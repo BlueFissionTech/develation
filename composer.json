@@ -1,0 +1,25 @@
+{
+    "name": "bluefission/develation",
+    "description": "Core Framework for BlueFission.com internal PHP Projects",
+    "license": "MIT",
+    "keywords": ["develation"],
+    "authors": [
+        {
+            "name": "Devon Scott",
+            "email": "dscott@bluefission.com",
+            "homepage": "http://bluefission.com",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "4.0.*",
+        "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "BlueFission\\DevElation\\": "src"
+        }
+    }
+}
