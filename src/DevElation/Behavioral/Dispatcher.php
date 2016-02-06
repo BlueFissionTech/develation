@@ -38,7 +38,6 @@ class Dispatcher extends DevObject {
 		}
 			
 		$this->_behaviors->add( $behavior );
-/*
 
 		if ( $callback ) {
 			try {
@@ -47,7 +46,6 @@ class Dispatcher extends DevObject {
 				error_log( $e->getMessage() );
 			}
 		}
-*/
 	}
 
 	public function handler($handler) {
