@@ -1,8 +1,13 @@
 <?php
-
 namespace BlueFission\HTML;
 
+use BlueFission\DevValue;
+use BlueFission\DevArray;
+use BlueFission\Behavioral\Configurable;
+
 class Table extends Configurable {
+	protected $_content;
+
 	protected $_config = array(
 		'columns'=>'',
 		'href'=>'',
@@ -18,12 +23,30 @@ class Table extends Configurable {
 		'fields'=>array(),
 	);
 
-	public function __construct( $_config ) {
+	public function __construct( $config = null ) {
+		parent::__construct( $config );
+	}
 
+	public function content( $content = null ) {
+		if (DevValue::isNotNull($content)) {
+			$content = DevArray::toArray($content);
+			$this->_content = $content;
+		}
+		return $this->_content;
 	}
 
 	//outputs standard html content box
 	public function render() {
+		$header = $this->config('headers');
+		$trunc = $this->config('truncate');
+		$file_dir = $this->config('document_dir');
+		$cols = $this->config('columns');
+		$link_style = $this->config('link_style');
+		// $href = $this->config('href');
+		// $fields = $this->config('fields');
+		$query_r = $this->config('query');
+		$content_r = $this->content();
+
 		extract($this->_config);
 		$hori = 0;
 		$output = '<table class="dev_table"' . (($header === false) ? '' : ' id="anyid"') . '>';

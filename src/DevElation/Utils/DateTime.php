@@ -1,11 +1,16 @@
-<?phps
-//dev_date_time.php
-use \BlueFission;
-@include_once('Loader.php');
-$loader = BlueFission\Loader::instance();
-$loader->load('com.bluefission.develation.functions.common');
-$loader->load('com.bluefission.develation.functions.html');
-$loader->load('com.bluefission.develation.Configurable');
+<?php
+namespace BlueFission\Utils;
+
+use BlueFission\DevValue;
+use BlueFission\DevArray;
+use BlueFission\HTML\Table;
+use BlueFission\Behavioral\Configurable;
+
+// @include_once('Loader.php');
+// $loader = BlueFission\Loader::instance();
+// $loader->load('com.bluefission.develation.functions.common');
+// $loader->load('com.bluefission.develation.functions.html');
+// $loader->load('com.bluefission.develation.Configurable');
 
 class DateTime extends Configurable
 {
@@ -23,12 +28,14 @@ class DateTime extends Configurable
 	public function __construct( $data = null )
 	{	
 		parent::__construct();
-		if (dev_not_null($data))
+		if (DevValue::isNotNull($data))
 		{
-			if ( is_array($data))
+			if ( is_array($data)) {
 				$this->config($data);
-			elseif ( $this->string_is_date($data))
+			}
+			elseif ( $this->stringIsDate($data)) {
 				$this->date($data);
+			}
 			elseif ( is_int($data ))
 			{
 				$data = $this->timestamp($data);
@@ -36,7 +43,7 @@ class DateTime extends Configurable
 			}
 			else 
 			{
-				$this->timestamp( strtotime($data) );
+				$data = $this->timestamp( strtotime($data) );
 				$this->_data = $this->info( $data );
 			}
 		}
@@ -44,9 +51,9 @@ class DateTime extends Configurable
 		$this->date( date( $this->config('date_format') ) );
 	}
 	
-	protected function field($field, $value = null)
+	public function field($field, $value = null)
 	{
-		if ( array_key_exists( $field, $this->_data ) )
+		if ( !array_key_exists( $field, $this->_data ) )
 			return null;
 		
 		$value = parent::field($field, $value);
@@ -56,20 +63,22 @@ class DateTime extends Configurable
 	
 	public function timestamp( $data = null )
 	{
-		if (dev_is_null($data))
-			return mktime ($this->field('second'), $this->field('minute'), $this->field('hour'), $this->field('month'), $this->field('day'), $this->field('year'));
+		if (DevValue::isNull($data))
+			return mktime ((int)$this->field('second'), (int)$this->field('minute'), (int)$this->field('hour'), (int)$this->field('month'), (int)$this->field('day'), (int)$this->field('year'));
 		elseif (is_numeric($data))
 			$timestamp = $data;
 		else 
-			$timestamp = strtotime($data);		
+			$timestamp = strtotime($data);
+
+		return $timestamp;
 	}
+
 	public function info($datetime = null) 
 	{
-		if (dev_is_null($datetime))
+		if (DevValue::isNull($datetime))
 			return $this->_data;
 		
 		$timestamp = $this->timestamp($datetime);
-				
 		$today =  array();
 		$count = 0;
 		
@@ -124,21 +133,21 @@ class DateTime extends Configurable
 		$date['timestamp'] = $today[0];
 		$date['timezone'] = '';
 		$date['offset'] = '';
+
+		// $this->assign($date);
 		
 		//Phew! that was a lot of work!
 		return $date;
 	}
 	
-	public function month()
-	{
-		$date = dev_get_date_info($sm, $sy, $timestamp);
-		$event_r = dev_value_to_array($event_r);
+	public function month($events = null) {
+		$date = $this->info();
+		$event_r = DevArray::toArray($events);
 		$month = array();
 		$notes = array();
-		for ($i=0, ($j=1 - $date['firstweekday']); ($i<5 || $j<=$date['daysinmonth']); $i++) 
-		{
+		for ($i=0, ($j=1 - $date['firstweekday']); ($i<5 || $j<=$date['daysinmonth']); $i++) {
 			for ($k = 0; $k < 7; $k++, $j++) {
-				if (in_array($j, $event_r) && dev_is_assoc($event_r)) {
+				if (in_array($j, $event_r) && DevArray::isAssoc($event_r)) {
 					$note_r = array_keys($event_r, $j);
 					$notes = implode(', ',$note_r);
 				}
@@ -149,9 +158,13 @@ class DateTime extends Configurable
 		return $month;
 	}
 	
-	public function calendar()
+	public function calendar( $events = null)
 	{
-		$output = dev_content_box(dev_month_r($sm, $sy, $timestamp, $event_r), '', '', '', '', false, 0, 1);
+		$table = new Table();
+		$content = $this->month( $events );
+		$table->content($content);
+		// $output = dev_content_box(, '', '', '', '', false, 0, 1);
+		$output = $table->render();
 		return $output;
 	}
 	
@@ -178,12 +191,12 @@ class DateTime extends Configurable
 		
 		$this->_data = $this->info($timestamp);
 		
-		if (dev_is_null($time))
+		if (DevValue::isNull($time))
 			$time = date($format);
 		
 		return $time;
 	}
-	
+
 	public function date()
 	{
 		$arg_count = func_num_args();
@@ -193,15 +206,20 @@ class DateTime extends Configurable
 		{
 		default:
 		case 0:
-			$timestamp = $this->timestamp();
+			// $timestamp = $this->timestamp();
+			$timestamp = $this->timestamp;
 			$format = ($this->config('full_date')) ? $this->config('date_format_long') : $this->config('date_format');
 			$date = date($format, $timestamp);
 		break;
 		case 1:
 			if ( version_compare(PHP_VERSION, '5.3.0', '>=') )
 			{
-				$date = DateTime::createFromFormat( $this->config('date_format') , func_get_arg(0));
-				$timestamp = $date->getTimestamp();
+				// die(var_dump(func_get_arg(0)));
+				// die();
+
+				// $date = \DateTime::createFromFormat( $this->config('date_format') , func_get_arg(0));
+				// $timestamp = $date->getTimestamp();
+				$timestamp = $this->timestamp(func_get_arg(0));
 			}
 			else
 			{
@@ -211,7 +229,7 @@ class DateTime extends Configurable
 		case 3:
 			if ( version_compare(PHP_VERSION, '5.2.0', '>=') )
 			{
-				$date = DateTime::setDate(func_get_arg(0), func_get_arg(1), func_get_arg(2));
+				$date = \DateTime::setDate(func_get_arg(0), func_get_arg(1), func_get_arg(2));
 				$timestamp = $date->getTimestamp();
 			}
 			else
@@ -223,15 +241,15 @@ class DateTime extends Configurable
 		
 		$this->_data = $this->info($timestamp);
 		
-		if (dev_is_null($date))	
-			$date = date($format, $timestamp);
+		if (DevValue::isNull($date))	
+			$date = date($this->config('date_format'), $timestamp);
 		
 		return $date;
 	}
 	
 	public static function difference($time1, $time2, $interval = null) 
 	{
-		if (dev_is_null($interval)) $interval = 'seconds';
+		if (DevValue::isNull($interval)) $interval = 'seconds';
 		$a = strtotime($time1);
 		$b = strtotime($time2);
 		$difference = (($a > $b) ? ($a - $b) : ($b - $a));
@@ -260,7 +278,7 @@ class DateTime extends Configurable
 		return $output;
 	}
 	
-	public static function string_is_date($string) 
+	public static function stringIsDate($string) 
 	{
 		return preg_match('/^(\d{4}\-\d+\-\d+|\d+\/\d+\/\d{4})/', $string);
 	}

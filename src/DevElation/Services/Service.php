@@ -1,15 +1,22 @@
 <?php
-namespace BlueFission;
+namespace BlueFission\Services;
 
-@include_once('Loader.php');
-$loader = Loader::instance();
-$loader->load('com.bluefission.develation.functions.common');
-$loader->load('com.bluefission.develation.DevObject');
+// @include_once('Loader.php');
+// $loader = Loader::instance();
+// $loader->load('com.bluefission.develation.functions.common');
+// $loader->load('com.bluefission.develation.DevObject');
 
-class Service extends \DevObject {
+use ReflectionClass;
+use BlueFission\DevValue;
+use BlueFission\DevObject;
+use BlueFission\DevArray;
+use BlueFission\Behavioral\Dispatcher;
+
+class Service extends Dispatcher {
 
 	protected $_registrations;
 	protected $_routes;
+	protected $_parent;
 
 	const LOCAL_LEVEL = 1;
 	const SCOPE_LEVEL = 2;
@@ -34,9 +41,9 @@ class Service extends \DevObject {
 		if ( isset( $this->instance ) && $this->instance instanceof $this->type ) {
 			$service = $this->instance;
 		} else {
-			$reflection_class = new \ReflectionClass($this->type);
-			$args = \dev_value_to_array( $this->arguments );
-    		$this->instance = $reflection_class->newInstanceArgs( $args );
+			$reflection_class = new ReflectionClass($this->type);
+			$args = DevArray::toArray( $this->arguments );
+    		$this->instance = $reflection_class->getConstructor() ? $reflection_class->newInstanceArgs( $args ) : $reflection_class->newInstanceWithoutConstructor();
 
 			foreach ($this->_registrations as $name=>$registrations) {
 				usort($registrations, function ($a, $b) {
@@ -51,7 +58,9 @@ class Service extends \DevObject {
 					$callback = $handler->callback();
 
 					if ( \is_object($callback) ) {
-						$callback = $callback->bindTo($this->scope, $this->instance);
+						$scope = (\is_object($this->scope)) ? $this->scope : $this->instance;
+						
+						$callback = $callback->bindTo($scope, $this->instance);
 					} elseif (\is_string($callback) && (\strpos($callback, '::') !== false)) {
 						$function = \explode('::', $callback);
 						$callback = array($this->instance, $function[1]);
@@ -87,6 +96,13 @@ class Service extends \DevObject {
 			}
 		}
 		return $this->instance;
+	}
+
+	public function parent( $object = null ) {
+		if ( DevValue::isNotNull($object) )
+			$this->_parent = $object;
+
+		return $this->_parent;
 	}
 
 	public function broadcast( $behavior )

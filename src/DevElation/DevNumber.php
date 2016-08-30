@@ -8,7 +8,7 @@ class DevNumber extends DevValue implements IDevValue {
 		$this->_value = $value;
 		if ( $this->_type ) {
 			$clone = $this->_value;
-			settype($clone, $type);
+			settype($clone, $this->_type);
 			$remainder = $clone % 1;
 			$this->_type = $remainder ? $this->_type : "int";
 			settype($this->_value, $this->_type);

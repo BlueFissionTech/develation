@@ -8,7 +8,7 @@ class FileSystem extends Data implements IData {
 	private $_handle;
 	private $_contents;
 	
-	protected $_config = array( 'mode'=>'r', 'filter'=>'/\..$|\.htm$|\.html$|\.pl$|\.txt$/i', 'home'=>'/' );
+	protected $_config = array( 'mode'=>'r', 'filter'=>'/\..$|\.htm$|\.html$|\.pl$|\.txt$/i', 'home'=>'/', 'doNotConfirm'=>'false' );
 
 	protected $_data = array(
 		'filename'=>'',
@@ -105,7 +105,9 @@ class FileSystem extends Data implements IData {
 	public function write() {
 		$path = $this->path();
 		$file = $this->file();
-		$content = stripslashes($this->contents());
+		$finfo = finfo_open(FILEINFO_MIME);
+
+		$content = ( substr(finfo_file($finfo, $path), 0, 4) == 'text') ? stripslashes($this->contents()) : $this->contents();
 		$status = '';
 		if ($file != '') {
 			if (!$this->exists($path)) $status = "File '$file' does not exist. Creating.\n";
@@ -168,10 +170,12 @@ class FileSystem extends Data implements IData {
 		$this->status($status);	
 	}
 
-	public function delete() {
+	public function delete( $confirm = null ) {
 		$status = false;
 		$path = $this->path();
 		$file = $this->file();
+
+		$confirm = DevValue::isNotNull($confirm) ? $confirm : $this->_doNotConfirm;
 		
 		if ($path != '') {
 			if ($confirm === true) {
@@ -198,7 +202,7 @@ class FileSystem extends Data implements IData {
 		$this->status($status);
 	}
 	
-	public function exists($path) {
+	public function exists($path = null) {
 		$file = DevValue::isNotNull($path) ? basename($path) : $this->file();
 		$directory = dirname($path) ? realpath( dirname($path) ) : $this->path();
 		

@@ -1,6 +1,8 @@
 <?php
 namespace BlueFission;
 
+use Exception;
+
 class DevValue implements IDevValue {
 	protected $_value;
 	protected $_type = "";
@@ -18,7 +20,7 @@ class DevValue implements IDevValue {
 	///////
 	// ensure that a var is not null
 	public function _isNotNull() {
-		return (isset($this->_value) && $this->_value !== null && $this->_value != '');
+		return (!empty($this->_value) && $this->_value !== null && $this->_value != '');
 	}
 
 	// check if a var is null

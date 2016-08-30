@@ -51,6 +51,6 @@ class Storage extends Data implements IData
 		if (DevValue::isNull($data)) return $this->_contents;
 		
 		$this->_contents = $data;
-		$this->perform( BlueFission\Event::CHANGE ); 
+		$this->perform( Event::CHANGE ); 
 	}
 }

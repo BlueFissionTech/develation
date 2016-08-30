@@ -1,12 +1,15 @@
 <?php
-use \BlueFission;
-@include_once('Loader.php');
-$loader = BlueFission\Loader::instance();
-$loader->load('com.bluefission.develation.functions.common');
-$loader->load('com.bluefission.develation.data.storage.DevStorage');
-$loader->load('com.bluefission.develation.interfaces.data.IDevData');
-$loader->load('com.bluefission.develation.connections.DevMysqlLink');
-$loader->load('com.bluefission.develation.DevDateTime');
+namespace BlueFission\Data\Storage;
+
+use BlueFission\DevValue;
+use BlueFission\DevArray;
+use BlueFission\DevString;
+use BlueFission\Utils\DateTime;
+use BlueFission\Data\IData;
+use BlueFission\Connections\Database\MysqlLink;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Data\Storage\Behaviors\StorageAction;
 
 class Mysql extends Storage implements IData
 {
@@ -17,9 +20,11 @@ class Mysql extends Storage implements IData
 		'ignore_null'=>false,
 		'temporary'=>false,
 		'set_defaults'=>false,
+		'key'=>'',
 	);
+
 	private $_last_row_affected;
-	private $_result;
+	protected $_result;
 		
 	//declare query parts
 	private $_tables = array();
@@ -29,7 +34,10 @@ class Mysql extends Storage implements IData
 	private $_order = array();
 	private $_aggregate = array();
 	private $_distinctions = array();
-	private $_query, $_row_start, $_row_limit;	
+	private $_query;
+
+	protected $_row_start = 0;
+	protected $_row_limit = 1;
 	
 	public function __construct( $config = null )
 	{
@@ -63,6 +71,12 @@ class Mysql extends Storage implements IData
 			$this->create();
 
 		$tables = $this->tables();
+
+		if ( count($tables) < 1 ) {
+			$this->status( self::STATUS_FAILED );
+			return false;
+		}
+
 		$table = $tables[0];
 		$table = isset( $tables[0] ) ? $tables[0] : $this->config(self::NAME_FIELD);
 		
@@ -82,6 +96,7 @@ class Mysql extends Storage implements IData
 			}
 		}
 		
+		$affected_row = null;
 		$tables = $this->tables();
 		while ( ( $table = each($tables) ) && $success )
 		{
@@ -94,11 +109,20 @@ class Mysql extends Storage implements IData
 
 			//$status = $success ? self::STATUS_FAILED : self::STATUS_SUCCESS;
 
+			if (!$affected_row && $success && $key) {
+				$affected_row = DevValue::isNotNull($this->_data[$key]) ? $this->_data[$key] : $db->last_row();
+				$this->_last_row_affected = $affected_row;
+			}
+
 			$status = $success ? self::STATUS_SUCCESS : $db->status();
 			$this->status( $status );
 			if (!$success)
 				return false;
 		}
+	}
+
+	public function last_row() {
+		return $this->_last_row_affected;
 	}
 	
 	public function read()
@@ -106,10 +130,14 @@ class Mysql extends Storage implements IData
 		$db = $this->_source;
 
 		$tables = $this->tables();
+		if ( count($tables) < 1 ) {
+			$this->status( self::STATUS_FAILED );
+			return false;
+		}
 		$table = $tables[0];
 		$fields = array();
 		$data = $this->data();
-		$active_fields = DevArray::toArray( $this->config('fields') );
+		$active_fields = $this->config('fields') != '' ? DevArray::toArray( $this->config('fields') ) : array();
 		$field_info = $this->fields();
 		
 		$relations = $this->_relations;
@@ -150,7 +178,7 @@ class Mysql extends Storage implements IData
 				{
 					$field = $this->arrayKeyIntersect($this->table($table), $join);
 					foreach ($field as $b=>$c) 
-					{ 
+					{
 						if (in_array($b, $active_fields) || DevValue::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
 					}
 	
@@ -226,13 +254,14 @@ class Mysql extends Storage implements IData
 
 		$start = $this->start();
 		$end = $this->end();
-
+		$result = false;
 		$query .= ((DevValue::isNotNull($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotNull($end)) ? ", " . $this->end() : '') : '');
+		if ($db) {
+			$db->query($query);
+			$this->_query = $db->stats()['query'];
 
-		$db->query($query);
-		$this->_query =$db->stats()['query'];
-
-		$result = $db->result();
+			$result = $db->result();
+		}
 		$this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 
 
@@ -396,7 +425,7 @@ class Mysql extends Storage implements IData
 					}
 					elseif (is_string($b))
 					{
-						if ( DevDateTime::string_is_date( $b ) )
+						if ( DateTime::stringIsDate( $b ) )
 							$type = "DATETIME";
 						else
 						{
@@ -440,7 +469,6 @@ class Mysql extends Storage implements IData
 					$type = "VARCHAR(90)";
 				}  
 			}
-			$types[$a] = $type;
 			
 			if ($this->config('set_defaults') && is_scalar($b))
 			{
@@ -449,14 +477,16 @@ class Mysql extends Storage implements IData
 			
 			if ( strtolower(substr( $a, -2)) == 'id' && $type == "INT" && $key == '')
 			{
-				$key = $b;
+				$key = $a;
 				$type .= " NOT NULL AUTO_INCREMENT, PRIMARY KEY($key)";
 				$this->config('key', $key);
 			}
+			$types[$a] = $type;
 		}
-		if ($key == '')
+		if ($key == '' && $this->config('key'))
 		{
 			$key = $this->config('key');
+
 			$type = $key . " INT NOT NULL AUTO_INCREMENT, PRIMARY KEY($key)";
 		}
 		
@@ -470,28 +500,23 @@ class Mysql extends Storage implements IData
 		$query = rtrim($query, ",");
 		$query .= ")";
 		$db->query($query);
-		$this->_query =$db->stats()['query'];
-		
+		$this->_query = $db->stats()['query'];
 		$result = $db->result();
 		
-		$this->_config[self::NAME_FIELD] = $this->tables();
+		$this->_config[self::NAME_FIELD] = $this->tables() ? $this->tables() : $this->_config[self::NAME_FIELD];
 
 		$status = ( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 		$this->status($status);
 	}
 	
-	// TODO : move to extended bulk mysql class
-	public function result()
-	{
-		return $this->_result;
-	}
-	
 	public function contents()
 	{
-		return $this->result()->fetch_assoc();
+		$data = ($this->_result) ? $this->_result : $this->data();
+
+		return $data;
 	}
 
-	private function fields()
+	public function fields()
 	{
 		$db = $this->_source;
 		//if (!$this->_fields || count( $this->config(self::NAME_FIELD) ) > 0 )
@@ -500,25 +525,28 @@ class Mysql extends Storage implements IData
 			$data = array();
 			//$tables = DevArray::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
 			$tables = $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : ( $this->tables() ? $this->tables() : get_class($this) );
+
 			$tables = DevArray::toArray( $tables );
-			
 			//if ( MysqlLink::tableExists( current( $tables ) ) )
 				//return array();
 			
-			$this->perform( BlueFission\State::DRAFT );
+			$this->perform( State::DRAFT );
 			$active_fields = DevArray::toArray( $this->config('fields') );
 			foreach ($tables as $table)
 			{
 				$query = "SHOW COLUMNS FROM `$table`";
-				$db->query($query);
-				$this->_query = $db->stats()['query'];
-				$result = $db->result();
+				$result = false;
+				if ($db) {
+					$db->query($query);
+					$this->_query = $db->stats()['query'];
+					$result = $db->result();
+				}
 				if ($result)
 				{
 					while ($column = $result->fetch_assoc()) 
 					{
 						$fields[$column['Field']] = $column;
-						if ( in_array($column['Field'], $active_fields) || $this->is(BlueFission\State::DRAFT) )
+						if ( in_array($column['Field'], $active_fields) || $this->is(State::DRAFT) )
 							$this->_data[$column['Field']] = isset( $this->_data[$column['Field']] ) ? $this->_data[$column['Field']] : $column['Default'];
 					}
 					$this->_fields[$table] = $fields;
@@ -526,9 +554,9 @@ class Mysql extends Storage implements IData
 				$fields = null;
 			}
 			
-			$this->_config[self::NAME_FIELD] = null;
-			$this->halt( BlueFission\State::DRAFT );
-			$this->perform( BlueFission\Event::CHANGE );
+			// $this->_config[self::NAME_FIELD] = null;
+			$this->halt( State::DRAFT );
+			$this->perform( Event::CHANGE );
 		}
 		$fields = array();
 
@@ -595,10 +623,10 @@ class Mysql extends Storage implements IData
 			} else {					
 				if ( $this->field($field_name) !== 0 && $this->field($field_name) == '' ) {
 					if (!$field['Null'] || $field['Null'] == 'NO') {
-						if (dev_is_substr($type, 'date')) {
+						if (DevString::has($type, 'date')) {
 							//$this->field($field_name, dev_join_date($field_name));
 							$this->field($field_name, date('Y-m-d'));
-							if (!is_string($this->field($field_name)) || !DevDateTime::string_is_date($this->field($field_name))) {
+							if (!is_string($this->field($field_name)) || !DateTime::stringIsDate($this->field($field_name))) {
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;
 							}
@@ -609,13 +637,13 @@ class Mysql extends Storage implements IData
 					}
 				} else {
 					//Correct Datatype/Size
-					if (dev_is_substr($type, 'int') || dev_is_substr($type, 'double') || dev_is_substr($type, 'float')) {
+					if (DevString::has($type, 'int') || DevString::has($type, 'double') || DevString::has($type, 'float')) {
 						if (!is_numeric($this->field($field_name))) {
 							$this->status("Field '$field_name' must be numeric!");
 							$passed = false;
 						}
 					}
-					if (dev_is_substr($type, 'char') || dev_is_substr($type, 'text')) {
+					if (DevString::has($type, 'char') || DevString::has($type, 'text')) {
 						if (!is_string($this->field($field_name))) {
 							$this->status("Field '$field_name' is not text!");
 							$passed = false;
@@ -625,16 +653,16 @@ class Mysql extends Storage implements IData
 							$passed = false;
 						}
 					}
-					if (dev_is_substr($type, 'date')) {
-						if (!is_string($this->field($field_name)) || !DevDateTime::string_is_date(($this->field($field_name)))) {
+					if (DevString::has($type, 'date')) {
+						if (!is_string($this->field($field_name)) || !DateTime::stringIsDate(($this->field($field_name)))) {
 							$this->field($field_name, dev_join_date($field_name));
-							if (!is_string($this->field($field_name)) || !DevDateTime::string_is_date($this->field($field_name))) {
+							if (!is_string($this->field($field_name)) || !DateTime::stringIsDate($this->field($field_name))) {
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;
 							}
 						}
 					}
-					if (dev_is_substr($type, 'set')) {
+					if (DevString::has($type, 'set')) {
 						if (is_array($this->field($field_name))) {
 							$this->field($field_name, implode(', ', $this->field($field_name)));
 						} elseif (!is_string($this->field($field_name))) {
@@ -646,12 +674,6 @@ class Mysql extends Storage implements IData
 			}
 		}		
 		return $passed;
-	}
-	
-	public function limit($start = 0, $end = '') 
-	{
-		$this->_row_start = $start;
-		$this->_row_end = $end;
 	}
 	
 	private function start () 
@@ -678,7 +700,7 @@ class Mysql extends Storage implements IData
 		}
 		if ( DevValue::isNotEmpty( $value ) ) 
 		{
-			if ( !in_array(strtoupper($condition), $values)) return false;
+			if ( !is_array($condition) && !in_array(strtoupper($condition), $values)) return false;
 			$this->_conditions[$member] = $condition;
 			if (strpos($member, ',')) 
 			{
@@ -719,6 +741,8 @@ class Mysql extends Storage implements IData
 
 		if ( !in_array(strtoupper($function), $values)) return false;
 		$this->_aggregate[$member] = $function;
+
+		return $this;
 	}
 	
 	public function relation($member, $field = null) 
@@ -750,7 +774,7 @@ class Mysql extends Storage implements IData
 	private function whereCase($table = '', $member, $value = '') 
 	{
 		$tables = $this->tables();
-		$table = ( DevValue:isNull( $table ) ) ? $tables[0] : $table;
+		$table = ( DevValue::isNull( $table ) ) ? $tables[0] : $table;
 		$where = '';
 		$where_r = array();
 
@@ -989,7 +1013,10 @@ class Mysql extends Storage implements IData
 	public function error()
 	{
 		$db = $this->_source;
-		return $db->status();
+		if ($db) {
+			return $db->status();
+		}
+		return $this->status();
 	}
 
 	public static function inDB( $field, $value, $table ) {

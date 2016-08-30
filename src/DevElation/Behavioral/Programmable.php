@@ -1,9 +1,11 @@
 <?php
-use \BlueFission;
-@include_once('Loader.php');
-$loader = BlueFission\Loader::instance();
-$loader->load('com.bluefission.develation.functions.common');
-$loader->load('com.bluefission.develation.Configurable');
+namespace BlueFission\Behavioral;
+
+use \RuntimeException;
+use BlueFission\Behavioral\Behaviors\Behavior;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\State;
 
 class Programmable extends Configurable
 {
@@ -23,19 +25,37 @@ class Programmable extends Configurable
 		}
 		if (isset($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
 		{
-			return call_user_func_array($this->_tasks[$name], $args);
+			$result = call_user_func_array($this->_tasks[$name], $args);
+			$this->perform('On'.$name);
+			return $result;
 		}
 		else 
 		{
-			throw new \RuntimeException("Method {$name} does not exist");
+			throw new RuntimeException("Method {$name} does not exist");
 		}
+	}
+
+	public function behavior( $behavior, $callback = null ) {
+		if ( is_string($behavior) ) {
+			if ( strpos ( $behavior, 'Do') === 0 ) {
+				$behavior = new Action($behavior);
+			} elseif ( strpos ( $behavior, 'Is') === 0 ) {
+				$behavior = new State($behavior);
+			} elseif ( strpos ( $behavior, 'On') === 0 ) {
+				$behavior = new Event($behavior);
+			} else {
+				$behavior = new Behavior($behavior);
+			}
+		}
+
+		parent::behavior($behavior, $callback);
 	}
 
 	public function learn($task, $function, $behavior = null )
 	{
 		if ( is_callable($function)
 			&& (!array_key_exists($task, $this->_tasks) 
-			&& $this->is( BlueFission\State::DRAFT )) )
+			&& $this->is( State::DRAFT )) )
 		{
 			$this->_tasks[$task] = $function->bindTo($this, $this);
 
@@ -43,6 +63,8 @@ class Programmable extends Configurable
 			{
 				$this->behavior($behavior, $this->_tasks[$task]);
 			}
+			$this->behavior( 'On'.$task );
+			$this->perform( Event::CHANGE );
 
 			return true;
 		}
@@ -52,8 +74,10 @@ class Programmable extends Configurable
 
 	public function forget($task)
 	{
-		if ( $this->is( BlueFission\State::DRAFT ) && isset( $this->_tasks[$task] ) )
+		if ( $this->is( BlueFission\State::DRAFT ) && isset( $this->_tasks[$task] ) ) {
 			unset( $this->_tasks[$task] );
+			$this->perform( Event::CHANGE );
+		}
 	}
 
 	public function __set($field, $value)

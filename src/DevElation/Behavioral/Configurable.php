@@ -12,7 +12,7 @@ class Configurable extends Scheme implements IConfigurable {
 	protected $_config;
 	protected $_status;
 	
-	public function __construct( $config = null )
+	public function __construct( )
 	{
 		parent::__construct( );
 		if (!isset($this->_config))

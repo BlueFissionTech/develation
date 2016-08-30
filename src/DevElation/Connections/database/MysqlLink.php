@@ -1,7 +1,8 @@
 <?php
-namespace BlueFission\Connections;
+namespace BlueFission\Connections\Database;
 
 use BlueFission\DevValue;
+use BlueFission\Connections\Connection;
 use BlueFission\DevArray;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
@@ -14,6 +15,7 @@ class MysqlLink extends Connection implements IConfigurable
 
 	protected static $_database;
 	private static $_query;
+	private static $_last_row;
 	
 	protected $_config = array( 'target'=>'localhost',
 		'username'=>'',
@@ -31,6 +33,8 @@ class MysqlLink extends Connection implements IConfigurable
 			self::$_database = array();
 		else	
 			$this->_connection = end ( self::$_database );
+
+		return $this;
 	}
 	
 	public function open()
@@ -42,7 +46,7 @@ class MysqlLink extends Connection implements IConfigurable
 		
 		$connection_id = count(self::$_database);
 		
-		$db = new mysqli($host, $username, $password, $database);
+		$db = new \mysqli($host, $username, $password, $database);
 		
 		if (!$db->connect_error)
 			self::$_database[$connection_id] = $this->_connection = $db;
@@ -99,7 +103,7 @@ class MysqlLink extends Connection implements IConfigurable
 			}
 			$data = $this->_data;
 			$type = ($update) ? ($this->config('ignore_null') ? self::UPDATE_SPECIFIED : self::UPDATE) : self::INSERT;
-			$this->post($table, $data, $where, $type);	
+			return $this->post($table, $data, $where, $type);	
 		}
 		else
 		{
@@ -221,6 +225,8 @@ class MysqlLink extends Connection implements IConfigurable
 		$status = '';
 		$success = false;
 		$ignore_null = false;
+		$last_row = null; 
+
 		if ($where == '' && ($type == self::INSERT || $type == self::UPDATE)) 
 		{
 			$where = "1";
@@ -240,6 +246,7 @@ class MysqlLink extends Connection implements IConfigurable
 					if ($this->insert($table, $data)) 
 					{
 						$status = "Successfully Inserted Entry.";
+						$last_row = $db->insert_id;
 						$success = true;
 					} 
 					else 
@@ -256,6 +263,7 @@ class MysqlLink extends Connection implements IConfigurable
 						if ($this->update($table, $data, $where, $ignore_null)) 
 						{
 							$status = "Successfully Updated Entry.";
+							$last_row = $db->insert_id;
 							$success = true;
 						} 
 						else 
@@ -289,6 +297,8 @@ class MysqlLink extends Connection implements IConfigurable
 		
 		$this->status($status);
 		
+		$this->_last_row = $last_row ? $last_row : $this->_last_row;
+
 		return $success;
 	}
 	
@@ -321,6 +331,10 @@ class MysqlLink extends Connection implements IConfigurable
 	     }
 	          
 	     return $value;
+	}
+
+	public function last_row() {
+		return $this->_last_row;
 	}
 	
 	public static function sanitize($string, $datetime = false) 

@@ -169,7 +169,7 @@ class Form {
 		  	}		
 	          break;
 	     case 'radio':
-			if (DevArray::toAssoc($value)) {
+			if (DevArray::isAssoc($value)) {
 		     	$output .= (($required) ? '*' : '' ) . $label.'<br />';
 				$i = 1;
 		     	foreach ($value as $a=>$b) {
@@ -356,7 +356,7 @@ class Form {
 		$output = '';
 		
 		if ($timestamp == 1) $pattern = '/^(\d{4})\-(\d+)\-(\d+)[\w\W\d\D\s]*$/';
-		else $pattern = '/^(\d{4})\-(\d+)\-(\d+)$/';
+		else $pattern = '/^(\d{4})\-(\d+)\-(\d+)/';
 		switch ($section) {
 		case 'day':
 			$replacement = '$3';

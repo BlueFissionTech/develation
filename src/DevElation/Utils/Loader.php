@@ -100,7 +100,7 @@ class Loader
 				$filePath .=  $pathParts[$index] . "." . $this->config('default_extension');
 			}
 		}
-		
+
 		if( $isWildcardMatch )
 		{
 			$wildcardMatches = array();
@@ -113,7 +113,7 @@ class Loader
 					while(false !== ( $entry = $directory->read() ) )
 					{
 						if( $entry != "." && $entry != ".." && 
-							strrpos( $entry, ".".$this->_config('default_extension') ) !== false )
+							strrpos( $entry, ".".$this->_config['default_extension'] ) !== false )
 						{
 							$wildcardMatches[] = $testPath . $entry;
 						}
@@ -127,10 +127,11 @@ class Loader
 		{
 			foreach( $this->_paths as $path )
 			{
-				$testPath = $path . "/" . $filePath;   
+				$testPath = $path . DIRECTORY_SEPARATOR . $filePath;   
+
 				if( is_file( $testPath ) )
 					return $testPath;
-			}			
+			}
 		}
 		
 		return false;

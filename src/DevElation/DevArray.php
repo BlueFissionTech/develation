@@ -26,6 +26,19 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 		return ((is_array( $var )) && is_numeric( implode( array_keys( $var ))));
 	}
 
+	public function _isNotEmpty( ) {
+		$var = $this->_value;
+
+		if ( !empty( $var ) && is_array($var) && count($var) >= 1) {
+			if ( count($var) == 1 && !$this->isAssoc($var) && empty( $var[0]) ) return false;
+		}
+		return true;
+	}
+
+	public function _isEmpty( ) {
+		return !$this->isNotEmpty( $this->_value);
+	}
+
 	// get value for given key in an array if it exists
 	public function get( $key ) {
 		$var = $this->_value;
@@ -76,6 +89,7 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 
 	// Remove duplicate values from an array as a reference
 	public function _removeDuplicates( ) {
+		// replace with array_unique 
 		$array = $this->_value;
 		if (is_array($array)) {
 			$hold = array();

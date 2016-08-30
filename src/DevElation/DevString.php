@@ -28,7 +28,7 @@ class DevString extends DevValue implements IDevValue {
 	}
 
 	// test if two strings match
-	public function match($str2) {
+	public function _match($str2) {
 		$str1 = $this->_value;
 		return ($str1 == $str2);
 	}
@@ -50,7 +50,7 @@ class DevString extends DevValue implements IDevValue {
 	}
 
 	// Reverse strpos
-	public function strrpos($needle) {
+	public function _strrpos($needle) {
 		$haystack = $this->_value;
 		$i = strlen($haystack);
 		while ( substr( $haystack, $i, strlen( $needle ) ) != $needle ) 
@@ -62,8 +62,12 @@ class DevString extends DevValue implements IDevValue {
 	}
 
 	// test is a string exists in another string
-	public function has($needle) {
+	public function _has($needle) {
 		$haystack = $this->_value;
 		return (strpos($haystack, $needle) !== false);
+	}
+
+	public function __toString() {
+		return $this->_value;
 	}
 }

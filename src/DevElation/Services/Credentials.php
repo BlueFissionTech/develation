@@ -1,10 +1,13 @@
 <?php
-namespace BlueFission;
-@include_once('Loader.php');
-$loader = Loader::instance();
-$loader->load('com.bluefission.develation.DevConfigurable');
+namespace BlueFission\Services;
+// @include_once('Loader.php');
+// $loader = Loader::instance();
+// $loader->load('com.bluefission.develation.DevConfigurable');
 
-class Credentials extends \DevConfigurable
+use BlueFission\Behavioral\Configurable;
+use BlueFission\Behavioral\Behaviors\Event;
+
+class Credentials extends Configurable
 {
 	const FAILED_USERNAME_EMPTY = 'Username cannot be empty';
 	const FAILED_PASSWORD_EMPTY = 'Password cannot be empty';

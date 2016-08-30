@@ -5,6 +5,8 @@ class System {
 	protected $_response;
 	protected $_processes;
 
+	public function __construct() {}
+
 	public function run( $command )
 	{
 		if (!$command)

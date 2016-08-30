@@ -56,7 +56,7 @@ class Session extends Storage implements IData
 		$secure = $this->config('secure');
 				
 		$path = ($path) ? $path : HTTP::domain();
-		$cookiedie = (DevNumber::isValue($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
+		$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 		$secure = (bool)$secure;
 		$status = ( HTTP::session($label, $value, $cookiedie, $path = null, $secure) ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
 		

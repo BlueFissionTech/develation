@@ -8,6 +8,8 @@ use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
+use InvalidArgumentException;
+
 // Scheme Class
 class Scheme extends Dispatcher 
 {
@@ -83,6 +85,11 @@ class Scheme extends Dispatcher
 			$this->dispatch( Event::CHANGE );
 		
 		return parent::field($field, $value);
+	}
+
+	public function clear() {
+		parent::clear();
+		$this->dispatch( Event::CHANGE );
 	}
 
 	protected function init()

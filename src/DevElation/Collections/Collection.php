@@ -3,12 +3,15 @@ namespace BlueFission\Collections;
 
 use ArrayAccess;
 use ArrayObject;
+use ArrayIterator;
+use IteratorAggregate;
 use BlueFission\DevValue;
 use BlueFission\DevArray;
 
-class Collection extends DevArray implements ICollection, ArrayAccess {
+class Collection extends DevArray implements ICollection, ArrayAccess, IteratorAggregate {
 	protected $_value;
 	protected $_type = "";
+	protected $_iterator;
 
 	public function __construct( $value = null ) {
 		parent::__construct( $value );
@@ -17,15 +20,18 @@ class Collection extends DevArray implements ICollection, ArrayAccess {
 			$this->_value = new ArrayObject( );
 		}
 		else
-			$this->_value = new ArrayObject( DevArray::toArray($this->_value) );		
+			$this->_value = new ArrayObject( DevArray::toArray($this->_value) );
+
+        $this->_iterator = new ArrayIterator($this->_value);	
 	}
 
 	public function get( $key ) {
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
-		if ($this->has( $key ))
+		if ($this->has( $key )) {
 			return $this->_value[$key];
+		}
 		else 
 			return null;		
 	}
@@ -48,7 +54,9 @@ class Collection extends DevArray implements ICollection, ArrayAccess {
 		$this->_value[$key] = $object;
 	}
 	public function first()	{
-		return end ( array_reverse ( $this->_value ) );
+		$array = $this->_value->getArrayCopy();
+		$array = array_reverse ( $array );
+		return end ( $array );
 	}
 	public function last() {
 		return end( $this->_value );
@@ -69,6 +77,17 @@ class Collection extends DevArray implements ICollection, ArrayAccess {
 
 	public function count() {
 		return $this->_value->count();
+	}
+
+	public function each() {
+		if ( $this->valid() ) {
+			$row = $this->current();
+			$this->next();
+			return $row;
+		} else {
+			$this->rewind();
+			return false;
+		}
 	}
 
 	public function serialize() {
@@ -92,4 +111,30 @@ class Collection extends DevArray implements ICollection, ArrayAccess {
 	public function offsetUnset ( $offset ) {
 		$this->remove( $offset );
 	}
+
+	// Iteration
+	public function rewind() {
+		$this->_iterator->rewind();
+	}
+
+	public function current() {
+		return $this->get( $this->_iterator->key() );
+	}
+
+	public function key() {
+		return $this->_iterator->key();
+	}
+
+	public function next() {
+		return $this->_iterator->next();
+	}
+
+	public function valid() {
+		return $this->has($this->_iterator->key());
+	}
+
+	public function getIterator() {
+        $this->_iterator = new ArrayIterator($this->_value);
+        return $this->_iterator;
+    }
 }

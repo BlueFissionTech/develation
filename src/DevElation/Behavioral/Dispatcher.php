@@ -6,6 +6,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Handler;
 use BlueFission\Behavioral\Behaviors\HandlerCollection;
 use BlueFission\Behavioral\Behaviors\BehaviorCollection;
 class Dispatcher extends DevObject {

@@ -24,7 +24,14 @@ class HandlerCollection extends Collection
 
 	public function get( $behaviorName )
 	{
-		throw new NotImplementedException('Function Not Implemented');
+		// throw new NotImplementedException('Function Not Implemented');
+		$handlers = array();
+		foreach ($this->_value as $c)
+		{
+			if ($c->name() == $behaviorName)
+				$handlers[] = $c;
+		}
+		return $handlers;
 	}
 
 	public function raise($behavior, $sender, $args)
