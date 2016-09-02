@@ -64,7 +64,7 @@ class DateTime extends Configurable
 	public function timestamp( $data = null )
 	{
 		if (DevValue::isNull($data))
-			return mktime ((int)$this->field('second'), (int)$this->field('minute'), (int)$this->field('hour'), (int)$this->field('month'), (int)$this->field('day'), (int)$this->field('year'));
+			return mktime ((int)$this->field('hour'), (int)$this->field('minute'), (int)$this->field('second'), (int)$this->field('month'), (int)$this->field('day'), (int)$this->field('year'));
 		elseif (is_numeric($data))
 			$timestamp = $data;
 		else 
