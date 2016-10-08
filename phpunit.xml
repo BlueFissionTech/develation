@@ -8,10 +8,15 @@
          convertWarningsToExceptions="true"
          processIsolation="false"
          stopOnFailure="false"
-         syntaxCheck="false">
+         syntaxCheck="true">
     <testsuites>
         <testsuite name="Develation Test Suite">
             <directory suffix=".php">./tests/</directory>
         </testsuite>
     </testsuites>
+    <filter>
+        <whitelist>
+            <directory>./src/</directory>
+        </whitelist>
+    </filter>
 </phpunit>
