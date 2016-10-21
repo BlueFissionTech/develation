@@ -46,6 +46,7 @@ class MysqlLink extends Connection implements IConfigurable
 		
 		$connection_id = count(self::$_database);
 		
+		if ( !function_exists('mysqli') ) return;
 		$db = new \mysqli($host, $username, $password, $database);
 		
 		if (!$db->connect_error)

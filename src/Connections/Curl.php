@@ -38,7 +38,7 @@ class Curl extends Connection implements IConfigurable
 			//open connection
 			$this->_connection = curl_init();
 			
-			curl_setopt($this->_connection, CURLOPT_URL, $url);
+			curl_setopt($this->_connection, CURLOPT_URL, $target);
 			curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
 
 			if ( $this->config('username') && $this->config('password') )

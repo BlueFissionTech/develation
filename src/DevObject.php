@@ -11,21 +11,20 @@ class DevObject implements IDevObject
 			$this->_data = array();
 		
 		if (!$this->_type)
-			$this->_type = get_class();
+			$this->_type = get_class( $this );
 	}
 
 	public function field($field, $value = null) {
 		if ( DevValue::isNotEmpty($value) ) {
 			$this->_data[$field] = $value;
 		} else {
-			$value = (isset($this->_data[$field])) ? $this->_data[$field] : null;
+			$value = ( isset($this->_data[$field]) && DevValue::isNotEmpty( $this->_data[$field]) ) ? $this->_data[$field] : null;
 		}
 		return $value;
 	}
 
 	public function clear()
 	{
-		//$this->_data = array();
 		array_walk($this->_data, function(&$value, $key) { 
 			$value = null; 
 		});
@@ -63,6 +62,7 @@ class DevObject implements IDevObject
 
 	public function __toString()
 	{
-		return get_class( $this );
+		// return get_class( $this );
+		return $this->_type;
 	}	
 }

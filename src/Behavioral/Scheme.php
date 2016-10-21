@@ -15,7 +15,6 @@ class Scheme extends Dispatcher
 {
 	protected $_history;
 	protected $_state;
-	protected $_final = false;
 	protected $_multistate = true;
 
 	public function __construct()
@@ -71,7 +70,7 @@ class Scheme extends Dispatcher
 
 	public function can( $behaviorName )
 	{
-		$can = ( ( $this->_behaviors->has( $behaviorName ) || !$this->_final ) && !$this->is( State::BUSY ) );
+		$can = ( ( $this->_behaviors->has( $behaviorName ) || $this->is( State::DRAFT ) ) && !$this->is( State::BUSY ) );
 		return $can;
 	}
 
@@ -94,7 +93,7 @@ class Scheme extends Dispatcher
 		if ( $this->is( State::READONLY ) )
 			$value = null;
 
-		if ( DevValue::isNotNull($value) ) 
+		if ( DevValue::isNotEmpty($value) ) 
 			$this->dispatch( Event::CHANGE );
 		
 		return parent::field($field, $value);
@@ -123,4 +122,5 @@ class Scheme extends Dispatcher
 		$this->behavior( new Action( Action::ACTIVATE ) );
 		$this->behavior( new Action( Action::UPDATE ) );
 	}
+
 }

@@ -6,7 +6,7 @@ use BlueFission\Exceptions\NotImplementedException;
 
 class HandlerCollection extends Collection
 {
-	public function add(&$handler, $priority = null)
+	public function add($handler, $priority = null)
 	{
 		$handler->priority($priority);
 		$this->_value->append($handler);

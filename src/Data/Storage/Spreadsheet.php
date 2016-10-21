@@ -31,6 +31,8 @@ class Spreadsheet extends Storage implements IData {
 
 		if ( !$this->_source ) 
 			$this->status( self::STATUS_FAILED_INIT );
+		else
+			$this->status( self::STATUS_SUCCESSFUL_INIT );
 	}
 
 	public function write() {

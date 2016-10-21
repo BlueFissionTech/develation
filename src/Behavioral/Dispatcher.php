@@ -2,6 +2,7 @@
 namespace BlueFission\Behavioral;
 
 use BlueFission\DevObject;
+use BlueFission\DevValue;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -29,11 +30,15 @@ class Dispatcher extends DevObject {
 	}
 
 	public function __destruct() {
-		$this->trigger(Event::UNLOAD);
+		if ( $this->_behaviors ) {
+			$this->trigger(Event::UNLOAD);
+		} else {
+			echo "\n\n".get_class($this). " has no behaviors\n\n";
+		}
 	}
 
 	public function behavior( $behavior, $callback = null ) {
-		if ( is_string($behavior) )
+		if ( is_string($behavior) && DevValue::isNotEmpty($behavior))
 			$behavior = new Behavior($behavior);
 
 		if ( !($behavior instanceof Behavior) ) {

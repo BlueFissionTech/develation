@@ -44,10 +44,10 @@ class Application extends Programmable {
 
 	public function __construct() 
 	{
-		parent::__construct();
-		if ( self::$_instance )
+		if ( self::$_instance != null )
 			return self::$_instance;
 
+		parent::__construct();
 		$this->_services = new Collection();
 		$this->_broadcasted_events[$this->name()] = array();
 
@@ -57,7 +57,6 @@ class Application extends Programmable {
 	static function instance()
 	{
 		if (!isset(self::$_instance)) {
-			// $c = __CLASS__;
 			$c = get_class();
 
 			self::$_instance = new $c;
@@ -183,16 +182,16 @@ class Application extends Programmable {
 		if ( \is_object($reference) ) {
 			$service->instance = $reference;
 			$service->type = \get_class($reference);
-			$service->scope = $this;
+			$service->scope = $reference;
 		} elseif (DevValue::isNotNull($reference) ) {
 			$service->type = $reference;	
-			$service->scope = $reference;
+			$service->scope = $this;
 		} else {
 			// If type isn't given, creates a programmable object property
 			$component = $this->component( $name );
 			$component->_parent = $this;
-			$service->instance = NULL;
-			$service->type = \get_class($reference);
+			$service->instance = $component;
+			$service->type = \get_class($component);
 			$service->scope = $component;
 		}
 		
@@ -374,7 +373,7 @@ class Application extends Programmable {
 		} elseif ( $recipient instanceof Dispatcher ) {
 			$recipient->dispatch($behavior, $arguments);
 		} else {
-			var_dump($recipientName);
+			// var_dump($recipientName);
 			call_user_func_array(array($recipient, $behavior->name()), array($arguments));
 		}
 	}

@@ -9,7 +9,7 @@ class Handler
 	private $_callback;
 	private $_priority;
 
-	public function __construct($behavior, $callback, $priority = 0) {
+	public function __construct(Behavior $behavior, $callback, $priority = 0) {
 		$this->_behavior = $behavior;
 		$this->_callback = $this->prepare($callback);
 		$this->_priority = (int)$priority;
@@ -19,7 +19,7 @@ class Handler
 		return $this->_behavior->name();
 	}
 
-	public function raise($behavior, $args) {
+	public function raise(Behavior $behavior, $args) {
 		if ($this->_callback)
 		{
 			$args = DevArray::isEmpty($args) ? null : $args;

@@ -9,6 +9,6 @@ abstract class Directory extends Container implements ICollection
 	public function __construct( )
 	{
 		parent::__construct();
-		$this->_root = new DevStorage();
+		$this->_root = new Storage();
 	}
 }

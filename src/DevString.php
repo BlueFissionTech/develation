@@ -8,19 +8,19 @@ class DevString extends DevValue implements IDevValue {
 		$alphanum = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		if ($symbols) $alphanum .= "~!@#\$%^&*()_+=";
 
-		if ( $this->_value == "" ) {
-			$this->_value = $alphanum;
+		if ( $this->_data == "" ) {
+			$this->_data = $alphanum;
 		}
 		$rand_string = '';
 		for($i=0; $i<$length; $i++)
-			$rand_string .= $this->_value[rand(0, strlen($this->_value)-1)];
+			$rand_string .= $this->_data[rand(0, strlen($this->_data)-1)];
 
 		return $rand_string;
 	}
 
 	// truncate a string to a given number of words using space as a word boundary
 	public function _truncate($limit = 40) {
-		$string = trim( $this->_value );
+		$string = trim( $this->_data );
 		$string_r = explode(' ', $string, ($limit+1));
 		if (count($string_r) >= $limit && $limit > 0) array_pop($string_r);
 		$output = implode (' ', $string_r);
@@ -29,13 +29,13 @@ class DevString extends DevValue implements IDevValue {
 
 	// test if two strings match
 	public function _match($str2) {
-		$str1 = $this->_value;
+		$str1 = $this->_data;
 		return ($str1 == $str2);
 	}
 
 	// Encrypt a string
 	public function _encrypt($mode = null) {
-		$string = $this->_value;
+		$string = $this->_data;
 		switch ($mode) {
 		default:
 		case 'md5':
@@ -51,7 +51,7 @@ class DevString extends DevValue implements IDevValue {
 
 	// Reverse strpos
 	public function _strrpos($needle) {
-		$haystack = $this->_value;
+		$haystack = $this->_data;
 		$i = strlen($haystack);
 		while ( substr( $haystack, $i, strlen( $needle ) ) != $needle ) 
 		{
@@ -63,14 +63,14 @@ class DevString extends DevValue implements IDevValue {
 
 	// test is a string exists in another string
 	public function _has($needle) {
-		$haystack = $this->_value;
+		$haystack = $this->_data;
 		return (strpos($haystack, $needle) !== false);
 	}
 
 	public function _similarityTo($string) {
 		// via vasyl at vasyltech dot com from https://secure.php.net/manual/en/function.similar-text.php
-		$string1 = $this->_value;
-		$string2 = $string
+		$string1 = $this->_data;
+		$string2 = $string;
 
 	    $len1 = strlen($string1);
 	    $len2 = strlen($string2);
@@ -79,7 +79,7 @@ class DevString extends DevValue implements IDevValue {
 	    $similarity = $i = $j = 0;
 	    
 	    while (($i < $len1) && isset($string2[$j])) {
-	        if ($str1[$i] == $string2[$j]) {
+	        if ($string1[$i] == $string2[$j]) {
 	            $similarity++;
 	            $i++;
 	            $j++;
@@ -99,6 +99,6 @@ class DevString extends DevValue implements IDevValue {
 	}
 
 	public function __toString() {
-		return $this->_value;
+		return $this->_data;
 	}
 }

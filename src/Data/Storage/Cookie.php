@@ -26,10 +26,12 @@ class Cookie extends Storage implements IData
 		$cookiesecure = $this->config('secure');
 		$name = $this->config('name') ? (string)$this->config('name') : DevString::random();
 		
-		$this->_source = HTTP::cookie($name, "", $cookiedie, $path = null, $cookiesecure) ? $name : null;
+		$this->_source = HTTP::cookie($name, "", $expire, $path = null, $cookiesecure) ? $name : null;
 		
 		if ( !$this->_source ) 
 			$this->status( self::STATUS_FAILED_INIT );
+		else
+			$this->status( self::STATUS_SUCCESSFUL_INIT );
 	}
 	
 	public function write()

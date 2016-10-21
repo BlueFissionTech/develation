@@ -86,10 +86,12 @@ class Service extends Dispatcher {
 	public function message( $behavior, $args = null ) {
 		$instance = $this->instance();
 		if ( $instance instanceof Dispatcher && is_callable( array( $instance, 'behavior') ) ) {
+			// var_dump($behavior);
 			// $instance->dispatch( $behavior, $args );
 			// echo "Getting on it with ".\BlueFission\DevString::truncate($args, 10)."\n";
 			
-			$this->dispatch($behavior, $args);
+			// $this->dispatch($behavior, $args);
+			$instance->dispatch($behavior, $args);
 		} else {
 			$this->call( $behavior, $args );
 		}
@@ -97,7 +99,7 @@ class Service extends Dispatcher {
 
 	public function call( $call, $args )
 	{
-		if ( is_callable(array($this->instance, $call) ) )
+		if ( is_callable(array($this->instance(), $call) ) )
 		{
 			$return = call_user_func_array( array($this->instance, $call), $args );
 			return $return;
@@ -114,47 +116,65 @@ class Service extends Dispatcher {
 		}
 	}
 
-	private function apply( $registration ) {
-		$level = $registration['level'];
-		$handler = $registration['handler'];
-		$callback = $handler->callback();
-
+	private function prepareCallback( $callback ) {
 		if ( \is_object($callback) ) {
-			$scope = (\is_object($this->scope)) ? $this->scope : $this->instance;
-			
-			$callback = $callback->bindTo($scope, $this->instance);
+			$callback = $callback->bindTo($this->scope, $this->instance);
 		} elseif (\is_string($callback) && (\strpos($callback, '::') !== false)) {
 			$function = \explode('::', $callback);
-			$callback = array($this->instance, $function[1]);
-		} elseif (\is_array($callback) && count( $callback ) == 2) {
-			if ( $this->instance instanceof $callback[0] ) {
-				$callback[0] = $this->instance;
-			}
+			$callback = array($callback[0], $function[1]);
 		} elseif (\is_string($callback)) {
 			$callback = array($this->instance, $callback);
 		}
 
+		if (\is_array($callback) && count( $callback ) == 2) {
+			if ( $this->instance instanceof $callback[0] ) {
+				$callback[0] = $this->instance;
+			}
+		}
+
+		return $callback;
+	}
+
+	private function apply( $registration ) {
+		$level = $registration['level'];
+		$handler = $registration['handler'];
+		$callback = $handler->callback();
+		$this->scope = (\is_object($this->scope)) ? $this->scope : $this->instance;
+		// $scope = (\is_object($this->scope)) ? $this->scope : $this;
+
+		$callback = $this->prepareCallback($callback);
+
 		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof Dispatcher && is_callable( array( $this->scope, 'behavior')) )
 		{
-			$this->scope->behavior($handler->name(), $this->broadcast);
+			// $this->scope->behavior($handler->name(), $this->broadcast);
+			if ( $this->instance instanceof Dispatcher && is_callable( array( $this->instance, 'behavior')) ) {	
+				$this->instance->behavior($handler->name(), $callback);
+			} else {
+				$this->scope->behavior($handler->name(), $callback);
+			}
+			$this->scope->behavior($handler->name(), $this->message);
+			// die(var_dump($this->scope));
 		}
 		elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof Dispatcher && is_callable( array( $this->instance, 'behavior')) )
 		{
 			// $this->behavior($handler->name(), $callback);
-			$scope = (\is_object($this->scope)) ? $this->scope : $this;
+			// $this->instance->behavior($handler->name(), $callback);
+			// $this->instance->behavior($handler->name(), $this->broadcast);
 
-			$this->instance->behavior($handler->name(), array($scope, 'broadcast'));
-			// $this->behavior($handler->name(), array($scope->_parent, 'broadcast'));
-		}
-
-		$this->behavior($handler->name(), $callback);
-		/*
-		if ( $this->instance instanceof Dispatcher && is_callable( array( $this->instance, 'behavior'))) {	
 			$this->instance->behavior($handler->name(), $callback);
+			$this->instance->behavior($handler->name(), $this->message);
+			$this->instance->behavior($handler->name(), $this->broadcast);
+
+			// if ( $this->scope == $this ) {
+			// 	$this->instance->behavior($handler->name(), array($scope, 'broadcast'));
+			// }
+
+			// $this->scope->behavior($handler->name(), $this->broadcast);
+			// $this->behavior($handler->name(), array($scope->_parent, 'broadcast'));
 		} else {
 			$this->behavior($handler->name(), $callback);
-		}
-		*/
+			// $this->behavior($handler->name(), $this->broadcast);
+		}		
 	}
 
 	// public function dispatch( $behavior, $args = null ) {

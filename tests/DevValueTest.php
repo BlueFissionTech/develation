@@ -1,9 +1,9 @@
 <?php
-// require 'vendor/autoload.php' ;
+namespace BlueFission\Tests;
 
 use BlueFission\DevValue;
  
-class DevValueTest extends PHPUnit_Framework_TestCase {
+class DevValueTest extends \PHPUnit_Framework_TestCase {
  
  	static $classname = '\BlueFission\DevValue';
 	public function setup()
@@ -183,8 +183,8 @@ class DevValueTest extends PHPUnit_Framework_TestCase {
 	// Static Empty Test
 	public function testRecognizesBlankAsEmptyStatically()
 	{
-		$trueResult = DevValue::isEmpty();
-		$falseResult = DevValue::isNotEmpty();
+		$trueResult = static::$classname::isEmpty();
+		$falseResult = static::$classname::isNotEmpty();
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -192,8 +192,8 @@ class DevValueTest extends PHPUnit_Framework_TestCase {
 	
 	public function testRecognizesNullAsEmptyStatically()
 	{
-		$trueResult = DevValue::isEmpty(null);
-		$falseResult = DevValue::isNotEmpty(null);
+		$trueResult = static::$classname::isEmpty(null);
+		$falseResult = static::$classname::isNotEmpty(null);
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -201,8 +201,8 @@ class DevValueTest extends PHPUnit_Framework_TestCase {
 
 	public function testRecognizesEmptyasEmptyStatically()
 	{
-		$trueResult = DevValue::isEmpty("");
-		$falseResult = DevValue::isNotEmpty("");
+		$trueResult = static::$classname::isEmpty("");
+		$falseResult = static::$classname::isNotEmpty("");
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -210,8 +210,8 @@ class DevValueTest extends PHPUnit_Framework_TestCase {
 	
 	public function testRecognizesZeroAsEmptyStatically()
 	{
-		$trueResult = DevValue::isNotEmpty(0);
-		$falseResult = DevValue::isEmpty(0);
+		$trueResult = static::$classname::isNotEmpty(0);
+		$falseResult = static::$classname::isEmpty(0);
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -220,8 +220,8 @@ class DevValueTest extends PHPUnit_Framework_TestCase {
 	public function testDoesntRecognizeValueAsEmptyStatically()
 	{
 		for ($i = 1; $i<100; $i++) {
-			$falseResult = DevValue::isEmpty($i);
-			$trueResult = DevValue::isNotEmpty($i);
+			$falseResult = static::$classname::isEmpty($i);
+			$trueResult = static::$classname::isNotEmpty($i);
 		
 			$this->assertTrue( $trueResult );
 			$this->assertFalse( $falseResult );

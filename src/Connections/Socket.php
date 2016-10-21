@@ -23,9 +23,9 @@ class Socket extends Connection implements IConfigurable
 	
 	public function open ()
 	{
-		if ( HTTP::urlExists($target) )
+		if ( HTTP::urlExists($this->config('target')) )
 		{
-			$target = parse_url( $target );
+			$target = parse_url( $this->config('target') );
 			
 			$status = '';
 			
@@ -42,7 +42,7 @@ class Socket extends Connection implements IConfigurable
 			$status = self::STATUS_NOTCONNECTED;
 		}
 		
-		$this->status($data);
+		$this->status($status);
 	}
 	
 	public function close ()

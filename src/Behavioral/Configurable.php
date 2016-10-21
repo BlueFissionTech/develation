@@ -26,20 +26,29 @@ class Configurable extends Scheme implements IConfigurable {
 	
 	public function config( $config = null, $value = null )
 	{
-		if (DevValue::isNull($config))
+		if (DevValue::isEmpty($config))
 			return $this->_config;
 		elseif (is_string($config))
 		{
-			if (DevValue::isNull ($value))
+			if (DevValue::isEmpty ($value))
 				return isset($this->_config[$config]) ? $this->_config[$config] : null;
-			if (array_key_exists($config, $this->_config))
+						
+			if ( ( array_key_exists($config, $this->_config) || $this->is(State::DRAFT) ) && !$this->is(State::READONLY)) {
 				$this->_config[$config] = $value; 
+			}
 		}
-		elseif (is_array($config))
+		elseif (is_array($config) && !$this->is(State::READONLY))
 		{
 			$this->perform( State::BUSY );
-			foreach ( $this->_config as $a=>$b )
-				if ( isset($config[$a] )) $this->_config[$a] = $config[$a];
+			if ( $this->is(State::DRAFT) ) {
+				foreach ( $config as $a=>$b ) {
+					$this->_config[$a] = $config[$a];
+				}
+			} else {
+				foreach ( $this->_config as $a=>$b ) {
+					if ( isset($config[$a] )) $this->_config[$a] = $config[$a];
+				}
+			}
 			$this->halt( State::BUSY );
 		}
 	}
@@ -87,7 +96,6 @@ class Configurable extends Scheme implements IConfigurable {
 	{
 		parent::init();
 		$this->behavior( new Event( Event::MESSAGE ) );
-		$this->behavior( new State( State::READONLY ) );
 	}
 	/*
 	*/

@@ -56,7 +56,7 @@ class FileSystem extends Data implements IData {
 			if (!$this->exists($path)) $status = "File '$file' does not exist. Creating.\n";
 			
 			if (!$handle = @fopen($path, $this->config('mode'))) {
-				$status = "Cannot access file ($file)\n";
+				$status = "Cannot access file ($path)\n";
 			} else {
 				if ($this->config('lock') && flock($handle, LOCK_EX)) {
 					$this->_is_locked = true;
@@ -64,6 +64,7 @@ class FileSystem extends Data implements IData {
 					$this->_handle = $handle;
 				} elseif (!$this->config('lock')) {
 					$this->_handle = $handle;
+					$success = 'true';
 				} else {
 					$this->_is_locked = false;
 					$status = "Couldn't acquire lock on file {$lock}.";
@@ -513,8 +514,13 @@ class FileSystem extends Data implements IData {
 		return $allowed;
 	}
 
+	public function __destruct() {
+		$this->close();
+		parent::__destruct();
+	}
+
 	public function mkdir( $dir = null ) {
-		$dir = $dir ? $dir : $this->path();
+		$dir = $dir ? $this->path().DIRECTORY_SEPARATOR.$dir : $this->path();
 
 		if (!$this->allowedDir($dir)) {
 			$this->status( "Location is outside of allowed path.");

@@ -12,7 +12,7 @@ class DevBoolean extends DevValue implements IDevValue {
 
 	// return the opposite value of a boolean variable
 	public function _opposite() {
-		$bool = $this->_value;
+		$bool = $this->_data;
 	    return (!($bool === true));
 	}
 }

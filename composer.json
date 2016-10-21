@@ -21,8 +21,13 @@
         "psr-4": {
             "BlueFission\\": "src"
         },
-	"classmap": [
-	   "src/"
-	]
+        "classmap": [
+           "src/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": { 
+            "BlueFission\\Tests\\": "tests/" 
+        }
     }
 }

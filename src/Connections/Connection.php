@@ -18,6 +18,7 @@ abstract class Connection extends Configurable implements IConfigurable
 	public function __construct( $config = null )
 	{
 		parent::__construct();
+		$this->status( self::STATUS_NOTCONNECTED );
 		if (is_array($config))
 			$this->config($config);
 	}

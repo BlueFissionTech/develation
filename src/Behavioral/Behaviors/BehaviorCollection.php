@@ -4,7 +4,7 @@ namespace BlueFission\Behavioral\Behaviors;
 use BlueFission\Collections\Collection;
 
 class BehaviorCollection extends Collection {
-	public function add( &$behavior, $label = null ) {
+	public function add( $behavior, $label = null ) {
 		if (!$this->has($behavior->name()))
 			parent::add( $behavior );
 	}

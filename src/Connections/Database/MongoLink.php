@@ -52,6 +52,8 @@ class MongoLink extends Connection
 		
 		$connection_id = count(self::$_database);
 
+		if ( !class_exists('MongoDB\Client') ) return;
+
 		try {
 			$mongo = new Client("mongodb://{$username}:{$password}@{$host}:27017");
 			// self::$_database[$connection_id] = $this->_connection = ($this->config('database') ? $mongo->{$this->config('database')} : $mongo);
@@ -330,7 +332,7 @@ class MongoLink extends Connection
 		return $success;
 	}
 
-	public function mapReduce( $map, $reduce, $output ) {
+	public function mapReduce( $map, $reduce, $output, $action = 'replace' ) {
 		$db = $this->_connection;
 
 		// construct map and reduce functions
@@ -343,7 +345,7 @@ class MongoLink extends Connection
 		    "map" => $map,
 		    "reduce" => $reduce,
 		    "query" => $this->_data,
-		    "out" => $output);
+		    "out" => array($action => $output));
 		    // "out" => array("reduce" => $output)));
 
 		$response = $db->command($command);

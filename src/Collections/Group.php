@@ -7,6 +7,7 @@ use BlueFission\DevValue;
 use BlueFission\Behavioral\Behaviors\Configurable;
 
 class Group extends Collection implements ICollection, ArrayAccess {
+	
 	public function type( $type = null ) {
 		if ( DevValue::isNull($type) ) {
 			return $this->_type;

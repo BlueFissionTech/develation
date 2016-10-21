@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Data\Storage;
 
+use BlueFission\DevValue;
 use BlueFission\DevString;
 use BlueFission\Data\IData;
 use BlueFission\Data\FileSystem;
@@ -20,32 +21,36 @@ class Disk extends Storage implements IData
 	public function activate( ) {
 		$path = $this->config('location') ? $this->config('location') : sys_get_temp_dir();
 		
-		$name = $this->config('name') ? (string)$this->config('name') : DevString::random();
+		$name = $this->config('name') ? (string)$this->config('name') : '';
 			
 		if (!$this->config('name'))	{
-			$file = tempnam($path, $name);		
+			$file = tempnam($path, 'store_');
+		} else {
+			$file = $path.DIRECTORY_SEPARATOR.$name;
 		}
 
-		$filesystem = new FileSystem( array('mode'=>'c') );
+		$filesystem = new FileSystem( array('mode'=>'c+','filter'=>'file') );
 		if ( $filesystem->open($file) )
 			$this->_source = $filesystem;
 
 		if ( !$this->_source ) 
 			$this->status( self::STATUS_FAILED_INIT );
+		else
+			$this->status( self::STATUS_SUCCESSFUL_INIT );
 	}
 	
 	public function write() {
 		$source = $this->_source;
 		$status = self::STATUS_FAILED;
-		$data = DevValue::isNull($this->_contents) ? HTTP::jsonEncode($this->_fields) : $this->_contents; 
+		$data = DevValue::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data) : $this->_contents; 
 		
-		$source->empty();
+		$source->flush();
 		$source->contents( $data );
 		$source->write();				
 		
 		$status = self::STATUS_SUCCESS;
 		
-		$this->status( $status );	
+		$this->status( $status );
 	}
 	
 	public function read() {	
@@ -64,5 +69,11 @@ class Disk extends Storage implements IData
 	public function delete() {
 		$source = $this->_source;
 		$source->delete();
+	}
+
+	public function __destruct() {
+		if (isset($this->_source))
+			$this->_source->close();
+		parent::__destruct();
 	}
 }

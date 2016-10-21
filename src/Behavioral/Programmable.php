@@ -2,6 +2,7 @@
 namespace BlueFission\Behavioral;
 
 use \RuntimeException;
+use BlueFission\DevValue;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -36,7 +37,7 @@ class Programmable extends Configurable
 	}
 
 	public function behavior( $behavior, $callback = null ) {
-		if ( is_string($behavior) ) {
+		if ( is_string($behavior) && DevValue::isNotEmpty($behavior) ) {
 			if ( strpos ( $behavior, 'Do') === 0 ) {
 				$behavior = new Action($behavior);
 			} elseif ( strpos ( $behavior, 'Is') === 0 ) {
@@ -74,7 +75,7 @@ class Programmable extends Configurable
 
 	public function forget($task)
 	{
-		if ( $this->is( BlueFission\State::DRAFT ) && isset( $this->_tasks[$task] ) ) {
+		if ( $this->is( State::DRAFT ) && isset( $this->_tasks[$task] ) ) {
 			unset( $this->_tasks[$task] );
 			$this->perform( Event::CHANGE );
 		}

@@ -4,15 +4,15 @@ namespace BlueFission;
 use Exception;
 
 class DevValue implements IDevValue {
-	protected $_value;
+	protected $_data;
 	protected $_type = "";
 
 	const MORPHING_METHOD_PREFIX = '_';
 
 	public function __construct( $value = null ) {
-		$this->_value = $value;
+		$this->_data = $value;
 		if ( $this->_type ) {
-			settype($this->_value, $this->_type);
+			settype($this->_data, $this->_type);
 		}
 	}
 	///
@@ -20,30 +20,30 @@ class DevValue implements IDevValue {
 	///////
 	// ensure that a var is not null
 	public function _isNotNull() {
-		// return (isset($this->_value) && $this->_value !== null && $this->_value != '');
+		// return (isset($this->_data) && $this->_data !== null && $this->_data != '');
 		return !$this->isNull();
 	}
 
 	// check if a var is null
 	public function _isNull( ) {
 		// return !$this->isNotNull();
-		return ( is_null($this->_value ) );
+		return ( is_null($this->_data ) );
 	}
 
 	// check if a var has an empty value
 	public function _isNotEmpty( ) {
-		// return ( $this->isNotNull( $this->_value ) || is_numeric( $this->_value) );
+		// return ( $this->isNotNull( $this->_data ) || is_numeric( $this->_data) );
 		return !$this->isEmpty( );
 	}
 
 	// check if a var has an empty value
 	public function _isEmpty( ) {
-		// return !$this->isNotEmpty( $this->_value );
-		return ( empty($this->_value) && !is_numeric( $this->_value ) );
+		// return !$this->isNotEmpty( $this->_data );
+		return ( empty($this->_data) && !is_numeric( $this->_data ) );
 	}
 
 	public function _isFalsy() {
-		return ( $this->_value == false || $this->_value == 0 || $this->_value == null );
+		return ( $this->_data == false || $this->_data == 0 || $this->_data == null );
 	}
 
 	public function _isTruthy() {
@@ -51,7 +51,7 @@ class DevValue implements IDevValue {
 	}
 
 	public function value() {
-		return $this->_value;
+		return $this->_data;
 	}
 
 	public function __call( $method, $args ) {

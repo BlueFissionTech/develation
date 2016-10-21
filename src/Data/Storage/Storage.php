@@ -15,6 +15,7 @@ class Storage extends Data implements IData
 	const STATUS_SUCCESS = 'Success.';
 	const STATUS_FAILED = 'Failed.';
 	const STATUS_FAILED_INIT = 'Could not init() storage.';
+	const STATUS_SUCCESSFUL_INIT = 'Storage is activated.';
 	
 	const NAME_FIELD = 'name';
 	const PATH_FIELD = 'location';
