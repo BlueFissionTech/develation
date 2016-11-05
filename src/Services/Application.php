@@ -102,7 +102,7 @@ class Application extends Programmable {
 
 		$behavior = $args['behavior'];
 		if ( $args['service'] == $this->name() ) {
-			$data = $args['data'];
+			$data = isset($args['data'])?$args['data']:null;
 			
 			$this->boost($behavior, $data);
 		} else {
