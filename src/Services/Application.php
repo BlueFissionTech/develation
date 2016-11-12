@@ -326,7 +326,7 @@ class Application extends Programmable {
 					foreach ( $recipients as $recipient )
 					{
 						$target_name = '';
-						if ($behavior->_target instanceof 'BlueFission\Services\Service' || $behavior->_target instanceof 'BlueFission\Services\Application') {
+						if ($behavior->_target instanceof BlueFission\Services\Service || $behavior->_target instanceof BlueFission\Services\Application) {
 							$target_name = $behavior->_target->name();
 						} else {
 							foreach ( $this->_services as $service ) {
