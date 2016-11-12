@@ -54,6 +54,11 @@ class DiskQueue extends Queue implements IQueue {
 		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));
 		$fs->dirname = $queue;
 		$array = $fs->listDir();
+
+		if ( self::$_mode == static::FILO ) {
+			$array = array_reverse($array);
+		}
+
 		$message = null;
 
 		if($after === false && $until === false) {

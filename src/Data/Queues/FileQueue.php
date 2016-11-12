@@ -50,7 +50,11 @@ class FileQueue extends Queue implements IQueue {
 		$stack = self::instance();
 		$data = file_get_contents($stack);
 		
+
 		self::$_array = unserialize($data);
+		if ( self::$_mode == static::FILO && is_array(self::$_array)) {
+			self::$_array = array_reverse(self::$_array);
+		}
 
 		if($after === false && $until === false) {
 			return is_array(self::$_array) ? array_pop( self::$_array[$queue] ) : null;

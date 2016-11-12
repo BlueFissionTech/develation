@@ -1,4 +1,6 @@
-<?php namespace BlueFission\System;
+<?php 
+
+namespace BlueFission\System;
 
 class System {
 	

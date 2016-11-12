@@ -47,17 +47,40 @@ class MemQueue implements IQueue {
 	public static function dequeue($queue, $after=FALSE, $until=FALSE) {
 		$stack = self::instance();
 		
+		// if ( self::$_mode == static::FIFO ) {
+		// 	$start = "_head";
+		// 	$end = "_tail";
+		// } elseif ( self::$_mode == static::FILO ) {
+		// 	$start = "_tail";
+		// 	$end = "_head";
+		// }
 		if($after === FALSE && $until === FALSE) {
-			$tail = $stack->get($queue."_tail");
-			if(($id = $stack->increment($queue."_head")) === FALSE) 
-				return FALSE;
-		
-			if($id <= $tail) {
-				return $stack->get($queue."_".($id-1));
-			}
-			else {
-				$stack->decrement($queue."_head");
-				return FALSE;
+			if ( self::$_mode == static::FIFO ) {
+
+				$tail = $stack->get($queue."_tail");
+				if(($id = $stack->increment($queue."_head")) === FALSE) 
+					return FALSE;
+			
+				if($id <= $tail) {
+					return $stack->get($queue."_".($id-1));
+				}
+				else {
+					$stack->decrement($queue."_head");
+					return FALSE;
+				} 
+			} elseif ( self::$_mode == static::FILO ) {
+				$head = $stack->get($queue."_head");
+				if(($id = $stack->decrement($queue."_tail")) === FALSE) 
+					return FALSE;
+			
+				if($id >= $head) {
+					return $stack->get($queue."_".($id-1));
+				}
+				else {
+					$stack->increment($queue."_tail");
+					return FALSE;
+				} 
+				
 			}
 		}
 		else if($after !== FALSE && $until === FALSE) {

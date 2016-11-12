@@ -42,6 +42,8 @@ class Application extends Programmable {
 	private $_routes = array();
 	private $_arguments = array();
 
+	private static $_class = __CLASS__;
+
 	public function __construct() 
 	{
 		if ( self::$_instance != null )
@@ -57,9 +59,10 @@ class Application extends Programmable {
 	static function instance()
 	{
 		if (!isset(self::$_instance)) {
-			$c = get_class();
+			// $c = get_class();
+			// self::$_class = ;
 
-			self::$_instance = new $c;
+			self::$_instance = new self::$_class;
 		}
 
 		return self::$_instance;
@@ -123,7 +126,7 @@ class Application extends Programmable {
 		if (\is_string($behavior)) {
 			$behavior = new Behavior($behavior);
 		}
-		
+
 		$behavior->_context = $args ? $args : $behavior->_context;
 		$behavior->_target = $behavior->_target ? $behavior->_target : $this;
 
@@ -322,8 +325,19 @@ class Application extends Programmable {
 
 					foreach ( $recipients as $recipient )
 					{
-						if ( $behavior->_target->name() == $senderName || 
-							( isset($this->_broadcast_chain[$this->_depth-1]) && $this->_broadcast_chain[$this->_depth-1] == $behavior->_target->name()))
+						$target_name = '';
+						if ($behavior->_target instanceof 'BlueFission\Services\Service' || $behavior->_target instanceof 'BlueFission\Services\Application') {
+							$target_name = $behavior->_target->name();
+						} else {
+							foreach ( $this->_services as $service ) {
+								if ( $service->instance == $behavior->_target ) {
+									$target_name = $service->name();
+									break;
+								}
+							}
+						}
+						if ( $target_name == $senderName || 
+							( isset($this->_broadcast_chain[$this->_depth-1]) && $this->_broadcast_chain[$this->_depth-1] == $target_name))
 						{
 							$name = $recipient['callback'] ? $recipient['callback'] : $behavior->name();
 

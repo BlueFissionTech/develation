@@ -178,7 +178,10 @@ class Service extends Dispatcher {
 	}
 
 	// public function dispatch( $behavior, $args = null ) {
-	// 	echo "{$behavior}\n";
+	// 	// echo "{$behavior}\n";
+	// 	if ( $behavior instanceof Behavior && $behavior->_target == $this->instance ) {
+	// 		$behavior->_target = $this;
+	// 	}
 	// 	parent::dispatch($behavior, $args);
 	// }
 }
