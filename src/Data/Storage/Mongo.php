@@ -95,10 +95,10 @@ class Mongo extends Storage {
 		// $this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 	}
 
-	public function mapReduce($map, $reduce, $output) {
+	public function mapReduce($map, $reduce, $output, $action = null) {
 		$db = $this->_source;
 
-		return $db->mapReduce($map, $reduce, $output);
+		return $db->mapReduce($map, $reduce, $output, $action );
 	}
 
 	public function contents( $data = null )

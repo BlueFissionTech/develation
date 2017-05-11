@@ -19,7 +19,8 @@ class MysqlBulk extends Mysql implements IData
 		parent::read();
 		$res = array();
 		if (method_exists('mysqli_result', 'fetch_all')) # Compatibility layer with PHP < 5.3
-			$res = $this->_result->fetch_all( MYSQLI_ASSOC );
+			if ($this->_result)
+				$res = $this->_result->fetch_all( MYSQLI_ASSOC );
 		else {
 			if ($this->_result)
 				for ($res = array(); $tmp = $this->_result->fetch_assoc();) $res[] = $tmp;

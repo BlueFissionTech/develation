@@ -54,12 +54,12 @@ class Scheme extends Dispatcher
 			}
 
 			$this->dispatch( $behavior, $args );
-			$this->_history->add($behaviorName, $behaviorName);
+			$this->_history->add($behaviorName, $args ? $args : $behaviorName);
 			if ( $this->_behaviors->has( $behaviorName ) && $this->_behaviors->get( $behaviorName )->is_persistent() )
 			{
 				if ( !$this->_multistate )
 					$this->_state->clear();
-				$this->_state->add($behaviorName, $behaviorName);
+				$this->_state->add($behaviorName, $args ? $args : $behaviorName);
 			}
 		}
 		else

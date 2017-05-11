@@ -33,7 +33,7 @@ class Dispatcher extends DevObject {
 		if ( $this->_behaviors ) {
 			$this->trigger(Event::UNLOAD);
 		} else {
-			echo "\n\n".get_class($this). " has no behaviors\n\n";
+			// echo "\n\n".get_class($this). " has no behaviors\n\n";
 		}
 	}
 
@@ -66,7 +66,7 @@ class Dispatcher extends DevObject {
 		if (is_string($behavior))
 			$behavior = new Behavior($behavior);
 
-		$this->trigger( $behavior, $args );
+		$this->trigger( $behavior, array($args) );
 	}
 
 	protected function trigger($behavior, $args = null) {

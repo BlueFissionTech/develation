@@ -8,8 +8,8 @@ class Queue implements IQueue {
 
 	public static $_mode;
 
-	static const FILO = 1;
-	static const FIFO = 2;
+	const FILO = 1;
+	const FIFO = 2;
 
 	private function __construct() {}
 	
@@ -35,13 +35,13 @@ class Queue implements IQueue {
 		$stack = self::instance();
 
 		if($after_id === false && $till_id === false) {
-			if ( self::$_mode == static::FILO ){
+			if ( self::$_mode == static::FILO ) {
 				$item = array_shift( $stack[$queue] );
-			} elseif ( self::$_mode == static::FIFO )
+			} elseif ( self::$_mode == static::FIFO ) {
 				$item = array_pop( $stack[$queue] );
 			}
 			return $item;
-		} elseif($after_id !== false && $till_id === false) {
+		} elseif ($after_id !== false && $till_id === false) {
 			$till_id = count($stack[$queue])-1;
 		}
 		$items = array_slice ( $stack[$queue], $after_id, $till_id, true );

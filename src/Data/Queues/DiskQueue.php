@@ -18,18 +18,19 @@ class DiskQueue extends Queue implements IQueue {
 	}
 	
 	private static function init() {
-		$tempfile = sys_get_temp_dir().DIRECTORY_SEPARATOR.self::DIRNAME;
+		// $tempfile = sys_get_temp_dir().DIRECTORY_SEPARATOR.self::DIRNAME;
+		$tempfile = sys_get_temp_dir();
 		
-		$stack = $tempfile;
+		$stack = $tempfile.DIRECTORY_SEPARATOR.self::DIRNAME;
 
-		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true));
+		$fs = new FileSystem(array('root'=>$tempfile, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true));
 	    
-	    if (file_exists($tempfile) && !is_dir($tempfile)) { 
-	    	unlink($tempfile); 
+	    if (file_exists($stack) && !is_dir($stack)) { 
+	    	unlink($stack); 
 	    }
 
-	    if (!is_dir($tempfile)) {
-	    	$fs->mkdir();
+	    if (!is_dir($stack)) {
+	    	$fs->mkdir(self::DIRNAME);
 	    }
 	    
 	    self::$_stack = $stack; 
@@ -54,6 +55,8 @@ class DiskQueue extends Queue implements IQueue {
 		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));
 		$fs->dirname = $queue;
 		$array = $fs->listDir();
+
+		if (  $array == false ) return false;
 
 		if ( self::$_mode == static::FILO ) {
 			$array = array_reverse($array);
