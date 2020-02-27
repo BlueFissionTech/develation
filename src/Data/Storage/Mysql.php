@@ -37,7 +37,7 @@ class Mysql extends Storage implements IData
 	private $_query;
 
 	protected $_row_start = 0;
-	protected $_row_limit = 1;
+	protected $_row_end = 1;
 	
 	public function __construct( $config = null )
 	{
@@ -255,7 +255,7 @@ class Mysql extends Storage implements IData
 		$start = $this->start();
 		$end = $this->end();
 		$result = false;
-		$query .= ((DevValue::isNotNull($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotNull($end)) ? ", " . $this->end() : '') : '');
+		$query .= ((DevValue::isNotNull($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotEmpty($end)) ? ", " . $this->end() : '') : '');
 		if ($db) {
 			$db->query($query);
 			$this->_query = $db->stats()['query'];
