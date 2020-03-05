@@ -509,7 +509,7 @@ class Mysql extends Storage implements IData
 		$this->status($status);
 	}
 	
-	public function contents()
+	public function contents( $data = null )
 	{
 		$data = ($this->_result) ? $this->_result : $this->data();
 
