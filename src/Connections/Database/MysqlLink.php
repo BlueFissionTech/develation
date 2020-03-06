@@ -139,7 +139,9 @@ class MysqlLink extends Connection implements IConfigurable
 			
 			$query = "SELECT * FROM `".$table."` WHERE ".$where_str;
 			
-			$query_str = $query;
+			$this->_query = $query;
+
+			// $query_str = $query;
 			 
 			$success = ( $db->query($query) ) ? true : false;
 			// $this->_result = $success;
@@ -183,7 +185,9 @@ class MysqlLink extends Connection implements IConfigurable
 			$value_string = implode(', ', $temp_values);
 			
 			$query = "INSERT INTO `".$table."`(".$field_string.") VALUES(".$value_string.")";
-						
+
+			$this->_query = $query;
+
 			$success = ( $db->query($query) ) ? true : false;
 
 			$this->_result = $success;
@@ -238,7 +242,8 @@ class MysqlLink extends Connection implements IConfigurable
 			
 			$query = "UPDATE `".$table."` SET ".$update_string." WHERE ".$where;
 			
-			$query_str = $query;
+			$this->_query = $query;
+			// $query_str = $query;
 			 
 			$success = ( $db->query($query) ) ? true : false;
 			$this->_result = $success;

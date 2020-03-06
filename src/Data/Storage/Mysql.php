@@ -80,7 +80,8 @@ class Mysql extends Storage implements IData
 		$table = $tables[0];
 		$table = isset( $tables[0] ) ? $tables[0] : $this->config(self::NAME_FIELD);
 		
-		foreach ($this->fields() as $table=>$column)
+		// foreach ($this->fields() as $table=>$column)
+		foreach ($this->fields() as $field=>$column)
 		{
 			$name = $column['Field'];
 			if ( $this->validate($name, $table) )
@@ -106,6 +107,8 @@ class Mysql extends Storage implements IData
 			$db->config('table', $table);
 			$db->config('ignore_null', $this->config('ignore_null'));
 			$success = $db->query($this->_data);
+
+			$this->_query = $db->stats()['query'];
 
 			//$status = $success ? self::STATUS_FAILED : self::STATUS_SUCCESS;
 

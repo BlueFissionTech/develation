@@ -24,7 +24,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 			} elseif ( is_subclass_of($this->_type, '\BlueFission\DevValue') ) {
 				$value = new $this->_type($value);
 			} else {
-				$value = settype($value, $this->_type);
+				// $value = settype($value, $this->_type);
 			}
 		}
 		return $value;
