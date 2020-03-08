@@ -50,15 +50,15 @@ class DevObject implements IDevObject
 		unset ( $this->_data[$field] );
 	}
 
-	public function __sleep()
-	{
-		return array_keys( $this->_data );
-	}
+	// public function __sleep()
+	// {
+	// 	return array_keys( $this->_data );
+	// }
 
-	public function __wakeup()
-	{
+	// public function __wakeup()
+	// {
 		
-	}
+	// }
 
 	public function __toString()
 	{
