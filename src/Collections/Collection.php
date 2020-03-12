@@ -138,4 +138,22 @@ class Collection extends DevArray implements ICollection, ArrayAccess, IteratorA
         $this->_iterator = new ArrayIterator($this->_value);
         return $this->_iterator;
     }
+
+    public function contains( $value ) {
+    	return in_array($value, $this->_value->getArrayCopy());
+    }
+
+    public function rand() {
+ 		// Doesn't work for associative key based arrays
+    	// $rand = 0;
+    	// if ( function_exists('mt_rand') ) {
+    	// 	$rand = mt_rand(0, $this->_value->count() - 1)];
+    	// } else {
+    	// 	$rand = array_rand( $this->_value->getArrayCopy() );
+    	// }
+
+    	$rand = array_rand( $this->_value->getArrayCopy() );
+
+    	return $rand;
+    }
 }
