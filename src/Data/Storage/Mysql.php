@@ -277,7 +277,7 @@ class Mysql extends Storage implements IData
 		$start = $this->start();
 		$end = $this->end();
 		$result = false;
-		$query .= ((DevValue::isNotNull($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotEmpty($end)) ? ", " . $this->end() : '') : '');
+		$query .= ((DevValue::isNotEmpty($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotEmpty($end)) ? ", " . $this->end() : '') : '');
 		if ($db) {
 			$db->query($query);
 			$this->_query = $db->stats()['query'];
