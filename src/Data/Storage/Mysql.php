@@ -65,7 +65,7 @@ class Mysql extends Storage implements IData
 		$tables = $this->tables();
 		$keys = array();
 		$table = $tables[0];
-		
+
 		foreach ($this->fields() as $field=>$column)
 		{
 			$name = $column['Field'];
@@ -1004,8 +1004,8 @@ class Mysql extends Storage implements IData
 		$this->_conditions = array();
 		$this->_distinctions = array();
 		$this->_aggregate = array();
-		$this->_row_start = array();
-		$this->_row_end = array();
+		$this->_row_start = 0;
+		$this->_row_end = 1;
 		$this->_order = array();
 		$this->_query = null;
 	}
