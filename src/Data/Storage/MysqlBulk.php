@@ -13,7 +13,7 @@ class MysqlBulk extends Mysql implements IData
 		parent::__construct( $config );
 		$this->_rows = new Group();
 		$this->_rows->type('\BlueFission\Data\Storage\Mysql');
-		$this->limit(0, null);
+		$this->limit(0, 1000);
 	}
 
 	public function read() {
