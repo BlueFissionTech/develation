@@ -59,6 +59,25 @@ class Mysql extends Storage implements IData
 	{
 		return $this->_query;
 	}
+
+	public function id( $id = null )
+	{
+		foreach ($this->fields() as $field=>$column)
+		{
+			$keys = array();
+			$table = $tables[0];
+			$name = $column['Field'];
+			if ( $this->validate($name, $table) )
+			{
+				if  ( $column['Key'] == 'PRI' || $column['Key'] == 'UNI' )
+				{
+					if (!isset($keys[$table])) $keys[$table] = $name;
+					break;
+				}
+			}
+		}
+		return $this->field($keys[$table], $id);
+	}
 	
 	public function write()
 	{
