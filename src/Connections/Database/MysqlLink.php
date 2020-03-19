@@ -95,11 +95,13 @@ class MysqlLink extends Connection implements IConfigurable
 			$where = '';
 			$update = false;
 			
-			$key = self::sanitize( $this->config('key') );
+			$key = $this->config('key');
+
 			if ($this->field($key) )
 			{
 				$value = self::sanitize( $this->field($key) );
-				$where = $key ? "`$key` = $value" : '';
+				$keyField = self::sanitize( $this->config('key') );
+				$where = $key ? "$keyField = $value" : '';
 				$update = true;
 			}
 			$data = $this->_data;
@@ -139,7 +141,9 @@ class MysqlLink extends Connection implements IConfigurable
 			
 			$query = "SELECT * FROM `".$table."` WHERE ".$where_str;
 			
-			$query_str = $query;
+			$this->_query = $query;
+
+			// $query_str = $query;
 			 
 			$success = ( $db->query($query) ) ? true : false;
 			// $this->_result = $success;
@@ -183,7 +187,9 @@ class MysqlLink extends Connection implements IConfigurable
 			$value_string = implode(', ', $temp_values);
 			
 			$query = "INSERT INTO `".$table."`(".$field_string.") VALUES(".$value_string.")";
-						
+
+			$this->_query = $query;
+
 			$success = ( $db->query($query) ) ? true : false;
 
 			$this->_result = $success;
@@ -238,7 +244,8 @@ class MysqlLink extends Connection implements IConfigurable
 			
 			$query = "UPDATE `".$table."` SET ".$update_string." WHERE ".$where;
 			
-			$query_str = $query;
+			$this->_query = $query;
+			// $query_str = $query;
 			 
 			$success = ( $db->query($query) ) ? true : false;
 			$this->_result = $success;
@@ -386,7 +393,7 @@ class MysqlLink extends Connection implements IConfigurable
 		$db = end ( self::$_database );
 		//Create regular expression patterns
 		$pattern = array( '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' );
-		$replacement = array( '&#39;', '\'$1\'', '$3-$1-$2', '$1', '&#36;', 'NULL' );
+		$replacement = array( '&#39;', '\'$1\'', '$3-$1-$2', '\'$1\'', '&#36;', 'NULL' );
 		if ($datetime === true) $replacement = array( '&#39;', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '&#36;', 'NULL' );
 		
 		$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
