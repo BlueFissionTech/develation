@@ -62,10 +62,12 @@ class Mysql extends Storage implements IData
 
 	public function id( $id = null )
 	{
+		$tables = $this->tables();
+		$keys = array();
+		$table = $tables[0];
+		
 		foreach ($this->fields() as $field=>$column)
 		{
-			$keys = array();
-			$table = $tables[0];
 			$name = $column['Field'];
 			if ( $this->validate($name, $table) )
 			{
