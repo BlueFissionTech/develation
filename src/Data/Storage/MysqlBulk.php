@@ -45,7 +45,7 @@ class MysqlBulk extends Mysql implements IData
 		$this->_row_end = $end;
 	}
 
-	public function contents()
+	public function contents(data = null)
 	{
 		return $this->_rows->current();
 	}
