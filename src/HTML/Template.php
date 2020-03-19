@@ -48,6 +48,21 @@ class Template extends Configurable {
 
 		$this->dispatch( State::DRAFT );
 	}
+
+	public function load ( $file = null ) 
+	{
+		if ( DevValue::isNotNull($file))
+		{
+			$this->_file = new FileSystem($file);
+			// $this->_file->open();
+		}
+		if ( $this->_file )
+		{
+			$this->_file->read($file);
+			$this->_template = $this->_file->contents();
+		}
+	}
+	/*
 	public function load ( $file = null ) 
 	{
 		if ( DevValue::isNotNull($file))
@@ -61,7 +76,7 @@ class Template extends Configurable {
 			$this->_template = $this->_file->contents();
 		}
 	}
-	
+	*/
 	public function contents($data = null)
 	{
 		if (DevValue::isNull($data)) return $this->_template;
