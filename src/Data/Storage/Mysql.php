@@ -145,7 +145,7 @@ class Mysql extends Storage implements IData
 		}
 	}
 
-	public function last_row() {
+	public function lastRow() {
 		return $this->_last_row_affected;
 	}
 	
