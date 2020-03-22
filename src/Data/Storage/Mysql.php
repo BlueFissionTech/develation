@@ -611,7 +611,7 @@ class Mysql extends Storage implements IData
 		return $table;
 	}
 	
-	private function primary() 
+	public function primary() 
 	{
 		$output = false;
 		foreach ($this->fields() as $a) {
