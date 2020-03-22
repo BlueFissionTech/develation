@@ -186,7 +186,11 @@ class Mysql extends Storage implements IData
 		{
 			if ( $this->exists($a) )
 			{
-				$sort[] = $this->orderCase($table, $a);
+				// $sort[] = $this->orderCase($table, $a);
+				$sort_entry = $this->orderCase($a, $b);
+				if ( $sort_entry ) {
+					$sort[] = $sort_entry;
+				}
 			}
 		}
 		
@@ -243,8 +247,12 @@ class Mysql extends Storage implements IData
 					{
 						if ($this->whereCase($a, $b, $c))
 							$where[] = $this->whereCase($a, $b, $c);
-						if ($this->orderCase($a, $b))
-							$sort[] = $this->orderCase($a, $b);
+						if ($this->orderCase($a, $b)) {
+							$sort_entry = $this->orderCase($a, $b);
+							if ( $sort_entry ) {
+								$sort[] = $sort_entry;
+							}
+						}
 					}
 				}
 			}
