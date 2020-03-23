@@ -140,14 +140,14 @@ class Template extends Configurable {
 
 		if (is_string($var))
 		{
-			if ( is_null($content) )
+			if ( !$content )
 			{
-				throw new InvalidArgumentException( 'Cannot assign empty value.');
+				// throw new InvalidArgumentException( 'Cannot assign empty value.');
 			}
 
 			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) )
 			{
-				throw new InvalidArgumentException( 'Formatted argument expects boolean');
+				// throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
 			return parent::field($var, $content );
