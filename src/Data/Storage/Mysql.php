@@ -288,6 +288,15 @@ class Mysql extends Storage implements IData
 		$end = $this->end();
 		$result = false;
 		$query .= ((DevValue::isNotEmpty($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotEmpty($end)) ? ", " . $this->end() : '') : '');
+		$this->run($query);
+	}
+
+	public function run( $query = "" )
+	{
+		if ( $query == "" ) {
+			$query = $this->_query;
+		}
+		
 		if ($db) {
 			$db->query($query);
 			$this->_query = $db->stats()['query'];
@@ -295,7 +304,6 @@ class Mysql extends Storage implements IData
 			$result = $db->result();
 		}
 		$this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
-
 
 		$this->_result = $result;
 
