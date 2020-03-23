@@ -151,8 +151,6 @@ class Mysql extends Storage implements IData
 	
 	public function read()
 	{
-		$db = $this->_source;
-
 		$tables = $this->tables();
 		if ( count($tables) < 1 ) {
 			$this->status( self::STATUS_FAILED );
@@ -293,10 +291,12 @@ class Mysql extends Storage implements IData
 
 	public function run( $query = "" )
 	{
+		$db = $this->_source;
+		
 		if ( $query == "" ) {
 			$query = $this->_query;
 		}
-		
+
 		if ($db) {
 			$db->query($query);
 			$this->_query = $db->stats()['query'];
