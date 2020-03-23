@@ -140,7 +140,7 @@ class Template extends Configurable {
 
 		if (is_string($var))
 		{
-			if ( !$content )
+			if ( is_null($content) )
 			{
 				throw new InvalidArgumentException( 'Cannot assign empty value.');
 			}
