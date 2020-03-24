@@ -2,6 +2,7 @@
 namespace BlueFission\HTML;
 
 use BlueFission\DevValue;
+use BlueFission\DevString;
 use BlueFission\Utils\Util;
 
 class HTML {
