@@ -20,7 +20,7 @@ class HTML {
 				$protocol = $secure ? 'https' : 'http';
 				$href = $protocol.'://' . $_SERVER['SERVER_NAME'];
 				$href .= $_SERVER['REQUEST_URI'];
-				if (DevString::strrpos($href, self::PAGE_EXTENSION)) $href = substr($href, 0, DevString::strrpos($href, self::PAGE_EXTENSION) + strlen(PAGE_EXTENSION));
+				if (DevString::strrpos($href, self::PAGE_EXTENSION)) $href = substr($href, 0, DevString::strrpos($href, self::PAGE_EXTENSION) + strlen(self::PAGE_EXTENSION));
 				elseif (DevString::strrpos($href, '/')) $href = substr($href, 0, DevString::strrpos($href, '/') + strlen('/'));
 			}
 		}
