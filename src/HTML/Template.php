@@ -95,7 +95,7 @@ class Template extends Configurable {
 		$this->load();
 	}
 
-	public function set( $var, $content = null, $formatted = null  ) 
+	public function set( $var, $content = null, $formatted = null, $repititions = null  ) 
 	{
 		if ($formatted)
 			$content = HTML::format($content);
@@ -113,7 +113,7 @@ class Template extends Configurable {
 				throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
-			$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template );
+			$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repititions );
 		}
 		elseif ( is_object( $var ) || DevArray::isAssoc( $var ) )
 		{
@@ -123,7 +123,7 @@ class Template extends Configurable {
 
 			foreach ($var as $a=>$b) 
 			{
-				$this->set($a, $b, $formatted);
+				$this->set($a, $b, $formatted, $repititions);
 			}
 		}
 		else
