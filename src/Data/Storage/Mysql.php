@@ -601,9 +601,11 @@ class Mysql extends Storage implements IData
 		$fields = array();
 
 		reset($this->_fields);
-		while ($table = each($this->_fields))
+		// while ($table = each($this->_fields))
+		for ($i = 0; $i < count($this->_fields); $i++) {
 		{
-			$table = $table['value'];
+			// $table = $table['value'];
+			$table = $this->_fields[$i]['value'];
 			$fields = array_merge($fields, $table);
 		}
 		reset($this->_fields);
