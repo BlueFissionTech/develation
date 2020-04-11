@@ -602,7 +602,7 @@ class Mysql extends Storage implements IData
 
 		reset($this->_fields);
 		// while ($table = each($this->_fields))
-		for ($i = 0; $i < count($this->_fields); $i++) {
+		for ($i = 0; $i < count($this->_fields); $i++)
 		{
 			// $table = $table['value'];
 			$table = $this->_fields[$i]['value'];
