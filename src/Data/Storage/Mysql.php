@@ -121,12 +121,12 @@ class Mysql extends Storage implements IData
 		$affected_row = null;
 		$tables = $this->tables();
 		// while ( ( $table = each($tables) ) && $success )
-		foreach ( $table as $key=>$value )
+		foreach ( $tables as $key=>$value )
 		{
 			if ( !$success ) {
 				break;
 			}
-			
+
 			$table = $value;
 			$key = isset($keys[$table]) ? $keys[$table] : null;
 			$db->config('key', $key);
