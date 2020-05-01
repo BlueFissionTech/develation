@@ -45,7 +45,8 @@ class Collection extends DevArray implements ICollection, ArrayAccess, IteratorA
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
-		return is_object($this->_value) ? property_exists( $this->_value, $key ) : array_key_exists( $key, $this->_value );
+		// return is_object($this->_value) ? property_exists( $this->_value, $key ) : array_key_exists( $key, $this->_value );
+		return $this->_value->offsetExists($key);
 	}
 	public function add( $object, $key = null ) {
 		if (!is_scalar($key) && !is_null($key)) {
