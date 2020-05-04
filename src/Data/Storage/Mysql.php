@@ -692,7 +692,7 @@ class Mysql extends Storage implements IData
 						}
 					}
 					if (DevString::has($type, 'char') || DevString::has($type, 'text')) {
-						if (!is_string($this->field($field_name))) {
+						if (!is_string($this->field($field_name)) && !is_numeric($this->field($field_name))) {
 							$this->status("Field '$field_name' is not text!");
 							$passed = false;
 						}
