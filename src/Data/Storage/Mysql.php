@@ -325,6 +325,8 @@ class Mysql extends Storage implements IData
 	
 	public function delete()
 	{
+		$db = $this->_source;
+		
 		$tables = $this->tables();
 		$table = $tables[0];
 		$fields = array();
