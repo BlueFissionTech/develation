@@ -190,7 +190,7 @@ class Mysql extends Storage implements IData
 			if ( $this->exists($a) )
 			{
 				// $sort[] = $this->orderCase($table, $a);
-				$sort_entry = $this->orderCase($a, $b);
+				$sort_entry = $this->orderCase($table, $a);
 				if ( $sort_entry ) {
 					$sort[] = $sort_entry;
 				}
