@@ -14,7 +14,7 @@ use BlueFission\Behavioral\Behaviors\Handler;
 use Exception;
 
 class Application extends Programmable {
-	static $_instance;
+	private static $_instances = array();
 
 	private $_broadcasted_events = array();
 	private $_broadcast_chain = array();
@@ -46,28 +46,29 @@ class Application extends Programmable {
 
 	public function __construct() 
 	{
-		if ( self::$_instance != null )
-			return self::$_instance;
+		$calledClass = get_called_class();
+		if ( self::$_instances[$calledClass] != null )
+			return self::$_instances[$calledClass];
 
 		parent::__construct();
 		$this->_services = new Collection();
 		$this->_broadcasted_events[$this->name()] = array();
 
-		self::$_instance = $this;
+		self::$_instances[$calledClass] = $this;
 	}
 
 	static function instance()
 	{
-		if (!isset(self::$_instance)) {
+		$calledClass = get_called_class();
+		if (!isset(self::$_instances[$calledClass])) {
 			// $c = get_class();
 			// self::$_class = ;
 
-			// self::$_instance = new self::$_class;
-			$calledClass = get_called_class();
-			self::$_instance = new $calledClass();
+			// self::$_instances = new self::$_class;
+			self::$_instances[$calledClass] = new $calledClass();
 		}
 
-		return self::$_instance;
+		return self::$_instances[$calledClass];
 	}
 
 	public function params( $params ) {
