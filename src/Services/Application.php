@@ -62,7 +62,9 @@ class Application extends Programmable {
 			// $c = get_class();
 			// self::$_class = ;
 
-			self::$_instance = new self::$_class;
+			// self::$_instance = new self::$_class;
+			$calledClass = get_called_class();
+			self::$_instance = new $calledClass();
 		}
 
 		return self::$_instance;
