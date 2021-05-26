@@ -106,7 +106,7 @@ class Application extends Programmable {
 		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $parts[2] ?? $this->_arguments[$this->_parameters[0]] );
 
 		// get the data triggered by this request
-		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( $parts[3] ?? null );
+		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($parts, 3) ?? null );
 
 		// die(var_dump($this->_arguments));
 
