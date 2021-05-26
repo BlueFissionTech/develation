@@ -59,6 +59,27 @@ class Mysql extends Storage implements IData
 	{
 		return $this->_query;
 	}
+
+	public function id( $id = null )
+	{
+		$tables = $this->tables();
+		$keys = array();
+		$table = $tables[0];
+
+		foreach ($this->fields() as $field=>$column)
+		{
+			$name = $column['Field'];
+			if ( $this->validate($name, $table) )
+			{
+				if  ( $column['Key'] == 'PRI' || $column['Key'] == 'UNI' )
+				{
+					if (!isset($keys[$table])) $keys[$table] = $name;
+					break;
+				}
+			}
+		}
+		return $this->field($keys[$table], $id);
+	}
 	
 	public function write()
 	{
@@ -99,9 +120,14 @@ class Mysql extends Storage implements IData
 		
 		$affected_row = null;
 		$tables = $this->tables();
-		while ( ( $table = each($tables) ) && $success )
+		// while ( ( $table = each($tables) ) && $success )
+		foreach ( $tables as $key=>$value )
 		{
-			$table = $table['value'];
+			if ( !$success ) {
+				break;
+			}
+
+			$table = $value;
 			$key = isset($keys[$table]) ? $keys[$table] : null;
 			$db->config('key', $key);
 			$db->config('table', $table);
@@ -124,14 +150,12 @@ class Mysql extends Storage implements IData
 		}
 	}
 
-	public function last_row() {
+	public function lastRow() {
 		return $this->_last_row_affected;
 	}
 	
 	public function read()
 	{
-		$db = $this->_source;
-
 		$tables = $this->tables();
 		if ( count($tables) < 1 ) {
 			$this->status( self::STATUS_FAILED );
@@ -165,7 +189,11 @@ class Mysql extends Storage implements IData
 		{
 			if ( $this->exists($a) )
 			{
-				$sort[] = $this->orderCase($table, $a);
+				// $sort[] = $this->orderCase($table, $a);
+				$sort_entry = $this->orderCase($table, $a);
+				if ( $sort_entry ) {
+					$sort[] = $sort_entry;
+				}
 			}
 		}
 		
@@ -222,8 +250,12 @@ class Mysql extends Storage implements IData
 					{
 						if ($this->whereCase($a, $b, $c))
 							$where[] = $this->whereCase($a, $b, $c);
-						if ($this->orderCase($a, $b))
-							$sort[] = $this->orderCase($a, $b);
+						if ($this->orderCase($a, $b)) {
+							$sort_entry = $this->orderCase($a, $b);
+							if ( $sort_entry ) {
+								$sort[] = $sort_entry;
+							}
+						}
 					}
 				}
 			}
@@ -259,6 +291,17 @@ class Mysql extends Storage implements IData
 		$end = $this->end();
 		$result = false;
 		$query .= ((DevValue::isNotEmpty($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotEmpty($end)) ? ", " . $this->end() : '') : '');
+		$this->run($query);
+	}
+
+	public function run( $query = "" )
+	{
+		$db = $this->_source;
+		
+		if ( $query == "" ) {
+			$query = $this->_query;
+		}
+
 		if ($db) {
 			$db->query($query);
 			$this->_query = $db->stats()['query'];
@@ -266,7 +309,6 @@ class Mysql extends Storage implements IData
 			$result = $db->result();
 		}
 		$this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
-
 
 		$this->_result = $result;
 
@@ -283,6 +325,8 @@ class Mysql extends Storage implements IData
 	
 	public function delete()
 	{
+		$db = $this->_source;
+		
 		$tables = $this->tables();
 		$table = $tables[0];
 		$fields = array();
@@ -564,9 +608,12 @@ class Mysql extends Storage implements IData
 		$fields = array();
 
 		reset($this->_fields);
-		while ($table = each($this->_fields))
+		// while ($table = each($this->_fields))
+		// for ($i = 0; $i < count($this->_fields); $i++)
+		foreach ( $this->_fields as $key=>$value )
 		{
-			$table = $table['value'];
+			$table = $value;
+			// $table = $this->_fields[$i]['value'];
 			$fields = array_merge($fields, $table);
 		}
 		reset($this->_fields);
@@ -590,7 +637,7 @@ class Mysql extends Storage implements IData
 		return $table;
 	}
 	
-	private function primary() 
+	public function primary() 
 	{
 		$output = false;
 		foreach ($this->fields() as $a) {
@@ -647,7 +694,7 @@ class Mysql extends Storage implements IData
 						}
 					}
 					if (DevString::has($type, 'char') || DevString::has($type, 'text')) {
-						if (!is_string($this->field($field_name))) {
+						if (!is_string($this->field($field_name)) && !is_numeric($this->field($field_name))) {
 							$this->status("Field '$field_name' is not text!");
 							$passed = false;
 						}
@@ -983,8 +1030,8 @@ class Mysql extends Storage implements IData
 		$this->_conditions = array();
 		$this->_distinctions = array();
 		$this->_aggregate = array();
-		$this->_row_start = array();
-		$this->_row_end = array();
+		$this->_row_start = 0;
+		$this->_row_end = 1;
 		$this->_order = array();
 		$this->_query = null;
 	}

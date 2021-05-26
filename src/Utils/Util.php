@@ -18,7 +18,7 @@ class Util {
 	}
 
 	static function parachute(&$count, $max = '', $redirect = '', $log = false, $alert = false) {
-		$max = (DevValue::isNotNull($rcpt)) ? $max : 400;
+		$max = (DevValue::isNotNull($max)) ? $max : 400;
 		if ($count >= $max) {
 			$status = "Loop exceeded max count! Killing Process.\n";
 			if ($alert) Util::emailAdmin($status);

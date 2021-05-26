@@ -13,10 +13,12 @@ class MysqlBulk extends Mysql implements IData
 		parent::__construct( $config );
 		$this->_rows = new Group();
 		$this->_rows->type('\BlueFission\Data\Storage\Mysql');
+		$this->limit(0, 1000);
 	}
-
-	public function read() {
-		parent::read();
+	
+	public function run( $query = "" )
+	{
+		parent::run($query);
 		$res = array();
 		if (method_exists('mysqli_result', 'fetch_all')) # Compatibility layer with PHP < 5.3
 			if ($this->_result)
@@ -45,7 +47,7 @@ class MysqlBulk extends Mysql implements IData
 		$this->_row_end = $end;
 	}
 
-	public function contents(data = null)
+	public function contents($data = null)
 	{
 		return $this->_rows->current();
 	}

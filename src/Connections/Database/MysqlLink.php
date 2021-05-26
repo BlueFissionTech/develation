@@ -101,6 +101,7 @@ class MysqlLink extends Connection implements IConfigurable
 			{
 				$value = self::sanitize( $this->field($key) );
 				$keyField = self::sanitize( $this->config('key') );
+				$keyField = '`'.$this->config('key').'`';
 				$where = $key ? "$keyField = $value" : '';
 				$update = true;
 			}

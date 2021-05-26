@@ -48,6 +48,21 @@ class Template extends Configurable {
 
 		$this->dispatch( State::DRAFT );
 	}
+
+	public function load ( $file = null ) 
+	{
+		if ( DevValue::isNotNull($file))
+		{
+			$this->_file = new FileSystem($file);
+			// $this->_file->open();
+		}
+		if ( $this->_file )
+		{
+			$this->_file->read($file);
+			$this->_template = $this->_file->contents();
+		}
+	}
+	/*
 	public function load ( $file = null ) 
 	{
 		if ( DevValue::isNotNull($file))
@@ -61,7 +76,7 @@ class Template extends Configurable {
 			$this->_template = $this->_file->contents();
 		}
 	}
-	
+	*/
 	public function contents($data = null)
 	{
 		if (DevValue::isNull($data)) return $this->_template;
@@ -80,7 +95,7 @@ class Template extends Configurable {
 		$this->load();
 	}
 
-	public function set( $var, $content = null, $formatted = null  ) 
+	public function set( $var, $content = null, $formatted = null, $repetitions = null  ) 
 	{
 		if ($formatted)
 			$content = HTML::format($content);
@@ -98,7 +113,8 @@ class Template extends Configurable {
 				throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
-			$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template );
+
+			$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
 		}
 		elseif ( is_object( $var ) || DevArray::isAssoc( $var ) )
 		{
@@ -108,7 +124,7 @@ class Template extends Configurable {
 
 			foreach ($var as $a=>$b) 
 			{
-				$this->set($a, $b, $formatted);
+				$this->set($a, $b, $formatted, $repetitions);
 			}
 		}
 		else
@@ -127,12 +143,12 @@ class Template extends Configurable {
 		{
 			if ( !$content )
 			{
-				throw new InvalidArgumentException( 'Cannot assign empty value.');
+				// throw new InvalidArgumentException( 'Cannot assign empty value.');
 			}
 
 			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) )
 			{
-				throw new InvalidArgumentException( 'Formatted argument expects boolean');
+				// throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
 			return parent::field($var, $content );
