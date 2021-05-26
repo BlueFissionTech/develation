@@ -134,7 +134,7 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 		return $this->get( $offset );
 
 	}
-	public function offsetSet ( $offset = null , $value ) {
+	public function offsetSet ( $offset, $value ) {
 		if (is_null($offset)) {
 			while (array_key_exists($offset, $this->_data) || !$offset) {
 				$offset = count($this->_data);
