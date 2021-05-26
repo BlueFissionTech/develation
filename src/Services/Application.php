@@ -47,7 +47,7 @@ class Application extends Programmable {
 	public function __construct() 
 	{
 		$calledClass = get_called_class();
-		if ( !isset(self::$_instances[$calledClass]) )
+		if ( isset(self::$_instances[$calledClass]) )
 			return self::$_instances[$calledClass];
 
 		parent::__construct();
