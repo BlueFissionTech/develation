@@ -65,7 +65,7 @@ class Application extends Programmable {
 			// self::$_class = ;
 
 			// self::$_instances = new self::$_class;
-			self::$_instances[$calledClass] = new $calledClass();
+			self::$_instances[$calledClass] = new static();
 		}
 
 		return self::$_instances[$calledClass];
@@ -92,13 +92,23 @@ class Application extends Programmable {
 			}
 		} else {
 			$request_parts = explode( '/', $_SERVER['REQUEST_URI'] );
-			$parts = array_reverse($request_parts);
+			// $parts = array_reverse($request_parts); // Why did I do this?
+			$parts = $request_parts;
 		}
 
+		// Get the method for this request
 		$this->_arguments[$this->_parameters[0]] = (isset($this->_arguments[$this->_parameters[0]])) ? $this->_arguments[$this->_parameters[0]] : strtolower( isset($_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : 'GET' );
-		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : $this->name();
+		
+		// Get the service targeted by this request
+		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : ( $parts[1] ?? $this->name() );
 
-		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : $this->_arguments[$this->_parameters[0]];
+		// get the behavior triggered by this request
+		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $parts[2] ?? $this->_arguments[$this->_parameters[0]] );
+
+		// get the data triggered by this request
+		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( $parts[3] ?? null );
+
+		// die(var_dump($this->_arguments));
 
 		return $this;
 	}
@@ -118,6 +128,8 @@ class Application extends Programmable {
 			$behavior->_context = $args;
 			$behavior->_target = $this;
 			$args['behavior'] = $behavior;
+
+			// die(var_dump($args));
 
 			call_user_func_array(array($this, 'message'), $args);
 		}
@@ -364,16 +376,16 @@ class Application extends Programmable {
 		}
 	}
 
-	private function message( $recipientName, $behavior, $arguments = null, $callback = null )
+	private function message( $service, $behavior, $data = null, $callback = null )
 	{
-		if ( $this->name() == $recipientName )
+		if ( $this->name() == $service )
 		{
 			$recipient = $this;
-			$behavior->_context = $arguments;
+			$behavior->_context = $data;
 		} 
 		else
 		{
-			$recipient = $this->_services[$recipientName];
+			$recipient = $this->_services[$service];
 		}
 
 		if (DevValue::isNotNull($callback) && \is_string($callback)) {
@@ -381,17 +393,17 @@ class Application extends Programmable {
 		}
 
 		if ( $recipient instanceof Application ) {
-			$recipient->execute($behavior, $arguments);
+			$recipient->execute($behavior, $data);
 		} elseif ( $recipient instanceof Service ) {
 			// echo "yo, I'm ".$recipient->name()." doing $behavior\n";
-			$recipient->message($behavior, $arguments);
+			$recipient->message($behavior, $data);
 		} elseif ( $recipient instanceof Scheme ) {
-			$recipient->perform($behavior, $arguments);
+			$recipient->perform($behavior, $data);
 		} elseif ( $recipient instanceof Dispatcher ) {
-			$recipient->dispatch($behavior, $arguments);
+			$recipient->dispatch($behavior, $data);
 		} else {
-			// var_dump($recipientName);
-			call_user_func_array(array($recipient, $behavior->name()), array($arguments));
+			// var_dump($service);
+			call_user_func_array(array($recipient, $behavior->name()), array($data));
 		}
 	}
 }
