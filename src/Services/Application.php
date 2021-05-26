@@ -39,6 +39,7 @@ class Application extends Programmable {
 	private $_storage;
 	private $_agent;
 	private $_services;
+	private $_mappings = array();
 	private $_routes = array();
 	private $_arguments = array();
 
@@ -103,7 +104,7 @@ class Application extends Programmable {
 		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : ( $parts[1] ?? $this->name() );
 
 		// get the behavior triggered by this request
-		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $parts[2] ?? $this->_arguments[$this->_parameters[0]] );
+		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $parts[2] ?? '' );
 
 		// get the data triggered by this request
 		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($parts, 3) ?? null );
@@ -115,9 +116,14 @@ class Application extends Programmable {
 
 	public function run() {
 		$args = array_slice($this->_arguments, 1);
+		// die(var_dump($this->_mappings));
 
 		$behavior = $args['behavior'];
-		if ( $args['service'] == $this->name() ) {
+		
+		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']]) ) {
+			call_user_func_array($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']], $args['data']);
+		}
+		elseif ( $args['service'] == $this->name() ) {
 			$data = isset($args['data'])?$args['data']:null;
 			
 			$this->boost($behavior, $data);
@@ -172,6 +178,13 @@ class Application extends Programmable {
 	public function name( $newname = null )
 	{
 		return $this->config('name', $newname);
+	}
+
+	public function map($method, $path, $callable)
+	{
+		$this->_mappings[$method][$path] = $callable;
+
+		return $this;
 	}
 
 	// Creates a property of the application that is a programmable object
@@ -378,6 +391,11 @@ class Application extends Programmable {
 
 	private function message( $service, $behavior, $data = null, $callback = null )
 	{
+		if ( '' === $service )
+		{
+			$service = $this->name();
+		} 
+
 		if ( $this->name() == $service )
 		{
 			$recipient = $this;
@@ -391,6 +409,8 @@ class Application extends Programmable {
 		if (DevValue::isNotNull($callback) && \is_string($callback)) {
 			$behavior = new Behavior($callback);
 		}
+
+		// var_dump($behavior);
 
 		if ( $recipient instanceof Application ) {
 			$recipient->execute($behavior, $data);
