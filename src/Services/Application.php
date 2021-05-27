@@ -472,7 +472,7 @@ class Application extends Programmable {
 				$objectOrClassName = $this->getServiceInstance($objectOrClassName);
 			}
 
-			$preparedCallable = [$objectOrClass, $methodName]
+			$preparedCallable = [$objectOrClass, $methodName];
 
 			return $preparedCallable; 
 		}
