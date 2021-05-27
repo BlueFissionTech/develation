@@ -123,7 +123,12 @@ class Application extends Programmable {
 		$behavior = $args['behavior'];
 		
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']]) ) {
-			print(call_user_func_array($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']], $args['data']));
+
+			$callable = $this->prepareCallable($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']]);
+
+			$result = call_user_func_array($callable, $args['data']);
+
+			print($result);
 		}
 		elseif ( $args['service'] == $this->name() ) {
 			$data = isset($args['data'])?$args['data']:null;
@@ -429,6 +434,47 @@ class Application extends Programmable {
 		} else {
 			// var_dump($service);
 			call_user_func_array(array($recipient, $behavior->name()), array($data));
+		}
+	}
+
+	private function getServiceInstance(string $class )
+	{
+		$constructor = new ReflectionMethod($class, '__construct');
+		$parameters = $constructor->getParameters();
+
+		$dependencies = [];
+		foreach ($parameters as $parameter) {
+			$dependenceClass = (string) $parameter->getType();
+			$dependencies[] = new $dependenceClass();
+		}
+
+		$instance = new $class($dependencies);
+	
+		// var_dump($instance);
+		return $instance;
+	}
+	
+	private function prepareCallable( $callable )
+	{
+		if ( \is_string($callable) ) {
+
+			return;
+		}
+
+		if ( \is_array($callable) ) {
+
+			$objectOrClassName = $callable[0];
+			$methodName = $callable[1];
+
+			$method = new ReflectionMethod($objectOrClassName, $methodName);
+
+			if ( \is_string($objectOrClass) && !$method->isStatic() ) {
+				$objectOrClassName = $this->getServiceInstance($objectOrClassName)
+			}
+
+			$preparedCallable = [$objectOrClass, $methodName]
+
+			return $preparedCallable; 
 		}
 	}
 }

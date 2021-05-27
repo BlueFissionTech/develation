@@ -1,11 +1,6 @@
 <?php
 namespace BlueFission\Services;
 
-// @include_once('Loader.php');
-// $loader = Loader::instance();
-// $loader->load('com.bluefission.develation.functions.common');
-// $loader->load('com.bluefission.develation.DevObject');
-
 use ReflectionClass;
 use BlueFission\DevValue;
 use BlueFission\DevObject;
