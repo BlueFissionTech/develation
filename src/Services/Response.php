@@ -14,8 +14,8 @@ use BlueFission\Behavioral\Behaviors\Event;
 class Response extends Dispatcher
 {
 
-	static MAX_DEPTH = 2;
-	static MAX_ITERATIONS = 10;
+	const MAX_DEPTH = 2;
+	const MAX_ITERATIONS = 10;
 
 	protected $_message;
 
