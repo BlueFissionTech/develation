@@ -61,7 +61,7 @@ class Response extends Dispatcher
 			}
 
 			if ( $depth == 0 && $this->data === '' ) {
-				$this->object = $values;
+				$this->data = $values;
 			}
 		}
 
