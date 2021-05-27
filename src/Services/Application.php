@@ -14,10 +14,10 @@ use BlueFission\Behavioral\Behaviors\Handler;
 use Exception;
 
 class Application extends Programmable {
-	private static $_instances = array();
+	private static $_instances = [];
 
-	private $_broadcasted_events = array();
-	private $_broadcast_chain = array();
+	private $_broadcasted_events = [];
+	private $_broadcast_chain = [];
 	private $_last_args = null;
 	private $_depth = 0;
 
@@ -39,11 +39,13 @@ class Application extends Programmable {
 	private $_storage;
 	private $_agent;
 	private $_services;
-	private $_mappings = array();
-	private $_routes = array();
-	private $_arguments = array();
+	private $_mappings = [];
+	private $_mappingNames = [];
 
-	protected static $_class = __CLASS__;
+	private $_routes = [];
+	private $_arguments = [];
+
+	// protected static $_class = __CLASS__;
 
 	public function __construct() 
 	{
@@ -53,7 +55,7 @@ class Application extends Programmable {
 
 		parent::__construct();
 		$this->_services = new Collection();
-		$this->_broadcasted_events[$this->name()] = array();
+		$this->_broadcasted_events[$this->name()] = [];
 
 		self::$_instances[$calledClass] = $this;
 	}
@@ -180,9 +182,12 @@ class Application extends Programmable {
 		return $this->config('name', $newname);
 	}
 
-	public function map($method, $path, $callable)
+	public function map($method, $path, $callable, $name = '')
 	{
 		$this->_mappings[$method][$path] = $callable;
+		if ( $name ) {
+			$this->_mappingNames[$name] = $path;
+		}
 
 		return $this;
 	}
@@ -345,7 +350,7 @@ class Application extends Programmable {
 			{
 				foreach ( $senders as $senderName=>$recipients )
 				{
-					if (!isset($this->_broadcasted_events[$senderName])) $this->_broadcasted_events[$senderName] = array();
+					if (!isset($this->_broadcasted_events[$senderName])) $this->_broadcasted_events[$senderName] = [];
 
 					if (in_array($behavior->name(), $this->_broadcasted_events[$senderName])) {
 						continue;
@@ -383,8 +388,8 @@ class Application extends Programmable {
 		$this->_depth--;
 
 		if ( $this->_depth == 0 ) {
-			$this->_broadcasted_events = array();
-			$this->_broadcast_chain = array();
+			$this->_broadcasted_events = [];
+			$this->_broadcast_chain = [];
 			$this->_last_args = null;
 		}
 	}
