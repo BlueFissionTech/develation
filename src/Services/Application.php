@@ -121,7 +121,7 @@ class Application extends Programmable {
 		$behavior = $args['behavior'];
 		
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']]) ) {
-			call_user_func_array($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']], $args['data']);
+			print(call_user_func_array($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']], $args['data']));
 		}
 		elseif ( $args['service'] == $this->name() ) {
 			$data = isset($args['data'])?$args['data']:null;

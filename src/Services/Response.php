@@ -37,6 +37,11 @@ class Response extends Dispatcher
 		die($this->_message);
 	}
 
+	public function message()
+	{
+		return $this->_message;
+	}
+
 	protected function init()
 	{
 		parent::init();
