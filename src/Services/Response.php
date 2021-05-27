@@ -69,7 +69,7 @@ class Response extends Dispatcher
 			$this->id = $values;
 		}
 
-		if ( \is_string($values) && $this->stats_cdf_uniform(par1, par2, par3, which) === ''  ) {
+		if ( \is_string($values) && $this->status === ''  ) {
 			$this->status = $values;
 		}
 
