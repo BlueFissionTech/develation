@@ -479,6 +479,10 @@ class Application extends Programmable {
 			$dependencyClass = (string) $parameter->getType();
 			$dependencyName = $parameter->getName();
 
+			if (\array_key_exists($dependencyClass, $this->_bindings)) {
+				$dependencyClass = $this->_bindings[$dependencyClass];
+			}
+
 			$dependencies[$dependencyName] = $arguments[$dependencyName] ?? new $dependencyClass();
 		}
 
