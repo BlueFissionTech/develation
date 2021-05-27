@@ -36,7 +36,7 @@ class Response extends Dispatcher
 
 		if ( \is_array($values) ) {
 			$mapped = false;
-			$iteration = 0;
+			$iterations = 0;
 			foreach ( $values as $key=>$value ) {
 				if ( $iteration > self::MAX_ITERATIONS ) {
 					break;
