@@ -468,11 +468,11 @@ class Application extends Programmable {
 
 			$method = new \ReflectionMethod($objectOrClassName, $methodName);
 
-			if ( \is_string($objectOrClass) && !$method->isStatic() ) {
+			if ( \is_string($objectOrClassName) && !$method->isStatic() ) {
 				$objectOrClassName = $this->getServiceInstance($objectOrClassName);
 			}
 
-			$preparedCallable = [$objectOrClass, $methodName];
+			$preparedCallable = [$objectOrClassName, $methodName];
 
 			return $preparedCallable; 
 		}
