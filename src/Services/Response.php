@@ -14,6 +14,9 @@ use BlueFission\Behavioral\Behaviors\Event;
 class Response extends Dispatcher
 {
 
+	static MAX_DEPTH = 2;
+	static MAX_ITERATIONS = 10;
+
 	protected $_message;
 
 	protected $_data = array(
@@ -24,6 +27,56 @@ class Response extends Dispatcher
 		'status'=>'',
 		'info'=>'',
 	);
+
+	public function fill( $values, $depth = 0 )
+	{
+		if ( $depth > self::MAX_DEPTH ) {
+			return;
+		}
+
+		if ( \is_array($values) ) {
+			$mapped = false;
+			$iteration = 0;
+			foreach ( $values as $key=>$value ) {
+				if ( $iteration > self:MAX_ITERATIONS ) {
+					break;
+				}
+
+				if ( $depth == 0 && \array_key_exists($key, $this->_data) && $this->$key === '' ) {
+					$mapped = true;
+					$this->$key = $value;
+				} else {
+					$this->fill( $value, ++$depth );
+				}
+
+				$iterations++;
+			}
+
+			if ( $depth == 1 && $this->children === '' ) {
+				$this->children = $value;
+			} 
+
+			if ( $mapped === false && $this->list === '' ) {
+				$this->list = $values;
+			}
+
+			if ( $depth == 0 && $this->data === '' ) {
+				$this->object = $values;
+			}
+		}
+
+		if ( \is_numeric($values) && $this->id === ''  ) {
+			$this->id = $values;
+		}
+
+		if ( \is_string($values) && $this->stats_cdf_uniform(par1, par2, par3, which) === ''  ) {
+			$this->status = $values;
+		}
+
+		if ( \is_object($values) && $this->data === ''  ) {
+			$this->data = $values;
+		}
+	}
 
 	public function send()
 	{
