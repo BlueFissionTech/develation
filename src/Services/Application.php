@@ -433,15 +433,16 @@ class Application extends Programmable {
 		if ( $recipient instanceof Application ) {
 			$recipient->execute($behavior, $data);
 		} elseif ( $recipient instanceof Service ) {
-			// echo "yo, I'm ".$recipient->name()." doing $behavior\n";
 			$recipient->message($behavior, $data);
 		} elseif ( $recipient instanceof Scheme ) {
 			$recipient->perform($behavior, $data);
 		} elseif ( $recipient instanceof Dispatcher ) {
 			$recipient->dispatch($behavior, $data);
-		} else {
-			// var_dump($service);
+		} elseif ( \is_callable(array($recipient, $behavior->name() ) ) ) {
 			call_user_func_array(array($recipient, $behavior->name()), array($data));
+		} else {
+			header("HTTP/1.0 404 Not Found");
+			return '404';
 		}
 	}
 
