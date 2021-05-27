@@ -439,7 +439,7 @@ class Application extends Programmable {
 
 	private function getServiceInstance(string $class )
 	{
-		$constructor = new ReflectionMethod($class, '__construct');
+		$constructor = new \ReflectionMethod($class, '__construct');
 		$parameters = $constructor->getParameters();
 
 		$dependencies = [];
@@ -466,7 +466,7 @@ class Application extends Programmable {
 			$objectOrClassName = $callable[0];
 			$methodName = $callable[1];
 
-			$method = new ReflectionMethod($objectOrClassName, $methodName);
+			$method = new \ReflectionMethod($objectOrClassName, $methodName);
 
 			if ( \is_string($objectOrClass) && !$method->isStatic() ) {
 				$objectOrClassName = $this->getServiceInstance($objectOrClassName);
