@@ -39,6 +39,7 @@ class Application extends Programmable {
 	private $_storage;
 	private $_agent;
 	private $_services;
+	private $_bindings = [];
 	private $_mappings = [];
 	private $_mappingNames = [];
 
@@ -182,6 +183,11 @@ class Application extends Programmable {
 		}
 
 		return $this;
+	}
+
+	public function bind( $classname, $newclassname ) 
+	{
+		$this->_bindings[$classname] = $newclassname;
 	}
 	
 	public function name( $newname = null )
