@@ -464,16 +464,21 @@ class Application extends Programmable {
 
 	private function executeServiceMethod( $callable, Array $arguments = [] )
 	{
+		$functionOrMethod = null;
+
 		if ( \is_array($callable) ) {
 			$functionOrMethod = new \ReflectionMethod($callable[0], $callable[1]);
+		} elseif ( \is_string($callable) ) {
+			$functionOrMethod = new \ReflectionFunction($callable);
+		} elseif ( \is_callable($callable) ) {
+			return $callable();
 		}
 
-		if ( \is_string($callable) ) {
-			$functionOrMethod = new \ReflectionFunction($callable);
+		if ( $functionOrMethod === null ) {
+			return null;
 		}
 
 		$parameters = $functionOrMethod->getParameters();
-		
 		$dependencies = [];
 		foreach ($parameters as $parameter) {
 			$dependencyClass = (string) $parameter->getType();
@@ -521,6 +526,10 @@ class Application extends Programmable {
 			$preparedCallable = [$objectOrClassName, $methodName];
 
 			return $preparedCallable; 
+		}
+
+		if ( \is_callable($callable) ) {
+			return $callable;
 		}
 	}
 }
