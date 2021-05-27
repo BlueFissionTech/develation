@@ -38,7 +38,7 @@ class Response extends Dispatcher
 			$mapped = false;
 			$iterations = 0;
 			foreach ( $values as $key=>$value ) {
-				if ( $iteration > self::MAX_ITERATIONS ) {
+				if ( $iterations > self::MAX_ITERATIONS ) {
 					break;
 				}
 
