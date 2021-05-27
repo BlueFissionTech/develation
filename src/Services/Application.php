@@ -126,7 +126,9 @@ class Application extends Programmable {
 
 			$callable = $this->prepareCallable($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']]);
 
-			$result = call_user_func_array($callable, $args['data']);
+			// $result = call_user_func_array($callable, $args['data']);
+			
+			$result = $this->executeServiceMethod($callable, $args['data']);
 
 			print($result);
 		}
@@ -444,8 +446,8 @@ class Application extends Programmable {
 
 		$dependencies = [];
 		foreach ($parameters as $parameter) {
-			$dependenceClass = (string) $parameter->getType();
-			$dependencies[] = new $dependenceClass();
+			$dependencyClass = (string) $parameter->getType();
+			$dependencies[] = new $dependencClass();
 		}
 
 		$instance = new $class($dependencies);
@@ -453,12 +455,46 @@ class Application extends Programmable {
 		// var_dump($instance);
 		return $instance;
 	}
+
+	private function executeServiceMethod( $callable, Array $arguments = [] )
+	{
+		if ( \is_array($callable) ) {
+			$functionOrMethod = new \ReflectionMethod($callable[0], $callable[1]);
+		}
+
+		if ( \is_string($callable) ) {
+			$functionOrMethod = new \ReflectionFunction($callable);
+		}
+
+		$parameters = $functionOrMethod->getParameters();
+		
+		$dependencies = [];
+		foreach ($parameters as $parameter) {
+			$dependencyClass = (string) $parameter->getType();
+			$dependencyName = $parameter->getName();
+
+			$dependencies[$dependencyName] = $arguments[$dependencyName] ?? new $dependencyClass();
+		}
+
+		// $result = call_user_func_array([$class, $callable], );
+		if ( \is_string($callable) ) {
+			$result = $functionOrMethod->invokeArgs( $dependencies );
+		}
+
+		if ( \is_array($callable) ) {
+			$object = \is_string($callable[0]) ? null : $callable[0];
+			$result = $functionOrMethod->invokeArgs($object , $dependencies );
+		}
+		
+		// var_dump($result);
+		return $result;
+	}
 	
 	private function prepareCallable( $callable )
 	{
 		if ( \is_string($callable) ) {
 
-			return;
+			return $callable;
 		}
 
 		if ( \is_array($callable) ) {
