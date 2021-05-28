@@ -8,15 +8,15 @@ class Mapping {
 
 	public String $method;
 	public String $path;
-	public Callable $callable;
+	public $callable;
 	public String $name;
-	public Array $gateways = [];
+	private Array $_gateways = [];
 
 	// public function __construct($method, $path, $callable, $name) {
 
 	// }
 
-	static public function add(String $path, Callable $callable, String $name = '', String $method = 'get')
+	static public function add(String $path, $callable, String $name = '', String $method = 'get')
 	{
 		$app = App::instance();
 		$mapping = $app->map(
@@ -29,10 +29,15 @@ class Mapping {
 		return $mapping;
 	}
 
-	public function gateway( $gateway )
+	public function gateway( IGateway $gateway )
 	{
-		$this->gateways[] = $gateway;
+		$this->_gateways[] = $gateway;
 
 		return $this;
+	}
+
+	public function gateways()
+	{
+		return $this->_gateways;
 	}
 }

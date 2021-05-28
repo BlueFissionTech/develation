@@ -126,10 +126,22 @@ class Application extends Programmable {
 		$behavior = $args['behavior'];
 
 		$location = $_SERVER['REQUEST_URI'] ?? '/';
-		
+
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$location]) ) {
 
-			$callable = $this->prepareCallable($this->_mappings[$this->_arguments['_method']][$location]);
+			$mapping = $this->_mappings[$this->_arguments['_method']][$location];
+
+			$request = new Request();
+
+			foreach ($mapping->gateways() as $gatewayName) {
+				if ( isset( $this->_gateways[$gatewayName] ) ) {
+					$gatewayClass = $this->_gateways[$gatewayName];
+					$gateway = $this->getGatwayInstance($gatewayClass);
+					$gateway->process( $request, $this->_arguments );	
+				}
+			}
+
+			$callable = $this->prepareCallable($mapping->callable);
 
 			$result = $this->executeServiceMethod($callable, $args['data']);
 
@@ -477,7 +489,7 @@ class Application extends Programmable {
 		}
 	}
 
-	private function getServiceInstance(string $class )
+	private function getDynamicInstance(string $class )
 	{
 		$constructor = new \ReflectionMethod($class, '__construct');
 		$parameters = $constructor->getParameters();
@@ -492,6 +504,16 @@ class Application extends Programmable {
 	
 		// var_dump($instance);
 		return $instance;
+	}
+
+	private function getServiceInstance(string $class )
+	{
+		return $this->getDynamicInstance($class);
+	}
+
+	private function getGatwayInstance(string $class )
+	{
+		return $this->getDynamicInstance($class);
 	}
 
 	private function executeServiceMethod( $callable, Array $arguments = [] )

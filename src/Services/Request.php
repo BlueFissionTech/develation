@@ -34,4 +34,9 @@ class Request extends Dispatcher {
 	{
 		return $_SERVER['REQUEST_METHOD'];
 	}
+
+	public function __set($field, $value)
+	{
+		throw new Exception('Request Inputs Are Immutable');
+	}
 }
