@@ -1,14 +1,9 @@
 <?php
 namespace BlueFission\Services;
-// @include_once('Loader.php');
-// $loader = Loader::instance();
-// $loader->load('com.bluefission.behaviors.*');
-// $loader->load('com.bluefission.develation.functions.common');
-// $loader->load('com.bluefission.develation.functions.http');
-// $loader->load('com.bluefission.develation.DevModel');
 
 use BlueFission\Behavioral\Dispatcher;
 use BlueFission\Net\HTTP;
+use BlueFission\DevArray;
 use BlueFission\Behavioral\Behaviors\Event;
 
 class Response extends Dispatcher
@@ -42,38 +37,38 @@ class Response extends Dispatcher
 					break;
 				}
 
-				if ( $depth == 0 && \array_key_exists($key, $this->_data) && $this->$key === '' ) {
+				if ( $depth == 0 && \array_key_exists($key, $this->_data) && $this->$key === null ) {
 					$mapped = true;
 					$this->$key = $value;
 				} else {
-					$this->fill( $value, ++$depth );
+					$this->fill( $value, $depth+1 );
 				}
 
 				$iterations++;
 			}
 
-			if ( $depth == 1 && $this->children === '' ) {
-				$this->children = $value;
-			} 
-
-			if ( $mapped === false && $this->list === '' ) {
+			if ( $depth == 0 && DevArray::isAssoc($values) && $this->data === null && $values != $this->list ) {
+				$this->data = $values;
+			}
+			
+			if ( $depth == 0 && DevArray::isIndexed($values) && $mapped === false && $this->list === null ) {
 				$this->list = $values;
 			}
 
-			if ( $depth == 0 && $this->data === '' ) {
-				$this->data = $values;
-			}
+			if ( $depth == 1 && DevArray::isIndexed($values) && $this->children === null && $values != $this->list ) {
+				$this->children = $values;
+			} 
 		}
 
-		if ( \is_numeric($values) && $this->id === ''  ) {
+		if ( $depth < 2 && \is_numeric($values) && $this->id === null  ) {
 			$this->id = $values;
 		}
 
-		if ( \is_string($values) && $this->status === ''  ) {
+		if ( $depth < 2 && \is_string($values) && $this->status === null  ) {
 			$this->status = $values;
 		}
 
-		if ( \is_object($values) && $this->data === ''  ) {
+		if ( $depth < 2 && \is_object($values) && $this->data === null  ) {
 			$this->data = $values;
 		}
 	}

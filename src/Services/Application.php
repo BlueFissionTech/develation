@@ -107,7 +107,7 @@ class Application extends Programmable {
 		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : ( $parts[1] ?? $this->name() );
 
 		// get the behavior triggered by this request
-		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $parts[2] ?? '' );
+		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $parts[2] ?? '' ); // TODO send a universal default behavior
 
 		// get the data triggered by this request
 		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($parts, 3) ?? null );
@@ -143,6 +143,12 @@ class Application extends Programmable {
 
 			$behavior->_context = $args;
 			$behavior->_target = $this;
+
+			try {
+				$behavior->_target = $this->service($args['service']);
+			} catch( Exception $e ) {
+				// Do Nothing
+			}
 			$args['behavior'] = $behavior;
 
 			// die(var_dump($args));

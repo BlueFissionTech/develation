@@ -23,15 +23,15 @@ class Handler
 		if ($this->_callback)
 		{
 			$args = DevArray::isEmpty($args) ? null : $args;
-			if ( $args == null )
-			{
-				$args = $behavior;
-			}
+			// if ( $args == null )
+			// {
+			// 	$args = $behavior;
+			// }
 			if ( !is_array($args) )
 				$args = array( $args );
 			
 			if (is_callable($this->_callback)) {
-				call_user_func_array($this->_callback, $args);
+				call_user_func_array($this->_callback, array($behavior, $args));
 			}
 		}
 	}
