@@ -56,6 +56,13 @@ class HTTP {
 		}
 		return $domain; 
 	}
+
+	static function url()
+	{
+		$url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
+		return $url;
+	}
 	
 	static function href($href = '', $doc = true) 
 	{

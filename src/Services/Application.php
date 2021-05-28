@@ -86,6 +86,7 @@ class Application extends Programmable {
 	public function args() {
 		global $argv, $argc;
 
+
 		if ( $argc > 1 ) {
 			$this->_arguments[$this->_parameters[0]] = 'console';
 			for ( $i = 1; $i <= $argc-1; $i++) {
@@ -96,11 +97,16 @@ class Application extends Programmable {
 			foreach ( $args as $arg ) {
 				$this->_arguments[$arg] = Util::value($arg);
 			}
-		} else {
-			$request_parts = explode( '/', $_SERVER['REQUEST_URI'] );
-			// $parts = array_reverse($request_parts); // Why did I do this?
-			$parts = $request_parts;
 		}
+
+		$url = HTTP::url();
+
+		$parts = [];
+		$request = parse_url($url, PHP_URL_PATH);
+		$request_parts = explode( '/', $request );
+		// $parts = array_reverse($request_parts); // Why did I do this?
+		$parts = $request_parts;
+	
 
 		// Get the method for this request
 		$this->_arguments[$this->_parameters[0]] = (isset($this->_arguments[$this->_parameters[0]])) ? $this->_arguments[$this->_parameters[0]] : strtolower( isset($_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : 'GET' );
@@ -114,7 +120,7 @@ class Application extends Programmable {
 		// get the data triggered by this request
 		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($parts, 3) ?? null );
 
-		// die(var_dump($this->_arguments));
+		// die(var_dump(parse_url($url, PHP_URL_PATH)));
 
 		return $this;
 	}
@@ -125,7 +131,9 @@ class Application extends Programmable {
 
 		$behavior = $args['behavior'];
 
-		$location = $_SERVER['REQUEST_URI'] ?? '/';
+		$url = HTTP::url();
+
+		$location = parse_url($url, PHP_URL_PATH) ?? '/';
 
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$location]) ) {
 
