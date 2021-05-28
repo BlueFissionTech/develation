@@ -75,7 +75,7 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 	//outputs any value as an array element or returns value if it is an array
 	//$value argument takes any mixed variable
 	//returns an array
-	public function _toArray( $allow_empty = false) {
+	public function _toArray( bool $allow_empty = false) {
 		$value = $this->_data;
 		$value_r = array();
 		if (!is_string($value) || (!$value == '' || $allow_empty))

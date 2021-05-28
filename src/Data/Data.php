@@ -21,27 +21,27 @@ class Data extends Configurable implements IData
 		switch( $source )
 		{
 			case 'post':
-				$vars = $_POST;
+				$vars = filter_input_array(INPUT_POST);
 			break;
 			case 'get':
-				$vars = $_GET;
+				$vars =  filter_input_array(INPUT_GET);
 			break;
 			case 'session':
-				$vars = $_SESSION;
+				$vars = filter_input_array(INPUT_SESSION);
 			break;
 			case 'cookie':
 			case 'cookies':
-				$vars = $_COOKIE;
+				$vars = filter_input_array(INPUT_COOKIE);
 			break;
 			default:
 			case 'globals':
 				$vars = $GLOBALS;
 			break;
 			case 'request':
-				$vars = $_REQUEST;
+				$vars = filter_input_array(INPUT_REQUEST);
 			break;
 		}
-		
+
 		$this->assign($vars);
 	}
 }

@@ -8,7 +8,7 @@ class DevObject implements IDevObject
 
 	public function __construct() {
 		if (!isset($this->_data))
-			$this->_data = array();
+			$this->_data = [];
 		
 		if (!$this->_type)
 			$this->_type = get_class( $this );
@@ -18,7 +18,7 @@ class DevObject implements IDevObject
 		if ( DevValue::isNotEmpty($value) ) {
 			$this->_data[$field] = $value;
 		} else {
-			$value = ( isset($this->_data[$field]) && DevValue::isNotEmpty( $this->_data[$field]) ) ? $this->_data[$field] : null;
+			$value = $this->_data[$field] ?? null;
 		}
 		return $value;
 	}

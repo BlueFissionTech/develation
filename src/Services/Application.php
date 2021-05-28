@@ -6,6 +6,7 @@ use BlueFission\Utils\Util;
 use BlueFission\Behavioral\Scheme;
 use BlueFission\Behavioral\Dispatcher;
 use BlueFission\Collections\Collection;
+use BlueFission\Services\Mapping;
 use BlueFission\DevValue;
 use BlueFission\DevArray;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -39,6 +40,7 @@ class Application extends Programmable {
 	private $_storage;
 	private $_agent;
 	private $_services;
+	private $_gateways = [];
 	private $_bindings = [];
 	private $_mappings = [];
 	private $_mappingNames = [];
@@ -122,14 +124,16 @@ class Application extends Programmable {
 		// die(var_dump($this->_mappings));
 
 		$behavior = $args['behavior'];
+
+		$location = $_SERVER['REQUEST_URI'] ?? '/';
 		
-		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']]) ) {
+		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$location]) ) {
 
-			$callable = $this->prepareCallable($this->_mappings[$this->_arguments['_method']][$_SERVER['REQUEST_URI']]);
+			$callable = $this->prepareCallable($this->_mappings[$this->_arguments['_method']][$location]);
 
-			// $result = call_user_func_array($callable, $args['data']);
-			
 			$result = $this->executeServiceMethod($callable, $args['data']);
+
+			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($location, $this->_arguments['_method']) ?? $location);
 
 			print($result);
 		}
@@ -164,8 +168,8 @@ class Application extends Programmable {
 			$behavior = new Behavior($behavior);
 		}
 
-		$behavior->_context = $args ? $args : $behavior->_context;
-		$behavior->_target = $behavior->_target ? $behavior->_target : $this;
+		$behavior->_context = $args ?? $behavior->_context;
+		$behavior->_target = $behavior->_target ?? $this;
 
 		call_user_func_array(array($this, 'broadcast'), array($behavior));
 	}
@@ -201,14 +205,35 @@ class Application extends Programmable {
 		return $this->config('name', $newname);
 	}
 
-	public function map($method, $path, $callable, $name = '')
+	public function addMapping($method, $path, $callable, $name = '')
 	{
-		$this->_mappings[$method][$path] = $callable;
-		if ( $name ) {
-			$this->_mappingNames[$name] = $path;
-		}
+		// $this->_mappings[$method][$path] = $callable;
+		// if ( $name ) {
+		// 	$this->_mappingNames[$name] = $path;
+		// }
+		
+		$mapping = new Mapping();
+		$mapping->method = $method;
+		$mapping->path = $path;
+		$mapping->callable = $callable;
+		$mapping->name = $name;
+		
+		$this->_mappings[$method][$path] = $mapping;
 
-		return $this;
+		// return $this;
+		return $map;
+	}
+
+	public function getMappingName( $location, $method = 'get' ) {
+		$result = '';
+		// foreach ( $this->_mappingNames as $name=>$path ) {
+		foreach ( $this->_mappings[$method] as $path=>$mapping ) {
+			if ( $location == $path || $location.'/' == $path ) {
+				$result = $mapping->name;
+				break; 
+			}
+		}
+		return $result;
 	}
 
 	// Creates a property of the application that is a programmable object

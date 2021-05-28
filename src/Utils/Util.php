@@ -33,10 +33,11 @@ class Util {
 		$count++;
 	}
 
-	static function value($var) {
-		$cookie = ( array_key_exists( $var, $_COOKIE) ) ? $_COOKIE[$var] : NULL;  
-		$get = ( array_key_exists( $var, $_GET) ) ? $_GET[$var] : NULL;
-		$post = ( array_key_exists( $var, $_POST) ) ? $_POST[$var] : NULL;
+	static function value($var, $filter = FILTER_DEFAULT ) {
+		
+		$cookie = filter_input(INPUT_COOKIE, $var);
+		$get = filter_input(INPUT_GET, $var);
+		$post = filter_input(INPUT_POST, $var);
 		return ( DevValue::isNotNull($cookie) ) ? $cookie : (( DevValue::isNotNull($post) ) ? $post : $get);
 	}
 }
