@@ -29,7 +29,7 @@ class Mapping {
 		return $mapping;
 	}
 
-	public function gateway( IGateway $gateway )
+	public function gateway( $gateway )
 	{
 		$this->_gateways[] = $gateway;
 

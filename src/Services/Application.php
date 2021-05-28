@@ -248,6 +248,13 @@ class Application extends Programmable {
 		return $result;
 	}
 
+	public function gateway($name, $class)
+	{
+		$this->_gateways[$name] = $class;
+
+		return $this;
+	}
+
 	// Creates a property of the application that is a programmable object
 	public function component( $name, $data = null, $configuration = null )
 	{	

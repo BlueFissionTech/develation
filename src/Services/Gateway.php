@@ -1,8 +1,9 @@
 <?php
+namespace BlueFission\Services;
 
-public class Gateway implements IGateway {
+class Gateway implements IGateway {
 	
-	public class process( Request $request, &$arguments )
+	public function process( Request $request, &$arguments )
 	{
 		// Do Something
 	}
