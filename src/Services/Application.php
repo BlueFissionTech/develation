@@ -12,6 +12,7 @@ use BlueFission\DevArray;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Handler;
+use BlueFission\Net\HTTP;
 use Exception;
 
 class Application extends Programmable {
