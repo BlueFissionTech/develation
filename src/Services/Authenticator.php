@@ -6,11 +6,12 @@ use BlueFission\Data\IData;
 use BlueFission\Data\Storage\Mysql;
 
 class Authenticator extends Configurable {
-	protected $_config( 
+
+	protected $_config = [ 
 		'session'=>'',
 		'users'=>'',
-		'crendentials'=>''
-	);
+		'credentials'=>''
+	];
 
 	private $_datasource;
 
