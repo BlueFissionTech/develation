@@ -2,6 +2,7 @@
 namespace BlueFission\Services;
 
 use BlueFission\Behavioral\Behaviors\Behavior;
+use BlueFission\Behavioral\Configurable;
 use BlueFission\Data\IData;
 use BlueFission\Data\Storage\Mysql;
 
