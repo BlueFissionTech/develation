@@ -205,7 +205,7 @@ class Application extends Programmable {
 		return $this->config('name', $newname);
 	}
 
-	public function addMapping($method, $path, $callable, $name = '')
+	public function map($method, $path, $callable, $name = '')
 	{
 		// $this->_mappings[$method][$path] = $callable;
 		// if ( $name ) {
@@ -221,7 +221,7 @@ class Application extends Programmable {
 		$this->_mappings[$method][$path] = $mapping;
 
 		// return $this;
-		return $map;
+		return $mapping;
 	}
 
 	public function getMappingName( $location, $method = 'get' ) {

@@ -26,7 +26,7 @@ class Mapping {
 			trim($name)
 		);
 
-		return &$mapping;
+		return $mapping;
 	}
 
 	public function gateway( $gateway )
