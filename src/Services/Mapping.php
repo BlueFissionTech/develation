@@ -21,7 +21,7 @@ class Mapping {
 		$app = App::instance();
 		$mapping = $app->map(
 			strtolower($method), 
-			filter_var($path, FILTER_SANITIZE_URL), 
+			filter_var(trim($path, '/'), FILTER_SANITIZE_URL), 
 			$callable, 
 			trim($name)
 		);

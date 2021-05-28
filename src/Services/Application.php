@@ -108,7 +108,6 @@ class Application extends Programmable {
 		// $parts = array_reverse($request_parts); // Why did I do this?
 		$parts = $request_parts;
 	
-
 		// Get the method for this request
 		$this->_arguments[$this->_parameters[0]] = (isset($this->_arguments[$this->_parameters[0]])) ? $this->_arguments[$this->_parameters[0]] : strtolower( isset($_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : 'GET' );
 		
@@ -134,7 +133,7 @@ class Application extends Programmable {
 
 		$url = HTTP::url();
 
-		$location = parse_url($url, PHP_URL_PATH) ?? '/';
+		$location = trim(parse_url($url, PHP_URL_PATH), '/') ?? '/';
 
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$location]) ) {
 
