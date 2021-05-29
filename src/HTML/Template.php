@@ -236,7 +236,7 @@ class Template extends Configurable {
 
 	private function executeModules()
 	{
-		$pattern = "/@module\('(.*)'\)/";
+		$pattern = "/@".$this->config('module_token')."\('(.*)'\)/";
 
 		preg_match_all( $pattern, $this->_template, $matches );
 

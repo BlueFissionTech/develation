@@ -134,6 +134,7 @@ class Application extends Programmable {
 				// Continue to process
 			}
 		}
+		return $this;
 	}
 
 	public function run() {

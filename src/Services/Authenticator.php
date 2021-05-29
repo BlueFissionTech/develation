@@ -11,7 +11,7 @@ class Authenticator extends Configurable {
 	protected $_config = [ 
 		'session'=>'login',
 		'users'=>'users',
-		'login_attempts'='login_attempts',
+		'login_attempts'=>'login_attempts',
 		'credentials'=>''
 	];
 
