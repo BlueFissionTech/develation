@@ -127,10 +127,12 @@ class Application extends Programmable {
 
 	public function validateCsrf()
 	{
-		if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST['token'])) {
-		    die('Invalid Request');
-		} elseif (hash_equals($_SESSION['token'], $_POST['token'])) {
-			// Continue to process
+		if ($_SERVER['REQUEST_METHOD'] == 'POST' ) {
+			if (empty($_POST['_token'])) {
+			    die('Invalid Request');
+			} elseif (hash_equals($_SESSION['_token'], $_POST['_token'])) {
+				// Continue to process
+			}
 		}
 	}
 
