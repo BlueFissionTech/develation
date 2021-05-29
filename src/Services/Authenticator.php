@@ -4,20 +4,21 @@ namespace BlueFission\Services;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Data\IData;
-use BlueFission\Data\Storage\Mysql;
+use BlueFission\Data\Storage\Storage;
 
 class Authenticator extends Configurable {
 
 	protected $_config = [ 
-		'session'=>'',
-		'users'=>'',
+		'session'=>'login',
+		'users'=>'users',
+		'login_attempts'='login_attempts',
 		'credentials'=>''
 	];
 
 	private $_datasource;
 
-	public function __construct( IData $datasource ) {
-		parent::__construct();
+	public function __construct( Storage $datasource, $config = null ) {
+		parent::__construct($config);
 		$this->_datasource = $datasource;
 	}
 
@@ -70,7 +71,10 @@ class Authenticator extends Configurable {
 
 	private function confirmIPAddress($value) 
 	{ 
-		$attempts = new Mysql('dash_login_attempts'); // TODO fix this with dependency injection
+		// $attempts = new Mysql('dash_login_attempts'); // TODO fix this with dependency injection
+		$attempts = $this->_datasource;
+		$attempts->config($this->config('login_attempts'));
+		$attempts->activate();
 		$last = array();
 		$attempts->setField('ip_address', $value);
 		$last = $attempts->read();
@@ -96,7 +100,10 @@ class Authenticator extends Configurable {
 
 	private function blockIPAddress() 
 	{ 
-		$attempts = new Mysql('dash_login_attempts');
+		// $attempts = new Mysql('dash_login_attempts');
+		$attempts = $this->_datasource;
+		$attempts->config($this->config('login_attempts'));
+		$attempts->activate();
 		$last = array();
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
 		$last = $attempts->read();
@@ -115,7 +122,10 @@ class Authenticator extends Configurable {
 
 	private function clearIPAddress() 
 	{ 
-		$attempts = new Mysql('dash_login_attempts');
+		// $attempts = new Mysql('dash_login_attempts');
+		$attempts = $this->_datasource;
+		$attempts->config($this->config('login_attempts'));
+		$attempts->activate();
 		$last = array();
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
 		$last = $attempts->read();
@@ -140,7 +150,10 @@ class Authenticator extends Configurable {
 
 	private function getUser($username){
 		
-		$user = new Mysql('users');
+		// $user = new Mysql('users');
+		$user = $this->_datasource;
+		$user->config($this->config('user'));
+		$user->activate();
 		$user->field('username', $username);
 		$dbCheck = $user->read();
 

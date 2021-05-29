@@ -125,6 +125,15 @@ class Application extends Programmable {
 		return $this;
 	}
 
+	public function validateCsrf()
+	{
+		if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST['token'])) {
+		    die('Invalid Request');
+		} elseif (hash_equals($_SESSION['token'], $_POST['token'])) {
+			// Continue to process
+		}
+	}
+
 	public function run() {
 		$args = array_slice($this->_arguments, 1);
 		// die(var_dump($this->_mappings));

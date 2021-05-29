@@ -33,6 +33,13 @@ class Util {
 		$count++;
 	}
 
+	static function csrf_token()
+	{
+		$token = bin2hex(random_bytes(32));
+		
+		return $token;
+	}
+
 	static function value($var, $filter = FILTER_DEFAULT ) {
 		
 		$cookie = filter_input(INPUT_COOKIE, $var);
