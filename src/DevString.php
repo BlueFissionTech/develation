@@ -18,6 +18,22 @@ class DevString extends DevValue implements IDevValue {
 		return $rand_string;
 	}
 
+	// https://www.uuidgenerator.net/dev-corner/php
+	public function _uuid4()
+	{
+	    // Generate 16 bytes (128 bits) of random data or use the data passed into the function.
+	    $data = $data ?? random_bytes(16);
+	    assert(strlen($data) == 16);
+
+	    // Set version to 0100
+	    $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+	    // Set bits 6-7 to 10
+	    $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+
+	    // Output the 36 character UUID.
+	    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+	}
+
 	// truncate a string to a given number of words using space as a word boundary
 	public function _truncate($limit = 40) {
 		$string = trim( $this->_data );

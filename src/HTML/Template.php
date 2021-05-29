@@ -22,12 +22,12 @@ class Template extends Configurable {
 		'file'=>'',
 		'cache'=>true,
 		'cache_expire'=>60,
-		'cache_directory'=>'cache/',
+		'cache_directory'=>'cache',
 		'max_records'=>1000, 
 		'delimiter_start'=>'{', 
 		'delimiter_end'=>'}',
 		'module_token'=>'mod', 
-		'module_directory'=>'modules/',
+		'module_directory'=>'modules',
 		'format'=>false,
 		'eval'=>false,
 	);
@@ -177,7 +177,7 @@ class Template extends Configurable {
 	
 	public function cache ( $minutes = null ) 
 	{
-		$file = $this->config('cache_directory').$_SERVER['REQUEST_URI'];
+		$file = $this->config('cache_directory').DIRECTORY_SEPARATOR.$_SERVER['REQUEST_URI'];
 		if (file_exists($file) && filectime($file) <= strtotime("-{$time} minutes")) {
 			$this->_cached = true;
 			$this->load ( $file );
@@ -218,7 +218,7 @@ class Template extends Configurable {
 	
 	public function render ( ) 
 	{
-		//$this->executeModules();
+		$this->executeModules();
 		$this->commit( $this->config('format') );
 		ob_start();
 		if ($this->config('eval'))
@@ -232,5 +232,22 @@ class Template extends Configurable {
 	public function publish ( ) 
 	{
 		print($this->render());
+	}
+
+	private function executeModules()
+	{
+		$pattern = "/@module\('(.*)'\)/";
+
+		preg_match_all( $pattern, $this->_template, $matches );
+
+		for ($i = 0; $i < count($matches[0]); $i++) {
+			$match = $matches[0][i];
+			$file = $matches[1][i];
+			$template = new Template();
+			$template->load( $this->config('module_directory').DIRECTORY_SEPARATOR.$file);
+			$content = $template->render();
+			$this->_template = str_replace($match, $content, $this->_template);
+		}
+
 	}
 }
