@@ -4,6 +4,7 @@ namespace BlueFission\Services;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Data\IData;
+use BlueFission\Net\HTTP;
 use BlueFission\Data\Storage\Storage;
 
 class Authenticator extends Configurable {
@@ -12,7 +13,14 @@ class Authenticator extends Configurable {
 		'session'=>'login',
 		'users'=>'users',
 		'login_attempts'=>'login_attempts',
-		'credentials'=>''
+		'credentials'=>'',
+		'duration'=>3600,
+	];
+
+	protected $_data = [
+		'username'=>'',
+		'displayname'=>'',
+		'userID'=>''
 	];
 
 	private $_datasource;
@@ -27,19 +35,19 @@ class Authenticator extends Configurable {
 		// $users->
 
 		if (!$this->confirmIPAddress($_SERVER['REMOTE_ADDR']) ) {
-			$this->status = 'Too many failures';
+			$this->_status = 'Too many failures';
 			return false;
 		}
 
 		if ( "" == $username || "" == $password ) {
-			$this->status = "Username and password required";
+			$this->_status = "Username and password required";
 			return false;
 		}
 		
 		$userinfo = $this->getUser($username);
 
 		if ( !$userinfo ) {
-			$this->status = "User not found";
+			$this->_status = "User not found";
 			return false;
 		}
 		
@@ -49,20 +57,22 @@ class Authenticator extends Configurable {
 		$password = $this->hashPassword( $password, $id );
 
 		if ( $password != $savedpass ) {
-			$this->status = "Username or password incorrect";
+			$this->_status = "Username or password incorrect";
 			return false;
 		}
 
 		$this->username = $userinfo[$this->usernameField];
-		$this->realname = $userinfo['realname'];
+		$this->displayname = $userinfo['displayname'];
 		$this->userID = $userinfo['user_id'];
 		
 		return true;
 	}
 
 	public function isAuthenticated() {
-		if($this->username !== false && $this->realname !== false && $this->userID !== false){
-			define("USER_ID", $this->id);
+		if($this->username !== false && $this->displayname !== false && $this->userID !== false){
+			if (!defined("USER_ID") {
+				define("USER_ID", $this->id);
+			}
 			return true;
 		} else {
 			return false;
@@ -108,7 +118,6 @@ class Authenticator extends Configurable {
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
 		$last = $attempts->read();
 		
-		
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( LOCKOUT_INTERVAL ) )
 		{
 			if (isset( $last['attempts']) && $last['attempts'] >= MAX_ATTEMPTS )
@@ -140,7 +149,7 @@ class Authenticator extends Configurable {
 
 	public function destroySession() {
 		$this->setAuthCookie("", -3600);
-		unset($_COOKIE[$this->sessionName]);
+		unset($_COOKIE[$this->config('session')]);
 
 		$this->username = '';
 		$this->userID = 0;
@@ -165,11 +174,11 @@ class Authenticator extends Configurable {
 	}
 	
 	public function setSession() {
-		if ( isset( $_COOKIE[$this->sessionName] ) ) {
-			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->sessionName])))
+		if ( isset( $_COOKIE[$this->config('session')] ) ) {
+			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')])))
 				return true;
 			else {
-				$this->status = "Could not save session";
+				$this->_status = "Could not save session";
 				return false;
 			}
 		}
@@ -178,9 +187,9 @@ class Authenticator extends Configurable {
 
 		$loginData = array(
 			'username' => $this->username,
-			'realname' => $this->realname,
+			'displayname' => $this->displayname,
 			'id' => $this->userID,
-			'duration' => $this->sessionDuration
+			'duration' => $this->config('duration')
 		);
 
 		$cookie = json_encode( ($loginData) );
@@ -188,7 +197,7 @@ class Authenticator extends Configurable {
 		if ($this->setAuthCookie($cookie))
 			return true;
 		else {
-			$this->status = "Could not save session";
+			$this->_status = "Could not save session";
 			return false;
 		}
 	}
@@ -203,12 +212,12 @@ class Authenticator extends Configurable {
 	}
 	
 	private function getExpiration(){
-		return time() + $this->sessionDuration;
+		return time() + $this->config('duration');
 	}
 	
 	private function setAuthCookie($value, $duration = ""){
 		if($duration == ""){
-			$duration = $this->sessionDuration;
+			$duration = $this->config('duration');
 		}
 		
 		$url = parse_url($_SERVER["HTTP_HOST"]);
@@ -217,10 +226,8 @@ class Authenticator extends Configurable {
 		$cookiedie = ($duration > 0) ? time()+(int)$duration : (int)$duration; //expire in one hour
 		$cookiesecure = false;
 		
-		$var = $this->sessionName;
+		$var = $this->config('session');
 		
-		// die(var_dump($domain));
-		//die();
-		return setcookie ($var, $value, $cookiedie, $dir, $domain, $cookiesecure);	
+		return HTTP::cookie($var, $value, $cookiedie, $dir, $cookiesecure);
 	}
 }
