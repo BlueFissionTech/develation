@@ -241,8 +241,8 @@ class Template extends Configurable {
 		preg_match_all( $pattern, $this->_template, $matches );
 
 		for ($i = 0; $i < count($matches[0]); $i++) {
-			$match = $matches[0][i];
-			$file = $matches[1][i];
+			$match = $matches[0][$i];
+			$file = $matches[1][$i];
 			$template = new Template();
 			$template->load( $this->config('module_directory').DIRECTORY_SEPARATOR.$file);
 			$content = $template->render();
