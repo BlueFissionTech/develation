@@ -70,7 +70,7 @@ class Authenticator extends Configurable {
 
 	public function isAuthenticated() {
 		if($this->username !== false && $this->displayname !== false && $this->userID !== false){
-			if (!defined("USER_ID") {
+			if (!defined("USER_ID")) {
 				define("USER_ID", $this->id);
 			}
 			return true;

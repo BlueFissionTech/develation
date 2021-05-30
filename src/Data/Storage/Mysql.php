@@ -821,7 +821,7 @@ class Mysql extends Storage implements IData
 		}
 	}
 	
-	private function whereCase($table = '', $member, $value = '') 
+	private function whereCase($table, $member, $value = '') 
 	{
 		$tables = $this->tables();
 		$table = ( DevValue::isNull( $table ) ) ? $tables[0] : $table;
@@ -973,7 +973,7 @@ class Mysql extends Storage implements IData
 		return $where;
 	}
 	
-	private function orderCase($table = null, $member) 
+	private function orderCase($table, $member) 
 	{
 		$tables = $this->tables();
 		$table = (DevValue::isNull($table)) ? $tables[0] : $table;
@@ -989,7 +989,7 @@ class Mysql extends Storage implements IData
 		return $sort;
 	}
 
-	private function aggregateCase($table = null, $member) 
+	private function aggregateCase($table, $member) 
 	{
 		$tables = $this->tables();
 		$table = (DevValue::isNull($table)) ? $tables[0] : $table;
@@ -1004,7 +1004,7 @@ class Mysql extends Storage implements IData
 		return $agg;
 	}
 	
-	private function distinctCase($table = null, $member) 
+	private function distinctCase($table, $member) 
 	{
 		$tables = $this->tables();
 		$table = (DevValue::isNull($table)) ? $tables[0] : $table;
