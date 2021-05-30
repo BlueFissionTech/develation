@@ -37,7 +37,7 @@ class Response extends Dispatcher
 					break;
 				}
 
-				if ( $depth == 0 && \array_key_exists($key, $this->_data) && $this->$key === null ) {
+				if ( $depth == 0 && \array_key_exists($key, $this->_data) && $this->$key == null ) {
 					$mapped = true;
 					$this->$key = $value;
 				} else {
@@ -47,30 +47,32 @@ class Response extends Dispatcher
 				$iterations++;
 			}
 
-			if ( $depth == 0 && DevArray::isAssoc($values) && $this->data === null && $values != $this->list ) {
+			if ( $depth == 0 && DevArray::isAssoc($values) && $this->data == null && $values != $this->list ) {
 				$this->data = $values;
 			}
-			
-			if ( $depth == 0 && DevArray::isIndexed($values) && $mapped === false && $this->list === null ) {
+
+			if ( $depth == 0 && DevArray::isIndexed($values) && $mapped == false && $this->list == null ) {
 				$this->list = $values;
 			}
 
-			if ( $depth == 1 && DevArray::isIndexed($values) && $this->children === null && $values != $this->list ) {
+			if ( $depth == 1 && DevArray::isIndexed($values) && $this->children == null && $values != $this->list ) {
 				$this->children = $values;
 			} 
 		}
 
-		if ( $depth < 2 && \is_numeric($values) && $this->id === null  ) {
+		if ( $depth < 2 && \is_numeric($values) && $this->id == null  ) {
 			$this->id = $values;
 		}
 
-		if ( $depth < 2 && \is_string($values) && $this->status === null  ) {
+		if ( $depth < 2 && \is_string($values) && $this->status == null  ) {
 			$this->status = $values;
 		}
 
-		if ( $depth < 2 && \is_object($values) && $this->data === null  ) {
+		if ( $depth < 2 && \is_object($values) && $this->data == null  ) {
 			$this->data = $values;
 		}
+
+		// var_dump($this->_data);
 	}
 
 	public function send()

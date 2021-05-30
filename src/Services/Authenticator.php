@@ -18,9 +18,10 @@ class Authenticator extends Configurable {
 	];
 
 	protected $_data = [
+		'userID'=>'',
 		'username'=>'',
 		'displayname'=>'',
-		'userID'=>''
+		'remember'=>''
 	];
 
 	private $_datasource;

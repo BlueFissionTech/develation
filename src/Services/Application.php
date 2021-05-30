@@ -45,6 +45,7 @@ class Application extends Programmable {
 	private $_bindings = [];
 	private $_mappings = [];
 	private $_mappingNames = [];
+	private $_boundArguments = [];
 
 	private $_routes = [];
 	private $_arguments = [];
@@ -230,6 +231,11 @@ class Application extends Programmable {
 	public function bind( $classname, $newclassname ) 
 	{
 		$this->_bindings[$classname] = $newclassname;
+	}
+
+	public function bindArguments( array $arguments, string $classname = '_' )
+	{
+		$this->_boundArguments[$classname] = $arguments;
 	}
 	
 	public function name( $newname = null )
@@ -559,18 +565,7 @@ class Application extends Programmable {
 			return null;
 		}
 
-		$parameters = $functionOrMethod->getParameters();
-		$dependencies = [];
-		foreach ($parameters as $parameter) {
-			$dependencyClass = (string) $parameter->getType();
-			$dependencyName = $parameter->getName();
-
-			if (\array_key_exists($dependencyClass, $this->_bindings)) {
-				$dependencyClass = $this->_bindings[$dependencyClass];
-			}
-
-			$dependencies[$dependencyName] = $arguments[$dependencyName] ?? new $dependencyClass();
-		}
+		$dependencies = $this->handleDependencies($functionOrMethod, $arguments);
 
 		// $result = call_user_func_array([$class, $callable], );
 		if ( \is_string($callable) ) {
@@ -584,6 +579,72 @@ class Application extends Programmable {
 		
 		// var_dump($result);
 		return $result;
+	}
+
+	private function boundArguments(String $classname = null)
+	{
+		if ( array_key_exists($classname, $this->_boundArguments) ) {
+			return $this->_boundArguments[$classname];
+		}
+
+		if ( $classname ) {
+			$class = new ReflectionClass($classname);
+	        $parents = [];
+	        $interfaces = [];
+	       
+	        while ($parent = $class->getParentClass()) {
+	            $parents[] = $parent->getName();
+	            $interfaces = array_merge($parent->getInterfaceNames(), $interfaces);
+	            $class = $parent;
+	        }
+
+	        foreach ( $parents as $parent ) {
+	        	if ( array_key_exists($parent, $this->_boundArguments) ) {
+					return $this->_boundArguments[$parent];
+				}
+	        }
+	        foreach ( $interfaces as $interface ) {
+	        	if ( array_key_exists($interface, $this->_boundArguments) ) {
+					return $this->_boundArguments[$interface];
+				}
+	        }
+	    }
+
+	    return $this->_boundArguments['_'];
+	}
+
+	private function handleDependencies ( $functionOrMethod, $arguments = [] )
+	{
+		$parameters = $functionOrMethod->getParameters();
+		$dependencies = [];
+		foreach ($parameters as $parameter) {
+
+			$dependencyClass = (string) $parameter->getType();
+			$dependencyName = $parameter->getName();
+
+			if (\array_key_exists($dependencyClass, $this->_bindings)) {
+				$dependencyClass = $this->_bindings[$dependencyClass];
+			}
+
+			// TODO array_merge arguments with application registered named bindings by class to pass global configurations
+			// like: array_merge($arguments, $this->boundArguments());
+			// Where boundArguments returns an assoc array like ['_mysqlConfig'=>$mysqlConfig, '_tableConfig'=>$tableConfig]
+			// var_dump($dependencyClass);
+			
+			$arguments = array_merge($this->boundArguments($dependencyClass), $arguments);
+
+			if ( $dependencyClass ) {
+				$dependencies[$dependencyName] = 
+					$arguments[$dependencyName] ?? 
+					new $dependencyClass(...$this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
+			}
+			if ( $parameter->isOptional() ) {
+				// $dependencies[$dependencyName] = $parameter->getDefaultValue();
+			}
+
+		}
+
+		return $dependencies;
 	}
 	
 	private function prepareCallable( $callable )
