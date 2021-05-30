@@ -588,7 +588,7 @@ class Application extends Programmable {
 		}
 
 		if ( $classname ) {
-			$class = new ReflectionClass($classname);
+			$class = new \ReflectionClass($classname);
 	        $parents = [];
 	        $interfaces = [];
 	       
@@ -610,7 +610,7 @@ class Application extends Programmable {
 	        }
 	    }
 
-	    return $this->_boundArguments['_'];
+	    return $this->_boundArguments['_'] ?? [];
 	}
 
 	private function handleDependencies ( $functionOrMethod, $arguments = [] )
@@ -618,6 +618,7 @@ class Application extends Programmable {
 		$parameters = $functionOrMethod->getParameters();
 		$dependencies = [];
 		foreach ($parameters as $parameter) {
+			$callingClass = $functionOrMethod->class ?? '';
 
 			$dependencyClass = (string) $parameter->getType();
 			$dependencyName = $parameter->getName();
@@ -630,18 +631,21 @@ class Application extends Programmable {
 			// like: array_merge($arguments, $this->boundArguments());
 			// Where boundArguments returns an assoc array like ['_mysqlConfig'=>$mysqlConfig, '_tableConfig'=>$tableConfig]
 			// var_dump($dependencyClass);
-			
-			$arguments = array_merge($this->boundArguments($dependencyClass), $arguments);
+			if ( $parameter->isOptional() ) {
+				// $dependencies[$dependencyName] = $parameter->getDefaultValue();
+			}
+
+			$arguments = array_merge($this->boundArguments($callingClass), $arguments);
+
+			if ( isset($arguments[$dependencyName]) ) {
+				$dependencies[$dependencyName] = $arguments[$dependencyName];
+			}
 
 			if ( $dependencyClass ) {
 				$dependencies[$dependencyName] = 
 					$arguments[$dependencyName] ?? 
 					new $dependencyClass(...$this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
 			}
-			if ( $parameter->isOptional() ) {
-				// $dependencies[$dependencyName] = $parameter->getDefaultValue();
-			}
-
 		}
 
 		return $dependencies;
