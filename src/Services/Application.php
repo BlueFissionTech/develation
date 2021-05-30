@@ -233,7 +233,7 @@ class Application extends Programmable {
 		$this->_bindings[$classname] = $newclassname;
 	}
 
-	public function bindArguments( array $arguments, string $classname = '_' )
+	public function bindArgs( array $arguments, string $classname = '_' )
 	{
 		$this->_boundArguments[$classname] = $arguments;
 	}
