@@ -149,13 +149,13 @@ class Application extends Programmable {
 		/*
 		$url = HTTP::url();
 		$location = trim(parse_url($url, PHP_URL_PATH), '/') ?? '/';
-		$uri = new Uri();
 		*/
+		$uri = new Uri();
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
 
 			// $mapping = $this->_mappings[$this->_arguments['_method']][$location];
-			$uri = $this->returnMatchingUri(array_keys($this->_mappings[$this->_arguments['_method']]));
-			$mapping = $this->_mappings[$this->_arguments['_method']][$uri];
+			$path = $this->returnMatchingUri(array_keys($this->_mappings[$this->_arguments['_method']]));
+			$mapping = $this->_mappings[$this->_arguments['_method']][$path];
 
 			$request = new Request();
 
@@ -169,9 +169,11 @@ class Application extends Programmable {
 
 			$callable = $this->prepareCallable($mapping->callable);
 
-			$result = $this->executeServiceMethod($callable, $args['data']);
+			$arguments = array_merge($args['data'], $uri->buildArguments($path) );
 
-			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($location, $this->_arguments['_method']) ?? $location);
+			$result = $this->executeServiceMethod($callable, $arguments);
+
+			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($path, $this->_arguments['_method']) ?? $path);
 
 			print($result);
 		}
@@ -488,16 +490,16 @@ class Application extends Programmable {
 		}
 	}
 
-	// private function uriExists( $uris )
-	// {
-	// 	$uri = new Uri();
-	// 	foreach ( $uris as $testUri ) {
-	// 		if ( $uri->match($testUri) ) {
-	// 			return true;
-	// 		}
-	// 	}
-	// 	return false;
-	// }
+	private function uriExists( $uris )
+	{
+		$uri = new Uri();
+		foreach ( $uris as $testUri ) {
+			if ( $uri->match($testUri) ) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	private function returnMatchingUri( $uris )
 	{

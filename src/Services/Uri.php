@@ -4,14 +4,15 @@ namespace BlueFission\Services;
 use BlueFission\Net\HTTP;
 
 class Uri {
-	public function $path;
-	public function $parts;
+	public $path;
+	public $parts;
 
 	private $_valueToken = '$';
 
 	public function __construct( string $path = '' ) 
 	{
-		$url = $path ?? HTTP::url();
+		$url = $path != '' ? $path : HTTP::url();
+
 		
 		$request = trim(parse_url($url, PHP_URL_PATH), '/');
 		$this->path = $request;
@@ -31,7 +32,7 @@ class Uri {
 		$uri_parts = explode( '/', $cleanTestUri );
 
 		if ( count( $uri_parts ) == count( $this->parts ) ) {
-			for ( $i = 0; $i = < count($uri_parts); $i++ ) {
+			for ( $i = 0; $i < count($uri_parts); $i++ ) {
 				if ( !$this->compare_parts($uri_parts[$i], $this->parts[$i]) ) {
 					return false;
 				}
@@ -53,7 +54,7 @@ class Uri {
 		$uri_parts = explode( '/', $cleanTestUri );
 
 		if ( count( $uri_parts ) == count( $this->parts ) ) {
-			for ( $i = 0; $i = < count($uri_parts); $i++ ) {
+			for ( $i = 0; $i < count($uri_parts); $i++ ) {
 				if ( !$this->compare_parts($uri_parts[$i], $this->parts[$i]) ) {
 					return false;
 				}
@@ -62,6 +63,25 @@ class Uri {
 		}
 
 		return false;
+	}
+
+	public function buildArguments( $uriSignature )
+	{
+		$arguments = [];
+
+		$cleanUri = trim($uriSignature, '/');
+
+		$uri_parts = explode( '/', $cleanUri );
+
+		if ( count( $uri_parts ) == count( $this->parts ) ) {
+			for ( $i = 0; $i < count($uri_parts); $i++ ) {
+				if ( strpos($uri_parts[$i], $this->_valueToken) === 0 ) {
+					$arguments[ substr($uri_parts[$i], 1) ] = $this->parts[$i];
+				}
+			}
+		}
+
+		return $arguments;
 	}
 
 	private function compare_parts($firstPart, $secondPart)

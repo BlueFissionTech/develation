@@ -18,6 +18,7 @@ class Mysql extends Storage implements IData
 		'name'=>'',
 		'fields'=>'',
 		'ignore_null'=>false,
+		'auto_join'=>true,
 		'temporary'=>false,
 		'set_defaults'=>false,
 		'key'=>'',
@@ -208,12 +209,13 @@ class Mysql extends Storage implements IData
 				$join = $this->table($a);
 				if (is_array($join)) 
 				{
-					$field = $this->arrayKeyIntersect($this->table($table), $join);
-					foreach ($field as $b=>$c) 
-					{
-						if (in_array($b, $active_fields) || DevValue::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
+					if ($this->config('auto_join')) {
+						$field = $this->arrayKeyIntersect($this->table($table), $join);
+						foreach ($field as $b=>$c) 
+						{
+							if (in_array($b, $active_fields) || DevValue::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
+						}
 					}
-	
 					if (count($relations) > 0) 
 					{
 						$fields = $this->arrayKeyIntersect($relations, $join);
@@ -222,23 +224,26 @@ class Mysql extends Storage implements IData
 						}
 					}
 	
-					for ($i = $count; $i < count($tables); $i++) 
-					{
-						$b = $tables[$i];
-						if ($a != $b) {
-							$join_2 = $this->table($b);
-							if (is_array($join_2)) {
-								$fields = $this->arrayKeyIntersect($this->table($a), $join_2);
-								foreach ($fields as $c=>$d) {
-									$on[] = $a . ".$c  = $b.$c";
+					if ($this->config('auto_join')) {
+
+						for ($i = $count; $i < count($tables); $i++) 
+						{
+							$b = $tables[$i];
+							if ($a != $b) {
+								$join_2 = $this->table($b);
+								if (is_array($join_2)) {
+									$fields = $this->arrayKeyIntersect($this->table($a), $join_2);
+									foreach ($fields as $c=>$d) {
+										$on[] = $a . ".$c  = $b.$c";
+									}
 								}
-							}
-							
-							$join_2 = $this->arrayKeyIntersect($this->table($b), $relations);
-							if (is_array($join_2)) {	
-								$fields = $this->arrayKeyIntersect($this->tables($a), $join_2);
-								foreach ($fields as $c=>$d) {
-									$on[] = $a . ".$c  = $b.$c";
+								
+								$join_2 = $this->arrayKeyIntersect($this->table($b), $relations);
+								if (is_array($join_2)) {	
+									$fields = $this->arrayKeyIntersect($this->tables($a), $join_2);
+									foreach ($fields as $c=>$d) {
+										$on[] = $a . ".$c  = $b.$c";
+									}
 								}
 							}
 						}
