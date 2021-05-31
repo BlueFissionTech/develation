@@ -274,8 +274,9 @@ class Mysql extends Storage implements IData
 		$select = array();
 		foreach($active_fields as $a) 
 		{
-			if ($this->exists($a))
-				$select[] = ($this->aggregateCase($table, $a)) ? $this->aggregateCase($table, $a) : $table.'.'.$a;
+			if ($this->exists($a)){
+				$select[] = ($this->aggregateCase($table, $a)) ? $this->aggregateCase($table, $a) : $this->fieldTable($a).'.'.$a;
+			}
 		}
 		if (count($select) <= 0) 
 		{
@@ -1045,7 +1046,6 @@ class Mysql extends Storage implements IData
 	public function exists($var) 
 	{
 		$fields = $this->fields();
-		
 		$active_fields = $this->config('fields');
 		if ($var != '' && array_key_exists( $var, $fields ) ) 
 		{
@@ -1064,6 +1064,15 @@ class Mysql extends Storage implements IData
 			return false;
 		}
 		return false;
+	}
+
+	public function fieldTable( $field ) {
+		foreach ( $this->_fields as $table=>$fields ) {
+			if ( array_key_exists($field, $fields)) {
+				return $table;
+			}
+		}
+		return '';
 	}
 
 	public function error()

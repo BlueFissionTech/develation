@@ -11,14 +11,14 @@ class Authenticator extends Configurable {
 
 	protected $_config = [ 
 		'session'=>'login',
-		'users'=>'users',
-		'login_attempts'=>'login_attempts',
-		'credentials'=>'',
+		'users_table'=>'users',
+		'login_attempts_table'=>'login_attempts',
+		'credentials_table'=>'credentials',
 		'duration'=>3600,
 	];
 
 	protected $_data = [
-		'userID'=>'',
+		'id'=>'',
 		'username'=>'',
 		'displayname'=>'',
 		'remember'=>''
@@ -64,13 +64,13 @@ class Authenticator extends Configurable {
 
 		$this->username = $userinfo[$this->usernameField];
 		$this->displayname = $userinfo['displayname'];
-		$this->userID = $userinfo['user_id'];
+		$this->id = $userinfo['user_id'];
 		
 		return true;
 	}
 
 	public function isAuthenticated() {
-		if($this->username !== false && $this->displayname !== false && $this->userID !== false){
+		if($this->username != '' && $this->displayname != '' && $this->id != ''){
 			if (!defined("USER_ID")) {
 				define("USER_ID", $this->id);
 			}
@@ -84,11 +84,13 @@ class Authenticator extends Configurable {
 	{ 
 		// $attempts = new Mysql('dash_login_attempts'); // TODO fix this with dependency injection
 		$attempts = $this->_datasource;
-		$attempts->config($this->config('login_attempts'));
+		$attempts->config($this->config('login_attempts_table'));
 		$attempts->activate();
 		$last = array();
 		$attempts->setField('ip_address', $value);
-		$last = $attempts->read();
+		$attempts->read();
+		$last = $attempts->data();
+
 		
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( LOCKOUT_INTERVAL ) )
 		{
@@ -113,11 +115,13 @@ class Authenticator extends Configurable {
 	{ 
 		// $attempts = new Mysql('dash_login_attempts');
 		$attempts = $this->_datasource;
-		$attempts->config($this->config('login_attempts'));
+		$attempts->config($this->config('login_attempts_table'));
 		$attempts->activate();
 		$last = array();
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
-		$last = $attempts->read();
+		$attempts->read();
+		$last = $attempts->data();
+
 		
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( LOCKOUT_INTERVAL ) )
 		{
@@ -134,11 +138,12 @@ class Authenticator extends Configurable {
 	{ 
 		// $attempts = new Mysql('dash_login_attempts');
 		$attempts = $this->_datasource;
-		$attempts->config($this->config('login_attempts'));
+		$attempts->config($this->config('login_attempts_table'));
 		$attempts->activate();
 		$last = array();
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
-		$last = $attempts->read();
+		$attempts->read();
+		$last = $attempts->data();
 		
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( LOCKOUT_INTERVAL ) )
 		{
@@ -153,7 +158,7 @@ class Authenticator extends Configurable {
 		unset($_COOKIE[$this->config('session')]);
 
 		$this->username = '';
-		$this->userID = 0;
+		$this->id = 0;
 
 		return true;
 	}
@@ -162,10 +167,11 @@ class Authenticator extends Configurable {
 		
 		// $user = new Mysql('users');
 		$user = $this->_datasource;
-		$user->config($this->config('user'));
+		$user->config([$this->config('credentials_table'), $this->config('users_table')]);
 		$user->activate();
 		$user->field('username', $username);
-		$dbCheck = $user->read();
+		$user->read();
+		$dbCheck = $user->data();
 
 		if(!empty($dbCheck)){
 			return $dbCheck;
@@ -189,7 +195,7 @@ class Authenticator extends Configurable {
 		$loginData = array(
 			'username' => $this->username,
 			'displayname' => $this->displayname,
-			'id' => $this->userID,
+			'id' => $this->id,
 			'duration' => $this->config('duration')
 		);
 
