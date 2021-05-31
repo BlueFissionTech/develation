@@ -20,7 +20,9 @@ class Collection extends DevArray implements ICollection, ArrayAccess, IteratorA
 			$this->_value = new ArrayObject( );
 		}
 		else
-			$this->_value = new ArrayObject( DevArray::toArray($this->_value) );
+		{
+			$this->_value = new ArrayObject( DevArray::toArray() );
+		}
 
         $this->_iterator = new ArrayIterator($this->_value);	
 	}
@@ -36,7 +38,7 @@ class Collection extends DevArray implements ICollection, ArrayAccess, IteratorA
 			return null;		
 	}
 
-	public function toArray( $allow_empty = false ) {
+	public function toArray( bool $allow_empty = false ) {
 		$value = $this->_value->getArrayCopy();
 		return $value;
 	}

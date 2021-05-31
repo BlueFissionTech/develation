@@ -88,8 +88,9 @@ class Mysql extends Storage implements IData
 		$keys = array();
 		$success = true;
 
-		if (!$this->tables() || !$this->fields())
+		if (!$this->tables() || !$this->fields()) {
 			$this->create();
+		}
 
 		$tables = $this->tables();
 

@@ -100,26 +100,28 @@ class Application extends Programmable {
 				$this->_arguments[$arg] = Util::value($arg);
 			}
 		}
-
+		/*
 		$url = HTTP::url();
-
+		// TODO replace with URL object
 		$parts = [];
 		$request = parse_url($url, PHP_URL_PATH);
 		$request_parts = explode( '/', $request );
 		// $parts = array_reverse($request_parts); // Why did I do this?
 		$parts = $request_parts;
-	
+		*/
+		$uri = new Uri();
+		
 		// Get the method for this request
 		$this->_arguments[$this->_parameters[0]] = (isset($this->_arguments[$this->_parameters[0]])) ? $this->_arguments[$this->_parameters[0]] : strtolower( isset($_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : 'GET' );
 		
 		// Get the service targeted by this request
-		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : ( $parts[1] ?? $this->name() );
+		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : ( $uri->parts[0] ?? $this->name() );
 
 		// get the behavior triggered by this request
-		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $parts[2] ?? '' ); // TODO send a universal default behavior
+		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $uri->parts[1] ?? '' ); // TODO send a universal default behavior
 
 		// get the data triggered by this request
-		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($parts, 3) ?? null );
+		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($uri->parts, 2) ?? null );
 
 		// die(var_dump(parse_url($url, PHP_URL_PATH)));
 
@@ -143,14 +145,17 @@ class Application extends Programmable {
 		// die(var_dump($this->_mappings));
 
 		$behavior = $args['behavior'];
-
+		// TODO replace with URI object
+		/*
 		$url = HTTP::url();
-
 		$location = trim(parse_url($url, PHP_URL_PATH), '/') ?? '/';
+		$uri = new Uri();
+		*/
+		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
 
-		if ( isset($this->_mappings[$this->_arguments['_method']]) && isset($this->_mappings[$this->_arguments['_method']][$location]) ) {
-
-			$mapping = $this->_mappings[$this->_arguments['_method']][$location];
+			// $mapping = $this->_mappings[$this->_arguments['_method']][$location];
+			$uri = $this->returnMatchingUri(array_keys($this->_mappings[$this->_arguments['_method']]));
+			$mapping = $this->_mappings[$this->_arguments['_method']][$uri];
 
 			$request = new Request();
 
@@ -481,6 +486,28 @@ class Application extends Programmable {
 			$this->_broadcast_chain = [];
 			$this->_last_args = null;
 		}
+	}
+
+	// private function uriExists( $uris )
+	// {
+	// 	$uri = new Uri();
+	// 	foreach ( $uris as $testUri ) {
+	// 		if ( $uri->match($testUri) ) {
+	// 			return true;
+	// 		}
+	// 	}
+	// 	return false;
+	// }
+
+	private function returnMatchingUri( $uris )
+	{
+		$uri = new Uri();
+		foreach ( $uris as $testUri ) {
+			if ( $uri->match($testUri) ) {
+				return $testUri;
+			}
+		}
+		return false;
 	}
 
 	private function message( $service, $behavior, $data = null, $callback = null )
