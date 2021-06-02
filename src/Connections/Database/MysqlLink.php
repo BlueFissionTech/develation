@@ -377,7 +377,7 @@ class MysqlLink extends Connection implements IConfigurable
 	          $query = "SELECT `$field` FROM `$table` WHERE $where";
 	          $result = $db->query($query);
 	          $selection = $result->fetch_array();
-	          if (mysql_)
+	          // if (mysql_) // TODO figure out what I intended to do here
 	          $this->status( $db->connect_error ? $db->connect_error : self::STATUS_CONNECTED );
 	          $value = self::sanitize($selection[0]);
 	     }

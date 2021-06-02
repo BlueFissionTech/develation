@@ -131,10 +131,15 @@ class Application extends Programmable {
 	public function validateCsrf()
 	{
 		if ($_SERVER['REQUEST_METHOD'] == 'POST' ) {
-			if (empty($_POST['_token'])) {
-			    die('Invalid Request');
-			} elseif (hash_equals($_SESSION['_token'], $_POST['_token'])) {
+			$csrf = null;
+			if ( isset($_POST['_token']) || isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+			    $csrf = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'];
+			}
+
+			if ($csrf && hash_equals($_SESSION['_token'], $csrf) ) {
 				// Continue to process
+			} else {
+				die('Invalid Request');
 			}
 		}
 		return $this;
@@ -554,17 +559,13 @@ class Application extends Programmable {
 	private function getDynamicInstance(string $class )
 	{
 		$constructor = new \ReflectionMethod($class, '__construct');
-		$parameters = $constructor->getParameters();
 
 		$dependencies = [];
-		foreach ($parameters as $parameter) {
-			$dependencyClass = (string) $parameter->getType();
-			$dependencies[] = new $dependencClass();
-		}
+		
+		$dependencies = $this->handleDependencies($constructor);
 
-		$instance = new $class($dependencies);
+		$instance = new $class(...$dependencies);
 	
-		// var_dump($instance);
 		return $instance;
 	}
 

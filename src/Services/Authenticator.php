@@ -14,7 +14,11 @@ class Authenticator extends Configurable {
 		'users_table'=>'users',
 		'login_attempts_table'=>'login_attempts',
 		'credentials_table'=>'credentials',
+		'id_field'=>'user_id',
+		'username_field'=>'username',
+		'password_field'=>'password',
 		'duration'=>3600,
+		'max_attempts'=>10,
 	];
 
 	protected $_data = [
@@ -31,46 +35,52 @@ class Authenticator extends Configurable {
 		$this->_datasource = $datasource;
 	}
 
-	private function authenticate( Behavior $event = null ) {
+	public function authenticate( $username, $password ) {
 		// $users = $this->config('users');
 		// $users->
 
 		if (!$this->confirmIPAddress($_SERVER['REMOTE_ADDR']) ) {
-			$this->_status = 'Too many failures';
+			$this->_status[] = 'Too many failures';
 			return false;
 		}
 
 		if ( "" == $username || "" == $password ) {
-			$this->_status = "Username and password required";
+			$this->_status[] = "Username and password required";
 			return false;
 		}
 		
 		$userinfo = $this->getUser($username);
 
 		if ( !$userinfo ) {
-			$this->_status = "User not found";
+			$this->_status[] = "User not found";
 			return false;
 		}
 		
-		$savedpass = $userinfo[$this->passwordField];
+		$savedpass = $userinfo[$this->config('password_field')];
 		$id = $userinfo['user_id'];
 		
-		$password = $this->hashPassword( $password, $id );
+		// $password = password_hash($password, PASSWORD_DEFAULT);
 
-		if ( $password != $savedpass ) {
-			$this->_status = "Username or password incorrect";
+		if ( !password_verify($password, $savedpass) ) {
+			$this->_status[] = "Username or password incorrect";
 			return false;
 		}
 
-		$this->username = $userinfo[$this->usernameField];
-		$this->displayname = $userinfo['displayname'];
-		$this->id = $userinfo['user_id'];
+		$this->username = $userinfo[$this->config('username_field')];
+		// $this->displayname = $userinfo['displayname'];
+		$this->id = $userinfo[$this->config('id_field')];
 		
 		return true;
 	}
 
 	public function isAuthenticated() {
-		if($this->username != '' && $this->displayname != '' && $this->id != ''){
+		// return true;
+		if ( isset( $_COOKIE[$this->config('session')] ) ) {
+			$data = json_decode($_COOKIE[$this->config('session')]);
+			$this->assign($data);
+		}
+		
+		if($this->username != '' && $this->id != ''){
 			if (!defined("USER_ID")) {
 				define("USER_ID", $this->id);
 			}
@@ -87,7 +97,7 @@ class Authenticator extends Configurable {
 		$attempts->config($this->config('login_attempts_table'));
 		$attempts->activate();
 		$last = array();
-		$attempts->setField('ip_address', $value);
+		$attempts->field('ip_address', $value);
 		$attempts->read();
 		$last = $attempts->data();
 
@@ -102,9 +112,9 @@ class Authenticator extends Configurable {
 		}
 		$attempts->field('last_attempt', date('Y-m-d G:i:s', strtotime('now')));
 		$attempts->field('attempts', $last['attempts']);
-		$attempts->save();
+		$attempts->write();
 
-		if (isset( $last['attempts']) && $last['attempts'] >= MAX_ATTEMPTS )
+		if (isset( $last['attempts']) && $last['attempts'] >= $this->config('max_attempts') )
 		{
 			return false;
 		}
@@ -125,7 +135,7 @@ class Authenticator extends Configurable {
 		
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( LOCKOUT_INTERVAL ) )
 		{
-			if (isset( $last['attempts']) && $last['attempts'] >= MAX_ATTEMPTS )
+			if (isset( $last['attempts']) && $last['attempts'] >= $this->config('max_attempts') )
 			{
 				return true;
 			}
@@ -167,7 +177,7 @@ class Authenticator extends Configurable {
 		
 		// $user = new Mysql('users');
 		$user = $this->_datasource;
-		$user->config([$this->config('credentials_table'), $this->config('users_table')]);
+		$user->config('name', [$this->config('credentials_table')]);
 		$user->activate();
 		$user->field('username', $username);
 		$user->read();
@@ -185,39 +195,29 @@ class Authenticator extends Configurable {
 			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')])))
 				return true;
 			else {
-				$this->_status = "Could not save session";
+				$this->_status[] = "Could not save session";
 				return false;
 			}
 		}
 
 		if ( !$this->isAuthenticated() ) return false;
-
 		$loginData = array(
 			'username' => $this->username,
-			'displayname' => $this->displayname,
+			// 'displayname' => $this->displayname,
 			'id' => $this->id,
 			'duration' => $this->config('duration')
 		);
 
-		$cookie = json_encode( ($loginData) );
+		$cookie = HTTP::jsonEncode( ($loginData) );
 
 		if ($this->setAuthCookie($cookie))
 			return true;
 		else {
-			$this->_status = "Could not save session";
+			$this->_status[] = "Could not save session";
 			return false;
 		}
 	}
 
-	private function hashPassword( $password, $salt ) {
-		if ( function_exists('hashPassword') ) {
-			$newpass = hashPassword( $password, $salt );
-			return $newpass;
-		}
-		$newpass = sha1( $password . $salt );
-		return $newpass;
-	}
-	
 	private function getExpiration(){
 		return time() + $this->config('duration');
 	}

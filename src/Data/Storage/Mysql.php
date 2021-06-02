@@ -19,6 +19,7 @@ class Mysql extends Storage implements IData
 		'fields'=>'',
 		'ignore_null'=>false,
 		'auto_join'=>true,
+		'save_related_tables'=>false,
 		'temporary'=>false,
 		'set_defaults'=>false,
 		'key'=>'',
@@ -107,21 +108,22 @@ class Mysql extends Storage implements IData
 		foreach ($this->fields() as $field=>$column)
 		{
 			$name = $column['Field'];
-			if ( $this->validate($name, $table) )
+			if  ( $column['Key'] == 'PRI' || $column['Key'] == 'UNI' || $column['Key'] == 'MUL' )
 			{
-				if  ( $column['Key'] == 'PRI' || $column['Key'] == 'UNI' )
-				{
-					if (!isset($keys[$table])) $keys[$table] = $name;
-				}
+				if (!isset($keys[$table])) $keys[$table] = $name;
 			}
-			else
+			if ( is_array($this->config('fields')) && count($this->config('fields')) > 0 && !in_array($field, $this->config('fields')) ) {
+				continue;
+			}
+
+			if ( !$this->validate($name, $table) )
 			{
 				$success = false;
 			}
 		}
 		
 		$affected_row = null;
-		$tables = $this->tables();
+		$tables = $this->config('save_related_tables') ? $this->tables() : [$this->tables()[0]];
 		// while ( ( $table = each($tables) ) && $success )
 		foreach ( $tables as $key=>$value )
 		{
@@ -134,7 +136,19 @@ class Mysql extends Storage implements IData
 			$db->config('key', $key);
 			$db->config('table', $table);
 			$db->config('ignore_null', $this->config('ignore_null'));
-			$success = $db->query($this->_data);
+
+			$data = [];
+			$fields = $this->_fields[$table] ?? $this->_data;
+
+			foreach ($fields as $field) {
+				$field = $field['Field'];
+				if ( is_array($this->config('fields')) && count($this->config('fields')) > 0 && !in_array($field, $this->config('fields')) ) {
+					continue;
+				}
+				$data[$field] = $this->field($field);
+			}
+
+			$success = $db->query($data);
 
 			$this->_query = $db->stats()['query'];
 
