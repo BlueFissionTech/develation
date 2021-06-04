@@ -591,9 +591,12 @@ class Mysql extends Storage implements IData
 		//if (!$this->_fields || count( $this->config(self::NAME_FIELD) ) > 0 )
 		
 		$tableDiff = array_merge(array_diff($this->tables(), DevArray::toArray($this->config('name'))), array_diff(DevArray::toArray($this->config('name')), $this->tables()));
+		if ( count($tableDiff) > 0 ) {
+			$this->_fields = [];
+		}
 		
 		// TODO make sure this works as expected and it actually compares the arrays
-		if ( !$this->_fields || count($tableDiff) > 0 )
+		if ( !$this->_fields )
 		{
 			$data = array();
 			//$tables = DevArray::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
