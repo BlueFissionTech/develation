@@ -444,9 +444,9 @@ class Mysql extends Storage implements IData
 		if ( count ( $this->tables() ) > 1 )
 		$left_join = "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
 		
-		$select = array();
-		foreach($active_fields as $a) if ($this->exists($a)) $select[] = $field_info[$a]['Table'].'.'.$a;
-		if (count($select) <= 0) $select_r[] = '*';
+		// $select = array();
+		// foreach($active_fields as $a) if ($this->exists($a)) $select[] = $field_info[$a]['Table'].'.'.$a;
+		// if (count($select) <= 0) $select_r[] = '*';
 
 		// Build query		
 		//$query = "SELECT " . implode(', ', $select) . " FROM `$table` $left_join WHERE " . implode(' AND ', $where); 
