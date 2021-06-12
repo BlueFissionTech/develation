@@ -328,6 +328,10 @@ class Application extends Programmable {
 		} elseif (DevValue::isNotNull($reference) ) {
 			$service->type = $reference;	
 			$service->scope = $this;
+			// die(var_dump($args));
+			if ( is_subclass_of($reference, Service::class) && count($args) == 0 ) {
+				$service->instance = $this->getServiceInstance($reference);
+			}
 		} else {
 			// If type isn't given, creates a programmable object property
 			$component = $this->component( $name );
