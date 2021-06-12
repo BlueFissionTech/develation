@@ -78,6 +78,14 @@ class Service extends Dispatcher {
 		$this->dispatch( $behavior );
 	}
 
+	public function boost( $behavior ) 
+	{
+		$parent = $this->parent();
+		if ( $parent && $parent instanceof \BlueFission\Services\Application ) {
+			$parent->boost($behavior);
+		}
+	}
+
 	public function message( $behavior, $args = null ) {
 		$instance = $this->instance();
 		if ( $instance instanceof Dispatcher && is_callable( array( $instance, 'behavior') ) ) {

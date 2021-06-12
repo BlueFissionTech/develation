@@ -176,6 +176,11 @@ class Application extends Programmable {
 
 			$arguments = array_merge($args['data'], $uri->buildArguments($path) );
 
+			// TODO make this more elegant
+			if ( $callable[0] instanceof \BlueFission\Services\Service  ) {
+				$callable[0]->parent( $this );
+			}
+
 			$result = $this->executeServiceMethod($callable, $arguments);
 
 			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($path, $this->_arguments['_method']) ?? $path);
