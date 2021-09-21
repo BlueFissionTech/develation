@@ -177,8 +177,13 @@ class Application extends Programmable {
 			$arguments = array_merge($args['data'], $uri->buildArguments($path) );
 
 			// TODO make this more elegant
+			/* This should never have an array as callable becase of "prepareCallable"
 			if ( $callable[0] instanceof \BlueFission\Services\Service  ) {
 				$callable[0]->parent( $this );
+			}
+			*/
+			if ( $callable instanceof \BlueFission\Services\Service  ) {
+				$callable->parent( $this );
 			}
 
 			$result = $this->executeServiceMethod($callable, $arguments);

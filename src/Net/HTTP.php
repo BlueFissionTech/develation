@@ -88,7 +88,7 @@ class HTTP {
 	static function cookie($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
 		if (DevValue::isNull($value))
-			return $_COOKIE[$var];
+			return $_COOKIE[$var] ?? null;
 		
 		$domain = ($path) ? substr($path, 0, strpos($path, '/')) : HTTP::domain();
 		$dir = ($path) ? substr($path, strpos($path, '/'), strlen($path)) : '/';
