@@ -102,19 +102,27 @@ class Template extends Configurable {
 
 		if (is_string($var))
 		{
-			if ( !$content )
-			{
-				//throw new InvalidArgumentException( 'Cannot set empty value.');
-				//return false;
-			}
-
 			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) )
 			{
 				throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
-
-			$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
+			if ( is_string($content) )
+			{
+				$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
+			}
+			elseif ( is_object( $content ) || DevArray::isAssoc( $content ) )
+			{
+				foreach ($content as $a=>$b) 
+				{
+					$this->set($var.'.'.$a, $b, $formatted, $repetitions);
+				}
+				$this->field($var, $content);
+			}
+			elseif ( is_array($content) )
+			{
+				$this->field($var, $content);
+			}
 		}
 		elseif ( is_object( $var ) || DevArray::isAssoc( $var ) )
 		{

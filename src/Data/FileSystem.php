@@ -88,7 +88,7 @@ class FileSystem extends Data implements IData {
 	private function getInfo( $path ) {
 		$info = pathinfo($path);
 		if (is_array($info)) {
-			$dir = $info['dirname'];
+			$dir = $info['dirname'] ?? '';
 			
 			if ($this->allowedDir($dir)) {
 				$info['dirname'] = substr($dir, strlen($this->config('root')), strlen($dir) );

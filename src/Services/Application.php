@@ -664,7 +664,8 @@ class Application extends Programmable {
 		foreach ($parameters as $parameter) {
 			$callingClass = $functionOrMethod->class ?? '';
 
-			$dependencyClass = (string) $parameter->getType();
+			// $dependencyClass = (string) $parameter->getType();
+			$dependencyClass = $parameter->getType()->getName();
 			$dependencyName = $parameter->getName();
 
 			if (\array_key_exists($dependencyClass, $this->_bindings)) {
