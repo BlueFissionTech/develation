@@ -691,9 +691,11 @@ class Application extends Programmable {
 			}
 
 			if ( $dependencyClass ) {
+				// Doing this to avoid issues with prior to php 8.1 versions that struggle with unpacking assoc arrays
+				$values = array_values($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
 				$dependencies[$dependencyName] = 
 					$arguments[$dependencyName] ?? 
-					new $dependencyClass(...$this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
+					new $dependencyClass(...$values);
 			}
 		}
 
