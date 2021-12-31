@@ -578,7 +578,10 @@ class Application extends Programmable {
 		
 		$dependencies = $this->handleDependencies($constructor);
 
-		$instance = new $class(...$dependencies);
+		// php prior to 8.1 fix for unpacking assoc arrays
+		$values = array_values($dependencies);
+
+		$instance = new $class(...$values);
 	
 		return $instance;
 	}
