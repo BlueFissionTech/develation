@@ -59,7 +59,7 @@ class DevValue implements IDevValue {
 			$output = call_user_func_array(array($this, self::MORPHING_METHOD_PREFIX.$method), $args);
 			return $output;
 		} else {
-			throw new Exception("Method not defined", 1);			
+			throw new Exception("Method {$method} not defined", 1);			
 		}
 	}
 
@@ -72,7 +72,7 @@ class DevValue implements IDevValue {
 			unset($var);
 			return $output;
 		} else {
-			throw new Exception("Method not defined", 1);			
+			throw new Exception("Method {$method} not defined", 1);			
 		}
 	}
 }

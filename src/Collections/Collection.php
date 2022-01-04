@@ -5,6 +5,7 @@ use ArrayAccess;
 use ArrayObject;
 use ArrayIterator;
 use IteratorAggregate;
+use InvalidArgumentException;
 use BlueFission\DevValue;
 use BlueFission\DevArray;
 
