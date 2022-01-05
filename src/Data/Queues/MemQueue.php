@@ -25,7 +25,7 @@ class MemQueue extends Queue implements IQueue {
 	
 	private static function init() {
 		$_stack = new Memcached;
-		$servers = explode(",", self::MEMQ_POOL);
+		$servers = explode(",", env('MEMQ_POOL', static::MEMQ_POOL));
 		foreach($servers as $server) {
 			list($host, $port) = explode(":", $server);
 			$_stack->addServer($host, $port);
@@ -59,31 +59,30 @@ class MemQueue extends Queue implements IQueue {
 
 				$tail = $stack->get($queue."_tail");
 				if(($id = $stack->increment($queue."_head")) === FALSE) {
-					// var_dump('1');
 					return FALSE;
 				}
 			
 				if($id <= $tail) {
-					// var_dump('2');
-					return $stack->get($queue."_".($id-1));
+					$output = $stack->get($queue."_".($id-1));
+					$stack->delete($queue."_".($id-1));
+					return $output;
 				}
 				else {
-					// var_dump('3');
 					$stack->decrement($queue."_head");
 					return FALSE;
 				} 
 			} elseif ( self::$_mode == static::FILO ) {
 				$head = $stack->get($queue."_head");
 				if(($id = $stack->decrement($queue."_tail")) === FALSE) {
-					// var_dump('4');
 					return FALSE;
 				}
 			
 				if($id >= $head) {
-					return $stack->get($queue."_".($id-1));
+					$output = $stack->get($queue."_".($id-1));
+					$stack->delete($queue."_".($id-1));
+					return $output;
 				}
 				else {
-					// var_dump('5');
 					$stack->increment($queue."_tail");
 					return FALSE;
 				} 

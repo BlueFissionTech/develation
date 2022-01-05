@@ -50,5 +50,9 @@ class Queue implements IQueue {
 	public static function enqueue($queue, $item) {
 		$stack = self::instance();
 		$stack[$queue][] = $item;
-	}	
+	}
+
+	public static function setMode( $mode ) {
+		self::$_mode = $mode;
+	}
 }
