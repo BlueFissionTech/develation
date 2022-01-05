@@ -33,7 +33,7 @@ class Queue implements IQueue {
 
 	public static function dequeue($queue, $after_id=false, $till_id=false) {
 		$stack = self::instance();
-
+		var_dump($stack);
 		if($after_id === false && $till_id === false) {
 			if ( self::$_mode == static::FILO ) {
 				$item = array_shift( $stack[$queue] );
@@ -49,6 +49,7 @@ class Queue implements IQueue {
 	}
 	
 	public static function enqueue($queue, $item) {
+		var_dump($item);
 		$stack = self::instance();
 		$stack[$queue][] = $item;
 	}	

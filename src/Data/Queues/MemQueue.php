@@ -7,7 +7,7 @@ use Memcached;
 // https://github.com/abhinavsingh/memq
 // http://abhinavsingh.com/memq-fast-queue-implementation-using-memcached-and-php-only/
 
-class MemQueue implements IQueue {
+class MemQueue extends Queue implements IQueue {
 		
 	private static $_stack = NULL;
 
