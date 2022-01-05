@@ -59,23 +59,23 @@ class MemQueue extends Queue implements IQueue {
 
 				$tail = $stack->get($queue."_tail");
 				if(($id = $stack->increment($queue."_head")) === FALSE) {
-					var_dump('1');
+					// var_dump('1');
 					return FALSE;
 				}
 			
 				if($id <= $tail) {
-					var_dump('2');
+					// var_dump('2');
 					return $stack->get($queue."_".($id-1));
 				}
 				else {
-					var_dump('3');
+					// var_dump('3');
 					$stack->decrement($queue."_head");
 					return FALSE;
 				} 
 			} elseif ( self::$_mode == static::FILO ) {
 				$head = $stack->get($queue."_head");
 				if(($id = $stack->decrement($queue."_tail")) === FALSE) {
-					var_dump('4');
+					// var_dump('4');
 					return FALSE;
 				}
 			
@@ -83,7 +83,7 @@ class MemQueue extends Queue implements IQueue {
 					return $stack->get($queue."_".($id-1));
 				}
 				else {
-					var_dump('5');
+					// var_dump('5');
 					$stack->increment($queue."_tail");
 					return FALSE;
 				} 
