@@ -572,7 +572,7 @@ class Application extends Programmable {
 
 	static function makeInstance( string $class )
 	{
-		$app = Application::instance();
+		$app = self::instance();
 		return $app->getDynamicInstance($class);
 	}
 
