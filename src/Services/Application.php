@@ -570,7 +570,13 @@ class Application extends Programmable {
 		}
 	}
 
-	private function getDynamicInstance(string $class )
+	static function makeInstance( string $class )
+	{
+		$app = Application::instance();
+		return $app->getDynamicInstance($class);
+	}
+
+	public function getDynamicInstance(string $class )
 	{
 		$constructor = new \ReflectionMethod($class, '__construct');
 

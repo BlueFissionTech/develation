@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use BlueFission\DevValue;
 use BlueFission\DevArray;
 
+// https://www.php.net/manual/en/class.ds-vector.php
 class Collection extends DevArray implements ICollection, ArrayAccess, IteratorAggregate {
 	protected $_value;
 	protected $_type = "";
