@@ -12,11 +12,11 @@ class MysqlScaffold implements IScaffold {
 		$this->_mysql->run($query);
 	}
 
-	public alter( $entity, callable $processor ) {
+	public function alter( $entity, callable $processor ) {
 
 	}
 
-	public delete( $entity ) {
+	public function delete( $entity ) {
 
 	}	
 }
