@@ -1,7 +1,7 @@
 <?php
 namespace BlueFission\Data\Storage\Structure;
 
-class MysqlStructure {
+class MysqlStructure extends Structure {
 	protected $_fields = [];
 	protected $_comment;
 	protected $_query = [];
