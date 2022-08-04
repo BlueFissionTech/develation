@@ -29,9 +29,22 @@ class Mapping {
 		return $mapping;
 	}
 
+	static public function crud($root, $package, $controller, $idField, $gateway = '')
+	{
+		$name = str_replace(['/','-','_'], ['.','.','.'], $root.$package);
+
+		self::add($root.$package, [$controller, 'index'], $name, 'get')->gateway($gateway);
+		self::add($root.$package."/$".$idField, [$controller, 'find'], $name.'.get', 'get')->gateway($gateway);
+		self::add($root.$package, [$controller, 'save'], $name.'.save', 'post')->gateway($gateway);
+		self::add($root.$package."/$".$idField, [$controller, 'update'], $name.'.update', 'post')->gateway($gateway);
+		// self::add($root.$package."/$".$idField, [$controller, 'delete'], $name.'.delete', 'get')->gateway($gateway);
+	}
+
 	public function gateway( $gateway )
 	{
-		$this->_gateways[] = $gateway;
+		if ( $gateway) {
+			$this->_gateways[] = $gateway;
+		}
 
 		return $this;
 	}
