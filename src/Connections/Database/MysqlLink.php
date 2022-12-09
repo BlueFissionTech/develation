@@ -22,6 +22,7 @@ class MysqlLink extends Connection implements IConfigurable
 		'password'=>'',
 		'database'=>'',
 		'table'=>'',
+		'port'=>'',
 		'key'=>'_rowid',
 		'ignore_null'=>false,
 	);
@@ -43,11 +44,12 @@ class MysqlLink extends Connection implements IConfigurable
 		$username = $this->config('username');
 		$password = $this->config('password');
 		$database = $this->config('database');
+		$port = $this->config('port');
 		
 		$connection_id = count(self::$_database);
 		
 		if ( !class_exists('mysqli') ) return;
-		$db = new \mysqli($host, $username, $password, $database);
+		$db = new \mysqli($host, $username, $password, $database, $port);
 		
 		if (!$db->connect_error)
 			self::$_database[$connection_id] = $this->_connection = $db;
