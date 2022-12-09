@@ -139,8 +139,8 @@ class Collection extends DevArray implements ICollection, ArrayAccess, IteratorA
 		return $this->has($this->_iterator->key());
 	}
 
-	public function getIterator() {
-        $this->_iterator = new ArrayIterator($this->_value);
+	public function getIterator() : ArrayIterator {
+        $this->_iterator = $this->_iterator ?? new ArrayIterator($this->_value);
         return $this->_iterator;
     }
 
