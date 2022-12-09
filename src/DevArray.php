@@ -127,14 +127,14 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 			return false;
 	}
 
-	public function offsetExists ( $offset ) {
+	public function offsetExists ( $offset ) : bool {
 		return isset( $this->_data[$offset] );
 	}
-	public function offsetGet ( $offset ) {
+	public function offsetGet ( $offset ) : mixed {
 		return $this->get( $offset );
 
 	}
-	public function offsetSet ( $offset, $value ) {
+	public function offsetSet ( $offset, $value ) : void {
 		if (is_null($offset)) {
 			while (array_key_exists($offset, $this->_data) || !$offset) {
 				$offset = count($this->_data);
@@ -142,7 +142,7 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 		}
 		$this->set($offset, $value);
 	}
-	public function offsetUnset ( $offset ) {
+	public function offsetUnset ( $offset ) : void {
 		if ( $this->offsetExists ( $offset ) )
 			unset( $this->_data[$offset] );
 	}

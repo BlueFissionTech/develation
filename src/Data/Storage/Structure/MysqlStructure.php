@@ -6,6 +6,7 @@ class MysqlStructure extends Structure {
 	protected $_comment;
 	protected $_query = [];
 	protected $_definitions = [];
+	protected $_extras = [];
 	protected $_additions = [];
 
 	const NUMERIC_FIELD = 'numeric';
@@ -20,7 +21,8 @@ class MysqlStructure extends Structure {
 
 	private function newField($name, $type, $size = null)
 	{
-		$field = new Field($name)->type($type)->size($size);
+		$field = new MysqlField($name);
+		$field->type($type)->size($size);
 		$this->_fields[$name] = $field;
 
 		return $field;
@@ -30,10 +32,14 @@ class MysqlStructure extends Structure {
 		$this->_comment = $text;
 	}
 
+	public function primary($name, $size = 11)
+	{
+		$this->numeric($name, 11)->primary();
+	}
+
 	public function incrementer($name, $size = 11)
 	{
-		$this->numeric($name, 11);
-		$this->primary($name);
+		$this->numeric($name, 11)->primary()->autoincrement();
 	}
 
 	public function numeric($name, $size = 11)
@@ -56,21 +62,6 @@ class MysqlStructure extends Structure {
 		return $this->newField($name, self::DATETIME_FIELD);
 	}
 
-	// public function primary($name)
-	// {
-	// 	$this->_fields[$name]->primary();
-	// }
-
-	// public function unique($name)
-	// {
-	// 	$this->_fields[$name]->unique();
-	// }
-
-	// public function foreign($name, )
-	// {
-	// 	$this->_fields[$name]->foreign($entity, $onField);
-	// }
-
 	public function timestamps()
 	{
 		$this->datetime('created');
@@ -80,12 +71,33 @@ class MysqlStructure extends Structure {
 	public function build()
 	{
 		foreach ($this->_fields as $field) {
-			$this->_definitions[] = $field->_definition();
-			$this->_additions[] = $field->_additions();
+			$this->_definitions[] = $field->definition();
+			
+			$extras = $field->extras();
+			if ( $extras ) {
+				$this->_extras[] = $extras;
+			}
+			
+			$additions = $field->additions();
+			if ( $additions ) {
+				$this->_additions[] = $additions;
+			}
 		}
 
 		if ( $this->_comment ) {
-			$additions[] = "COMMENTS='{$this->_comment}'";
+			$this->_additions[] = "COMMENT='".addslashes($this->_comment)."'";
 		}
+
+		$definitions = array_merge($this->_definitions, $this->_extras);
+
+		$this->_query[] = "(". implode(",\n", $definitions) . ")";
+
+		$this->_query = array_merge($this->_query, $this->_additions);
+		
+		$query = implode("\n", $this->_query);
+
+		$query .= ';';
+
+		return $query;
 	}
 }

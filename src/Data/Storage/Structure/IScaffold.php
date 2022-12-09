@@ -2,7 +2,7 @@
 namespace BlueFission\Data\Storage\Structure;
 
 interface IScaffold {
-	public function create( $entity, callable $processor );
-	public function alter( $entity, callable $processor );
-	public function delete( $entity );
+	static function create( $entity, callable $processor );
+	static function alter( $entity, callable $processor );
+	static function delete( $entity );
 }

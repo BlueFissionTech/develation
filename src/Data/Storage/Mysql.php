@@ -161,8 +161,12 @@ class Mysql extends Storage implements IData
 
 			$status = $success ? self::STATUS_SUCCESS : $db->status();
 			$this->status( $status );
-			if (!$success)
+			if (!$success) {
 				return false;
+			} else {
+				$this->id($this->lastRow());
+				return true;
+			}
 		}
 	}
 
@@ -952,6 +956,11 @@ class Mysql extends Storage implements IData
 							elseif ( $condition_str == 'likE' || $condition_str == '$' ) 
 							{
 								$a = "%$a";
+								$condition_str = "LIKE";
+							}
+							elseif ( $condition_str == 'like' || $condition_str == '?' ) 
+							{
+								$a = "$a";
 								$condition_str = "LIKE";
 							}
 							elseif ( strtoupper( $condition_str ) == 'LIKE' || $condition_str == "*" ) 

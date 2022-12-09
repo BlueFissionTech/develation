@@ -4,19 +4,31 @@ namespace BlueFission\Data\Storage\Structure;
 use BlueFission\Data\Storage\Mysql;
 
 class MysqlScaffold implements IScaffold {
-	public function create( $entity, callable $processor ) {
-		$structure = new Structure($entity);
+	static function create( $entity, callable $processor ) {
+
+		$refFunction = new \ReflectionFunction($processor);
+		$parameters = $refFunction->getParameters();
+		$type = $parameters[0]->getType()->getName() ?? Structure::class;
+
+		$structure = new $type($entity);
 		call_user_func_array($processor, [$structure]);
 		$query = $structure->build();
 
-		$this->_mysql->run($query);
+		$mysql = new Mysql();
+		$mysql->activate();
+		$mysql->run($query);
+		print( "Creating {$entity}. " . $mysql->status(). "\n");
 	}
 
-	public function alter( $entity, callable $processor ) {
+	static function alter( $entity, callable $processor ) {
 
 	}
 
-	public function delete( $entity ) {
-
+	static function delete( $entity ) {
+		$query = "DROP TABLE IF EXISTS `{$entity}`";
+		$mysql = new Mysql();
+		$mysql->activate();
+		$mysql->run($query);
+		print( "Dropping {$entity}. " . $mysql->status(). "\n");
 	}	
 }

@@ -181,13 +181,13 @@ class MysqlLink extends Connection implements IConfigurable
 			$temp_values = array();
 			
 			//turn array to string
-			$field_string = implode( ', ', array_keys($data));
+			$field_string = implode( '`, `', array_keys($data));
 			//prepare each value for input
 			foreach ($data as $a) array_push($temp_values, self::sanitize($a));
 			
 			$value_string = implode(', ', $temp_values);
 			
-			$query = "INSERT INTO `".$table."`(".$field_string.") VALUES(".$value_string.")";
+			$query = "INSERT INTO `".$table."`(`".$field_string."`) VALUES(".$value_string.")";
 
 			$this->_query = $query;
 
@@ -237,7 +237,7 @@ class MysqlLink extends Connection implements IConfigurable
 				{
 					$temp_values[$count] = $this->getExistingValueIfNull($table, $a, $temp_values[$count], $where);
 				}
-				array_push($updates, $a ."=". $temp_values[$count]);
+				array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
 				$count++;
 			}
 	
@@ -394,8 +394,10 @@ class MysqlLink extends Connection implements IConfigurable
 		$db = end ( self::$_database );
 		//Create regular expression patterns
 		$pattern = array( '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' );
-		$replacement = array( '&#39;', '\'$1\'', '$3-$1-$2', '\'$1\'', '&#36;', 'NULL' );
-		if ($datetime === true) $replacement = array( '&#39;', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '&#36;', 'NULL' );
+		// $replacement = array( '&#39;', '\'$1\'', '$3-$1-$2', '\'$1\'', '&#36;', 'NULL' );
+		// if ($datetime === true) $replacement = array( '&#39;', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '&#36;', 'NULL' );
+		$replacement = array( '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', 'NULL' );
+		if ($datetime === true) $replacement = array( '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', 'NULL' );
 		
 		$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
 		

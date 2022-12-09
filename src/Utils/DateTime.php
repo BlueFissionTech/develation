@@ -16,7 +16,7 @@ class DateTime extends Configurable
 {
 	protected $_data = array('second'=>'', 'minute'=>'', 'hour'=>'', 'day'=>'', 'month'=>'', 'year'=>'', 'timezone'=>'', 'offset'=>'');
 	protected $_config = array('date_format'=>'Y-m-d',
-			'date_format_long'=>'M, Y', 
+			'date_format_long'=>'l jS \o\f F Y', 
 			'time_format'=>'r',
 			'time_format_long'=>'H:i:sa T',
 			'timezone' => 'America/New_York',

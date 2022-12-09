@@ -1,6 +1,8 @@
 <?php
 namespace BlueFission\Data\Storage\Structure;
 
+use BlueFission\DevString;
+
 class MysqlField {
 
 	private $_name;
@@ -10,7 +12,7 @@ class MysqlField {
 	private $_unique;
 	private $_null;
 	private $_binary;
-	private $_foreign;
+	private $_foreign = [];
 	private $_autoincrement;
 
 	public function __construct($name)
@@ -37,6 +39,13 @@ class MysqlField {
 	public function primary( $isTrue = true)
 	{
 		$this->_primary = $isTrue;
+
+		return $this;
+	}
+
+	public function autoincrement( $isTrue = true)
+	{
+		$this->_autoincrement = $isTrue;
 
 		return $this;
 	}
@@ -92,7 +101,9 @@ class MysqlField {
 			break;
 		}
 
-		$definition[] = "({$this->_size})";
+		if ( $this->_size ) {
+			$definition[] = "({$this->_size})";
+		}
 		
 		if ( !$this->_null ) {
 			$definition[] = "NOT";
@@ -109,38 +120,48 @@ class MysqlField {
 		return $definition_string;
 	}
 
-	public function additions
+	public function extras()
 	{
+		$extras = [];
+
 		if ( $this->_primary ) {
-			$additions[] = "PRIMARY KEY (`{$name}`)";
+			$extras[] = "PRIMARY KEY (`{$this->_name}`)";
+		}
+
+		if ( $this->_unique ) {
+			$extras[] = "UNIQUE INDEX `{$this->_name}_UNIQUE` (`{$this->_name}` ASC) VISIBLE";
 		}
 
 		if ( count($this->_foreign) > 0 ) {
 			foreach ( $this->_foreign as $entity => $values ) {
-				$additions[] = "INDEX `{$name}_idx` (`{$name}` ASC) VISIBLE";
-				$foreign = "CONSTRAINT `{$name}`
-				    FOREIGN KEY (`{$name}`)
-				    REFERENCES `$entity` (`{$values['on']}`)";
+				$extras[] = "INDEX `{$this->_name}_idx` (`{$this->_name}` ASC) VISIBLE";
+				$foreign = "CONSTRAINT `{$this->_name}_".DevString::random(null, 4)."`\n".
+				    "FOREIGN KEY (`{$this->_name}`)\n".
+				    "REFERENCES `$entity` (`{$values['on']}`)\n";
 
 				    if ( $values['delete'] ) {
-				    	$foreign .= " ON DELETE CASCADE";
+				    	$foreign .= " ON DELETE CASCADE\n";
 				    }
 
 				    if ( $values['update'] ) {
-				    	$foreign .= " ON UPDATE CASCADE";
+				    	$foreign .= " ON UPDATE CASCADE\n";
 				    }
 
-				$additions[] = $foreign;
+				$extras[] = $foreign;
 			}
 		}
 
-		if ( $this->_unique ) {
-			$additions[] = "UNIQUE INDEX `{$this->_name}_UNIQUE` (`{$this->_name}` ASC) VISIBLE)";
-		}
 
-		// return $additions;
+		$extras_string = implode(",\n", $extras);
 
-		$addition_string = implode(",\n", $addition);
+		return $extras_string;
+	}
+
+	public function additions()
+	{
+		$additions = [];
+
+		$addition_string = implode(",\n", $additions);
 
 		return $addition_string;
 	}
