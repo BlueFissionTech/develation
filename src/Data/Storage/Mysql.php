@@ -865,6 +865,9 @@ class Mysql extends Storage implements IData
 	
 		$condition = $this->condition($member);
 		$condition_str = is_array( $condition ) ? $condition[0] : $condition; 
+		if ($condition_str === null ) {
+			$condition_str = '';
+		}
 		if ( DevValue::isNotEmpty( $this->field($member) ) && array_key_exists($member, $fields) ) 
 		{
 			//Allow for fulltext searches
