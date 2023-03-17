@@ -60,36 +60,10 @@ class Dispatcher extends DevObject {
 	}
 
 	/**
-	 * Adds a behavior to the dispatcher
-	 *
-	 * @param Behavior|string $behavior The behavior to add, can be an instance of Behavior or a string
-	 * @param callback $callback Optional callback to add as a handler for the behavior
-	 * @throws InvalidArgumentException If the provided behavior is not an instance of Behavior or a string
-	 */
-	public function behavior( $behavior, $callback = null ) {
-		if ( is_string($behavior) && DevValue::isNotEmpty($behavior))
-			$behavior = new Behavior($behavior);
-
-		if ( !($behavior instanceof Behavior) ) {
-			throw new InvalidArgumentException("Invalid Behavior Type");
-		}
-			
-		$this->_behaviors->add( $behavior );
-
-		if ( $callback ) {
-			try {
-				$this->handler( new Handler( $behavior, $callback ) );
-			} catch ( InvalidArgumentException $e ) {
-				error_log( $e->getMessage() );
-			}
-		}
-	}
-
-	/**
 	 * Adds a behavior to the behavior collection and creates a callback to trigger the behavior if specified.
 	 * 
-	 * @param mixed $behavior The behavior to be added. Can be a string or an instance of Behavior.
-	 * @param callable|null $callback The callback to trigger the behavior if specified.
+	 * @param Behavior|string $behavior The behavior to be added. Can be a string or an instance of Behavior.
+	 * @param callable|null $callback The callback to trigger the behavior if specified to add as a handler for the behavior.
 	 * 
 	 * @throws InvalidArgumentException if the behavior is not a string or an instance of Behavior.
 	 */
