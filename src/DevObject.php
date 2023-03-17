@@ -1,9 +1,7 @@
 <?php
 namespace BlueFission;
 
-use Serializable;
-
-class DevObject implements IDevObject, Serializable
+class DevObject implements IDevObject
 {
     /**
      * @var array

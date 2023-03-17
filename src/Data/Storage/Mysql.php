@@ -79,8 +79,9 @@ class Mysql extends Storage implements IData
 	 */
 	public function activate()
 	{
-		$this->_source = new MysqlLink();
-		$this->_source->database($this->config('location'));
+		$this->_source = new MysqlLink( );
+		$this->_source->database( $this->config('location') );
+		// load object fields and related data
 		$this->fields();
 		
 		if (!$this->_source) 
@@ -397,7 +398,7 @@ class Mysql extends Storage implements IData
 
 		$this->_result = $result;
 
-		if ($this->_result)	
+		if ($this->_result && is_object($this->_result))	
 		{
 			$data = $this->_result->fetch_assoc();
 			if ( $data )
@@ -1367,9 +1368,9 @@ class Mysql extends Storage implements IData
 		if ( DevValue::isNotNull ($value) )
 		{ 
 			//$db->field($field, $value);
-			$db->query("select from $table where $field = $value");
+			$db->query("select * from `$table` where `$field` = '$value'");
 			$result = $db->result();
-			if ($result && count($result->num_rows > 0)) 
+			if ($result && $result->num_rows > 0) 
 			{
 				return true;
 			}

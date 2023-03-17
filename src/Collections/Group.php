@@ -22,7 +22,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 *
 	 * @var null|string
 	 */
-	private $_type = null;
+	protected $_type = null;
 
 	/**
 	 * Get or set the type of objects stored in the group.

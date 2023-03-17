@@ -102,8 +102,6 @@ class FileSystem extends Data implements IData {
 		$this->close();
 
 		if ($file != '') {
-			if (!$this->exists($path
-
 			if (!$this->exists($path)) $status = "File '$file' does not exist. Creating.\n";
 			
 			if (!$handle = @fopen($path, $this->config('mode'))) {

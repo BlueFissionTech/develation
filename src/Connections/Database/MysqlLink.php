@@ -480,9 +480,11 @@ class MysqlLink extends Connection implements IConfigurable
 		$replacement = array( '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', 'NULL' );
 		if ($datetime === true) $replacement = array( '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', 'NULL' );
 		
-		$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
+		if ($string) {
+			$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
+		}
 		
-		if (strlen($string) <= 0) $string = 'NULL';
+		if ($string == null || strlen($string) <= 0) $string = 'NULL';
 		if ($string == '\'NOW()\'') $string = 'NOW()';
 		
 		return $string;

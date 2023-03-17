@@ -162,6 +162,8 @@ class Application extends Programmable {
 
     private $_conditions = [];
 
+    private $_cmdpath = "";
+
     /**
      * The class constructor
      *
@@ -294,8 +296,8 @@ class Application extends Programmable {
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
 
 			// $mapping = $this->_mappings[$this->_arguments['_method']][$location];
-			$path = $this->returnMatchingUri(array_keys($this->_mappings[$this->_arguments['_method']]));
-			$mapping = $this->_mappings[$this->_arguments['_method']][$path];
+			$this->_cmdpath = $this->returnMatchingUri(array_keys($this->_mappings[$this->_arguments['_method']]));
+			$mapping = $this->_mappings[$this->_arguments['_method']][$this->_cmdpath];
 
 			$request = new Request();
 
@@ -309,7 +311,7 @@ class Application extends Programmable {
 
 			$this->_operation = $this->prepareCallable($mapping->callable);
 
-			$this->_conditions = array_merge($args['data'], $uri->buildArguments($path) );
+			$this->_conditions = array_merge($args['data'], $uri->buildArguments($this->_cmdpath) );
 		}
 
 		return $this;
@@ -322,6 +324,7 @@ class Application extends Programmable {
 	 */
 	public function run() {
 		$args = array_slice($this->_arguments, 1);
+		$behavior = $args['behavior'];
 
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
 			// TODO make this more elegant
@@ -336,7 +339,7 @@ class Application extends Programmable {
 
 			$result = $this->executeServiceMethod($this->_operation, $this->_conditions);
 
-			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($path, $this->_arguments['_method']) ?? $path);
+			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($this->_cmdpath, $this->_arguments['_method']) ?? $this->_cmdpath);
 
 			print($result);
 		}
