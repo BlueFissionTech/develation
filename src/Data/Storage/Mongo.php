@@ -4,21 +4,39 @@ namespace BlueFission\Data\Storage;
 
 use BlueFission\Connections\Database\MongoLink;
 
+/**
+ * Class Mongo
+ *
+ * A Mongo storage class for accessing MongoDB databases.
+ */
 class Mongo extends Storage {
 
-	// private $_database;
+	/**
+	 * @var string $_collection The name of the collection in the MongoDB database.
+	 */
 	private $_collection;
 
+	/**
+	 * @var array $_config The configuration options for the Mongo storage class.
+	 */
 	protected $_config = array( 
 		'location'=>'',
 		'name'=>'',
 	);
 	
+	/**
+	 * Mongo constructor.
+	 *
+	 * @param null $config The configuration options for the Mongo storage class.
+	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
 	}
 	
+	/**
+	 * Activates the Mongo storage class and sets up the connection to the MongoDB database.
+	 */
 	public function activate( )
 	{
 		$this->_source = new MongoLink();
@@ -32,6 +50,9 @@ class Mongo extends Storage {
 			$this->status( self::STATUS_FAILED_INIT );
 	}
 
+	/**
+	 * Reads data from the MongoDB database.
+	 */
 	public function read() {
 		$db = $this->_source;
 
@@ -53,6 +74,9 @@ class Mongo extends Storage {
 		}
 	}
 
+	/**
+	 * Deletes data from the MongoDB database.
+	 */
 	public function delete() {
 		$db = $this->_source;
 
@@ -72,7 +96,11 @@ class Mongo extends Storage {
 		}
 	}
 
+	/**
+	 * Writes data to the MongoDB database.
+	 */
 	public function write() {
+	
 		$db = $this->_source;
 
 		if ($db) {
@@ -95,12 +123,29 @@ class Mongo extends Storage {
 		// $this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 	}
 
+	/**
+	 * Performs map-reduce operation on Mongo database.
+	 * 
+	 * @param string $map The map function.
+	 * @param string $reduce The reduce function.
+	 * @param string $output The output function.
+	 * @param string $action The action to be performed on map-reduce operation.
+	 * 
+	 * @return mixed Result of the map-reduce operation.
+	 */
 	public function mapReduce($map, $reduce, $output, $action = null) {
 		$db = $this->_source;
 
 		return $db->mapReduce($map, $reduce, $output, $action );
 	}
 
+	/**
+	 * Returns contents of the database.
+	 * 
+	 * @param mixed $data Optional data to be assigned.
+	 * 
+	 * @return mixed Data stored in the database.
+	 */
 	public function contents( $data = null )
 	{
 		$data = parent::contents($data);
@@ -110,4 +155,5 @@ class Mongo extends Storage {
 			return $data;
 		}
 	}
+
 }

@@ -6,73 +6,110 @@ use BlueFission\DevArray;
 use BlueFission\HTML\Table;
 use BlueFission\Behavioral\Configurable;
 
-// @include_once('Loader.php');
-// $loader = BlueFission\Loader::instance();
-// $loader->load('com.bluefission.develation.functions.common');
-// $loader->load('com.bluefission.develation.functions.html');
-// $loader->load('com.bluefission.develation.Configurable');
-
 class DateTime extends Configurable
 {
-	protected $_data = array('second'=>'', 'minute'=>'', 'hour'=>'', 'day'=>'', 'month'=>'', 'year'=>'', 'timezone'=>'', 'offset'=>'');
-	protected $_config = array('date_format'=>'Y-m-d',
-			'date_format_long'=>'l jS \o\f F Y', 
-			'time_format'=>'r',
-			'time_format_long'=>'H:i:sa T',
-			'timezone' => 'America/New_York',
-			'calendar_start_day'=>'Sunday',
-			'full_date'=>true,
-			'full_time'=>true,
-		);
+    // protected properties to store date and time information and configuration
+    protected $_data = [
+        'second'=>'', 
+        'minute'=>'', 
+        'hour'=>'', 
+        'day'=>'', 
+        'month'=>'', 
+        'year'=>'', 
+        'timezone'=>'', 
+        'offset'=>''
+    ];
+    protected $_config = [
+        'date_format'=>'Y-m-d',
+        'date_format_long'=>'l jS \o\f F Y', 
+        'time_format'=>'r',
+        'time_format_long'=>'H:i:sa T',
+        'timezone' => 'America/New_York',
+        'calendar_start_day'=>'Sunday',
+        'full_date'=>true,
+        'full_time'=>true,
+    ];
 
-	public function __construct( $data = null )
-	{	
-		parent::__construct();
-		if (DevValue::isNotNull($data))
-		{
-			if ( is_array($data)) {
-				$this->config($data);
-			}
-			elseif ( $this->stringIsDate($data)) {
-				$this->date($data);
-			}
-			elseif ( is_int($data ))
-			{
-				$data = $this->timestamp($data);
-				$this->_data = $this->info( $data );
-			}
-			else 
-			{
-				$data = $this->timestamp( strtotime($data) );
-				$this->_data = $this->info( $data );
-			}
-		}
-		else
-		$this->date( date( $this->config('date_format') ) );
+    /**
+     * Constructor function
+     * @param mixed $data, either an array with configuration settings, a date string, or a timestamp
+     */
+    public function __construct( $data = null )
+    {   
+        // call the parent construct method
+        parent::__construct();
+
+        // if data is not null, process it
+        if (DevValue::isNotNull($data))
+        {
+            if ( is_array($data)) {
+                // if data is an array, it is assumed to be configuration settings
+                $this->config($data);
+            }
+            elseif ( $this->stringIsDate($data)) {
+                // if data is a date string, call the date method
+                $this->date($data);
+            }
+            elseif ( is_int($data ))
+            {
+                // if data is a timestamp, call the timestamp method
+                $data = $this->timestamp($data);
+                // call the info method
+                $this->_data = $this->info( $data );
+            }
+            else 
+            {
+                // if data is not a timestamp, assume it's a date string
+                $data = $this->timestamp( strtotime($data) );
+                // call the info method
+                $this->_data = $this->info( $data );
+            }
+        }
+        else
+        {
+            // if data is null, call the date method with the current date
+            $this->date( date( $this->config('date_format') ) );
+        }
+    }
+    
+    /**
+     * Get or set value of a field
+     * @param string $field, the field name
+     * @param mixed $value, the value to be set
+     * @return mixed, the value of the field
+     */
+    public function field($field, $value = null)
+    {
+        if ( !array_key_exists( $field, $this->_data ) )
+            return null;
+        
+        $value = parent::field($field, $value);
+        
+        return $value;
 	}
 	
-	public function field($field, $value = null)
-	{
-		if ( !array_key_exists( $field, $this->_data ) )
-			return null;
-		
-		$value = parent::field($field, $value);
-		
-		return $value;
-	}
-	
+	/**
+	 * Returns the timestamp value of the date and time represented by the current instance
+	 * @param $data - optional timestamp value, if passed, it will set the timestamp of the current instance
+	 * @return int - timestamp value
+	 */
 	public function timestamp( $data = null )
 	{
-		if (DevValue::isNull($data))
-			return mktime ((int)$this->field('hour'), (int)$this->field('minute'), (int)$this->field('second'), (int)$this->field('month'), (int)$this->field('day'), (int)$this->field('year'));
-		elseif (is_numeric($data))
-			$timestamp = $data;
-		else 
-			$timestamp = strtotime($data);
+	    if (DevValue::isNull($data))
+	        return mktime ((int)$this->field('hour'), (int)$this->field('minute'), (int)$this->field('second'), (int)$this->field('month'), (int)$this->field('day'), (int)$this->field('year'));
+	    elseif (is_numeric($data))
+	        $timestamp = $data;
+	    else 
+	        $timestamp = strtotime($data);
 
-		return $timestamp;
+	    return $timestamp;
 	}
 
+	/**
+	 * Returns an array of information about a given date or the current date
+	 * @param  mixed $datetime A valid datetime string or a timestamp
+	 * @return array  An array of information about the date
+	 */
 	public function info($datetime = null) 
 	{
 		if (DevValue::isNull($datetime))
@@ -140,6 +177,12 @@ class DateTime extends Configurable
 		return $date;
 	}
 	
+	/**
+	 * Generate a month array with events
+	 *
+	 * @param array|null $events Array of events to be added to the month
+	 * @return array The month array with events
+	 */
 	public function month($events = null) {
 		$date = $this->info();
 		$event_r = DevArray::toArray($events);
@@ -158,6 +201,12 @@ class DateTime extends Configurable
 		return $month;
 	}
 	
+	/**
+	 * Generate a calendar table with events
+	 *
+	 * @param array|null $events Array of events to be added to the calendar
+	 * @return string The rendered calendar table
+	 */
 	public function calendar( $events = null)
 	{
 		$table = new Table();
@@ -168,6 +217,14 @@ class DateTime extends Configurable
 		return $output;
 	}
 	
+	/**
+	 * Get the time
+	 *
+	 * @param int|null $hours Hours to set
+	 * @param int|null $minutes Minutes to set
+	 * @param int|null $seconds Seconds to set
+	 * @return string The formatted time
+	 */
 	public function time()
 	{
 		$arg_count = func_num_args();
@@ -197,6 +254,14 @@ class DateTime extends Configurable
 		return $time;
 	}
 
+	/**
+	 * Get the date
+	 *
+	 * @param string|null $date Date string in the format specified in config
+	 * @param int|null $month Month to set
+	 * @param int|null $day Day to set
+	 * @return string The formatted date
+	 */
 	public function date()
 	{
 		$arg_count = func_num_args();
@@ -247,6 +312,15 @@ class DateTime extends Configurable
 		return $date;
 	}
 	
+	/**
+	 * Calculates the difference between two times
+	 *
+	 * @param string $time1 The first time
+	 * @param string $time2 The second time
+	 * @param string $interval The interval to measure the difference in, defaults to 'seconds'
+	 *
+	 * @return float The difference between the two times
+	 */
 	public static function difference($time1, $time2, $interval = null) 
 	{
 		if (DevValue::isNull($interval)) $interval = 'seconds';
@@ -278,6 +352,13 @@ class DateTime extends Configurable
 		return $output;
 	}
 	
+	/**
+	 * Determines if a given string is a date
+	 *
+	 * @param string $string The string to check
+	 *
+	 * @return bool True if the string is a date, false otherwise
+	 */
 	public static function stringIsDate($string) 
 	{
 		return preg_match('/^(\d{4}\-\d+\-\d+|\d+\/\d+\/\d{4})/', $string);

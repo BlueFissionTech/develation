@@ -1,19 +1,47 @@
 <?php
+
 namespace BlueFission\Services;
 
 use BlueFission\Net\HTTP;
 
+/**
+ * Class Uri
+ *
+ * This class provides functionality for parsing and matching URLs.
+ *
+ * @package BlueFission\Services
+ */
 class Uri {
+	/**
+	 * The path of the URL.
+	 *
+	 * @var string
+	 */
 	public $path;
+
+	/**
+	 * The parts of the URL path.
+	 *
+	 * @var array
+	 */
 	public $parts;
 
+	/**
+	 * The token used to denote a value in the URL path.
+	 *
+	 * @var string
+	 */
 	private $_valueToken = '$';
 
+	/**
+	 * Uri constructor.
+	 *
+	 * @param string $path The URL path to parse. If not provided, the current URL will be used.
+	 */
 	public function __construct( string $path = '' ) 
 	{
 		$url = $path != '' ? $path : HTTP::url();
 
-		
 		$request = trim(parse_url($url, PHP_URL_PATH), '/');
 		$this->path = $request;
 
@@ -21,6 +49,13 @@ class Uri {
 		$this->parts = $request_parts;
 	}
 
+	/**
+	 * Matches a test URI against the current URL path.
+	 *
+	 * @param string $testUri The URI to test against.
+	 *
+	 * @return bool Returns true if the test URI matches the current URL path, false otherwise.
+	 */
 	public function match( $testUri )
 	{
 		$cleanTestUri = trim($testUri, '/');
@@ -43,6 +78,13 @@ class Uri {
 		return false;
 	}
 
+	/**
+	 * Matches a test URI against the current URL path and returns the test URI if it matches.
+	 *
+	 * @param string $testUri The URI to test against.
+	 *
+	 * @return string|bool Returns the test URI if it matches the current URL path, false otherwise.
+	 */
 	public function matchAndReturn( $testUri )
 	{
 		$cleanTestUri = trim($testUri, '/');
@@ -65,6 +107,12 @@ class Uri {
 		return false;
 	}
 
+	/**
+	 * Build the arguments based on the uri signature
+	 *
+	 * @param string $uriSignature
+	 * @return array
+	 */
 	public function buildArguments( $uriSignature )
 	{
 		$arguments = [];
@@ -84,6 +132,13 @@ class Uri {
 		return $arguments;
 	}
 
+	/**
+	 * Compare the parts of the uri
+	 *
+	 * @param string $firstPart
+	 * @param string $secondPart
+	 * @return boolean
+	 */
 	private function compare_parts($firstPart, $secondPart)
 	{
 		if ( $firstPart == $secondPart ) {
@@ -96,4 +151,5 @@ class Uri {
 
 		return false;
 	}
+
 }

@@ -2,15 +2,27 @@
 
 class Async extends Programmable {
 
+	/**
+	 * Configuration array
+	 *
+	 * @var array
+	 */
 	private $_config = array(
 		'location'=>'.',
 		'interpreter'=>'/usr/bin/php',
 		'memory'=>pow(1024,2),
-		);
+	);
 
+	/**
+	 * Post data to a URL
+	 *
+	 * @param string $url The URL to post to
+	 * @param array $params An array of data to post
+	 *
+	 * @return void
+	 */
 	public function post($url, array $params)
 	{
-
 		$url = $this->config('location');
 		$params = $this->_data;
 
@@ -37,10 +49,20 @@ class Async extends Programmable {
 	    fclose($fp);
 	}
 
+	/**
+	 * Queue data for later processing
+	 *
+	 * @return void
+	 */
 	public function queue() {
 
 	}
 
+	/**
+	 * Execute the command in a shell
+	 *
+	 * @return void
+	 */
 	public function shell() {
 		set_time_limit(0);
 		$interpreter = $this->config('interpreter');
@@ -49,6 +71,11 @@ class Async extends Programmable {
 		$pid = shell_exec($cmd);
 	}
 
+	/**
+	 * Spawn a child process
+	 *
+	 * @return void
+	 */
 	public function child() {
 		if (! function_exists('pcntl_fork')) return;
 
@@ -72,7 +99,16 @@ class Async extends Programmable {
 
 	// Thanks to kenneth at fellowrock dot com
 	// https://secure.php.net/manual/en/function.pcntl-fork.php#115855
-	function fork($options) 
+	/**
+	 * Executes multiple processes concurrently by forking the process.
+	 *
+	 * @param array $options The options for the forking process.
+	 *   - process: An array of functions to be executed concurrently.
+	 *   - size: The size of the shared memory block for each function.
+	 *   - callback: A function to be executed after all the processes are finished.
+	 * @return void
+	 */
+	public function fork($options) 
 	{
 		if (! function_exists('pcntl_fork')) return;
 	    $shared_memory_monitor = shmop_open(ftok(__FILE__, chr(0)), "c", 0644, count($options['process']));

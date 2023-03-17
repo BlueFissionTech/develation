@@ -5,9 +5,22 @@ use BlueFission\DevValue;
 use BlueFission\DevArray;
 use BlueFission\Behavioral\Configurable;
 
+/**
+ * Class Table
+ *
+ * This class extends the Configurable class and outputs a standard HTML content box
+ *
+ * @package BlueFission\HTML
+ */
 class Table extends Configurable {
+	/**
+	 * @var array $_content Stores the content of the table
+	 */
 	protected $_content;
 
+	/**
+	 * @var array $_config The default configuration options for the table
+	 */
 	protected $_config = array(
 		'columns'=>'',
 		'href'=>'',
@@ -23,10 +36,22 @@ class Table extends Configurable {
 		'fields'=>array(),
 	);
 
+	/**
+	 * Table constructor
+	 *
+	 * @param null $config Configuration options for the table
+	 */
 	public function __construct( $config = null ) {
 		parent::__construct( $config );
 	}
 
+	/**
+	 * Get or set the content of the table
+	 *
+	 * @param null $content The new content of the table
+	 *
+	 * @return mixed The content of the table
+	 */
 	public function content( $content = null ) {
 		if (DevValue::isNotNull($content)) {
 			$content = DevArray::toArray($content);
@@ -35,7 +60,11 @@ class Table extends Configurable {
 		return $this->_content;
 	}
 
-	//outputs standard html content box
+	/**
+	 * Render the HTML table
+	 *
+	 * @return string The HTML content of the table
+	 */
 	public function render() {
 		$header = $this->config('headers');
 		$trunc = $this->config('truncate');

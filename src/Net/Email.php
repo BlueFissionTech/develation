@@ -1,49 +1,119 @@
 <?php
 namespace BlueFission\Net;
 
-use BlueFission;
+use BlueFission\Behavioral\Configurable;
+use BlueFission\DevValue;
+use BlueFission\DevArray;
 
-@include_once('Loader.php');
-$loader = BlueFission\Loader::instance();
-$loader->load('com.bluefission.behavioral.Configurable');
-
-class Email extends Configurable 
+/**
+ * Class Email
+ * 
+ * @package BlueFission\Net
+ */
+class Email extends Configurable
 {
-	protected $_config = array('sender' => '', 
-		'html'=>false, 
-		'eol' => "\r\n",
-	);
+    /**
+     * An array that stores the email configurations.
+     * 
+     * @var array
+     */
+    protected $_config = array(
+        'sender' => '',
+        'html'=>false,
+        'eol' => "\r\n",
+    );
 
-	private $_headers = array();
-	private $_attachments = array();
-	private $_recipients = array();
+    /**
+     * An array that stores the email headers.
+     * 
+     * @var array
+     */
+    private $_headers = array();
 
-	static $DEFAULT = 'default';
-	static $CC = 'cc';
-	static $BCC = 'bcc';
-	
-	protected $_data = array( 
-		'from'=>'', 
-		'message'=>'', 
-		'subject'=>'',
-	);
+    /**
+     * An array that stores the email attachments.
+     * 
+     * @var array
+     */
+    private $_attachments = array();
 
-	function __construct($rcpt = '', $from = '', $subject = '', $message = '', $cc = '', $bcc = '', $html = false, $headers_r = '', $additional = '', $attachments = '') {
-		//Prepare addresses
-		$this->recipients($rcpt);
-		$this->recipients($cc, self::$CC);
-		$this->recipients($bcc, self::$BCC);
-		$this->from( $from );
-		$this->subject( $subject );
-		$this->message( $message );
-		$this->headers( $headers_r );
-	}
+    /**
+     * An array that stores the email recipients.
+     * 
+     * @var array
+     */
+    private $_recipients = array();
 
+    /**
+     * A constant to represent default recipients.
+     * 
+     * @var string
+     */
+    static $DEFAULT = 'default';
+
+    /**
+     * A constant to represent CC recipients.
+     * 
+     * @var string
+     */
+    static $CC = 'cc';
+
+    /**
+     * A constant to represent BCC recipients.
+     * 
+     * @var string
+     */
+    static $BCC = 'bcc';
+
+    /**
+     * An array that stores the email data such as 'from', 'message', 'subject'.
+     * 
+     * @var array
+     */
+    protected $_data = array(
+        'from'=>'',
+        'message'=>'',
+        'subject'=>'',
+    );
+
+    /**
+     * Constructor function to initialize email data such as recipients, from, subject, message, cc, bcc, html, headers_r, additional and attachments.
+     * 
+     * @param string $recipient
+     * @param string $from
+     * @param string $subject
+     * @param string $message
+     * @param string $cc
+     * @param string $bcc
+     * @param bool $html
+     * @param string $headers_r
+     * @param string $additional
+     * @param string $attachments
+     */
+    public function __construct($recipient = null, $from = null, $subject = null, $message = null, $cc = null, $bcc = null, $html = false, $headers_r = null, $additional = null, $attachments = null)
+    {
+        //Prepare addresses
+        $this->recipients($recipient);
+        $this->recipients($cc, self::$CC);
+        $this->recipients($bcc, self::$BCC);
+        $this->from( $from );
+        $this->subject( $subject );
+        $this->message( $message );
+        $this->headers( $headers_r );
+    }
+
+    /**
+     * A private function to set or get the value of an email data field.
+     * 
+     * @param string $field
+     * @param null $value
+     * @return mixed
+     */
 	private function field($field, $value = null)
 	{
 		if ( !array_key_exists( $field, $this->_data ) )
 			return null;
-		if ( dev_not_null($value) ) 
+		if ( DevValue:isNotNull($value) ) 
 		{
 			$this->_data[$field] = $value;
 		}
@@ -54,14 +124,22 @@ class Email extends Configurable
 		return $value;
 	}
 
+	/**
+	 * headers - retrieves or sets the headers
+	 * 
+	 * @param mixed $input  the header name or an array of headers to set
+	 * @param mixed $value  the value of the header
+	 * 
+	 * @return mixed the headers if $input is not provided, the value of the header if $value is not provided, or null if the header does not exist
+	 */
 	public function headers( $input = null, $value = null )
 	{
-		if (dev_is_null ($input))
+		if (DevValue::isNull ($input))
 			return $this->_headers;
 		elseif (is_string($input))
 		{
-			if (dev_is_null ($value))
-				return isset($this->_headers[$input]) ? $this->_headers[$input] : null;
+			if (DevValue::isNull ($value))
+				return isset($this->_headers[$input]) ? $this->_headers[$input] : false;
 			$this->_headers[$input] = self::sanitize($value); 
 		}
 		elseif (is_array($input))
@@ -71,13 +149,21 @@ class Email extends Configurable
 		}
 	}
 
+	/**
+	 * attach - retrieves or sets the attachments
+	 * 
+	 * @param mixed $input  the attachment name or an array of attachments to set
+	 * @param mixed $value  the value of the attachment
+	 * 
+	 * @return mixed the attachments if $input is not provided, the value of the attachment if $value is not provided, or null if the attachment does not exist
+	 */
 	public function attach( $input = null, $value = null )
 	{
-		if (dev_is_null ($input))
+		if (DevValue::isNull ($input))
 			return $this->_attachments;
 		elseif (is_string($input))
 		{
-			if (dev_is_null ($value))
+			if (DevValue::isNull ($value))
 				return isset($this->_attachments[$input]) ? $this->_attachments[$input] : null;
 			$this->_attachments[$input] = $value; 
 		}
@@ -88,9 +174,17 @@ class Email extends Configurable
 		}
 	}
 
+	/**
+	 * recipients - retrieves or sets the recipients
+	 * 
+	 * @param mixed $value  the value of the recipient
+	 * @param mixed $type   the type of the recipient
+	 * 
+	 * @return mixed the recipients if $value is not provided, or the value of the recipient if it exists, or an empty array if it does not
+	 */
 	public function recipients($value = null, $type = null)
 	{
-		if (dev_is_null($value))
+		if (DevValue::isNull($value))
 			return $this->_recipients;
 			
 		$type = $type ? $type : self::$DEFAULT;
@@ -98,54 +192,105 @@ class Email extends Configurable
 		$this->_recipients[$type] = ( isset($this->_recipients[$type]) && count( $this->_recipients[$type] ) > 0 ) ? array_merge( $this->_recipients[$type], $value ) : $value;	 
 	}
 	
+	/**
+	 * Get recipients based on the type provided or default type.
+	 * 
+	 * @param string|null $type Type of recipients to get
+	 * 
+	 * @return array Array of recipients
+	 */
 	private function getRecipients( $type = null )
 	{
-		$type = (dev_is_null($type)) ? self::$DEFAULT : $type;
-		return isset($this->_recipients[$type]) ? $this->_recipients[$type] : array();
+	    $type = (DevValue::isNull($type)) ? self::$DEFAULT : $type;
+	    return isset($this->_recipients[$type]) ? $this->_recipients[$type] : array();
 	}
-	
+
+	/**
+	 * Set the 'From' field of the email.
+	 * 
+	 * @param string|null $value Email address to set as the 'From' field
+	 * 
+	 * @return string|false Returns the 'From' field if set, otherwise returns the default sender address
+	 */
 	public function from($value = null)
 	{
-		if ( (dev_not_null($value)) && !self::validateAddress($value));
-			return false;
-		$this->field('from', $value);
-		return $this->field('from') ? $this->field('from', $value) : $this->config('sender');
+	    if ( (DevValue:isNotNull($value)) && !self::validateAddress($value));
+	        return false;
+	    $this->field('from', $value);
+	    return $this->field('from') ? $this->field('from', $value) : $this->config('sender');
 	}
-	
+
+	/**
+	 * Set the message content of the email.
+	 * 
+	 * @param string|null $value Message content for the email
+	 * 
+	 * @return string The sanitized message content
+	 */
 	public function message($value = null)
-	{	
-		$value = self::sanitize($value);
-		return $this->field('message', $value);
+	{   
+	    $value = self::sanitize($value);
+	    return $this->field('message', $value);
 	}
-	
+
+	/**
+	 * Set the subject of the email.
+	 * 
+	 * @param string|null $value Subject of the email
+	 * 
+	 * @return string The sanitized subject of the email
+	 */
 	public function subject($value = null)
 	{
-		$value = self::sanitize($value);
-		return $this->field('subject', $value);
+	    $value = self::sanitize($value);
+	    return $this->field('subject', $value);
 	}
-	
+
+	/**
+	 * Set the 'sendHTML' config.
+	 * 
+	 * @param bool|null $value Boolean value to set the 'sendHTML' config
+	 * 
+	 * @return bool The value of the 'sendHTML' config
+	 */
 	public function sendHTML($value = null)
 	{
-		return $this->config('html', $value);
-	}	
+	    return $this->config('html', $value);
+	}    
 
+	/**
+	 * Get the latest status message.
+	 * 
+	 * @param string|null $message Status message to set
+	 * 
+	 * @return string The latest status message
+	 */
 	public function status($message = null)
 	{
-		if (dev_is_null($message))
-		{
-			$message = end($this->_status);
-			return $message;
-		}
-		$this->_status[] = $message;	
+	    if (DevValue::isNull($message))
+	    {
+	        $message = end($this->_status);
+	        return $message;
+	    }
+	    $this->_status[] = $message;    
 	}
 
-	// validate an email address 
-	static function validateAddress($address = '') 
+	/**
+	 * Validate an email address.
+	 * 
+	 * @param string|array $address Email address(es) to validate
+	 * 
+	 * @return bool Returns true if all email addresses are valid, false otherwise
+	 */
+	static function validateAddress($address = null) 
 	{
-		$address = dev_value_to_array($address);
-		$p = '/^[a-z0-9!#$%&*+-=?^_`{|}~]+(\.[a-z0-9!#$%&*+-=?^_`{|}~]+)*';
-		$p.= '@([-a-z0-9]+\.)+([a-z]{2,3}';
-		$p.= '|com|net|edu|org|gov|mil|int|biz|pro|info|arpa|aero|coop|name|museum|au|jp|tv|us|nz|nt)$/ix';
+		$address = DevArray::toArray($address); //dev_value_to_array($address);
+		$p = '/^[a-z0-9!#$%&*+-=?^_`{|}~\.]+([\.\+][a-z0-9!#$%&*+-=?^_`{|}~\.]+)*';
+		$p .= '@[a-z0-9][-a-z0-9]*(\.[a-z0-9][-a-z0-9]*)*';
+		$p .= '(\.[a-z]{2,}';
+		$p .= '|\.xn--[a-z0-9]{2,}';
+		$p .= '|\.com|\.net|\.edu|\.org|\.gov|\.mil|\.int|\.biz|\.pro|\.info|\.arpa|\.aero|\.coop|\.name|\.museum|\.au|\.jp|\.tv|\.us|\.nz|\.nt)$/ix';
+
 		$pattern = $p;
 		$passed = false;
 		$i = 0;
@@ -160,7 +305,12 @@ class Email extends Configurable
 		return $passed;
 	}
 
-	// filter out invalid email addresses from an array
+	/**
+	 * Filter out invalid email addresses from an array
+	 * 
+	 * @param array $addresses The array of email addresses to filter
+	 * @return array|bool An array of valid email addresses or false if none are found
+	 */
 	public function filterAddresses($addresses = null) 
 	{
 		$address_r = dev_value_to_array($addresses);
@@ -170,6 +320,12 @@ class Email extends Configurable
 		return $valid_address_r;
 	}
 
+	/**
+	 * Sanitize a given field
+	 * 
+	 * @param string $field The field to sanitize
+	 * @return string The sanitized field
+	 */
 	static function sanitize( $field )
 	{
 		//Remove line feeds
@@ -185,6 +341,11 @@ class Email extends Configurable
 		return $ret;
 	}
 
+	/**
+	 * Send an email
+	 * 
+	 * @return string A status message indicating success or failure
+	 */
 	public function send() {
 		$status = 'Failed to send mail. ';
 		$from = $this->from();
@@ -218,7 +379,7 @@ class Email extends Configurable
 	   		$this->headers['Return-Path'] = "{$from}";
 	   		$this->headers['Message-ID'] = "<".time()."-{$from}>";
 		}
-		$rcpts = $this->getRecipients();
+		$recipients = $this->getRecipients();
 		$cc = $this->getRecipients(self::$CC);
 		$bcc = $this->getRecipients(self::$BCC);
 		if (count($cc) > 0) $this->_headers["Cc"] = implode(', ', $cc);
@@ -294,7 +455,7 @@ class Email extends Configurable
 		// the INI lines are to force the From Address to be used
 		ini_set( "sendmail_from", $this->from() ); 
 		
-		if (count($rcpts) <= 0) {
+		if (count($recipients) <= 0) {
 			$status .= "The send to address is empty.\n";
 		} elseif (!self::validateAddress($this->getRecipients())) {
 			$status .= "Email address '" . implode(', ', $this->rcpt) . "' is invalid.\n";

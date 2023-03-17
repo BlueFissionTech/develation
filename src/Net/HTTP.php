@@ -5,8 +5,21 @@ use BlueFission\DevValue;
 use BlueFission\DevString;
 use BlueFission\DevNumber;
 
+/**
+ * Class HTTP
+ * This class provides helper methods for handling HTTP requests and responses.
+ */
 class HTTP {
 
+	/**
+	 * Query function to build a query string from an array of key-value pairs
+	 * 
+	 * @param array $formdata An array of key-value pairs to be used as the query
+	 * @param string $numeric_prefix A prefix to be added to numeric keys in the query array
+	 * @param string $key A key to be added to the query array
+	 * 
+	 * @return string A URL-encoded string representation of the query array
+	 */
 	static function query( $formdata, $numeric_prefix = null, $key = null ) 
 	{
 		if (function_exists('http_build_query') && DevValue::isNull( $key ))
@@ -33,30 +46,56 @@ class HTTP {
 	     return implode($separator, $res);
 	}
 
-	static function urlExists($url)
+	/**
+	 * Check if a URL exists
+	 * 
+	 * @param string $url The URL to be checked
+	 * 
+	 * @return bool true if the URL exists, false otherwise
+	 */
+	static function urlExists(string $url): bool
 	{
-		if(stristr($url, "http://")) {
-			$url = str_replace("http://", "", $url);
-			$fp = @fsockopen($url, 80);
-			if($fp === false) return false;
-			return true;
-		} else {
-			return false;
-		}
+	    $scheme = parse_url($url, PHP_URL_SCHEME);
+	    if ($scheme === false || $scheme !== "http") {
+	        return false;
+	    }
+	    
+	    $host = parse_url($url, PHP_URL_HOST);
+	    $port = parse_url($url, PHP_URL_PORT) ?: 80;
+	    $fp = @fsockopen($host, $port);
+	    if ($fp === false) {
+	        return false;
+	    }
+
+	    fclose($fp);
+	    return true;
 	}
 
+
+	/**
+	 * This method returns the domain name of the current website.
+	 * If $wholedomain is set to false, it returns the domain name without 'www.'
+	 * 
+	 * @param bool $wholedomain A flag to determine if the whole domain name should be returned or not.
+	 * @return string The domain name of the current website.
+	 */
 	static function domain( $wholedomain = false ) 
 	{
 		$domain = (isset($_SERVER['HTTP_HOST'])) ? $_SERVER['HTTP_HOST'] : '';
 		if ($domain != '') 
 		{
-			$domain = (strtolower(substr($domain, 0, 4)) == 'www.' && !$wholedomain ) ? substr($domain, 3) : $domain;
-			$port = strpos($domain, ':');
-			$domain = ($port) ? substr($domain, 0, $port) : $domain;
+			$domain = (strtolower(DevString::substring($domain, 0, 4)) == 'www.' && !$wholedomain ) ? DevString::substring($domain, 3) : $domain;
+			$port = DevString::strpos($domain, ':');
+			$domain = ($port) ? DevString::substring($domain, 0, $port) : $domain;
 		}
 		return $domain; 
 	}
 
+	/**
+	 * This method returns the URL of the current website.
+	 *
+	 * @return string The URL of the current website.
+	 */
 	static function url()
 	{
 		$url = '';
@@ -66,41 +105,76 @@ class HTTP {
 
 		return $url;
 	}
-	
+
+	/**
+	 * This method returns the href value of the current website.
+	 * If $href is empty, it returns the current href of the website.
+	 * If $doc is set to false, it returns the document root.
+	 * 
+	 * @param string $href The desired href value to return.
+	 * @param bool $doc A flag to determine if the document root or the current href of the website should be returned.
+	 * @return string The href value of the current website.
+	 */
 	static function href($href = '', $doc = true) 
 	{
-		if (DevValue::isNull($href)) {
-			if (!defined('PAGE_EXTENSION')) define('PAGE_EXTENSION', '.php');
-			$href = '';
-			if ($doc === false) 
-			{
-				$href .= $_SERVER['DOCUMENT_ROOT'];
-			} 
-			else 
-			{
-				$href = 'http://' . $_SERVER['SERVER_NAME'];
-				$href .= $_SERVER['REQUEST_URI'];
-				if (DevString::strrpos($href, PAGE_EXTENSION)) $href = substr($href, 0, DevString::strrpos($href, PAGE_EXTENSION) + strlen(PAGE_EXTENSION));
-				elseif (DevString::strrpos($href, '/')) $href = substr($href, 0, DevString::strrpos($href, '/') + strlen('/'));
-			}
-		}
-		
-		return $href;
+	    if (empty($href)) {
+	        if (!defined('PAGE_EXTENSION')) define('PAGE_EXTENSION', '.php');
+	        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+	        $host = $_SERVER['HTTP_HOST'];
+	        $request_uri = $_SERVER['REQUEST_URI'];
+	        if ($doc === false) {
+	            $href = $_SERVER['DOCUMENT_ROOT'];
+	        } else {
+	            $href = $protocol . $host . $request_uri;
+	            if (strrpos($href, PAGE_EXTENSION)) {
+	                $href = substr($href, 0, strrpos($href, PAGE_EXTENSION) + strlen(PAGE_EXTENSION));
+	            } elseif (strrpos($href, '/')) {
+	                $href = substr($href, 0, strrpos($href, '/') + strlen('/'));
+	            }
+	        }
+	    }
+
+	    return $href;
 	}
 
+
+	/**
+	 * Function to set or retrieve a cookie.
+	 * 
+	 * @param string $var 			The name of the cookie.
+	 * @param mixed $value 			The value to set for the cookie.
+	 * @param int $expire 			The number of seconds for the cookie to expire.
+	 * @param string $path 			The path for the cookie to be valid on.
+	 * @param boolean $secure 		Indicates whether the cookie should only be sent over secure connections.
+	 * 
+	 * @return mixed 				The value of the cookie if `$value` is null.
+	 * 								True on success, False otherwise.
+	 */
 	static function cookie($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
 		if (DevValue::isNull($value))
 			return $_COOKIE[$var] ?? null;
 		
-		$domain = ($path) ? substr($path, 0, strpos($path, '/')) : HTTP::domain();
-		$dir = ($path) ? substr($path, strpos($path, '/'), strlen($path)) : '/';
+		$domain = ($path) ? DevString::substring($path, 0, DevString::strpos($path, '/')) : HTTP::domain();
+		$dir = ($path) ? DevString::substring($path, DevString::strpos($path, '/'), strlen($path)) : '/';
 		$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 		$cookiesecure = (bool)$secure;
 			
 		return setcookie ($var, $value, $cookiedie, $dir, $domain, $cookiesecure);
 	}
 
+	/**
+	 * Function to set or retrieve a session value.
+	 * 
+	 * @param string $var 			The name of the session variable.
+	 * @param mixed $value 			The value to set for the session variable.
+	 * @param int $expire 			The number of seconds for the session to expire.
+	 * @param string $path 			The path for the session to be valid on.
+	 * @param boolean $secure 		Indicates whether the session should only be sent over secure connections.
+	 * 
+	 * @return mixed 				The value of the session variable if `$value` is null.
+	 * 								True on success, False otherwise.
+	 */
 	static function session($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
 		if (DevValue::isNull($value) )
@@ -108,8 +182,8 @@ class HTTP {
 			
 		if (session_id() == '') 
 		{
-			$domain = ($path) ? substr($path, 0, strpos($path, '/')) : HTTP::domain();
-			$dir = ($path) ? substr($path, strpos($path, '/'), strlen($path)) : '/';
+			$domain = ($path) ? DevString::substring($path, 0, DevString::strpos($path, '/')) : HTTP::domain();
+			$dir = ($path) ? DevString::substring($path, DevString::strpos($path, '/'), strlen($path)) : '/';
 			$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 			$cookiesecure = (bool)$secure;
 			
@@ -122,6 +196,12 @@ class HTTP {
 		return $status;
 	}
 
+	/**
+	 * Function to encode PHP variables as JSON string
+	 *
+	 * @param mixed $a
+	 * @return string
+	 */
 	static function jsonEncode($a=false)
 	{
 		if (function_exists('json_encode'))
@@ -138,7 +218,7 @@ class HTTP {
 				// Always use "." for floats.
 				return floatval(str_replace(",", ".", strval($a)));
 			}
-			
+
 			if (is_string($a))
 			{
 				static $jsonReplaces = array(array("\\", "/", "\n", "\t", "\r", "\b", "\f", '"'), array('\\\\', '\\/', '\\n', '\\t', '\\r', '\\b', '\\f', '\"'));
@@ -169,13 +249,21 @@ class HTTP {
 		}
 	}
 
-	static function redirect($href = '', $request_r = '', $ssl = '', $snapshot = '') {
-		$href = HTTP::href($href);
-		$request = ($request_r) ? http_build_query($request_r) : "";
-		$href = str_replace('http://', '', $href);
-		$href = str_replace('https://', '', $href);
-		$href = (($ssl == true) ? 'https' : 'http' ) . "://$href" . (($request != '') ? "?$request" : "");
-		if ($snapshot != '') HTTP::cookie('href_snapshot', $snapshot);
-		header("Location: $href");
+	/**
+	 * Function to redirect to specified URL
+	 *
+	 * @param string $href
+	 * @param array $request_r
+	 * @param boolean $ssl
+	 * @param string $snapshot
+	 * @return void
+	 */
+	static function redirect($href = '', $request_r = [], $snapshot = '') {
+	  $href = HTTP::href($href);
+	  $request = ($request_r) ? http_build_query($request_r) : "";
+	  $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+	  $href = $protocol . str_replace(['http://', 'https://'], '', $href) . (($request != '') ? "?$request" : "");
+	  if ($snapshot != '') HTTP::cookie('href_snapshot', $snapshot);
+	  header("Location: $href");
 	}
 }

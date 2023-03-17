@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Data\Storage;
 
 use BlueFission\DevString;
@@ -6,19 +7,42 @@ use BlueFission\DevNumber;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
 
+/**
+ * Class Cookie
+ * 
+ * This class represents the Cookie storage method and implements the IData interface.
+ * 
+ * @package BlueFission\Data\Storage
+ * @implements IData
+ */
 class Cookie extends Storage implements IData
 {
+	/**
+	 * Configuration for the cookie, including the name, location, expiration time and security status.
+	 *
+	 * @var array
+	 */
 	protected $_config = array( 'location'=>'',
 		'name'=>'storage',
 		'expire'=>'3600',
 		'secure'=>false,
 	);
 	
+	/**
+	 * Constructor for the Cookie class.
+	 *
+	 * @param null|array $config Configuration for the cookie.
+	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
 	}
 	
+	/**
+	 * Activates the cookie.
+	 *
+	 * @return void
+	 */
 	public function activate()
 	{
 		$path = $this->config('location');
@@ -34,6 +58,11 @@ class Cookie extends Storage implements IData
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
 	}
 	
+	/**
+	 * Writes data to the cookie.
+	 *
+	 * @return void
+	 */
 	public function write()
 	{	
 		$value = HTTP::jsonEncode( $this->_data ? $this->_data : $this->_contents);
@@ -50,8 +79,13 @@ class Cookie extends Storage implements IData
 		$this->status( $status );	
 	}
 	
+	/**
+	 * Reads the cookie and returns its value.
+	 *
+	 * @return mixed The value of the cookie.
+	 */
 	public function read()
-	{	
+	{
 		$value = HTTP::cookie($this->_source);
 		if ( function_exists('json_decode'))
 		{
@@ -61,10 +95,15 @@ class Cookie extends Storage implements IData
 		}	
 		return $value;
 	}
-	
+
+	/**
+	 * Deletes the cookie.
+	 *
+	 * @return void
+	 */
 	public function delete()
 	{
 		$label = $this->_source;
 		unset($_COOKIES[$label]);
-	} 
+	}
 }

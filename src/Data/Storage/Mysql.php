@@ -11,6 +11,27 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\Storage\Behaviors\StorageAction;
 
+/**
+ * Mysql class is a storage implementation that provides a way to interact with a Mysql database.
+ * It extends the Storage class and implements the IData interface.
+ *
+ * @package BlueFission\Data\Storage
+ * 
+ * @property-read array $_config An array that contains the configuration options for the Mysql class.
+ * @property-read int $_last_row_affected The last number of rows affected by the previous database query.
+ * @property-read mixed $_result The result of the previous database query.
+ * @property-read array $_tables An array that contains all tables for the database.
+ * @property-read array $_fields An array that contains all the fields for the tables in the database.
+ * @property-read array $_relations An array that contains the relationships between tables in the database.
+ * @property-read array $_conditions An array that contains conditions for database queries.
+ * @property-read array $_order An array that contains the order for database queries.
+ * @property-read array $_aggregate An array that contains aggregate functions for database queries.
+ * @property-read array $_distinctions An array that contains distinctions options for database queries.
+ * @property-read string $_query The last executed database query.
+ * @property int $_row_start The starting row for the database query result.
+ * @property int $_row_end The ending row for the database query result.
+ * 
+ */
 class Mysql extends Storage implements IData
 {
 	protected $_config = array(
@@ -41,40 +62,57 @@ class Mysql extends Storage implements IData
 	protected $_row_start = 0;
 	protected $_row_end = 1;
 	
+	/**
+	 * Mysql constructor.
+	 * 
+	 * @param mixed $config An array or object that contains the configuration options for the Mysql class.
+	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
 	}
 	
+	/**
+	 * Activates the object by initializing the database connection and loading the object fields and related data.
+	 * 
+	 * @return void
+	 */
 	public function activate()
 	{
-		$this->_source = new MysqlLink( );
-		$this->_source->database( $this->config('location') );
-		// load object fields and related data
+		$this->_source = new MysqlLink();
+		$this->_source->database($this->config('location'));
 		$this->fields();
-			
-		if ( !$this->_source ) 
-			$this->status( self::STATUS_FAILED_INIT );
+		
+		if (!$this->_source) 
+			$this->status(self::STATUS_FAILED_INIT);
 	}
 
+	/**
+	 * Returns the last executed query.
+	 * 
+	 * @return string
+	 */
 	public function query()
 	{
 		return $this->_query;
 	}
 
-	public function id( $id = null )
+	/**
+	 * Gets or sets the ID of the object.
+	 * 
+	 * @param mixed $id
+	 * @return mixed
+	 */
+	public function id($id = null)
 	{
 		$tables = $this->tables();
-		$keys = array();
+		$keys = [];
 		$table = $tables[0];
 
-		foreach ($this->fields() as $field=>$column)
-		{
+		foreach ($this->fields() as $field => $column) {
 			$name = $column['Field'];
-			if ( $this->validate($name, $table) )
-			{
-				if  ( $column['Key'] == 'PRI' || $column['Key'] == 'UNI' )
-				{
+			if ($this->validate($name, $table)) {
+				if ($column['Key'] == 'PRI' || $column['Key'] == 'UNI') {
 					if (!isset($keys[$table])) $keys[$table] = $name;
 					break;
 				}
@@ -82,7 +120,12 @@ class Mysql extends Storage implements IData
 		}
 		return $this->field($keys[$table], $id);
 	}
-	
+
+	/**
+	 * Writes the data to the database.
+	 *
+	 * @return boolean - Returns true on success, false otherwise
+	 */
 	public function write()
 	{
 		$db = $this->_source;
@@ -170,10 +213,20 @@ class Mysql extends Storage implements IData
 		}
 	}
 
+	/**
+	 * Returns the last affected row of the query.
+	 *
+	 * @return int The last affected row of the query.
+	 */
 	public function lastRow() {
 		return $this->_last_row_affected;
 	}
-	
+
+	/**
+	 * Executes a read query to retrieve data from the database.
+	 *
+	 * @return array|bool The result of the query or false if the query failed.
+	 */
 	public function read()
 	{
 		$tables = $this->tables();
@@ -319,6 +372,13 @@ class Mysql extends Storage implements IData
 		$this->run($query);
 	}
 
+	/**
+	 * Executes the query
+	 * 
+	 * @param string $query The query to be executed
+	 * 
+	 * @return void
+	 */
 	public function run( $query = "" )
 	{
 		$db = $this->_source;
@@ -348,6 +408,11 @@ class Mysql extends Storage implements IData
 		}
 	}
 	
+	/**
+	 * Deletes a record from the database
+	 * 
+	 * @return void
+	 */
 	public function delete()
 	{
 		$db = $this->_source;
@@ -472,6 +537,15 @@ class Mysql extends Storage implements IData
 		//$this->_result = $result;
 	}
 	
+	/**
+	 * Creates a new table for the data in this object.
+	 * 
+	 * The table name is derived from the value of the `self::NAME_FIELD` configuration 
+	 * option, or from the name of the class if `self::NAME_FIELD` is not set.
+	 * The data types of each column in the table are inferred from the values in this object.
+	 * 
+	 * @return null
+	 */
 	private function create()
 	{
 		$db = $this->_source;
@@ -581,6 +655,13 @@ class Mysql extends Storage implements IData
 		$this->status($status);
 	}
 	
+	/**
+	 * Method to retrieve the data.
+	 * 
+	 * @param mixed $data Optional data to be returned
+	 * 
+	 * @return mixed The contents of the data
+	 */
 	public function contents( $data = null )
 	{
 		$data = ($this->_result) ? $this->_result : $this->data();
@@ -588,6 +669,11 @@ class Mysql extends Storage implements IData
 		return $data;
 	}
 
+	/**
+	 * Method to retrieve the fields of the data source.
+	 * 
+	 * @return array The fields of the data source
+	 */
 	public function fields()
 	{
 		$db = $this->_source;
@@ -654,6 +740,11 @@ class Mysql extends Storage implements IData
 		return $fields;
 	}
 	
+	/**
+	 * Returns a list of tables in `$this->_fields`.
+	 * 
+	 * @return array List of table names
+	 */
 	private function tables()
 	{
 		$tables = array();
@@ -664,12 +755,24 @@ class Mysql extends Storage implements IData
 		return $tables;
 	}
 	
+	/**
+	 * Returns fields of the specified table.
+	 * 
+	 * @param string $name Table name
+	 * 
+	 * @return array Fields of the table
+	 */
 	private function table( $name )
 	{
 		$table = isset( $this->_fields[$name] ) ? $this->_fields[$name] : array();
 		return $table;
 	}
 	
+	/**
+	 * Returns the primary key field of the first table.
+	 * 
+	 * @return mixed Name of the primary key field or False if not found
+	 */
 	public function primary() 
 	{
 		$output = false;
@@ -682,6 +785,14 @@ class Mysql extends Storage implements IData
 		return $output;
 	}
 	
+	/**
+	 * Validates the specified field or all fields of the table.
+	 * 
+	 * @param string $field_name Name of the field to validate. If not specified, validates all fields.
+	 * @param string $table Name of the table to validate. If not specified, uses the first available entry.
+	 * 
+	 * @return boolean Whether the validation is passed or failed
+	 */
 	private function validate($field_name = null, $table = null) 
 	{
 		$fields = $this->fields();
@@ -759,16 +870,35 @@ class Mysql extends Storage implements IData
 		return $passed;
 	}
 	
+	/**
+	 * Retrieve the value of row start
+	 * 
+	 * @return integer The value of _row_start
+	 */
 	private function start () 
 	{
 		return $this->_row_start;
 	}
 	
+	/**
+	 * Retrieve the value of row end
+	 * 
+	 * @return integer The value of _row_end
+	 */
 	private function end () 
 	{
 		return $this->_row_end;
 	}
 	
+	/**
+	 * Get the condition set for a member, or set a condition for a member
+	 * 
+	 * @param string $member The member to be set/retrieved condition
+	 * @param string|array $condition The condition to be set
+	 * @param mixed $value The value to be set
+	 * 
+	 * @return mixed Returns the condition if only $member is passed, returns boolean false on failure, returns $this if the method is successful
+	 */
 	public function condition($member, $condition = null, $value = null) 
 	{
 		//if (!$this->exists($member)) return false;
@@ -795,6 +925,14 @@ class Mysql extends Storage implements IData
 		}
 	}
 	
+	/**
+	 * Get the order set for a member, or set an order for a member
+	 * 
+	 * @param string $member The member to be set/retrieved order
+	 * @param string $order The order to be set
+	 * 
+	 * @return mixed Returns the order if only $member is passed, returns boolean false on failure, returns $this if the method is successful
+	 */
 	public function order($member, $order = null) 
 	{
 		//if (!$this->exists($member)) return false;
@@ -811,6 +949,14 @@ class Mysql extends Storage implements IData
 		$this->_order[$member] = $order;
 	}
 	
+	/**
+	 * Aggregates a member with a function
+	 *
+	 * @param string $member  The name of the member to be aggregated
+	 * @param string $function  The function to aggregate the member with, e.g. 'SUM', 'AVG', 'MIN', etc.
+	 *
+	 * @return mixed  The aggregated result or the current object if setting the aggregation
+	 */
 	public function aggregate($member, $function = null) 
 	{
 		//if (!$this->exists($member)) return false;
@@ -828,6 +974,14 @@ class Mysql extends Storage implements IData
 		return $this;
 	}
 	
+	/**
+	 * Defines a relation between two members
+	 *
+	 * @param string $member  The name of the first member
+	 * @param string $field  The name of the second member
+	 *
+	 * @return mixed  The current object if setting the relation or the related member if getting the relation
+	 */
 	public function relation($member, $field = null) 
 	{
 		//if (!$this->exists($member)) return false;
@@ -838,11 +992,25 @@ class Mysql extends Storage implements IData
 		$this->_relations[$field] = $member;
 	}
 	
+	/**
+	 * Adds a distinction to the list of distinctions
+	 *
+	 * @param string $member  The name of the member to be distinguished
+	 *
+	 * @return void
+	 */
 	public function distinction($member) 
 	{
 		$this->_distinctions[] = $member;
 	}
-	
+
+	/**
+	 * Finds the condition key for a given member
+	 *
+	 * @param string $member  The name of the member to find the condition key for
+	 *
+	 * @return mixed  The condition key if found, false otherwise
+	 */
 	private function conditionKey($member) 
 	{
 		if (!$this->exists($member)) return false;
@@ -854,6 +1022,15 @@ class Mysql extends Storage implements IData
 		}
 	}
 	
+	/**
+	 * Creates a where case statement for the query
+	 *
+	 * @param string $table The table to search for the member
+	 * @param string $member The member to search for
+	 * @param mixed $value The value to compare the member with
+	 *
+	 * @return string The where case statement
+	 */
 	private function whereCase($table, $member, $value = '') 
 	{
 		$tables = $this->tables();
@@ -1014,6 +1191,14 @@ class Mysql extends Storage implements IData
 		return $where;
 	}
 	
+	/**
+	 * Order Case function
+	 * 
+	 * @param string $table Table name
+	 * @param string $member Member of the table
+	 * 
+	 * @return string
+	 */
 	private function orderCase($table, $member) 
 	{
 		$tables = $this->tables();
@@ -1030,6 +1215,14 @@ class Mysql extends Storage implements IData
 		return $sort;
 	}
 
+	/**
+	 * Aggregate Case function
+	 * 
+	 * @param string $table Table name
+	 * @param string $member Member of the table
+	 * 
+	 * @return string
+	 */
 	private function aggregateCase($table, $member) 
 	{
 		$tables = $this->tables();
@@ -1045,6 +1238,14 @@ class Mysql extends Storage implements IData
 		return $agg;
 	}
 	
+	/**
+	 * Distinct Case function
+	 * 
+	 * @param string $table Table name
+	 * @param string $member Member of the table
+	 * 
+	 * @return string
+	 */
 	private function distinctCase($table, $member) 
 	{
 		$tables = $this->tables();
@@ -1057,6 +1258,14 @@ class Mysql extends Storage implements IData
 		return $distinct;
 	}
 	
+	/**
+	 * Array Key Intersect function
+	 * 
+	 * @param array $arr1 First array
+	 * @param array $arr2 Second array
+	 * 
+	 * @return array
+	 */
 	private function arrayKeyIntersect($arr1, $arr2) 
 	{
 		$array = array();
@@ -1066,6 +1275,13 @@ class Mysql extends Storage implements IData
 		return $array;
 	}
 	
+	/**
+	 * Reset function
+	 * 
+	 * Resets the conditions, distinctions, aggregate, row start and end, order, and query variables
+	 * 
+	 * @return void
+	 */
 	public function reset()
 	{
 		$this->_conditions = array();
@@ -1077,6 +1293,13 @@ class Mysql extends Storage implements IData
 		$this->_query = null;
 	}
 	
+	/**
+	 * Check if a field exists and is active
+	 *
+	 * @param string $var The field to check
+	 *
+	 * @return bool True if the field exists and is active, false otherwise
+	 */
 	public function exists($var) 
 	{
 		$fields = $this->fields();
@@ -1100,6 +1323,13 @@ class Mysql extends Storage implements IData
 		return false;
 	}
 
+	/**
+	 * Get the table name for a given field
+	 *
+	 * @param string $field The field to get the table name for
+	 *
+	 * @return string The table name for the field, or an empty string if not found
+	 */
 	public function fieldTable( $field ) {
 		foreach ( $this->_fields as $table=>$fields ) {
 			if ( array_key_exists($field, $fields)) {
@@ -1109,6 +1339,11 @@ class Mysql extends Storage implements IData
 		return '';
 	}
 
+	/**
+	 * Get the error status
+	 *
+	 * @return mixed The error status of the database connection or the object's status if the database connection is not set
+	 */
 	public function error()
 	{
 		$db = $this->_source;
@@ -1118,6 +1353,15 @@ class Mysql extends Storage implements IData
 		return $this->status();
 	}
 
+	/**
+	 * Check if a value is in the database
+	 *
+	 * @param string $field The field to check
+	 * @param string $value The value to check
+	 * @param string $table The table to check
+	 *
+	 * @return bool True if the value is in the database, false otherwise
+	 */
 	public static function inDB( $field, $value, $table ) {
 		$db = new MysqlLink( array( 'table'=>$table ) );
 		if ( DevValue::isNotNull ($value) )

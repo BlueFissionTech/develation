@@ -6,19 +6,41 @@ use BlueFission\DevArray;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
+/**
+ * Class Stream
+ * 
+ * This class provides a stream connection for sending and receiving data over HTTP.
+ * 
+ * @package BlueFission\Connections
+ * @implements IConfigurable
+ */
 class Stream extends Connection implements IConfigurable
 {
-	protected $_config = array( 'target'=>'',
-		'wrapper'=>'http',
-		'method'=>'GET',
-		'header'=>"Content-type: application/x-www-form-urlencoded\r\n",
+	/**
+	 * @var array $_config Configuration options for the stream connection
+	 */
+	protected $_config = array( 
+		'target' => '',  // target URL for the stream connection
+		'wrapper' => 'http', // wrapper for the stream context
+		'method' => 'GET',  // HTTP method for the stream connection
+		'header' => "Content-type: application/x-www-form-urlencoded\r\n", // header for the stream connection
 	);
 	
+	/**
+	 * Stream constructor.
+	 *
+	 * @param mixed|null $config Configuration options for the stream connection
+	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct();
 	}
 	
+	/**
+	 * Opens a stream connection.
+	 *
+	 * @return void
+	 */
 	public function open() 
 	{
 		$target = $this->config('target') ? $this->config('target') : HTTP::domain();
@@ -26,8 +48,10 @@ class Stream extends Connection implements IConfigurable
 		$header = $this->config('header'); 
 		$wrapper = $this->config('wrapper');
 		
+		// Check if target URL exists
 		if ( HTTP::urlExists($target) )
 		{
+			// Create a stream context with the options provided in the config
 			$options = array(
 				$wrapper => array(
 					'header'	=>	$header,
@@ -35,6 +59,8 @@ class Stream extends Connection implements IConfigurable
 				),
 			);
 			$this->_connection = stream_context_create($options);
+			
+			// Set the connection status
 			$status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 		}
 		else
@@ -44,15 +70,23 @@ class Stream extends Connection implements IConfigurable
 		$this->status($status);
 	}
 	
+	/**
+	 * Sends a query to the target URL and retrieves the result.
+	 *
+	 * @param mixed|null $query Query to be sent to the target URL
+	 * @return bool
+	 */
 	public function query ( $query = null )
 	{ 
-		
+		// Set the connection status as not connected
 		$status = self::STATUS_NOTCONNECTED;
 		$context = $this->_connection;
 		$wrapper = $this->config('wrapper');
 		
+		// If the stream context exists
 		if ($context)
 		{
+			// If a query is not null
 			if (DevValue::isNotNull($query))
 			{
 				if (DevArray::isAssoc($query))

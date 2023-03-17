@@ -8,10 +8,28 @@ use BlueFission\DevValue;
 use BlueFission\DevArray;
 use BlueFission\Behavioral\Behaviors\Event;
 
+/**
+ * Class MongoBulk
+ *
+ * @package BlueFission\Data\Storage
+ * 
+ * This class extends the Mongo class and implements IData interface.
+ * It provides an implementation for reading and writing to/from a MongoDB database in bulk.
+ */
 class MongoBulk extends Mongo implements IData {
 	
+	/**
+	 * An instance of the Group class
+	 * 
+	 * @var Group
+	 */
 	private $_rows;
 
+	/**
+	 * Constructor for the MongoBulk class.
+	 *
+	 * @param array|null $config Configuration options for the object.
+	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
@@ -19,6 +37,11 @@ class MongoBulk extends Mongo implements IData {
 		$this->_rows->type('\BlueFission\Data\Storage\Mongo');
 	}
 
+	/**
+	 * Reads data from the MongoDB database.
+	 * 
+	 * @return void
+	 */
 	public function read() {
 		parent::read();
 		$res = array();
@@ -34,6 +57,11 @@ class MongoBulk extends Mongo implements IData {
 		$this->_rows->type('\BlueFission\Data\Storage\Mongo');
 	}
 
+	/**
+	 * Writes data to the MongoDB database.
+	 * 
+	 * @return bool Returns true on success, false otherwise.
+	 */
 	public function write() {
 		$db = $this->_source;
 
@@ -56,31 +84,55 @@ class MongoBulk extends Mongo implements IData {
 		}
 	}
 
+	/**
+	 * Returns the result of the query.
+	 * 
+	 * @return Group An instance of the Group class.
+	 */
 	public function result()
 	{
 		return $this->_rows;
 	}
 
+	/**
+	 * Get the current item in the iteration
+	 *
+	 * @return mixed
+	 */
 	public function each() {
-		return $this->_rows->each();
+	    return $this->_rows->each();
 	}
 
+	/**
+	 * Limit the number of rows returned
+	 *
+	 * @param int $start
+	 * @param int $end
+	 * @return void
+	 */
 	public function limit($start = 0, $end = '') 
 	{
-		$this->_row_start = $start;
-		$this->_row_end = $end;
+	    $this->_row_start = $start;
+	    $this->_row_end = $end;
 	}
 
+	/**
+	 * Get or set the data contents
+	 *
+	 * @param array|null $data
+	 * @return mixed
+	 */
 	public function contents($data = null)
 	{
-		if ( DevValue::isNull($data)) {
-			return $this->_rows->current() ? $this->_rows->current() : parent::contents();
-		} elseif (is_array($data) && !DevArray::isAssoc($data)) {
-			$this->_rows = new Group( $data );
-		} elseif ( DevArray::isAssoc($data) ) {
-			parent::contents($data);
-		}
-		
-		$this->perform( Event::CHANGE ); 
+	    if ( DevValue::isNull($data)) {
+	        return $this->_rows->current() ? $this->_rows->current() : parent::contents();
+	    } elseif (is_array($data) && !DevArray::isAssoc($data)) {
+	        $this->_rows = new Group( $data );
+	    } elseif ( DevArray::isAssoc($data) ) {
+	        parent::contents($data);
+	    }
+
+	    $this->perform( Event::CHANGE ); 
 	}
+
 }

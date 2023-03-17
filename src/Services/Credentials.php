@@ -9,14 +9,31 @@ use BlueFission\Behavioral\Behaviors\Event;
 
 class Credentials extends Configurable
 {
+    /**
+     * Error message for an empty username
+     */
 	const FAILED_USERNAME_EMPTY = 'Username cannot be empty';
+
+    /**
+     * Error message for an empty password
+     */
 	const FAILED_PASSWORD_EMPTY = 'Password cannot be empty';
 
+    /**
+     * The data containing the username and password
+     *
+     * @var array
+     */
 	protected $_data = array(
 		'username'=>'',
 		'password'=>'',
 	);
 
+    /**
+     * Validates the username and password
+     *
+     * @return bool
+     */
 	public function validate()
 	{
 		$valid = false;
@@ -34,6 +51,9 @@ class Credentials extends Configurable
 		return $valid;
 	}
 
+    /**
+     * Initializes the class
+     */
 	protected function init()
 	{
 		parent::init();

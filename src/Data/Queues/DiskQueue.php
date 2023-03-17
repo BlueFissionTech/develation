@@ -4,21 +4,50 @@ namespace BlueFission\Data\Queues;
 
 use BlueFission\Data\FileSystem;
 
+/**
+ * Class DiskQueue
+ * This class implements the IQueue interface and serves as a disk based queue for message storage and processing
+ */
 class DiskQueue extends Queue implements IQueue {
-
+	
+	/**
+	 * Directory name for the disk-based queue
+	 * @var string
+	 */
 	const DIRNAME = 'php_temp_stack_dir';
+	
+	/**
+	 * Filename prefix for messages stored in the disk-based queue
+	 * @var string
+	 */
 	const FILENAME = 'message_';
-		
+	
+	/**
+	 * The instance of the disk-based queue
+	 * @var string
+	 */
 	private static $_stack;
+	
+	/**
+	 * The array of messages in the disk-based queue
+	 * @var array
+	 */
 	private static $_array;
 
+	/**
+	 * Get the instance of the disk-based queue
+	 * @return string
+	 */
 	private static function instance() {
 		if(!self::$_stack) self::init();
 		return self::$_stack;
 	}
 	
+	/**
+	 * Initialize the disk-based queue by creating a directory and file system object
+	 * @return void
+	 */
 	private static function init() {
-		// $tempfile = sys_get_temp_dir().DIRECTORY_SEPARATOR.self::DIRNAME;
 		$tempfile = sys_get_temp_dir();
 		
 		$stack = $tempfile.DIRECTORY_SEPARATOR.self::DIRNAME;
@@ -36,6 +65,11 @@ class DiskQueue extends Queue implements IQueue {
 	    self::$_stack = $stack; 
 	}
 	
+	/**
+	 * Check if the disk-based queue is empty
+	 * @param  string  $queue
+	 * @return boolean
+	 */
 	public static function is_empty($queue) {
 		$stack = self::instance();
 
@@ -49,6 +83,13 @@ class DiskQueue extends Queue implements IQueue {
 		return count( $array ) ? false : true;
 	}
 
+	/**
+	 * Dequeue messages from the disk-based queue
+	 * @param  string  $queue
+	 * @param  integer $after
+	 * @param  integer $until
+	 * @return mixed
+	 */
 	public static function dequeue($queue, $after=false, $until=false) {
 		$stack = self::instance();
 
@@ -101,6 +142,14 @@ class DiskQueue extends Queue implements IQueue {
 		return $items;
 	}
 	
+	/**
+	 * Adds a new item to the specified queue.
+	 *
+	 * @param string $queue The name of the queue to add the item to.
+	 * @param mixed $item The item to be added to the queue.
+	 *
+	 * @return void
+	 */
 	public static function enqueue($queue, $item) {
 		$stack = self::instance();
 
@@ -122,8 +171,15 @@ class DiskQueue extends Queue implements IQueue {
 
 		$fs->write();
 		$fs->close();
-	}	
+	}
 
+	/**
+	 * Retrieves the last item added to the specified queue.
+	 *
+	 * @param string $queue The name of the queue to retrieve the last item from.
+	 *
+	 * @return int The last item's index in the queue.
+	 */
 	private static function tail($queue) {
 		$stack = self::instance();
 
@@ -139,4 +195,5 @@ class DiskQueue extends Queue implements IQueue {
 
 		return (int)$tail;
 	}
+
 }

@@ -14,6 +14,55 @@ class ServiceTest extends \PHPUnit_Framework_TestCase {
 		$this->object = new static::$classname();
 	}
 
+	    public function testServiceInstance()
+    {
+        $service = new Service();
+        $this->assertInstanceOf(Service::class, $service);
+    }
+
+    public function testNameMethod()
+    {
+        $service = new Service();
+        $this->assertInternalType('string', $service->name());
+    }
+
+    public function testParentMethod()
+    {
+        $service = new Service();
+        $parent = new Service();
+        $service->parent($parent);
+        $this->assertInstanceOf(Service::class, $service->parent());
+    }
+
+    public function testBroadcastMethod()
+    {
+        $service = new Service();
+        $behavior = $this->getMockBuilder(Behavior::class)->getMock();
+        $service->broadcast($behavior);
+        $this->assertAttributeInstanceOf(Behavior::class, '_target', $behavior);
+    }
+
+    public function testBoostMethod()
+    {
+        $service = new Service();
+        $parent = $this->getMockBuilder(\BlueFission\Services\Application::class)->getMock();
+        $service->parent($parent);
+        $behavior = $this->getMockBuilder(Behavior::class)->getMock();
+        $service->boost($behavior);
+        $this->assertAttributeInstanceOf(Behavior::class, '_target', $behavior);
+    }
+
+    public function testMessageMethod()
+    {
+        $service = new Service();
+        $instance = $this->getMockBuilder(Dispatcher::class)->getMock();
+        $behavior = $this->getMockBuilder(Behavior::class)->getMock();
+        $instance->method('behavior')->willReturn(true);
+        $instance->method('dispatch')->with($behavior, null);
+        $service->instance = $instance;
+        $service->message('behavior');
+    }
+
 	public function testServicesCanDispatchLocalizedEvents()
 	{
 		$this->expectOutputString('Test message 1');

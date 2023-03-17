@@ -5,29 +5,52 @@ use BlueFission\DevValue;
 use BlueFission\DevString;
 use BlueFission\Utils\Util;
 
+/**
+ * Class HTML
+ * 
+ * This class contains utility functions for generating and manipulating HTML.
+ */
 class HTML {
+    /**
+     * PAGE_EXTENSION is the default file extension for web pages.
+     */
+    const PAGE_EXTENSION = '.php';
 
-	const PAGE_EXTENSION = '.php';
+    /**
+     * href() is a static method that generates a URL based on the current server
+     * 
+     * @param  string  $href    The URL to use as the base
+     * @param  boolean $secure  Whether the URL should use HTTPS
+     * @param  boolean $doc     Whether the URL should include the document root
+     * 
+     * @return string           The generated URL
+     */
+    static function href($href = null, $secure = false, $doc = true) 
+    {
+        if (DevValue::isNotNull($href)) {
+            $href = '';
+            if ($doc === false) {
+                $href .= $_SERVER['DOCUMENT_ROOT'];
+            } else {
+                $protocol = $secure ? 'https' : 'http';
+                $href = $protocol.'://' . $_SERVER['SERVER_NAME'];
+                $href .= $_SERVER['REQUEST_URI'];
+                if (DevString::strrpos($href, self::PAGE_EXTENSION)) $href = substr($href, 0, DevString::strrpos($href, self::PAGE_EXTENSION) + strlen(self::PAGE_EXTENSION));
+                elseif (DevString::strrpos($href, '/')) $href = substr($href, 0, DevString::strrpos($href, '/') + strlen('/'));
+            }
+        }
+        
+        return $href;
+    }
 
-	static function href($href = null, $secure = false, $doc = true) 
-	{
-		if (DevValue::isNotNull($href)) {
-
-			$href = '';
-			if ($doc === false) {
-				$href .= $_SERVER['DOCUMENT_ROOT'];
-			} else {
-				$protocol = $secure ? 'https' : 'http';
-				$href = $protocol.'://' . $_SERVER['SERVER_NAME'];
-				$href .= $_SERVER['REQUEST_URI'];
-				if (DevString::strrpos($href, self::PAGE_EXTENSION)) $href = substr($href, 0, DevString::strrpos($href, self::PAGE_EXTENSION) + strlen(self::PAGE_EXTENSION));
-				elseif (DevString::strrpos($href, '/')) $href = substr($href, 0, DevString::strrpos($href, '/') + strlen('/'));
-			}
-		}
-		
-		return $href;
-	}
-
+    /**
+     * format() is a static method that formats text content into HTML
+     * 
+     * @param  string  $content The text content to be formatted
+     * @param  boolean $rich    Whether the content should be formatted with rich text
+     * 
+     * @return string           The formatted HTML content
+     */
 	static function format($content = null, $rich = false) {
 		$search = array('/^==========/mx',
 			'/^\b([\W\w\D\d\s]|[^\n]+)\n----------/mx',
@@ -82,7 +105,21 @@ class HTML {
 		return $output;
 	}
 	
-	//prints an image
+	/**
+	 * Prints an image.
+	 *
+	 * @param string $image Image file name
+	 * @param string $dir Image directory
+	 * @param string $alt Alt attribute for image
+	 * @param string $width Width of the image
+	 * @param string $height Height of the image
+	 * @param boolean $thumb Show the image as thumbnail
+	 * @param string $align Alignment of the image
+	 * @param boolean $link Show the image as a link
+	 * @param int $defaults Whether to set default width
+	 * @param string $blank Blank image path
+	 * @return string HTML code for image or original file name if not an image
+	 */
 	static function image($image, $dir = '', $alt = '', $width = '100', $height = '', $thumb = false, $align = '', $link = true, $defaults = 0, $blank = false) {
 		$imgdir = Util::value('imgdir');
 		$output = '';
@@ -113,7 +150,15 @@ class HTML {
 		}
 	}
 
-	//prints an image
+	/**
+	 * Static function to generate a link to a file based on its extension
+	 * 
+	 * @param string $file Name of the file
+	 * @param string $dir Directory path of the file
+	 * @param bool $virtual If true, generate a link to file.php, otherwise to the file path
+	 * 
+	 * @return string Link to the file if file exists and has a supported extension, otherwise returns the file name
+	 */
 	static function file($file, $dir, $virtual = false) {
 		$href = HTML::href();
 		$output = '';
@@ -131,6 +176,13 @@ class HTML {
 		}
 	}
 
+	/**
+	 * Static function to format ASCII text into HTML
+	 * 
+	 * @param string $text The ASCII text to format
+	 * 
+	 * @return string HTML formatted text
+	 */
 	// static function formatAscii($text = '') {
 	// 	$search = array('/^==========/mx',
 	// 		'/^\b([\W\w\D\d\s]|[^\n]+)\n----------/mx',
@@ -194,6 +246,16 @@ class HTML {
 	// 	return $string;
 	// }
 
+	/**
+	 * Generates pagination links for the list of results
+	 * 
+	 * @param mixed $list_r A list of results to be paginated. Can be an array or a number representing the total count of results.
+	 * @param string $begin The query string parameter for the start of the page range. Default is 'start'.
+	 * @param string $end The query string parameter for the end of the page range. Default is 'lim'.
+	 * @param string $href The base URL for the pagination links.
+	 * @param int $limit The default limit of items per page. Default is 20.
+	 * @return string The generated pagination links.
+	 */
 	static function paginate($list_r, $begin = 'start', $end = 'lim', $href = '', $limit = 20) {
 		$output = '';
 		$chapter_r = array();
@@ -228,31 +290,57 @@ class HTML {
 		return $output;
 	}
 
+	/**
+	 * Function to display the results.
+	 *
+	 * @param array $list_r The list of results to display.
+	 * @param string $begin Start key for the query string.
+	 * @param string $end End key for the query string.
+	 * @param string $href The base href for the links.
+	 * @param boolean $chapters Whether or not to display chapters.
+	 * @param integer $link_style The style for the links.
+	 * @param string $query_r The query to highlight in the results.
+	 * @param string $highlight The highlight color.
+	 * @param string $img_dir The directory for the images.
+	 * @param string $file_dir The directory for the assets.
+	 * @param string $headers The headers to display.
+	 * @param string $trunc The truncation string.
+	 * @param integer $limit The maximum limit of results to display.
+	 *
+	 * @return string The HTML string for the results.
+	 */
 	static function results($list_r, $begin = 'start', $end = 'lim', $href = '', $chapters = true, $link_style = 1, $query_r = '', $highlight = '#c0c0ff', $img_dir = 'images/', $file_dir = 'assets/', $headers = '', $trunc = '', $limit = 20) {
 		$start = (isset($_GET[$begin]) && is_numeric($_GET[$begin])) ? $_GET[$begin] : 0;
 		$end = (isset($_GET[$end]) && is_numeric($_GET[$end])) ? $_GET[$end] : $limit;
 		$list_r = (count($list_r) <= 0) ? array() : $list_r;
 		$href = HTML::href($href);
-		
+
 		if ($chapters) {
 			$chapter_list = dev_list_chapter($list_r, $begin, $end, $href);
 		}
-		
+
 		$output .= $chapter_list;
-		
+
 		$list_r = array_splice($list_r, $start, $end);
-		
+
 		//for ($i = $start; $i < (((count($list_r) - $start) > $end) ? ($start + $end) : count($list_r)); $i++) 
 		// $output .= dev_content_box($list_r, '', $href, $query_r, $highlight, $headers, $link_style, true, $img_dir, $file_dir, '', $trunc);
 		$table = new Table();
 		$table->content($list_r);
 		$output .= $table->render();
-		
+
 		$output .= $chapter_list;
-		
+
 		return $output;
 	}
 
+	/**
+	 * Function to get the base href.
+	 *
+	 * @param string $href The base href for the links.
+	 *
+	 * @return string The base href HTML string.
+	 */
 	static function baseHref($href = '') {
 		$href = HTML::href($href, false);
 		$output = '<base href="' . $href . '">';
@@ -260,6 +348,17 @@ class HTML {
 		return $output;
 	}
 
+	/**
+	 * Function to generate bar graph
+	 *
+	 * @param array $data The data to generate the graph
+	 * @param int $height The height of the graph
+	 * @param int $width The width of the graph
+	 * @param int $max The maximum value in the data
+	 * @param bool $is_percent Whether to display the values in percent
+	 *
+	 * @return string The HTML code for the bar graph
+	 */
 	static function barGraph($data, $height = '', $width = '', $max = '', $is_percent = '') {
 		$output = '';
 		if (DevArray::isAssoc($data)) {
@@ -279,6 +378,15 @@ class HTML {
 		
 		return $output;
 	}
+
+
+	/**
+	 * Function to convert newline to list item
+	 *
+	 * @param string $str The string to be converted
+	 *
+	 * @return string The HTML code for list items
+	 */
 	static function nl2li($str) {
 		$output = '';
 		$str_r = explode("\n", $str);
@@ -286,6 +394,13 @@ class HTML {
 		return $output;
 	}
 
+	/**
+	 * Function to convert HTML line breaks to newlines
+	 *
+	 * @param string $str The string to be converted
+	 *
+	 * @return string The string with newlines
+	 */
 	static function br2nl($str){ 
 		if (version_compare(PHP_VERSION, '5.0.0', '<')) 
 		{
@@ -303,6 +418,13 @@ class HTML {
 		return $str;
 	} 
 
+	/**
+	 * Function to return a darker color by reducing the value of each character in the hex code by 2.
+	 * 
+	 * @param string $hex The hex code of the color.
+	 * 
+	 * @return string The darker color hex code.
+	 */
 	static function darkerColor($hex)
 	{
 		$color = preg_replace("/[^A-Za-z0-9 ]/", '', $hex);
@@ -318,5 +440,6 @@ class HTML {
 		}
 		
 		return $color2;
-	}	
+	}
+
 }

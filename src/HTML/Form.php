@@ -5,8 +5,25 @@ use BlueFission\DevValue;
 use BlueFission\DevArray;
 use BlueFission\DevBoolean;
 
+/**
+ * Class Form
+ * 
+ * This class contains several static methods for generating various form fields. 
+ */
 class Form {
 
+	/**
+	 * dropdown
+	 * 
+	 * This method generates a dropdown select field with options. 
+	 * 
+	 * @param array $content_r   - An array of content used to populate the dropdown options
+	 * @param array $query_r     - An array of query data to be included as hidden fields in the form
+	 * @param string $trunc      - A string used to truncate data for display in the dropdown options
+	 * @param integer $fields    - The number of fields to display in each dropdown option
+	 * 
+	 * @return string
+	 */
 	static function dropdown($content_r, $query_r = '', $trunc = '', $fields = 2) {
 		$field_name = '';
 		$get_name = true;
@@ -39,6 +56,20 @@ class Form {
 		return $output;
 	}
 
+	/**
+	 * Generates form fields
+	 * 
+	 * @param string $type      The type of form field to generate, such as text, password, textarea, select, etc.
+	 * @param string $name      The name attribute of the form field.
+	 * @param string $label     The label to display for the form field.
+	 * @param mixed $value      The value to pre-populate the form field with.
+	 * @param bool $required    Whether the form field is required or not.
+	 * @param string $id        The id attribute of the form field. If left empty, it will default to the value of $name.
+	 * @param bool $readonly    Whether the form field should be readonly or not.
+	 * @param mixed $properties An array or string of additional properties to add to the form field.
+	 * 
+	 * @return string The generated form field.
+	 */
 	static function field($type = '', $name = '', $label = '', $value = '', $required = false, $id = '', $readonly = false, $properties = '') 
 	{
 	     $output = '';
@@ -307,6 +338,16 @@ class Form {
 	     return $output;
 	}
 
+	/**
+	 * Creates a form field for date input.
+	 *
+	 * @param string $name The name of the field.
+	 * @param string $label The label for the field.
+	 * @param string $value The value of the field.
+	 * @param bool $readonly Determines if the field is readonly.
+	 *
+	 * @return string The HTML for the date field.
+	 */
 	static function date($name = 'date', $label = 'Date', $value = '', $readonly = false) 
 	{
 		if ($value == '') 
@@ -347,11 +388,30 @@ class Form {
 	     return $output;
 	}
 
+	/**
+	 * Creates a form field for time input.
+	 *
+	 * @param string $name The name of the field.
+	 * @param string $label The label for the field.
+	 * @param string $value The value of the field.
+	 * @param bool $readonly Determines if the field is readonly.
+	 *
+	 * @return string The HTML for the time field.
+	 */
 	static function time($name = 'time', $label = 'Time', $value = '', $readonly = false)
 	{
-	
+		// Method body not provided, add implementation as needed.
 	}
 
+	/**
+	 * Returns the extracted part of a date string based on the section specified.
+	 *
+	 * @param string  $date      The date string in the format YYYY-MM-DD
+	 * @param string  $section   The section of the date to extract. Can be 'day', 'month', 'year' or left blank to return the whole date string in the format MM/DD/YYYY
+	 * @param int     $timestamp A flag to indicate if the date string is a timestamp (1) or not (0)
+	 *
+	 * @return string The extracted section of the date or the whole date in MM/DD/YYYY format
+	 */
 	static function splitDate($date, $section = '', $timestamp = 0) {
 		$output = '';
 		
@@ -377,9 +437,13 @@ class Form {
 		return $output;
 	}
 
-	//joins variables from a form post or get into a single date string
-	//$name argument takes as string as the base name for the date elements and the name of the final date var
-	//returns a standard format date as a string (mm/dd/yyyy)
+	/**
+	 * Joins variables from a form post or get into a single date string.
+	 *
+	 * @param string $name The base name for the date elements and the name of the final date var
+	 *
+	 * @return string A standard format date as a string (MM/DD/YYYY)
+	 */
 	static function joinDate($name = 'date') {
 	     $entry_month = $name . '_month';
 	     $entry_day = $name . '_day';
@@ -392,8 +456,22 @@ class Form {
 	     //$date = $$entry_month . '/' . $$entry_day . '/' . $$entry_year;
 	     
 	     return $date;
+
 	}
 
+	/**
+	 * Creates an HTML form with the given parameters.
+	 *
+	 * @param string $action   The action attribute of the form
+	 * @param string $name     The name attribute of the form
+	 * @param string $method   The method attribute of the form
+	 * @param bool   $validate A flag to indicate if the form needs to be validated
+	 * @param string $properties Additional properties to add to the form tag
+	 * @param string $image_path The path to the images for the form
+	 * @param string $css_path The path to the CSS for the form
+	 *
+	 * @return string The HTML form
+	 */
 	static function open($action = '', $name = '', $method = '', $validate = true, $properties = '', $image_path = 'images/', $css_path = 'css/rte.css') {
 		$output = '';
 		$action = HTML::href($action);
@@ -431,11 +509,25 @@ class Form {
 		return $output;
 	}
 
+	/**
+	 * Generates the closing tag for a form element.
+	 * 
+	 * @return string The closing tag for a form element.
+	 */
 	static function close() {
 		$output = '</form>';
 		return $output;
 	}
 
+	/**
+	 * Generates a table with form fields based on the given parameters.
+	 * 
+	 * @param array $field_type_r An array containing the type of field to be generated for each element.
+	 * @param array $active_field_r An array specifying the active fields.
+	 * @param array $property_r An array containing properties for each field.
+	 * 
+	 * @return string A table with form fields.
+	 */
 	static function draw($field_type_r = '', $active_field_r = '', $property_r = '') {
 		$output = '';
 		$required = '';
@@ -459,6 +551,15 @@ class Form {
 		return $output;
 	}
 
+	/**
+	 * Adds validation script for a form field.
+	 * 
+	 * @param string $field_name The name of the field to be validated.
+	 * @param string $field_label The label of the field to be validated.
+	 * @param string $criteria The validation criteria for the field.
+	 * 
+	 * @return string A validation script.
+	 */
 	static function validation($field_name = '', $field_label = '', $criteria = '') {
 		$output = '';
 		$output .= '

@@ -5,37 +5,87 @@ use BlueFission\DevValue;
 use BlueFission\Data\FileSystem;
 use BlueFission\Net\Email;
 
+/**
+ * Class Log
+ *
+ * This class is for managing log data, it provides methods for reading, writing, 
+ * and pushing log data to various locations such as file, email, or system logs.
+ * 
+ * The class implements the iData interface to provide a common way of accessing data.
+ */
 class Log extends Data implements iData
 {
-	protected $_config = array('storage'=>'', 'file'=>'application.log', 'email'=>'', 'subject'=>'', 'from'=>'', 'max_logs'=>100, 'instant'=>false);
-	
-	static $_messages;
-	
-	const SYSTEM = 0;
-	const EMAIL = 1;
-	const FILE = 3;
-	
-	static $_instance;
-	
-	public function __construct( $config = null )
-	{
-		parent::__construct();
-		if (is_array($config))
-			$this->config($config);
-			
-		if ( !$this->config('storage') ) $this->config('storage', self::FILE);
-		self::$_messages = array();
-	}
-	
-	public static function instance()
-	{
-		if (DevValue::isNull(Log::$_instance))
-			Log::$_instance = new Log();
-			
-		return Log::$_instance;
-	}
-	
-	public function push($message)
+    /**
+     * @var array $_config - Configuration options for the Log class.
+     *      storage - The destination where the log data should be stored.
+     *      file - The file path where log data should be stored.
+     *      email - The email address where log data should be sent.
+     *      subject - The subject line for the email.
+     *      from - The sender email address for the email.
+     *      max_logs - The maximum number of logs that should be stored.
+     *      instant - Whether to write the log data immediately or store it until write() is called.
+     */
+    protected $_config = array('storage'=>'', 'file'=>'application.log', 'email'=>'', 'subject'=>'', 'from'=>'', 'max_logs'=>100, 'instant'=>false);
+    
+    /**
+     * @var array $_messages - An array to store log data.
+     */
+    static $_messages;
+    
+    /**
+     * @var int SYSTEM - Constant value to indicate that log data should be stored in the system logs.
+     */
+    const SYSTEM = 0;
+    
+    /**
+     * @var int EMAIL - Constant value to indicate that log data should be sent as an email.
+     */
+    const EMAIL = 1;
+    
+    /**
+     * @var int FILE - Constant value to indicate that log data should be stored in a file.
+     */
+    const FILE = 3;
+    
+    /**
+     * @var Log $_instance - An instance of the Log class.
+     */
+    static $_instance;
+    
+    /**
+     * Log constructor.
+     * 
+     * @param array|null $config - An array of configuration options.
+     */
+    public function __construct( $config = null )
+    {
+        parent::__construct();
+        if (is_array($config))
+            $this->config($config);
+            
+        if ( !$this->config('storage') ) $this->config('storage', self::FILE);
+        self::$_messages = array();
+    }
+    
+    /**
+     * Creates a singleton instance of the Log class.
+     * 
+     * @return Log - An instance of the Log class.
+     */
+    public static function instance()
+    {
+        if (DevValue::isNull(Log::$_instance))
+            Log::$_instance = new Log();
+            
+        return Log::$_instance;
+    }
+    
+    /**
+     * Adds a message to the log data.
+     * 
+     * @param string $message - The log message to be added.
+     */
+    public function push($message)
 	{
 		$time = date('Y-m-d G:i:s');
 		$this->field($time, $message);
@@ -45,6 +95,13 @@ class Log extends Data implements iData
 		}
 	}
 	
+	/**
+	 * The `read` method reads the log data based on the storage type specified in the configuration.
+	 * If the storage type is `FILE`, it uses the `FileSystem` class to read the log file.
+	 * If the storage type is not specified, it defaults to `SYSTEM`.
+	 * 
+	 * @return mixed data Returns the log data if it was able to be read, otherwise returns false.
+	 */
 	public function read() 
 	{
 		$destination = $this->config('file');
@@ -64,6 +121,15 @@ class Log extends Data implements iData
 		return false;
 	}
 	
+	/**
+	 * The `write` method writes the log data to the specified storage type.
+	 * If the storage type is `FILE`, it uses the `FileSystem` class to write the log data to a file.
+	 * If the storage type is `EMAIL`, it uses the `Email` class to send an email with the log data.
+	 * If the storage type is not specified, it defaults to `SYSTEM`.
+	 * 
+	 * @param string $file The file name to be used for writing log data. 
+	 * @return void
+	 */
 	public function write($file = null)
 	{
 		$message = $this->message();
@@ -113,6 +179,11 @@ class Log extends Data implements iData
 		$this->status($status);	
 	}
 	
+	/**
+     * Deletes the log file
+     * 
+     * @return bool
+     */
 	public function delete()
 	{
 		$destination = $this->config('file');
@@ -131,6 +202,12 @@ class Log extends Data implements iData
 		return false;
 	}
 	
+	/**
+     * Gets the log message from the given records
+     * 
+     * @param null $records
+     * @return string
+     */
 	private function message( $records = null )
 	{
 		$records = (DevValue::isNull($records)) ? $records : $this->config('max_logs');
@@ -143,7 +220,12 @@ class Log extends Data implements iData
 		}
 		return $output; 
 	}
-	 
+	
+	/**
+     * Sends an alert message to the specified email address
+     * 
+     * @return void
+     */ 
 	public function alert()
 	{
 		$destination = $this->config('email');
@@ -164,6 +246,9 @@ class Log extends Data implements iData
 		$this->status($status);
 	}
 
+	/**
+     * Writes the log to file before the instance is destroyed
+     */
 	public function __destruct() {
 		if (!$this->config('instant'))
 			$this->write();

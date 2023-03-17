@@ -4,55 +4,111 @@ namespace BlueFission\Connections;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
+/**
+ * Class Socket
+ *
+ * This class is an implementation of the Connection class
+ * that implements the IConfigurable interface.
+ *
+ * The class makes use of fsockopen() function to open a
+ * socket connection.
+ *
+ * @package BlueFission\Connections
+ */
 class Socket extends Connection implements IConfigurable
 {
-	protected $_result;
-	protected $_config = array( 'target'=>'',
-		'port'=>'80',
-		'method'=>'GET',
-	);
-	private $_host;
-	private $_url;
+    /**
+     * @var string $result The result of the query
+     */
+    protected $_result;
+    /**
+     * @var array $_config The configuration data
+     */
+    protected $_config = [
+        'target' => '',
+        'port' => '80',
+        'method' => 'GET',
+    ];
+    /**
+     * @var string $host The host name
+     */
+    private $_host;
+    /**
+     * @var string $url The URL for the query
+     */
+    private $_url;
+
+    /**
+     * Constructor for the Socket class
+     *
+     * If a config is provided, it will be passed to the config() method.
+     *
+     * @param string|array $config
+     */
+    public function __construct($config = '')
+    {
+        parent::__construct();
+        if (is_array($config)) {
+            $this->config($config);
+        }
+    }
+
+    /**
+     * Method to open the socket connection
+     *
+     * The method makes use of the HTTP::urlExists() method
+     * to check if the target URL exists. If it does, it will
+     * parse the URL to get the host and path.
+     *
+     * The fsockopen() method is then used to open the socket connection.
+     *
+     * @return void
+     */
+    public function open()
+    {
+        if (HTTP::urlExists($this->config('target'))) {
+            $target = parse_url($this->config('target'));
+
+            $status = '';
+
+            $this->_host = $target['host'] ? $target['host'] : HTTP::domain();
+            $this->_url = $target['path'];
+            $port = $target['port'] ? $target['port'] : $this->config('port');
+
+            $this->_connection = fsockopen($this->_host, $port, $error_number, $error_string, 30);
+
+            $status = ($this->_connection) ? self::STATUS_CONNECTED : $error_string . ': ' . $error_number;
+        } else {
+            $status = self::STATUS_NOTCONNECTED;
+        }
+
+        $this->status($status);
+    }
+
+    /**
+     * Method to close the socket connection
+     *
+     * The method makes use of the fclose() method to close
+     * the connection, and then calls the parent::close() method
+     * to clean up.
+     *
+     * @return void
+     */
+    public function close()
+    {
+        fclose($this->_connection);
+
+        // clean up
+        parent::close();
+    }
 	
-	public function __construct( $config = '' )
-	{
-		parent::__construct();
-		if (is_array($config))
-			$this->config($config);
-	}
-	
-	public function open ()
-	{
-		if ( HTTP::urlExists($this->config('target')) )
-		{
-			$target = parse_url( $this->config('target') );
-			
-			$status = '';
-			
-			$this->_host = $target['host'] ? $target['host'] : HTTP::domain();
-			$this->_url = $target['path'];
-			$port = $target['port'] ? $target['port'] : $this->config('port');
-					
-			$this->_connection = fsockopen($host, $port, $error_number, $error_string, 30);
-			
-			$status ($this->_connection) ? self::STATUS_CONNECTED : $error_string . ': '. $error_number; 
-		}
-		else
-		{
-			$status = self::STATUS_NOTCONNECTED;
-		}
-		
-		$this->status($status);
-	}
-	
-	public function close ()
-	{
-		fclose($this->_connection); 
-			
-		// clean up
-		parent::close();
-	}
-	
+	/**
+	 * Performs an HTTP query
+	 *
+	 * @param string|null $query The query to be performed. If not provided, the query will use the method specified in the config.
+	 *
+	 * @return void
+	 */
 	public function query( $query = null ) 
 	{
 		$socket = $this->_connection;

@@ -6,9 +6,25 @@ use BlueFission\DevNumber;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
 
+/**
+ * Class Session
+ *
+ * Represents a session storage mechanism that implements the IData interface.
+ */
 class Session extends Storage implements IData
 {
+	/**
+	 * @var string $_id The unique identifier for the session.
+	 */
 	protected static $_id;
+	
+	/**
+	 * @var array $_config An array of configuration options for the session.
+	 * 'location': the path to the session.
+	 * 'name': the name of the session.
+	 * 'expire': the time in seconds for the session to expire.
+	 * 'secure': a boolean indicating if the session should be secure.
+	 */
 	protected $_config = array( 
 		'location'=>'',
 		'name'=>'',
@@ -16,11 +32,19 @@ class Session extends Storage implements IData
 		'secure'=>false,
 	);
 	
+	/**
+	 * Session constructor.
+	 * 
+	 * @param array|null $config An array of configuration options for the session.
+	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
 	}
 	
+	/**
+	 * Activates the session.
+	 */
 	public function activate( )
 	{
 		$path = $this->config('location');
@@ -47,6 +71,9 @@ class Session extends Storage implements IData
 			$this->status( self::STATUS_FAILED_INIT );
 	}
 	
+	/**
+	 * Writes data to the session.
+	 */
 	public function write()
 	{			
 		$value = HTTP::jsonEncode( $this->_data ? $this->_data : $this->_contents);
@@ -63,6 +90,11 @@ class Session extends Storage implements IData
 		$this->status( $status );	
 	}
 	
+	/**
+	 * Reads session data
+	 * 
+	 * @return mixed Session data
+	 */
 	public function read()
 	{	
 		$value = HTTP::session( $this->_source );
@@ -74,10 +106,15 @@ class Session extends Storage implements IData
 		}
 		return $value; 
 	}
-	
+
+	/**
+	 * Deletes session data
+	 * 
+	 * @return void
+	 */
 	public function delete()
 	{
 		$label = $this->_source;
 		unset($_SESSION[$label]);
-	} 
+	}
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Connections;
 
 use BlueFission\DevValue;
@@ -6,11 +7,28 @@ use BlueFission\DevArray;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
+/**
+ * Class Curl
+ * 
+ * This class implements the connection functionality using cURL. It extends the
+ * base Connection class and implements the IConfigurable interface.
+ */
 class Curl extends Connection implements IConfigurable
 {
+	/**
+	 * Result of the last cURL operation.
+	 *
+	 * @var string
+	 */
 	protected $_result;
 
-	protected $_config = array( 'target'=>'',
+	/**
+	 * Configuration data for the cURL connection.
+	 *
+	 * @var array
+	 */
+	protected $_config = array( 
+		'target'=>'',
 		'username'=>'',
 		'password'=>'',
 		'method'=>'',
@@ -18,6 +36,11 @@ class Curl extends Connection implements IConfigurable
 		'validate_host'=>false,
 	);
 	
+	/**
+	 * Constructor that sets the configuration data.
+	 *
+	 * @param array|null $config Configuration data.
+	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct();
@@ -25,6 +48,11 @@ class Curl extends Connection implements IConfigurable
 			$this->config($config);
 	}
 	
+	/**
+	 * Opens a cURL connection.
+	 *
+	 * @return void
+	 */
 	public function open()
 	{
 		$status = '';
@@ -53,6 +81,11 @@ class Curl extends Connection implements IConfigurable
 		$this->status($status);
 	}
 	
+	/**
+	 * Closes a cURL connection.
+	 *
+	 * @return void
+	 */
 	public function close ()
 	{
 		curl_close($this->_connection);
@@ -61,7 +94,14 @@ class Curl extends Connection implements IConfigurable
 		parent::close();
 	}
 	
-	public function query ( $query = null )
+	/**
+	 * Performs a cURL query to the target URL.
+	 * 
+	 * @param array $query The query data to be sent to the target URL.
+	 * 
+	 * @return void
+	 */
+	public function query($query = null)
 	{ 
 		$curl = $this->_connection;
 		$method = strtolower($this->config('method'));
@@ -96,4 +136,5 @@ class Curl extends Connection implements IConfigurable
 		}	
 		$this->status($status);
 	}
+
 }

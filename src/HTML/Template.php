@@ -11,72 +11,85 @@ use BlueFission\Data\FileSystem;
 use BlueFission\Data\Storage\Disk;
 use \InvalidArgumentException;
 
-
-//dev_template
+/**
+ * Class Template
+ *
+ * This class provides functionality for handling templates. It extends the Configurable class to handle configuration.
+ */
 class Template extends Configurable {
-	private $_template;
-	private $_cached;
-	private $_file;
-	
-	protected $_config = array(
-		'file'=>'',
-		'cache'=>true,
-		'cache_expire'=>60,
-		'cache_directory'=>'cache',
-		'max_records'=>1000, 
-		'delimiter_start'=>'{', 
-		'delimiter_end'=>'}',
-		'module_token'=>'mod', 
-		'module_directory'=>'modules',
-		'format'=>false,
-		'eval'=>false,
-	);
-	
-	public function __construct ( $config = null ) 
-	{
-		parent::__construct( $config );
-		if ( DevValue::isNotNull( $config ) ) {
-			if (DevArray::isAssoc($config))
-			{
-				$this->config($config);
-				$this->load($this->config('file'));
-			}
-			else
-				$this->load($config);
-		}
-		$this->_cached = false;
+    /**
+     * @var string $_template The contents of the template file
+     */
+    private $_template;
+    /**
+     * @var bool $_cached Whether the template is cached
+     */
+    private $_cached;
+    /**
+     * @var FileSystem $_file An object to represent the file system
+     */
+    private $_file;
+    /**
+     * @var array $_config Default configuration for the Template class
+     */
+    protected $_config = array(
+        'file'=>'',
+        'cache'=>true,
+        'cache_expire'=>60,
+        'cache_directory'=>'cache',
+        'max_records'=>1000, 
+        'delimiter_start'=>'{', 
+        'delimiter_end'=>'}',
+        'module_token'=>'mod', 
+        'module_directory'=>'modules',
+        'format'=>false,
+        'eval'=>false,
+    );
 
-		$this->dispatch( State::DRAFT );
-	}
+    /**
+     * Template constructor.
+     *
+     * @param null|array $config Configuration for the Template class
+     */
+    public function __construct ( $config = null ) 
+    {
+        parent::__construct( $config );
+        if ( DevValue::isNotNull( $config ) ) {
+            if (DevArray::isAssoc($config)) {
+                $this->config($config);
+                $this->load($this->config('file'));
+            } else {
+                $this->load($config);
+            }
+        }
+        $this->_cached = false;
 
-	public function load ( $file = null ) 
-	{
-		if ( DevValue::isNotNull($file))
-		{
-			$this->_file = new FileSystem($file);
-			// $this->_file->open();
-		}
-		if ( $this->_file )
-		{
-			$this->_file->read($file);
-			$this->_template = $this->_file->contents();
-		}
-	}
-	/*
-	public function load ( $file = null ) 
-	{
-		if ( DevValue::isNotNull($file))
-		{
-			$this->_file = new FileSystem($file);
-			$this->_file->open();
-		}
-		if ( $this->_file )
-		{
-			$this->_file->read();
-			$this->_template = $this->_file->contents();
-		}
-	}
-	*/
+        $this->dispatch( State::DRAFT );
+    }
+
+    /**
+     * Loads the contents of a file into the `$_template` property.
+     *
+     * @param null|string $file The file to load
+     */
+    public function load ( $file = null ) 
+    {
+        if ( DevValue::isNotNull($file)) {
+            $this->_file = new FileSystem($file);
+            // $this->_file->open();
+        }
+        if ( $this->_file ) {
+            $this->_file->read($file);
+            $this->_template = $this->_file->contents();
+        }
+    }
+
+    /**
+     * Gets or sets the contents of the `$_template` property.
+     *
+     * @param null|string $data The new value for `$_template`
+     * @return string The contents of `$_template`
+     */
 	public function contents($data = null)
 	{
 		if (DevValue::isNull($data)) return $this->_template;
@@ -84,17 +97,33 @@ class Template extends Configurable {
 		$this->_template = $data;
 	}
 	
+	/**
+	 * public function clear()
+	 * This method clears the content of the template and resets it.
+	 */
 	public function clear () 
 	{
 		parent::clear();
 		$this->reset();
 	}
 
+	/**
+	 * public function reset()
+	 * This method resets the template to its original state.
+	 */
 	public function reset()
 	{
 		$this->load();
 	}
 
+	/**
+	 * public function set( $var, $content = null, $formatted = null, $repetitions = null )
+	 * This method sets the content of the template.
+	 * @param  mixed  $var        the variable name or data
+	 * @param  mixed  $content    the content to be assigned to the variable
+	 * @param  mixed  $formatted  specifies if the content should be formatted as HTML or not
+	 * @param  mixed  $repetitions  specifies the number of repetitions for the content
+	 */
 	public function set( $var, $content = null, $formatted = null, $repetitions = null  ) 
 	{
 		if ($formatted)
@@ -141,7 +170,16 @@ class Template extends Configurable {
 		}
 	}
 
-	//alias parent "field()"
+	/**
+	 * Set the content of a field in the template
+	 *
+	 * @param mixed $var The field name or an associative array of field names and contents
+	 * @param mixed $content The content of the field. If $var is an associative array, this argument will be used as the value of $formatted
+	 * @param mixed $formatted Whether to format the content as HTML. Expects a boolean value
+	 *
+	 * @throws InvalidArgumentException If $content is empty or $formatted is not boolean
+	 * @return mixed The content of the field
+	 */
 	public function field( $var, $content = null, $formatted = null ) 
 	{
 		if ($formatted)
@@ -151,12 +189,12 @@ class Template extends Configurable {
 		{
 			if ( !$content )
 			{
-				// throw new InvalidArgumentException( 'Cannot assign empty value.');
+				throw new InvalidArgumentException( 'Cannot assign empty value.');
 			}
 
 			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) )
 			{
-				// throw new InvalidArgumentException( 'Formatted argument expects boolean');
+				throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
 			return parent::field($var, $content );
@@ -178,11 +216,26 @@ class Template extends Configurable {
 		}
 	}
 
+	/**
+	 * Set the content of the fields in the template
+	 *
+	 * @param mixed $data The content of the fields. Expects an associative array of field names and contents
+	 * @param mixed $formatted Whether to format the content as HTML. Expects a boolean value
+	 *
+	 * @return void
+	 */
 	public function assign( $data, $formatted = null )
 	{
 		$this->field($data, $formatted);
 	}
-	
+
+	/**
+	 * Cache the contents of the template
+	 *
+	 * @param int $minutes The number of minutes to cache the template
+	 *
+	 * @return void
+	 */
 	public function cache ( $minutes = null ) 
 	{
 		$file = $this->config('cache_directory').DIRECTORY_SEPARATOR.$_SERVER['REQUEST_URI'];
@@ -197,7 +250,14 @@ class Template extends Configurable {
 			$copy->write();
 		}
 	}
-	
+
+	/**
+	 * Check if the contents of the template are cached
+	 *
+	 * @param mixed $value If set, sets the cached property to the value
+	 *
+	 * @return mixed The value of the cached property
+	 */
 	private function cached ( $value ) 
 	{
 		if (DevValue::isNull($value))
@@ -205,11 +265,24 @@ class Template extends Configurable {
 		$this->_cached = ($value == true);
 	}
 
+	/**
+	 * Method to commit the data and formatting to the template
+	 *
+	 * @param mixed $formatted The formatting to apply to the data, if any
+	 */
 	public function commit( $formatted = null )
 	{
 		$this->set( $this->_data, $formatted );
 	}
-	
+
+	/**
+	 * Method to render a set of records
+	 *
+	 * @param array $recordSet The set of records to be rendered
+	 * @param mixed $formatted The formatting to apply to the records, if any
+	 *
+	 * @return string The rendered output
+	 */
 	public function renderRecordSet( $recordSet, $formatted = null ) 
 	{
 		$output = '';
@@ -223,7 +296,12 @@ class Template extends Configurable {
 		}
 		return $output;
 	}
-	
+
+	/**
+	 * Method to render the current template and its data
+	 *
+	 * @return string The rendered output
+	 */
 	public function render ( ) 
 	{
 		$this->executeModules();
@@ -237,11 +315,17 @@ class Template extends Configurable {
 		return ob_get_clean();
 	}
 
+	/**
+	 * Method to publish the rendered output to the screen
+	 */
 	public function publish ( ) 
 	{
 		print($this->render());
 	}
 
+	/**
+	 * Private method to execute any modules found in the template
+	 */
 	private function executeModules()
 	{
 		$pattern = "/@".$this->config('module_token')."\('(.*)'\)/";
@@ -258,4 +342,5 @@ class Template extends Configurable {
 		}
 
 	}
+
 }

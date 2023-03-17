@@ -7,6 +7,26 @@ use BlueFission\DevArray;
 use BlueFission\Data\File;
 use BlueFission\Behavioral\Configurable;
 
+/**
+ * Class XML
+ * 
+ * The XML class is used for parsing XML data and building XML structures.
+ * It extends the Configurable class to provide configurable behavior to the class.
+ * 
+ * @package BlueFission\HTML
+ * 
+ * @property string $_filename The filename of the XML file being parsed.
+ * @property resource $_parser The XML parser being used.
+ * @property array $_data The data obtained from parsing the XML file.
+ * @property string $_status The status of the XML parsing operation.
+ * 
+ * @method void file($file = null) Gets or sets the filename of the XML file being parsed.
+ * @method bool parseXML($file = null) Parses the XML file and returns the result.
+ * @method void startHandler($parser, $name = null, $attributes = null) The handler function that is called when an XML start tag is encountered.
+ * @method void dataHandler($parser, $data = null) The handler function that is called when XML data is encountered.
+ * @method void endHandler($parser, $name = null) The handler function that is called when an XML end tag is encountered.
+ * @method string buildXML($data = null, $indent = 0) Builds an XML structure from the data obtained from parsing the XML file.
+ */
 class XML extends Configurable
 {
 	private $_filename;
@@ -14,6 +34,13 @@ class XML extends Configurable
 	protected $_data;
 	protected $_status;
 
+	/**
+	 * The XML class constructor.
+	 * 
+	 * @param string|null $file The XML file to parse.
+	 * 
+	 * @return void
+	 */
 	public function __construct($file = null) 
 	{
 		parent::__construct();
@@ -28,6 +55,13 @@ class XML extends Configurable
 		}
 	}
 
+	/**
+	 * Gets or sets the filename of the XML file being parsed.
+	 * 
+	 * @param string|null $file The filename of the XML file being parsed.
+	 * 
+	 * @return string|void
+	 */
 	public function file($file = null) 
 	{
 		if (DevValue::isNull($file))
@@ -35,7 +69,16 @@ class XML extends Configurable
 		
 		$this->_filename = $file;
 	}
-
+	
+	/**
+	 * parseXML
+	 *
+	 * Parse an XML file and saves it to a data array.
+	 *
+	 * @param string|null $file Path to the XML file
+	 *
+	 * @return bool Returns true on success, false otherwise
+	 */
 	public function parseXML($file = null) 
 	{
 		if (DevValue::isNull($file)) {
@@ -58,12 +101,33 @@ class XML extends Configurable
 		return true;
 	}
 
+	/**
+	 * startHandler
+	 *
+	 * Handle the start of an XML element.
+	 *
+	 * @param resource $parser The XML parser resource
+	 * @param string $name The name of the element
+	 * @param array $attributes An array of element attributes
+	 *
+	 * @return void
+	 */
 	public function startHandler($parser, $name = null, $attributes = null) {
 		$data['name'] = $name;
 		if ($attributes) $data['attributes'] = $attributes;
 		$this->_data[] = $data;
 	}
 
+	/**
+	 * dataHandler
+	 *
+	 * Handle data within an XML element.
+	 *
+	 * @param resource $parser The XML parser resource
+	 * @param string $data The data within the element
+	 *
+	 * @return void
+	 */
 	public function dataHandler($parser, $data = null) {
 		if ($data = trim($data)) {
 			$index = count($this->_data)-1;
@@ -71,7 +135,17 @@ class XML extends Configurable
 			$this->_data[$index]['content'] .= $data;
 		}
 	}
-	 
+
+	/**
+	 * endHandler
+	 *
+	 * Handle the end of an XML element.
+	 *
+	 * @param resource $parser The XML parser resource
+	 * @param string $name The name of the element
+	 *
+	 * @return void
+	 */
 	public function endHandler($parser, $name = null) {
 		if (count($this->_data) > 1) {
 			$data = array_pop($this->_data);
@@ -80,6 +154,13 @@ class XML extends Configurable
 		}
 	}
 
+	/**
+	 * Builds an XML string from the given data array
+	 *
+	 * @param array $data
+	 * @param integer $indent
+	 * @return string
+	 */
 	public function buildXML($data = null, $indent = 0) {
 		$xml = '';
 		$tabs = "";
@@ -99,6 +180,12 @@ class XML extends Configurable
 		return $xml;
 	}
 
+	/**
+	 * Gets or sets the current status
+	 *
+	 * @param mixed $status
+	 * @return mixed
+	 */
 	public function status($status = null) 
 	{
 		if (DevValue::isNull($status))
@@ -106,11 +193,21 @@ class XML extends Configurable
 		$this->_status = $status;
 	}
 
+	/**
+	 * Gets the data
+	 *
+	 * @return mixed
+	 */
 	public function data() 
 	{
 		return $this->_data;
 	}
 
+	/**
+	 * Outputs the XML
+	 *
+	 * @param array $data
+	 */
 	public function outputXML($data = null) 
 	{
 		header("Content-Type: XML");
@@ -119,5 +216,6 @@ class XML extends Configurable
 		$xml = $this->buildXML($data);
 		echo $xml;
 	}
+
 
 } //End class DevXML

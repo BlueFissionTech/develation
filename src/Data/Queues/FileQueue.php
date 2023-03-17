@@ -2,34 +2,65 @@
 
 namespace BlueFission\Data\Queues;
 
+/**
+ * Class FileQueue
+ * 
+ * @package BlueFission\Data\Queues
+ * @implements IQueue
+ */
 class FileQueue extends Queue implements IQueue {
 
-	// This is highly unreliable and should only be used for testing
-
+	/**
+	 * A constant for the file name for the file queue stack
+	 */
 	const FILENAME = 'file_queue_stack.tmp';
 		
+	/**
+	 * @var string $_stack 
+	 */
 	private static $_stack;
+
+	/**
+	 * @var array $_array 
+	 */
 	private static $_array;
 
+	/**
+	 * Prevents the class from being instantiated
+	 */
 	private function __construct() {}
 	
+	/**
+	 * Prevents the class from being cloned
+	 */
 	private function __clone() {}
 
+	/**
+	 * Returns the instance of the stack
+	 * 
+	 * @return string
+	 */
 	private static function instance() {
 		if(!self::$_stack) self::init();
 		return self::$_stack;
 	}
 	
+	/**
+	 * Initializes the stack
+	 */
 	private static function init() {
-		// $stack = tmpfile( self::FILENAME );
 		$tempfile = sys_get_temp_dir().DIRECTORY_SEPARATOR.self::FILENAME;
-		// touch($tempfile);
-		// $stack = fopen($tempfile, 'a+');
 		$stack = $tempfile;
 
 		self::$_stack = $stack;
 	}
 	
+	/**
+	 * Check if a given queue is empty
+	 * 
+	 * @param string $queue 
+	 * @return boolean
+	 */
 	public static function is_empty($queue) {
 		$stack = self::instance();
 
@@ -46,10 +77,17 @@ class FileQueue extends Queue implements IQueue {
 		return $count ? false : true;
 	}
 
+	/**
+	 * Dequeue an item from a given queue
+	 * 
+	 * @param string $queue 
+	 * @param int $after 
+	 * @param int $until 
+	 * @return array|null
+	 */
 	public static function dequeue($queue, $after=false, $until=false) {
 		$stack = self::instance();
 		$data = file_get_contents($stack);
-		
 
 		self::$_array = unserialize($data);
 		if ( self::$_mode == static::FILO && is_array(self::$_array)) {
@@ -70,6 +108,14 @@ class FileQueue extends Queue implements IQueue {
 		return $items;
 	}
 	
+	/**
+	 * Enqueue an item to the given queue
+	 * 
+	 * @param string $queue The name of the queue
+	 * @param mixed $item The item to be added to the queue
+	 * 
+	 * @return void
+	 */
 	public static function enqueue($queue, $item) {
 		$stack = self::instance();
 		$data = file_get_contents($stack);
@@ -81,5 +127,6 @@ class FileQueue extends Queue implements IQueue {
 		$data = serialize(self::$_array);
 
 		file_put_contents($stack, $data);
-	}	
+	}
+
 }

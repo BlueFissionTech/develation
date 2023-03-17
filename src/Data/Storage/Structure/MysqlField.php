@@ -3,67 +3,159 @@ namespace BlueFission\Data\Storage\Structure;
 
 use BlueFission\DevString;
 
+/**
+ * Class MysqlField 
+ * Represents a field in a MySQL table. 
+ */
 class MysqlField {
+    /**
+     * @var string The name of the field.
+     */
+    private $_name;
 
-	private $_name;
-	private $_type;
-	private $_size;
-	private $_primary;
-	private $_unique;
-	private $_null;
-	private $_binary;
-	private $_foreign = [];
-	private $_autoincrement;
+    /**
+     * @var string The type of the field.
+     */
+    private $_type;
 
-	public function __construct($name)
-	{
-		$this->_name = $name;
+    /**
+     * @var int The size of the field.
+     */
+    private $_size;
+
+    /**
+     * @var boolean If the field is a primary key.
+     */
+    private $_primary;
+
+    /**
+     * @var boolean If the field is unique.
+     */
+    private $_unique;
+
+    /**
+     * @var boolean If the field can be null.
+     */
+    private $_null;
+
+    /**
+     * @var boolean If the field is a binary.
+     */
+    private $_binary;
+
+    /**
+     * @var array Contains the foreign key information for the field.
+     */
+    private $_foreign = [];
+
+    /**
+     * @var boolean If the field is auto-incremented.
+     */
+    private $_autoincrement;
+
+    /**
+     * Constructor for the MysqlField class.
+     *
+     * @param string $name The name of the field.
+     *
+     * @return MysqlField 
+     */
+    public function __construct($name)
+    {
+        $this->_name = $name;
+
+        return $this;
+    }
+
+    /**
+     * Sets the type of the field.
+     *
+     * @param string $type The type of the field.
+     *
+     * @return MysqlField 
+     */
+    public function type($type)
+    {
+        $this->_type = $type;
+
+        return $this;
+    }
+
+    /**
+     * Sets the size of the field.
+     *
+     * @param int $size The size of the field.
+     *
+     * @return MysqlField 
+     */
+    public function size($size)
+    {
+        $this->_size = $size;
+
+        return $this;
+    }
+
+    /**
+     * Sets the field as a primary key.
+     *
+     * @param boolean $isTrue If the field is a primary key.
+     *
+     * @return MysqlField 
+     */
+    public function primary( $isTrue = true)
+    {
+        $this->_primary = $isTrue;
+
+        return $this;
+    }
+
+    /**
+     * Sets the field as auto-incremented.
+     *
+     * @param boolean $isTrue If the field is auto-incremented.
+     *
+     * @return MysqlField 
+     */
+    public function autoincrement( $isTrue = true)
+    {
+        $this->_autoincrement = $isTrue;
+
+        return $this;
+    }
+
+    /**
+     * Sets the field as unique.
+     *
+     * @param boolean $isTrue If the field is unique.
+     *
+     * @return MysqlField 
+     */
+    public function unique( $isTrue = true)
+    {
+        $this->_unique = $isTrue;
 
 		return $this;
 	}
 
-	public function type($type)
-	{
-		$this->_type = $type;
-
-		return $this;
-	}
-
-	public function size($size)
-	{
-		$this->_size = $size;
-
-		return $this;
-	}
-
-	public function primary( $isTrue = true)
-	{
-		$this->_primary = $isTrue;
-
-		return $this;
-	}
-
-	public function autoincrement( $isTrue = true)
-	{
-		$this->_autoincrement = $isTrue;
-
-		return $this;
-	}
-
-	public function unique( $isTrue = true)
-	{
-		$this->_unique = $isTrue;
-
-		return $this;
-	}
-
+	/**
+	 * Set the null property of the field
+	 * 
+	 * @param bool $isTrue Whether the field should be set to null
+	 * @return object Returns the instance of the class
+	 */
 	public function null( $isTrue = true)
-	{
-		$this->_null = $isTrue;
+		{
+			$this->_null = $isTrue;
 
-		return $this;
-	}
+			return $this;
+		}
 
+	/**
+	 * Set the required property of the field
+	 * 
+	 * @param bool $isTrue Whether the field is required
+	 * @return object Returns the instance of the class
+	 */
 	public function required( $isTrue = true)
 	{
 		$this->_null = !$isTrue;
@@ -71,6 +163,15 @@ class MysqlField {
 		return $this;
 	}
 
+	/**
+	 * Set the foreign property of the field
+	 * 
+	 * @param string $entity The entity referenced by the foreign key
+	 * @param string $onField The field referenced in the foreign entity
+	 * @param string $updateAction The action to be taken on update of the foreign field
+	 * @param string $deleteAction The action to be taken on delete of the foreign field
+	 * @return object Returns the instance of the class
+	 */
 	public function foreign( $entity, $onField = 'id', $updateAction = '', $deleteAction = '' )
 	{
 		$this->_foreign[$entity] = ['on'=>$onField, 'update'=>$updateAction, 'delete'=>$deleteAction];
@@ -78,6 +179,11 @@ class MysqlField {
 		return $this;
 	}
 
+	/**
+	 * Get the definition string of the field
+	 * 
+	 * @return string The definition string of the field
+	 */
 	public function definition()
 	{
 		$definition[] = "`{$this->_name}`";
@@ -120,6 +226,11 @@ class MysqlField {
 		return $definition_string;
 	}
 
+	/**
+	 * Get the extras string of the field
+	 * 
+	 * @return string The extras string of the field
+	 */
 	public function extras()
 	{
 		$extras = [];
@@ -157,12 +268,17 @@ class MysqlField {
 		return $extras_string;
 	}
 
+	/**
+	 * Adds any additional properties to the table definition.
+	 * 
+	 * @return string The string representation of the additional properties to be added to the table definition.
+	 */
 	public function additions()
-	{
-		$additions = [];
+		{
+			$additions = [];
 
-		$addition_string = implode(",\n", $additions);
+			$addition_string = implode(",\n", $additions);
 
-		return $addition_string;
-	}
+			return $addition_string;
+		}
 }

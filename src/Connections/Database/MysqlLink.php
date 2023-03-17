@@ -7,69 +7,110 @@ use BlueFission\DevArray;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
+/**
+ * Class MysqlLink
+ *
+ * This class extends the Connection class and implements the IConfigurable interface.
+ * It is used for establishing a connection to a MySQL database and performing queries.
+ */
 class MysqlLink extends Connection implements IConfigurable
 {
-	const INSERT = 1;
-	const UPDATE = 2;
-	const UPDATE_SPECIFIED = 3;
+    // Constants for different types of queries
+    const INSERT = 1;
+    const UPDATE = 2;
+    const UPDATE_SPECIFIED = 3;
 
-	protected static $_database;
-	private static $_query;
-	private static $_last_row;
-	
-	protected $_config = array( 'target'=>'localhost',
-		'username'=>'',
-		'password'=>'',
-		'database'=>'',
-		'table'=>'',
-		'port'=>'',
-		'key'=>'_rowid',
-		'ignore_null'=>false,
-	);
-	
-	public function __construct( $config = null )
-	{
-		parent::__construct( $config );
-		if (DevValue::isNull(self::$_database))
-			self::$_database = array();
-		else	
-			$this->_connection = end ( self::$_database );
-
-		return $this;
-	}
-	
-	public function open()
-	{
-		$host = ( $this->config('target') ) ? $this->config('target') : 'localhost';
-		$username = $this->config('username');
-		$password = $this->config('password');
-		$database = $this->config('database');
-		$port = $this->config('port');
-		
-		$connection_id = count(self::$_database);
-		
-		if ( !class_exists('mysqli') ) return;
-		$db = new \mysqli($host, $username, $password, $database, $port);
-		
-		if (!$db->connect_error)
-			self::$_database[$connection_id] = $this->_connection = $db;
-		
-		$this->status( $db->connect_error ? $db->connect_error : self::STATUS_CONNECTED );
-	}
-	
+    // protected property to store the database connection
+    protected static $_database;
+    private static $_query;
+    private static $_last_row;
+    
+    // property to store the configuration
+    protected $_config = array( 
+        'target'=>'localhost',
+        'username'=>'',
+        'password'=>'',
+        'database'=>'',
+        'table'=>'',
+        'port'=>'',
+        'key'=>'_rowid',
+        'ignore_null'=>false,
+    );
+    
+    /**
+     * Constructor method.
+     *
+     * This method sets the configuration, if provided, and sets the connection property to the last stored connection.
+     *
+     * @param mixed $config The configuration for the connection.
+     * @return MysqlLink 
+     */
+    public function __construct( $config = null )
+    {
+        parent::__construct( $config );
+        if (DevValue::isNull(self::$_database)) {
+            self::$_database = array();
+        } else {
+            $this->_connection = end ( self::$_database );
+        }
+        return $this;
+    }
+    
+    /**
+     * Method to open a connection to a MySQL database.
+     *
+     * This method uses the configuration properties to establish a connection to a MySQL database.
+     * If a connection is successfully established, it sets the connection property and the status property.
+     *
+     * @return void 
+     */
+    public function open()
+    {
+        $host = ( $this->config('target') ) ? $this->config('target') : 'localhost';
+        $username = $this->config('username');
+        $password = $this->config('password');
+        $database = $this->config('database');
+        $port = $this->config('port');
+        
+        $connection_id = count(self::$_database);
+        
+        if ( !class_exists('mysqli') ) return;
+        $db = new \mysqli($host, $username, $password, $database, $port);
+        
+        if (!$db->connect_error) {
+            self::$_database[$connection_id] = $this->_connection = $db;
+        }
+        
+        $this->status( $db->connect_error ? $db->connect_error : self::STATUS_CONNECTED );
+    }
+    
+	/**
+	 * Close the database connection
+	 */
 	public function close()
 	{
 		$this->_connection->close();
 		
-		//clean up
+		// Clean up
 		parent::close();
 	}
 
+	/**
+	 * Get stats about the current query
+	 *
+	 * @return array  An array containing the current query
+	 */
 	public function stats()
 	{
 		return array('query'=>$this->_query);
 	}
 	
+	/**
+	 * Perform a query on the database
+	 *
+	 * @param string|array $query  The query to perform
+	 * @return bool  Whether the query was successful
+	 */
 	public function query ( $query = null )
 	{
 		$db = $this->_connection;
@@ -118,6 +159,13 @@ class MysqlLink extends Connection implements IConfigurable
 		}	
 	}
 
+	/**
+	 * Find a record in the database matching the given criteria
+	 *
+	 * @param string $table  The name of the table to search in
+	 * @param array $data  The criteria to match
+	 * @return bool  Whether the query was successful
+	 */
 	private function find($table, $data) 
 	{
 		$db = $this->_connection;
@@ -163,12 +211,14 @@ class MysqlLink extends Connection implements IConfigurable
 		return $success;
 	}
 	
-	//inserts data into a MySQL database. 
-	//$table takes a string that represents the name of the database table
-	//(old) $fields is an array of all fields to be affected
-	//(old) $values is an array of all values to be inserted
-	//$data is an associative array of fields and values to be affected
-	//returns a true if insert was successful, false if not
+	/**
+	 * Inserts data into a MySQL database. 
+	 * 
+	 * @param string $table The name of the database table
+	 * @param array $data An associative array of fields and values to be inserted
+	 * 
+	 * @return boolean Returns `true` if the insert was successful, `false` otherwise
+	 */
 	private function insert($table, $data) 
 	{
 		$status = self::STATUS_NOTCONNECTED;
@@ -182,10 +232,13 @@ class MysqlLink extends Connection implements IConfigurable
 			$value_string = '';
 			$temp_values = array();
 			
-			//turn array to string
+			// Turn array into a string
 			$field_string = implode( '`, `', array_keys($data));
-			//prepare each value for input
-			foreach ($data as $a) array_push($temp_values, self::sanitize($a));
+			
+			// Prepare each value for input
+			foreach ($data as $a) {
+				array_push($temp_values, self::sanitize($a));
+			}
 			
 			$value_string = implode(', ', $temp_values);
 			
@@ -209,14 +262,17 @@ class MysqlLink extends Connection implements IConfigurable
 		return $success;
 	}
 
-	//updates data in a MySQL database. 
-	//$table takes a string that represents the name of the database table
-	//(old) $fields is an array of all fields to be affected 
-	//(old) $values is an array of all values to be changed
-	//$data is an associative array of fields and values to be affected
-	//returns a true if update was successful, false if not
-	//$ignore_null takes either a 1 or 0 (true or false) and determines if the entry 
-	//   will be replaced with a null value or kept the same when NULL is passed
+	/**
+	 * Updates data in a MySQL database. 
+	 * 
+	 * @param string $table The name of the database table
+	 * @param array $data An associative array of fields and values to be updated
+	 * @param string $where The condition for which to update the data
+	 * @param boolean $ignore_null Takes either a `1` or `0` (`true` or `false`) and determines if the entry 
+	 *   will be replaced with a null value or kept the same when `NULL` is passed
+	 * 
+	 * @return boolean Returns `true` if the update was successful, `false` otherwise
+	 */
 	private function update($table, $data, $where, $ignore_null = false) 
 	{
 		$db = $this->_connection;
@@ -265,14 +321,17 @@ class MysqlLink extends Connection implements IConfigurable
 		return $success;
 	}
 
-	//Posts data into DB by whatever means specified
-	//$table takes a string that represents the name of the database table
-	//(old) $fields is an array of all fields to be affected
-	//(old) $values is an array of all values to be changed
-	//$data is an associative array of fields and values to be affected
-	//$where takes a MySQL where clause. Uses an update query if given.
-	//$type determines what type of query will be used. 1 gives an insert, 2 gives an update, 3 give and update ignoring nulls
-	//Returns string with error or success statement.
+	//Posts data into the database using specified method
+	/**
+	 * Posts data into the database using specified method
+	 * 
+	 * @param string $table The name of the database table
+	 * @param array $data An associative array of fields and values to be affected
+	 * @param string $where A MySQL WHERE clause (optional)
+	 * @param int $type Determines the type of query used. 1 for INSERT, 2 for UPDATE, 3 for UPDATE ignoring nulls (optional)
+	 * 
+	 * @return string A string indicating success or error statement
+	 */
 	private function post($table, $data, $where = null, $type = null) 
 	{
 		$db = $this->_connection;
@@ -356,6 +415,12 @@ class MysqlLink extends Connection implements IConfigurable
 		return $success;
 	}
 	
+	/**
+	 * Get or set the database name
+	 *
+	 * @param string|null $database The database name to set
+	 * @return string|null The database name
+	 */
 	public function database( $database = null )
 	{
 		if ( DevValue::isNull( $database ) )
@@ -365,12 +430,16 @@ class MysqlLink extends Connection implements IConfigurable
 		$db = $this->_connection;
 		$db->select_db( $this->config('database') );	
 	}
-		
-	//Determines if the entry will be replaced with a null value or kept the same when NULL is passed
-	//$table takes the databased table to search in
-	//$field is the column that the value is in
-	//$value is the original value to be checked or preserved
-	//$where is the where clause that determines the row of the entry
+
+	/**
+	 * Get the existing value if NULL is passed as the value
+	 *
+	 * @param string $table The database table to search in
+	 * @param string $field The column that the value is in
+	 * @param string $value The original value to be checked or preserved
+	 * @param string $where The where clause that determines the row of the entry
+	 * @return string The value after checking or preserving
+	 */
 	private function getExistingValueIfNull($table, $field, $value, $where) 
 	{
 		$db = $this->_connection;
@@ -387,17 +456,27 @@ class MysqlLink extends Connection implements IConfigurable
 	     return $value;
 	}
 
+	/**
+	 * Get the last row inserted
+	 *
+	 * @return integer The last row id
+	 */
 	public function last_row() {
 		return $this->_last_row;
 	}
-	
+
+	/**
+	 * Sanitize the given string
+	 *
+	 * @param string $string The string to sanitize
+	 * @param boolean $datetime Indicates if the string is a datetime value
+	 * @return string The sanitized string
+	 */
 	public static function sanitize($string, $datetime = false) 
 	{
 		$db = end ( self::$_database );
 		//Create regular expression patterns
 		$pattern = array( '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' );
-		// $replacement = array( '&#39;', '\'$1\'', '$3-$1-$2', '\'$1\'', '&#36;', 'NULL' );
-		// if ($datetime === true) $replacement = array( '&#39;', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '&#36;', 'NULL' );
 		$replacement = array( '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', 'NULL' );
 		if ($datetime === true) $replacement = array( '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', 'NULL' );
 		
@@ -408,16 +487,23 @@ class MysqlLink extends Connection implements IConfigurable
 		
 		return $string;
 	}
-		
+
+	/**
+	 * Determines if the given table exists in the database
+	 *
+	 * @param string $table Name of the table to check for
+	 *
+	 * @return bool true if the table exists, false otherwise
+	 */
 	static function tableExists($table)
 	{
-		$db = end ( self::$_database );
-		$table = self::sanitize($table);
-		$result = $db->query("SHOW TABLES LIKE {$table}");
+	    $db = end ( self::$_database );
+	    $table = self::sanitize($table);
+	    $result = $db->query("SHOW TABLES LIKE {$table}");
 
-		if($result && $result->num_rows==1) 
-	    		return true;
-	    	else
-	    		return false;
+	    if($result && $result->num_rows==1) 
+	        return true;
+	    else
+	        return false;
 	}
 }

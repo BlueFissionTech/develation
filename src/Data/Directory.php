@@ -1,10 +1,10 @@
 <?php
 namespace BlueFission\Data
 
-use BlueFission\Collections\Container;
+use BlueFission\Collections\Hierarchical;
 use BlueFission\Collections\ICollection;
 
-abstract class Directory extends Container implements ICollection
+abstract class Directory extends Hierarchical implements ICollection
 {
 	public function __construct( )
 	{

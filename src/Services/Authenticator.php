@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class Authenticator
+ *
+ * This class extends the Configurable class and implements the authenticate method which
+ * verifies a given username and password and returns true or false based on the result. 
+ * The isAuthenticated method returns true if the session is authenticated.
+ */
 namespace BlueFission\Services;
 
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -8,7 +15,11 @@ use BlueFission\Net\HTTP;
 use BlueFission\Data\Storage\Storage;
 
 class Authenticator extends Configurable {
-
+	/**
+	 * Default configuration values
+	 *
+	 * @var array
+	 */
 	protected $_config = [ 
 		'session'=>'login',
 		'users_table'=>'users',
@@ -22,6 +33,11 @@ class Authenticator extends Configurable {
 		'max_attempts'=>10,
 	];
 
+	/**
+	 * The user data
+	 *
+	 * @var array
+	 */
 	protected $_data = [
 		'id'=>'',
 		'username'=>'',
@@ -29,13 +45,32 @@ class Authenticator extends Configurable {
 		'remember'=>'',
 	];
 
+	/**
+	 * The data source object
+	 *
+	 * @var Storage
+	 */
 	private $_datasource;
 
+	/**
+	 * The Authenticator constructor
+	 *
+	 * @param Storage $datasource
+	 * @param array|null $config
+	 */
 	public function __construct( Storage $datasource, $config = null ) {
 		parent::__construct($config);
 		$this->_datasource = $datasource;
 	}
 
+	/**
+	 * Authenticates the user
+	 *
+	 * @param string $username
+	 * @param string $password
+	 *
+	 * @return boolean
+	 */
 	public function authenticate( $username, $password ) {
 		// $users = $this->config('users');
 		// $users->
@@ -74,6 +109,13 @@ class Authenticator extends Configurable {
 		return true;
 	}
 
+	/**
+	 * Method isAuthenticated
+	 * 
+	 * Check if user is authenticated
+	 * 
+	 * @return bool Returns true if user is authenticated, false otherwise
+	 */
 	public function isAuthenticated() {
 		// return true;
 		if ( isset( $_COOKIE[$this->config('session')] ) ) {
@@ -91,6 +133,15 @@ class Authenticator extends Configurable {
 		}
 	}
 
+	/**
+	 * Method confirmIPAddress
+	 * 
+	 * Confirm the IP address of the user
+	 * 
+	 * @param string $value The IP address of the user
+	 * 
+	 * @return bool Returns true if the IP address is confirmed, false otherwise
+	 */
 	private function confirmIPAddress($value) 
 	{ 
 		// $attempts = new Mysql('dash_login_attempts'); // TODO fix this with dependency injection
@@ -122,6 +173,13 @@ class Authenticator extends Configurable {
 		return true;
 	}
 
+	/**
+	 * Method blockIPAddress
+	 * 
+	 * Block an IP address
+	 * 
+	 * @return bool Returns true if the IP address is blocked, false otherwise
+	 */
 	private function blockIPAddress() 
 	{ 
 		// $attempts = new Mysql('dash_login_attempts');
@@ -145,9 +203,11 @@ class Authenticator extends Configurable {
 		return false;
 	}
 
+	/**
+	 * Clear the IP address from the login attempts table.
+	 */
 	private function clearIPAddress() 
 	{ 
-		// $attempts = new Mysql('dash_login_attempts');
 		$attempts = $this->_datasource;
 		$attempts->clear();
 		$attempts->config('name', $this->config('login_attempts_table'));
@@ -156,15 +216,16 @@ class Authenticator extends Configurable {
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
 		$attempts->read();
 		$last = $attempts->data();
-		
+
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('logout_interval') ) )
 		{
-			// $attempts->delete();
 			$db->delete('dash_login_attempts', 'ip_address', $_SERVER['REMOTE_ADDR']);
 		}
-	} 
+	}
 
-
+	/**
+	 * Destroy the current session.
+	 */
 	public function destroySession() {
 		$this->setAuthCookie("", -3600);
 		unset($_COOKIE[$this->config('session')]);
@@ -175,9 +236,12 @@ class Authenticator extends Configurable {
 		return true;
 	}
 
+	/**
+	 * Get a user based on the provided username.
+	 * @param string $username The username of the user to get.
+	 * @return mixed The user data if the user was found, otherwise false.
+	 */
 	private function getUser($username){
-		
-		// $user = new Mysql('users');
 		$user = $this->_datasource;
 		$user->reset();
 		$user->clear();
@@ -193,7 +257,11 @@ class Authenticator extends Configurable {
 			return false;
 		}
 	}
-	
+
+	/**
+	 * Set the session.
+	 * @return bool True if the session was successfully set, otherwise false.
+	 */
 	public function setSession() {
 		if ( isset( $_COOKIE[$this->config('session')] ) ) {
 			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')])))
@@ -207,7 +275,6 @@ class Authenticator extends Configurable {
 		if ( !$this->isAuthenticated() ) return false;
 		$loginData = array(
 			'username' => $this->username,
-			// 'displayname' => $this->displayname,
 			'id' => $this->id,
 			'duration' => $this->config('duration')
 		);
@@ -222,10 +289,23 @@ class Authenticator extends Configurable {
 		}
 	}
 
+	/**
+	 * Get the expiration time for the cookie
+	 *
+	 * @return int The time the cookie should expire
+	 */
 	private function getExpiration(){
 		return time() + $this->config('duration');
 	}
-	
+
+	/**
+	 * Set the authentication cookie with the given value
+	 *
+	 * @param string $value The value to set in the cookie
+	 * @param string $duration The duration the cookie should be set for
+	 *
+	 * @return HTTP::cookie The newly set cookie
+	 */
 	private function setAuthCookie($value, $duration = ""){
 		if($duration == ""){
 			$duration = $this->config('duration');
@@ -241,4 +321,5 @@ class Authenticator extends Configurable {
 		
 		return HTTP::cookie($var, $value, $cookiedie, $dir, $cookiesecure);
 	}
+
 }

@@ -8,15 +8,41 @@ use BlueFission\DevArray;
 use BlueFission\Behavioral\Dispatcher;
 use BlueFission\Behavioral\Behaviors\Behavior;
 
+/**
+ * Class Service 
+ *
+ * @package BlueFission\Services
+ */
 class Service extends Dispatcher {
 
+	/**
+	 * @var array $registrations
+	 */
 	protected $_registrations;
+
+	/**
+	 * @var array $routes
+	 */
 	protected $_routes;
+
+	/**
+	 * @var object $parent
+	 */
 	protected $_parent;
 
+	/**
+	 * @var int $LOCAL_LEVEL
+	 */
 	const LOCAL_LEVEL = 1;
+
+	/**
+	 * @var int $SCOPE_LEVEL
+	 */
 	const SCOPE_LEVEL = 2;
 	
+	/**
+	 * @var array $data
+	 */
 	protected $_data = array(
 		'name'=>'',
 		'arguments'=>'',
@@ -25,6 +51,9 @@ class Service extends Dispatcher {
 		'scope'=>'',
 	);
 
+	/**
+	 * Service constructor.
+	 */
 	public function __construct() 
 	{
 		parent::__construct();
@@ -32,6 +61,11 @@ class Service extends Dispatcher {
 		$this->scope = $this;
 	}
 
+	/**
+	 * Returns instance of service
+	 * 
+	 * @return mixed
+	 */
 	public function instance()
 	{
 		if ( isset( $this->instance ) && $this->instance instanceof $this->type ) {
@@ -56,69 +90,115 @@ class Service extends Dispatcher {
 		return $this->instance;
 	}
 
+	/**
+	 * Returns name of service
+	 * 
+	 * @return string
+	 */
 	public function name() {
 		return $this->name;
 	}
 
-	public function parent( $object = null ) {
-		if ( DevValue::isNotNull($object) )
-			$this->_parent = $object;
-
-		return $this->_parent;
-	}
-
-	public function broadcast( $behavior )
+	/**
+	 * Method to get or set the parent of the current object.
+	 *
+	 * @param object|null $object  The parent object.
+	 *
+	 * @return object  The parent object.
+	 */
+	public function parent($object = null) 
 	{
-		// echo "broadcasting $behavior from ".$this->name();
-		if ( $behavior instanceof Behavior ) {
-			// $behavior->_target = $this->_parent;
-			$behavior->_target = $this;
-		}
-		// $this->_parent->boost($behavior);
-		$this->dispatch( $behavior );
+	    if (DevValue::isNotNull($object)) {
+	        $this->_parent = $object;
+	    }
+
+	    return $this->_parent;
 	}
 
-	public function boost( $behavior ) 
+	/**
+	 * Method to broadcast a behavior from the current object.
+	 *
+	 * @param object $behavior  The behavior object.
+	 */
+	public function broadcast($behavior) 
 	{
-		$parent = $this->parent();
-		if ( $parent && $parent instanceof \BlueFission\Services\Application ) {
-			$parent->boost($behavior);
-		}
+	    if ($behavior instanceof Behavior) {
+	        $behavior->_target = $this;
+	    }
+
+	    $this->dispatch($behavior);
 	}
 
-	public function message( $behavior, $args = null ) {
-		$instance = $this->instance();
-		if ( $instance instanceof Dispatcher && is_callable( array( $instance, 'behavior') ) ) {
-			// var_dump($behavior);
-			// $instance->dispatch( $behavior, $args );
-			// echo "Getting on it with ".\BlueFission\DevString::truncate($args, 10)."\n";
-			
-			// $this->dispatch($behavior, $args);
-			$instance->dispatch($behavior, $args);
-		} else {
-			$this->call( $behavior, $args );
-		}
-	}
-
-	public function call( $call, $args )
+	/**
+	 * Method to boost a behavior from the current object.
+	 *
+	 * @param object $behavior  The behavior object.
+	 */
+	public function boost($behavior) 
 	{
-		if ( is_callable(array($this->instance(), $call) ) )
-		{
-			$return = call_user_func_array( array($this->instance, $call), $args );
-			return $return;
-		}
+	    $parent = $this->parent();
+	    if ($parent && $parent instanceof \BlueFission\Services\Application) {
+	        $parent->boost($behavior);
+	    }
 	}
 
-	public function register( $name, $handler, $level = self::LOCAL_LEVEL, $priority = 0 )
+	/**
+	 * Method to send a message to the current object's instance.
+	 *
+	 * @param string $behavior  The behavior name.
+	 * @param mixed  $args      The arguments to pass to the behavior.
+	 */
+	public function message($behavior, $args = null) 
 	{
-		$registration = array('handler'=>$handler, 'level'=>$level, 'priority'=>$priority);
-		$this->_registrations[$name][] = $registration;
-		
-		if ( isset( $this->instance ) && $this->instance instanceof $this->type ) {
-			$this->apply( $registration );
-		}
+	    $instance = $this->instance();
+	    if ($instance instanceof Dispatcher && is_callable(array($instance, 'behavior'))) {
+	        $instance->dispatch($behavior, $args);
+	    } else {
+	        $this->call($behavior, $args);
+	    }
 	}
 
+	/**
+	 * Method to call a function on the current object's instance.
+	 *
+	 * @param string $call  The function name to call.
+	 * @param mixed  $args  The arguments to pass to the function.
+	 *
+	 * @return mixed  The return value of the function.
+	 */
+	public function call($call, $args)
+	{
+	    if (is_callable(array($this->instance, $call))) {
+	        $return = call_user_func_array(array($this->instance, $call), $args);
+	        return $return;
+	    }
+	}
+
+	/**
+	 * Method to register a handler for the current object.
+	 *
+	 * @param string $name      The name of the handler.
+	 * @param object $handler   The handler object.
+	 * @param int    $level     The level at which to apply the handler (LOCAL_LEVEL or SCOPE_LEVEL).
+	 * @param int    $priority  The priority of the handler.
+	 */
+	public function register($name, $handler, $level = self::LOCAL_LEVEL, $priority = 0)
+	{
+	    $registration = array('handler' => $handler, 'level' => $level, 'priority' => $priority);
+	    $this->_registrations[$name][] = $registration;
+	    
+	    if (isset($this->instance) && $this->instance instanceof $this->type) {
+	        $this->apply($registration);
+	    }
+	}
+
+	/**
+	 * Prepare the callback by binding it to the appropriate scope.
+	 *
+	 * @param mixed $callback The callback to be prepared
+	 *
+	 * @return mixed The prepared callback
+	 */
 	private function prepareCallback( $callback ) {
 		if ( \is_object($callback) ) {
 			$callback = $callback->bindTo($this->scope, $this->instance);
@@ -138,47 +218,38 @@ class Service extends Dispatcher {
 		return $callback;
 	}
 
+	/**
+	 * Apply the registration by calling the `behavior` method on the appropriate scope.
+	 *
+	 * @param array $registration An array containing the registration data
+	 */
 	private function apply( $registration ) {
 		$level = $registration['level'];
 		$handler = $registration['handler'];
 		$callback = $handler->callback();
 		$this->scope = (\is_object($this->scope)) ? $this->scope : $this->instance;
-		// $scope = (\is_object($this->scope)) ? $this->scope : $this;
 
 		$callback = $this->prepareCallback($callback);
 
 		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof Dispatcher && is_callable( array( $this->scope, 'behavior')) )
 		{
-			// $this->scope->behavior($handler->name(), $this->broadcast);
 			if ( $this->instance instanceof Dispatcher && is_callable( array( $this->instance, 'behavior')) ) {	
 				$this->instance->behavior($handler->name(), $callback);
 			} else {
 				$this->scope->behavior($handler->name(), $callback);
 			}
 			$this->scope->behavior($handler->name(), $this->message);
-			// die(var_dump($this->scope));
 		}
 		elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof Dispatcher && is_callable( array( $this->instance, 'behavior')) )
 		{
-			// $this->behavior($handler->name(), $callback);
-			// $this->instance->behavior($handler->name(), $callback);
-			// $this->instance->behavior($handler->name(), $this->broadcast);
-
 			$this->instance->behavior($handler->name(), $callback);
 			$this->instance->behavior($handler->name(), $this->message);
 			$this->instance->behavior($handler->name(), $this->broadcast);
-
-			// if ( $this->scope == $this ) {
-			// 	$this->instance->behavior($handler->name(), array($scope, 'broadcast'));
-			// }
-
-			// $this->scope->behavior($handler->name(), $this->broadcast);
-			// $this->behavior($handler->name(), array($scope->_parent, 'broadcast'));
 		} else {
 			$this->behavior($handler->name(), $callback);
-			// $this->behavior($handler->name(), $this->broadcast);
 		}		
 	}
+
 
 	// public function dispatch( $behavior, $args = null ) {
 	// 	// echo "{$behavior}\n";

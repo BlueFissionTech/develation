@@ -15,20 +15,63 @@ use BlueFission\Behavioral\Behaviors\Handler;
 use BlueFission\Net\HTTP;
 use Exception;
 
+/**
+ * Class Application
+ * 
+ * @package BlueFission\Services
+ */
 class Application extends Programmable {
+	/**
+	 * A collection of instances of this class
+	 *
+	 * @var array
+	 */
 	private static $_instances = [];
 
+	/**
+	 * A collection of broadcasted events
+	 *
+	 * @var array
+	 */
 	private $_broadcasted_events = [];
+
+	/**
+	 * An array to store the broadcast chain
+	 *
+	 * @var array
+	 */
 	private $_broadcast_chain = [];
+
+	/**
+	 * Store the last arguments
+	 *
+	 * @var null
+	 */
 	private $_last_args = null;
+
+	/**
+	 * Store the depth of this application
+	 *
+	 * @var int
+	 */
 	private $_depth = 0;
 
+	/**
+	 * Default configuration for the application
+	 *
+	 * @var array
+	 */
 	protected $_config = array(
 		'template'=>'',
 		'storage'=>'',
 		'name'=>'Application',
 	);
 
+	/**
+	 * A collection of parameters for this application
+	 *
+	 * @var array
+	 */
 	protected $_parameters = array(
 		'_method',
 		'service',
@@ -36,55 +79,142 @@ class Application extends Programmable {
 		'data',
 	);
 
+	/**
+	 * The context for this application
+	 *
+	 * @var mixed
+	 */
 	private $_context;
+
+	/**
+	 * The connection for this application
+	 *
+	 * @var mixed
+	 */
 	private $_connection;
+
+	/**
+	 * The storage for this application
+	 *
+	 * @var mixed
+	 */
 	private $_storage;
+
+	/**
+	 * The agent for this application
+	 *
+	 * @var mixed
+	 */
 	private $_agent;
+
+	/**
+	 * A collection of services for this application
+	 *
+	 * @var Collection
+	 */
 	private $_services;
+
+	/**
+	 * A collection of gateways for this application
+	 *
+	 * @var array
+	 */
 	private $_gateways = [];
+
+	/**
+	 * A collection of bindings for this application
+	 *
+	 * @var array
+	 */
 	private $_bindings = [];
+
+	/**
+	 * A collection of mappings for this application
+	 *
+	 * @var array
+	 */
 	private $_mappings = [];
+
+	/**
+	 * A collection of mapping names for this application
+	 *
+	 * @var array
+	 */
 	private $_mappingNames = [];
-	private $_boundArguments = [];
+	    /**
+     * An array to store bound arguments.
+     * @var array $_boundArguments 
+     */
+    private $_boundArguments = [];
 
-	private $_routes = [];
-	private $_arguments = [];
+    /**
+     * An array to store routes.
+     * @var array $_routes 
+     */
+    private $_routes = [];
+    /**
+     * An array to store arguments.
+     * @var array $_arguments 
+     */
+    private $_arguments = [];
 
-	// protected static $_class = __CLASS__;
+    private $_operation = null;
 
-	public function __construct() 
-	{
-		$calledClass = get_called_class();
-		if ( isset(self::$_instances[$calledClass]) )
-			return self::$_instances[$calledClass];
+    private $_conditions = [];
 
-		parent::__construct();
-		$this->_services = new Collection();
-		$this->_broadcasted_events[$this->name()] = [];
+    /**
+     * The class constructor
+     *
+     * @return void
+     */
+    public function __construct() 
+    {
+        $calledClass = get_called_class();
+        if (isset(self::$_instances[$calledClass])) {
+            return self::$_instances[$calledClass];
+        }
 
-		self::$_instances[$calledClass] = $this;
-	}
+        parent::__construct();
+        $this->_services = new Collection();
+        $this->_broadcasted_events[$this->name()] = [];
 
-	static function instance()
-	{
-		$calledClass = get_called_class();
-		if (!isset(self::$_instances[$calledClass])) {
-			// $c = get_class();
-			// self::$_class = ;
+        self::$_instances[$calledClass] = $this;
+    }
 
-			// self::$_instances = new self::$_class;
-			self::$_instances[$calledClass] = new static();
-		}
+    /**
+     * Get an instance of the current class.
+     *
+     * @return object An instance of the current class.
+     */
+    static function instance()
+    {
+        $calledClass = get_called_class();
+        if (!isset(self::$_instances[$calledClass])) {
+            self::$_instances[$calledClass] = new static();
+        }
 
-		return self::$_instances[$calledClass];
-	}
+        return self::$_instances[$calledClass];
+    }
 
-	public function params( $params ) {
-		$this->_parameters = DevArray::toArray($params);
+    /**
+     * Set the parameters for this request.
+     *
+     * @param array $params An array of parameters to set.
+     *
+     * @return object The current instance of the class.
+     */
+    public function params($params) 
+    {
+        $this->_parameters = DevArray::toArray($params);
 	
-		return $this;
-	}
+        return $this;
+    }
 
+    /**
+     * Get the arguments for this request.
+     *
+     * @return object The current instance of the class.
+     */
 	public function args() {
 		global $argv, $argc;
 
@@ -128,6 +258,11 @@ class Application extends Programmable {
 		return $this;
 	}
 
+	/**
+	 * Validate the csrf token
+	 * 
+	 * @return $this
+	 */
 	public function validateCsrf()
 	{
 		if ($_SERVER['REQUEST_METHOD'] == 'POST' ) {
@@ -145,7 +280,7 @@ class Application extends Programmable {
 		return $this;
 	}
 
-	public function run() {
+	public function process() {
 		$args = array_slice($this->_arguments, 1);
 		// die(var_dump($this->_mappings));
 
@@ -172,21 +307,34 @@ class Application extends Programmable {
 				}
 			}
 
-			$callable = $this->prepareCallable($mapping->callable);
+			$this->_operation = $this->prepareCallable($mapping->callable);
 
-			$arguments = array_merge($args['data'], $uri->buildArguments($path) );
+			$this->_conditions = array_merge($args['data'], $uri->buildArguments($path) );
+		}
 
+		return $this;
+	}
+
+	/**
+	 * Main method that starts the application
+	 *
+	 * @return $this
+	 */
+	public function run() {
+		$args = array_slice($this->_arguments, 1);
+
+		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
 			// TODO make this more elegant
 			/* This should never have an array as callable becase of "prepareCallable"
 			if ( $callable[0] instanceof \BlueFission\Services\Service  ) {
 				$callable[0]->parent( $this );
 			}
 			*/
-			if ( $callable instanceof \BlueFission\Services\Service  ) {
-				$callable->parent( $this );
+			if ( $this->_operation instanceof \BlueFission\Services\Service  ) {
+				$this->_operation->parent( $this );
 			}
 
-			$result = $this->executeServiceMethod($callable, $arguments);
+			$result = $this->executeServiceMethod($this->_operation, $this->_conditions);
 
 			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($path, $this->_arguments['_method']) ?? $path);
 
@@ -218,6 +366,13 @@ class Application extends Programmable {
 		return $this;
 	}
 
+	/**
+	 * The `boost` method broadcasts a behavior object to the target object.
+	 * 
+	 * @param mixed $behavior A string or an object that represents a behavior.
+	 * @param mixed $args A context for the behavior.
+	 * @return void
+	 */
 	public function boost( $behavior, $args = null ) {
 		if (\is_string($behavior)) {
 			$behavior = new Behavior($behavior);
@@ -229,10 +384,25 @@ class Application extends Programmable {
 		call_user_func_array(array($this, 'broadcast'), array($behavior));
 	}
 
+	/**
+	 * The `serve` method delegates a behavior to a service.
+	 * 
+	 * @param string $service The name of the service.
+	 * @param mixed $behavior The behavior to be performed.
+	 * @param mixed $args The arguments for the behavior.
+	 * @return void
+	 */
 	public function serve( $service, $behavior, $args ) {
 		$this->service($service)->perform($behavior, $args);
 	}
 
+	/**
+	 * The `execute` method executes a behavior.
+	 * 
+	 * @param mixed $behavior A string or an object that represents a behavior.
+	 * @param mixed $args A context for the behavior.
+	 * @return $this The instance of the object.
+	 */
 	public function execute( $behavior, $args = null )
 	{
 		$this->_last_args = null;
@@ -250,28 +420,53 @@ class Application extends Programmable {
 		return $this;
 	}
 
+	/**
+	 * The `bind` method creates a binding between two classes.
+	 * 
+	 * @param string $classname The name of the original class.
+	 * @param string $newclassname The name of the new class.
+	 * @return void
+	 */
 	public function bind( $classname, $newclassname ) 
 	{
 		$this->_bindings[$classname] = $newclassname;
 	}
 
+	/**
+	 * The `bindArgs` method creates a mapping of arguments for a class.
+	 * 
+	 * @param array $arguments The array of arguments.
+	 * @param string $classname The name of the class to be mapped. Default is '_'.
+	 * @return void
+	 */
 	public function bindArgs( array $arguments, string $classname = '_' )
 	{
 		$this->_boundArguments[$classname] = $arguments;
 	}
-	
+
+	/**
+	 * The `name` method returns the name of the object or sets a new name for the object.
+	 * 
+	 * @param string|null $newname The new name for the object.
+	 * @return mixed The name of the object.
+	 */
 	public function name( $newname = null )
 	{
 		return $this->config('name', $newname);
 	}
-
+	
+	/**
+	 * Adds a new route to the application's mappings.
+	 *
+	 * @param string $method The HTTP method for the route.
+	 * @param string $path The path of the route.
+	 * @param callable $callable The callback function to be executed when the route is matched.
+	 * @param string $name An optional name for the route.
+	 *
+	 * @return Mapping The newly created mapping object.
+	 */
 	public function map($method, $path, $callable, $name = '')
 	{
-		// $this->_mappings[$method][$path] = $callable;
-		// if ( $name ) {
-		// 	$this->_mappingNames[$name] = $path;
-		// }
-		
 		$mapping = new Mapping();
 		$mapping->method = $method;
 		$mapping->path = $path;
@@ -280,13 +475,19 @@ class Application extends Programmable {
 		
 		$this->_mappings[$method][$path] = $mapping;
 
-		// return $this;
 		return $mapping;
 	}
 
+	/**
+	 * Gets the name of a mapping for a given location and HTTP method.
+	 *
+	 * @param string $location The location to search for.
+	 * @param string $method The HTTP method to search for.
+	 *
+	 * @return string The name of the mapping, or an empty string if no matching mapping was found.
+	 */
 	public function getMappingName( $location, $method = 'get' ) {
 		$result = '';
-		// foreach ( $this->_mappingNames as $name=>$path ) {
 		foreach ( $this->_mappings[$method] as $path=>$mapping ) {
 			if ( $location == $path || $location.'/' == $path ) {
 				$result = $mapping->name;
@@ -296,6 +497,14 @@ class Application extends Programmable {
 		return $result;
 	}
 
+	/**
+	 * Adds a new gateway class to the application's gateways.
+	 *
+	 * @param string $name The name of the gateway.
+	 * @param string $class The name of the class that implements the gateway.
+	 *
+	 * @return Application The current application instance.
+	 */
 	public function gateway($name, $class)
 	{
 		$this->_gateways[$name] = $class;
@@ -303,7 +512,15 @@ class Application extends Programmable {
 		return $this;
 	}
 
-	// Creates a property of the application that is a programmable object
+	/**
+	 * Creates a property of the application that is a programmable object.
+	 *
+	 * @param string $name The name of the property to create.
+	 * @param mixed $data Optional data to assign to the property.
+	 * @param mixed $configuration Optional configuration for the programmable object.
+	 *
+	 * @return Programmable The newly created programmable object.
+	 */
 	public function component( $name, $data = null, $configuration = null )
 	{	
 		$object = null;
@@ -318,7 +535,15 @@ class Application extends Programmable {
 		return $this->field( $name, $object );
 	}
 
-	// Creates a delegate service for the application and registers it
+	/**
+	 * Creates a delegate service for the application and registers it
+	 *
+	 * @param string $name         The name of the service
+	 * @param mixed  $reference    The reference to the instance of the service or the class name
+	 * @param array  $args         The arguments passed to the service
+	 *
+	 * @return self
+	 */
 	public function delegate( $name, $reference = null, $args = null )
 	{
 		$params = func_get_args();
@@ -333,21 +558,18 @@ class Application extends Programmable {
 		} elseif (DevValue::isNotNull($reference) ) {
 			$service->type = $reference;	
 			$service->scope = $this;
-			// die(var_dump($args));
 			if ( is_subclass_of($reference, Service::class) && count($args) == 0 ) {
 				$service->instance = $this->getServiceInstance($reference);
 			}
 		} else {
-			// If type isn't given, creates a programmable object property
 			$component = $this->component( $name );
 			$component->_parent = $this;
 			$service->instance = $component;
 			$service->type = \get_class($component);
 			$service->scope = $component;
 		}
-		
+
 		$service->name = $name;
-		// $service->scope = $this;
 		$service->arguments = $args;
 
 		$this->_services->add( $service, $name );
@@ -355,7 +577,17 @@ class Application extends Programmable {
 		return $this;
 	}
 
-	// Registers a behavior and a function under a given service, automatically routes it
+	/**
+	 * Registers a behavior and a function under a given service, automatically routes it
+	 *
+	 * @param string $serviceName  The name of the service
+	 * @param mixed  $behavior     The behavior to be registered
+	 * @param mixed  $callable     The callable function to be registered
+	 * @param int    $level        The level of the service
+	 * @param int    $priority     The priority of the behavior
+	 *
+	 * @return self
+	 */
 	public function register( $serviceName, $behavior, $callable, $level = Service::LOCAL_LEVEL, $priority = 0 )
 	{
 		if (\is_string($behavior))
@@ -364,7 +596,6 @@ class Application extends Programmable {
 		if ( $serviceName == $this->name() ) {
 			$function_name = uniqid($behavior->name().'_');
 			$this->learn($function_name, $callable, $behavior);
-			// return $this;
 		} elseif ( !$this->_services->has( $serviceName ) ) {
 			$this->delegate($serviceName);
 		} 
@@ -380,7 +611,16 @@ class Application extends Programmable {
 		return $this;
 	}
 
-	// Configures given behaviors to be routed to given sub-services
+	/**
+	 * Configures the given behaviors to be routed to the given sub-services
+	 *
+	 * @param string $senderName The name of the sender service
+	 * @param string $recipientName The name of the recipient service
+	 * @param mixed $behavior The behavior to be routed
+	 * @param callable $callback The callback function for the behavior
+	 *
+	 * @return $this The instance of the class
+	 */
 	public function route( $senderName, $recipientName, $behavior, $callback = null )
 	{
 		if (\is_string($behavior))
@@ -405,7 +645,6 @@ class Application extends Programmable {
 		{
 			throw new Exception("The service {$senderName} is not registered", 1);
 		} elseif ($callback) {
-			// echo $senderName ." | ". $behavior . "\n";
 			$this->register($senderName, $behavior, array($this, 'boost'));
 		}
 
@@ -419,6 +658,14 @@ class Application extends Programmable {
 		return $this;
 	}
 
+	/**
+	 * Retrieves the service specified by the service name
+	 *
+	 * @param string $serviceName The name of the service
+	 * @param string $call The function name to call on the service
+	 *
+	 * @return mixed The instance of the service or the response of the called function on the service
+	 */
 	public function service( $serviceName, $call = null )
 	{
 		if ( !$this->_services->has( $serviceName ) )
@@ -431,15 +678,19 @@ class Application extends Programmable {
 			$args = array_slice( $params, 2 );
 
 			$response = $this->_services[$serviceName]->call( $call, $args );
-			// $response = $service->call( $call, $args );
 
-			// $service->perform(new Event('OnComplete'), $response);
 			$this->_services[$serviceName]->dispatch( Event::COMPLETE, $response);
 		}
 
 		return $service;
 	}
 
+	/**
+	 * Broadcasts the behavior to all the recipients
+	 *
+	 * @param Behavior $behavior The behavior to broadcast
+	 * @param mixed $args The arguments for the broadcast
+	 */
 	public function broadcast( $behavior, $args = null )
 	{
 		if (empty($this->_broadcast_chain)) $this->_broadcast_chain = array("Base");
@@ -509,6 +760,12 @@ class Application extends Programmable {
 		}
 	}
 
+	/**
+	 * Check if the given uris exists
+	 *
+	 * @param array $uris
+	 * @return bool
+	 */
 	private function uriExists( $uris )
 	{
 		$uri = new Uri();
@@ -520,6 +777,12 @@ class Application extends Programmable {
 		return false;
 	}
 
+	/**
+	 * Return the matching uri if exists
+	 *
+	 * @param array $uris
+	 * @return mixed string|bool
+	 */
 	private function returnMatchingUri( $uris )
 	{
 		$uri = new Uri();
@@ -531,6 +794,15 @@ class Application extends Programmable {
 		return false;
 	}
 
+	/**
+	 * Send a message to the recipient with the specified behavior
+	 *
+	 * @param string $service
+	 * @param object $behavior
+	 * @param mixed $data
+	 * @param mixed $callback
+	 * @return mixed
+	 */
 	private function message( $service, $behavior, $data = null, $callback = null )
 	{
 		if ( '' === $service )
@@ -552,8 +824,6 @@ class Application extends Programmable {
 			$behavior = new Behavior($callback);
 		}
 
-		// var_dump($behavior);
-
 		if ( $recipient instanceof Application ) {
 			$recipient->execute($behavior, $data);
 		} elseif ( $recipient instanceof Service ) {
@@ -570,12 +840,24 @@ class Application extends Programmable {
 		}
 	}
 
+	/**
+	 * Create an instance of a given class
+	 *
+	 * @param string $class
+	 * @return object
+	 */
 	static function makeInstance( string $class )
 	{
 		$app = self::instance();
 		return $app->getDynamicInstance($class);
 	}
 
+	/**
+	 * Create an instance of a class with its dependencies
+	 *
+	 * @param string $class
+	 * @return object
+	 */
 	public function getDynamicInstance(string $class )
 	{
 		$constructor = new \ReflectionMethod($class, '__construct');
@@ -592,16 +874,35 @@ class Application extends Programmable {
 		return $instance;
 	}
 
+	/**
+	 * Get service instance
+	 * 
+	 * @param string $class 
+	 * @return mixed
+	 */
 	private function getServiceInstance(string $class )
 	{
 		return $this->getDynamicInstance($class);
 	}
 
+	/**
+	 * Get gateway instance
+	 * 
+	 * @param string $class 
+	 * @return mixed
+	 */
 	private function getGatwayInstance(string $class )
 	{
 		return $this->getDynamicInstance($class);
 	}
 
+	/**
+	 * Execute service method
+	 * 
+	 * @param callable $callable 
+	 * @param array $arguments 
+	 * @return mixed
+	 */
 	private function executeServiceMethod( $callable, Array $arguments = [] )
 	{
 		$functionOrMethod = null;
@@ -620,7 +921,6 @@ class Application extends Programmable {
 
 		$dependencies = $this->handleDependencies($functionOrMethod, $arguments);
 
-		// $result = call_user_func_array([$class, $callable], );
 		if ( \is_string($callable) ) {
 			$result = $functionOrMethod->invokeArgs( $dependencies );
 		}
@@ -630,10 +930,15 @@ class Application extends Programmable {
 			$result = $functionOrMethod->invokeArgs($object , $dependencies );
 		}
 		
-		// var_dump($result);
 		return $result;
 	}
 
+	/**
+	 * Get bound arguments
+	 * 
+	 * @param string $classname 
+	 * @return array
+	 */
 	private function boundArguments(String $classname = null)
 	{
 		if ( array_key_exists($classname, $this->_boundArguments) ) {
@@ -666,6 +971,14 @@ class Application extends Programmable {
 	    return $this->_boundArguments['_'] ?? [];
 	}
 
+	/**
+	 * Handle the dependencies of the function or method passed as the first parameter
+	 *
+	 * @param ReflectionFunctionAbstract $functionOrMethod The function or method to handle its dependencies
+	 * @param array $arguments The arguments to pass to the function or method
+	 *
+	 * @return array The dependencies of the function or method
+	 */
 	private function handleDependencies ( $functionOrMethod, $arguments = [] )
 	{
 		$parameters = $functionOrMethod->getParameters();
@@ -673,7 +986,7 @@ class Application extends Programmable {
 		foreach ($parameters as $parameter) {
 			$callingClass = $functionOrMethod->class ?? '';
 
-			// $dependencyClass = (string) $parameter->getType();
+			// Get the name of the dependency class
 			$dependencyClass = '';
 			$dependencyClassObj = $parameter->getType();
 			if ( $dependencyClassObj ) {
@@ -681,26 +994,21 @@ class Application extends Programmable {
 			}
 			$dependencyName = $parameter->getName();
 
+			// Check if the dependency class has a binding
 			if (\array_key_exists($dependencyClass, $this->_bindings)) {
 				$dependencyClass = $this->_bindings[$dependencyClass];
 			}
 
-			// TODO array_merge arguments with application registered named bindings by class to pass global configurations
-			// like: array_merge($arguments, $this->boundArguments());
-			// Where boundArguments returns an assoc array like ['_mysqlConfig'=>$mysqlConfig, '_tableConfig'=>$tableConfig]
-			// var_dump($dependencyClass);
-			if ( $parameter->isOptional() ) {
-				// $dependencies[$dependencyName] = $parameter->getDefaultValue();
-			}
-
+			// Merge the arguments with the application registered named bindings by class
 			$arguments = array_merge($this->boundArguments($callingClass), $arguments);
 
+			// Check if the argument exists for the current dependency
 			if ( isset($arguments[$dependencyName]) ) {
 				$dependencies[$dependencyName] = $arguments[$dependencyName];
 			}
 
+			// If the dependency class exists, get its dependencies and create an instance of it
 			if ( $dependencyClass ) {
-				// Doing this to avoid issues with prior to php 8.1 versions that struggle with unpacking assoc arrays
 				$values = array_values($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
 				$dependencies[$dependencyName] = 
 					$arguments[$dependencyName] ?? 
@@ -710,7 +1018,14 @@ class Application extends Programmable {
 
 		return $dependencies;
 	}
-	
+
+	/**
+	 * Prepare the callable passed as the parameter
+	 *
+	 * @param callable $callable The callable to prepare
+	 *
+	 * @return callable The prepared callable
+	 */
 	private function prepareCallable( $callable )
 	{
 		if ( \is_string($callable) ) {
