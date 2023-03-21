@@ -112,51 +112,51 @@ class Application extends Programmable {
 	 *
 	 * @var Collection
 	 */
-	private $_services;
+	protected $_services;
 
 	/**
 	 * A collection of gateways for this application
 	 *
 	 * @var array
 	 */
-	private $_gateways = [];
+	protected $_gateways = [];
 
 	/**
 	 * A collection of bindings for this application
 	 *
 	 * @var array
 	 */
-	private $_bindings = [];
+	protected $_bindings = [];
 
 	/**
 	 * A collection of mappings for this application
 	 *
 	 * @var array
 	 */
-	private $_mappings = [];
+	protected $_mappings = [];
 
 	/**
 	 * A collection of mapping names for this application
 	 *
 	 * @var array
 	 */
-	private $_mappingNames = [];
+	protected $_mappingNames = [];
 	    /**
      * An array to store bound arguments.
      * @var array $_boundArguments 
      */
-    private $_boundArguments = [];
+    protected $_boundArguments = [];
 
     /**
      * An array to store routes.
      * @var array $_routes 
      */
-    private $_routes = [];
+    protected $_routes = [];
     /**
      * An array to store arguments.
      * @var array $_arguments 
      */
-    private $_arguments = [];
+    protected $_arguments = [];
 
     private $_operation = null;
 
