@@ -26,7 +26,7 @@ class MysqlScaffold implements IScaffold {
 		call_user_func_array($processor, [$structure]);
 		$query = $structure->build();
 
-		$mysql = new Mysql();
+		$mysql = new Mysql(['location'=>null, 'name'=>$entity]);
 		$mysql->activate();
 		$mysql->run($query);
 		print( "Creating {$entity}. " . $mysql->status(). "\n");
@@ -49,7 +49,7 @@ class MysqlScaffold implements IScaffold {
 	 */
 	static function delete( $entity ) {
 		$query = "DROP TABLE IF EXISTS `{$entity}`";
-		$mysql = new Mysql();
+		$mysql = new Mysql(['location'=>null, 'name'=>$entity]);
 		$mysql->activate();
 		$mysql->run($query);
 		print( "Dropping {$entity}. " . $mysql->status(). "\n");

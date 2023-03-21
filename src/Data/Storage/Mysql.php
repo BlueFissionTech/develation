@@ -35,7 +35,7 @@ use BlueFission\Data\Storage\Behaviors\StorageAction;
 class Mysql extends Storage implements IData
 {
 	protected $_config = array(
-		'location'=>'',
+		'location'=>null,
 		'name'=>'',
 		'fields'=>'',
 		'ignore_null'=>false,

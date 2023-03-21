@@ -117,7 +117,7 @@ class DevValue implements IDevValue {
 			return $output;
 		} else {
 			// throw new Exception("Method {$method} not defined", 1);
-			error_log("Method {$method} not defined in class " . get_class($this));
+			error_log("Method {$method} not defined in class " . get_class($self));
 			return false;
 		}
 	}
@@ -140,7 +140,7 @@ class DevValue implements IDevValue {
 			return $output;
 		} else {
 			// throw new Exception("Method {$method} not defined", 1);
-			error_log("Method {$method} not defined in class " . get_class($this));
+			error_log("Method {$method} not defined in class " . get_called_class());
 			return false;
 		}
 	}

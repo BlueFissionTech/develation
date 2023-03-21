@@ -128,9 +128,15 @@ class MysqlLink extends Connection implements IConfigurable
 				}
 				else if (is_string($query))
 				{
-					$this->_result = $db->query($query);
-					$this->status( $db->error ? $db->error : self::STATUS_SUCCESS );
-					return true;
+					try {
+						$this->_result = $db->query($query);
+						$this->status( $db->error ? $db->error : self::STATUS_SUCCESS );
+						return true;
+					} catch ( \Exception | \MySQLiQueryException $e ) {
+						$this->_result = false;
+						$this->status( self::STATUS_FAILED );
+						return false;
+					}
 				}
 			}
 			$table = $this->config('table');
@@ -246,8 +252,14 @@ class MysqlLink extends Connection implements IConfigurable
 
 			$this->_query = $query;
 
-			$success = ( $db->query($query) ) ? true : false;
-
+			try {
+				$success = ( $db->query($query) ) ? true : false;
+				$status = ($success) ? $db->error : self::STATUS_SUCCESS;
+			} catch ( \Exception | \MySQLiQueryException $e ) {
+				$success = false;
+				$this->status( $e->getMessage() );
+			}
+			
 			$this->_result = $success;
 		}
 		else
@@ -306,10 +318,15 @@ class MysqlLink extends Connection implements IConfigurable
 			$this->_query = $query;
 			// $query_str = $query;
 			 
-			$success = ( $db->query($query) ) ? true : false;
-			$this->_result = $success;
+			try {
+				$success = ( $db->query($query) ) ? true : false;
+				$status = ($success) ? $db->error : self::STATUS_SUCCESS;
+			} catch ( \Exception | \MySQLiQueryException $e ) {
+				$success = false;
+				$this->status( $e->getMessage() );
+			}
 			
-			$status = ($success) ? $db->error : self::STATUS_SUCCESS;
+			$this->_result = $success;
 		}
 		else
 		{
@@ -425,7 +442,7 @@ class MysqlLink extends Connection implements IConfigurable
 	{
 		if ( DevValue::isNull( $database ) )
 			return $this->config('database');
-		
+
 		$this->config('database', $database);
 		$db = $this->_connection;
 		$db->select_db( $this->config('database') );	

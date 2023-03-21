@@ -673,8 +673,12 @@ class Application extends Programmable {
 	{
 		if ( !$this->_services->has( $serviceName ) )
 			throw new Exception("The service {$serviceName} is not registered", 1);
-			
-		$service = $this->_services[$serviceName]->instance();
+		
+		try {
+			$service = $this->_services[$serviceName]->instance();
+		} catch( \Exception $e ) {
+			$service = getServiceInstance($serviceName);
+		}
 		if ( $call )
 		{
 			$params = func_get_args();

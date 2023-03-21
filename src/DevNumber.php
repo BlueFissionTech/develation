@@ -41,7 +41,7 @@ class DevNumber extends DevValue implements IDevValue {
      */
     public function _isValid(bool $allow_zero = true) {
         $number = $this->_data;
-        return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allow_zero)): bool;
+        return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allow_zero));
     }
 
     /**

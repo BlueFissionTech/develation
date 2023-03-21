@@ -42,7 +42,9 @@ class DevObject implements IDevObject
      */
     public function clear()
     {
-        $this->_data = [];
+        array_walk($this->_data, function(&$value, $key) { 
+			$value = null; 
+		});
     }
     
     /**

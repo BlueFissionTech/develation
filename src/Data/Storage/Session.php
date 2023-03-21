@@ -98,6 +98,9 @@ class Session extends Storage implements IData
 	public function read()
 	{	
 		$value = HTTP::session( $this->_source );
+		if (empty($value)) {
+			return null;
+		}
 		if ( function_exists('json_decode'))
 		{
 			$value = json_decode($value);
