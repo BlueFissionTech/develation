@@ -2,8 +2,9 @@
 
 namespace BlueFission\Connections;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\DevValue as Value;
+use BlueFission\DevArray as Array;
+use BlueFission\DevString as String;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
@@ -126,15 +127,14 @@ class Curl extends Connection implements IConfigurable
 	public function query($query = null)
 	{ 
 		$curl = $this->_connection;
-		$method = strtolower($this->config('method'));
+		$method = String::lower($this->config('method'));
 		
 		if ($curl)
 		{
-			if (DevValue::isNotNull($query))
+			if (Value::isNotNull($query))
 			{
-				if (DevArray::isAssoc($query))
+				if (Array::isAssoc($query))
 				{
-					//$this->_data = $query; 
 					$this->assign($query);
 				}
 			}

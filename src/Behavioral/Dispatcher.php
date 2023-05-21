@@ -51,8 +51,6 @@ class Dispatcher {
 	public function __destruct() {
 		if ( $this->_behaviors ) {
 			$this->trigger(Event::UNLOAD);
-		} else {
-			// echo "\n\n".get_class($this). " has no behaviors\n\n";
 		}
 	}
 

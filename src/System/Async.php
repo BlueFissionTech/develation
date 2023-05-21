@@ -122,8 +122,9 @@ class Async extends Programmable {
 	        $pid = pcntl_fork(); 
 	        if (!$pid) 
 	        { 
-	            if($i==1)
+	            if($i == 1) {
 	                usleep(100000);
+	            }
 	            $shared_memory_data = $options['process'][$i - 1]();
 	            shmop_write($shared_memory_ids->$i, $shared_memory_data, 0);
 	            shmop_write($shared_memory_monitor, "1", $i-1);

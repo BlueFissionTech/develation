@@ -1,16 +1,16 @@
 <?php
 namespace BlueFission\Services;
 
-use BlueFission\Behavioral\Dispatcher;
+use BlueFission\DevObject;
 
 /**
  * Class Request
  *
- * This class extends the Dispatcher class and provides a mechanism for managing incoming request data.
+ * This class extends the DevObject class and provides a mechanism for managing incoming request data.
  *
  * @package BlueFission\Services
  */
-class Request extends Dispatcher {
+class Request extends DevObject {
 	
 	/**
 	 * Request constructor.
@@ -67,6 +67,6 @@ class Request extends Dispatcher {
 	 */
 	public function __set($field, $value)
 	{
-		throw new Exception('Request Inputs Are Immutable');
+		throw new \Exception('Request Inputs Are Immutable');
 	}
 }

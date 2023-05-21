@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Connections;
 
+use BlueFission\DevArray as Array;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
@@ -48,7 +49,7 @@ class Socket extends Connection implements IConfigurable
     public function __construct($config = '')
     {
         parent::__construct();
-        if (is_array($config)) {
+        if (Array::is($config)) {
             $this->config($config);
         }
     }

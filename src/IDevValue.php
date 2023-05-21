@@ -7,5 +7,11 @@ interface IDevValue {
      * 
      * @return mixed
      */
-	public function value();
+	public function value(): mixed|null;
+
+	/**
+	 * Sets the var to null
+	 * @return void 
+	 */
+	public function clear(): void;
 }

@@ -1,18 +1,18 @@
 <?php
 namespace BlueFission\Services;
 
-use BlueFission\Behavioral\Dispatcher;
 use BlueFission\Net\HTTP;
 use BlueFission\DevArray;
+use BlueFission\DevObject;
 use BlueFission\Behavioral\Behaviors\Event;
 
 /**
  * Class Response
  *
  * The Response class is used to handle the HTTP response for a web request.
- * It extends the Dispatcher class to include the ability to dispatch events.
+ * It extends the DevObject class to include the ability to dispatch events.
  */
-class Response extends Dispatcher
+class Response extends DevObject
 {
 	/**
 	 * Max depth for filling values into the Response object
@@ -36,14 +36,14 @@ class Response extends Dispatcher
 	 *
 	 * @var array
 	 */
-	protected $_data = array(
+	protected $_data = [
 		'id'=>'',
 		'list'=>'',
 		'data'=>'',
 		'children'=>'',
 		'status'=>'',
 		'info'=>'',
-	);
+	];
 
 	/**
 	 * Fill the Response object with values from an input array.

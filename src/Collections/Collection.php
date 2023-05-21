@@ -44,14 +44,13 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @param mixed $value Initial value for the collection.
 	 */
 	public function __construct( $value = null ) {
-		parent::__construct( $value );
 		if ( empty( $value ) )
 		{
 			$this->_value = new ArrayObject( );
 		}
 		else
 		{
-			$this->_value = new ArrayObject( DevArray::toArray($value) );
+			$this->_value = new ArrayObject( [$value] );
 		}
 
 		$this->_iterator = new ArrayIterator($this->_value);	

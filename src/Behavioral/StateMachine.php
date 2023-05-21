@@ -1,7 +1,8 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevArray;
+use BlueFission\DevArray as Array;
+use BlueFission\DevValue as Value;
 use BlueFission\Behavioral\Programmable;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\State;
@@ -24,14 +25,14 @@ class StateMachine extends Programmable {
 	 *
 	 * @var array
 	 */
-	protected $_denied_behaviors = [];
+	protected $_deniedBehaviors = [];
 	
 	/**
 	 * Array that holds the names of behaviors that are allowed in a certain state
 	 *
 	 * @var array
 	 */
-	protected $_allowed_behaviors = [];
+	protected $_allowedBehaviors = [];
 
 	/**
 	 * Checks if a behavior is denied in a state
@@ -42,8 +43,8 @@ class StateMachine extends Programmable {
 	 */
 	private function behaviorIsDenied( $behaviorName ) {
 		foreach ( $this->_state as $state => $args ) {
-			if ( ( isset($this->_denied_behaviors[$state]) && count($this->_denied_behaviors[$state] > 0) ) &&
-				in_array($behaviorName, $this->_denied_behaviors[$state]) ) {
+			if ( ( Value::is($this->_deniedBehaviors[$state]) && Array::count($this->_deniedBehaviors[$state] > 0) ) &&
+				in_array($behaviorName, $this->_deniedBehaviors[$state]) ) {
 				return true;
 			}
 		}
@@ -59,8 +60,8 @@ class StateMachine extends Programmable {
 	 */
 	private function behaviorIsAllowed( $behaviorName ) {
 		foreach ( $this->_state as $state => $args ) {
-			if ( (isset($this->_allowed_behaviors[$state]) && count($this->_allowed_behaviors[$state] > 0) ) &&
-				!in_array($behaviorName, $this->_allowed_behaviors[$state]) ) {
+			if ( (Value::is($this->_allowedBehaviors[$state]) && Array::count($this->_allowedBehaviors[$state] > 0) ) &&
+				!in_array($behaviorName, $this->_allowedBehaviors[$state]) ) {
 				return false;
 			}
 		}
@@ -90,15 +91,15 @@ class StateMachine extends Programmable {
 	 */
 	public function denies( $behavior, $behavioral_implication ) {
 		$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-		$behavioral_implication = DevArray::toArray($behavioral_implication);
+		$behavioral_implication = Array::toArray($behavioral_implication);
 			
 		if ( $this->can($behaviorName) ) {
 			$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);
-			$this->_denied_behaviors[$behaviorName] = [];
+			$this->_deniedBehaviors[$behaviorName] = [];
 			foreach( $behavioral_implication as $implication ) {
 				$impliedBehaviorName = ( $implication instanceof Behavior ) ? $implication->name() : $implication;
 
-				$this->_denied_behaviors[$behaviorName][] = $impliedBehaviorName;
+				$this->_deniedBehaviors[$behaviorName][] = $impliedBehaviorName;
 			}
 		}
 	}
@@ -111,15 +112,15 @@ class StateMachine extends Programmable {
 	 */
 	public function allows( $behavior, $behavioral_implication ) {
 		$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-		$behavioral_implication = DevArray::toArray($behavioral_implication);
+		$behavioral_implication = Array::toArray($behavioral_implication);
 			
 		if ( $this->can($behaviorName) ) {
 			$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);
-			$this->_denied_behaviors[$behaviorName] = [];
+			$this->_deniedBehaviors[$behaviorName] = [];
 			foreach( $behavioral_implication as $implication ) {
 				$impliedBehaviorName = ( $implication instanceof Behavior ) ? $implication->name() : $implication;
 
-				$this->_allowed_behaviors[$behaviorName][] = $impliedBehaviorName;
+				$this->_allowedBehaviors[$behaviorName][] = $impliedBehaviorName;
 			}
 		}
 	}
@@ -132,7 +133,7 @@ class StateMachine extends Programmable {
 	 */
 	public function implies( $behavior, $behavioral_implication ) {
 	$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-	$behavioral_implication = DevArray::toArray($behavioral_implication);
+	$behavioral_implication = Array::toArray($behavioral_implication);
 		
 	if ( $this->can($behaviorName) ) {
 		$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);
@@ -159,7 +160,7 @@ class StateMachine extends Programmable {
 	public function supresses( $behavior, $behavioral_implication ) {
 		// Get the behavior name string
 		$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-		$behavioral_implication = DevArray::toArray($behavioral_implication);
+		$behavioral_implication = Array::toArray($behavioral_implication);
 			
 		if ( $this->can($behaviorName) ) {
 			$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);

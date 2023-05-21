@@ -1,8 +1,8 @@
 <?php
 namespace BlueFission\Utils;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\DevValue as Value;
+use BlueFission\DevArray as Array;
 use BlueFission\HTML\Table;
 use BlueFission\Behavioral\Configurable;
 
@@ -40,7 +40,7 @@ class DateTime extends Configurable
         parent::__construct();
 
         // if data is not null, process it
-        if (DevValue::isNotNull($data))
+        if (Value::isNotNull($data))
         {
             if ( is_array($data)) {
                 // if data is an array, it is assumed to be configuration settings
@@ -95,7 +95,7 @@ class DateTime extends Configurable
 	 */
 	public function timestamp( $data = null )
 	{
-	    if (DevValue::isNull($data))
+	    if (Value::isNull($data))
 	        return mktime ((int)$this->field('hour'), (int)$this->field('minute'), (int)$this->field('second'), (int)$this->field('month'), (int)$this->field('day'), (int)$this->field('year'));
 	    elseif (is_numeric($data))
 	        $timestamp = $data;
@@ -112,7 +112,7 @@ class DateTime extends Configurable
 	 */
 	public function info($datetime = null) 
 	{
-		if (DevValue::isNull($datetime))
+		if (Value::isNull($datetime))
 			return $this->_data;
 		
 		$timestamp = $this->timestamp($datetime);
@@ -185,12 +185,12 @@ class DateTime extends Configurable
 	 */
 	public function month($events = null) {
 		$date = $this->info();
-		$event_r = DevArray::toArray($events);
+		$event_r = Array::toArray($events);
 		$month = array();
 		$notes = array();
 		for ($i=0, ($j=1 - $date['firstweekday']); ($i<5 || $j<=$date['daysinmonth']); $i++) {
 			for ($k = 0; $k < 7; $k++, $j++) {
-				if (in_array($j, $event_r) && DevArray::isAssoc($event_r)) {
+				if (in_array($j, $event_r) && Array::isAssoc($event_r)) {
 					$note_r = array_keys($event_r, $j);
 					$notes = implode(', ',$note_r);
 				}
@@ -251,7 +251,7 @@ class DateTime extends Configurable
 
 		$this->_data = $this->info($timestamp);
 		
-		if (DevValue::isNull($time))
+		if (Value::isNull($time))
 			$time = date($format);
 
 		return $time;
@@ -309,7 +309,7 @@ class DateTime extends Configurable
 		
 		$this->_data = $this->info($timestamp);
 
-		if (DevValue::isNull($date))	
+		if (Value::isNull($date))	
 			$date = date($this->config('date_format'), $timestamp);
 		
 		return $date;
@@ -326,7 +326,7 @@ class DateTime extends Configurable
 	 */
 	public static function difference($time1, $time2, $interval = null) 
 	{
-		if (DevValue::isNull($interval)) $interval = 'seconds';
+		if (Value::isNull($interval)) $interval = 'seconds';
 		$a = strtotime($time1);
 		$b = strtotime($time2);
 		$difference = (($a > $b) ? ($a - $b) : ($b - $a));

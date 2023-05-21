@@ -60,7 +60,7 @@ class Behavior
 	 *
 	 * @return string The name of the behavior.
 	 */
-	public function name()
+	public function name(): string
 	{
 		return $this->_name;
 	}
@@ -70,7 +70,7 @@ class Behavior
 	 *
 	 * @return bool True if the behavior is persistent, false otherwise.
 	 */
-	public function is_persistent()
+	public function is_persistent(): boolean
 	{
 		return $this->_persistent;
 	}
@@ -80,7 +80,7 @@ class Behavior
 	 *
 	 * @return bool True if the behavior is passive, false otherwise.
 	 */
-	public function is_passive()
+	public function is_passive(): boolean
 	{
 		return $this->_passive;
 	}
@@ -90,7 +90,7 @@ class Behavior
 	 *
 	 * @return int The priority of the behavior.
 	 */
-	public function priority()
+	public function priority(): int
 	{
 		return $this->_priority;
 	}
@@ -100,7 +100,7 @@ class Behavior
 	 *
 	 * @return string The name of the behavior.
 	 */
-	public function __toString()
+	public function __toString(): string
 	{
 		return $this->name();
 	}

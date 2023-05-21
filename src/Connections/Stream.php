@@ -1,8 +1,8 @@
 <?php
 namespace BlueFission\Connections;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\DevValue as Value;
+use BlueFission\DevArray as Array;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
@@ -87,9 +87,9 @@ class Stream extends Connection implements IConfigurable
 		if ($context)
 		{
 			// If a query is not null
-			if (DevValue::isNotNull($query))
+			if (Value::isNotNull($query))
 			{
-				if (DevArray::isAssoc($query))
+				if (Array::isAssoc($query))
 				{
 					$this->_data = $query; 
 				}

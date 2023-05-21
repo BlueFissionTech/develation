@@ -2,8 +2,8 @@
 namespace BlueFission\Connections\Database;
 
 use BlueFission\Connections\Connection;
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\DevValue as Value;
+use BlueFission\DevArray as Array;
 use MongoDB\BSON\Javascript;
 use MongoDB\Client;
 use Exception;
@@ -146,16 +146,16 @@ class MongoLink extends Connection
 
 		if ( $db )
 		{
-			if (DevValue::isNotNull($query))
+			if (Value::isNotNull($query))
 			{
 				$this->_query = $query;
 
-				if (DevArray::isAssoc($query))
+				if (Array::isAssoc($query))
 				{
 					$this->_dataset = null;
 					$this->_data = $query;
 				}
-				else if ( is_array($query) && !DevArray::isAssoc($query) )
+				else if ( is_array($query) && !Array::isAssoc($query) )
 				{
 					$this->_dataset = $query;
 					$this->_data = $query[0];
@@ -215,16 +215,13 @@ class MongoLink extends Connection
 		$db = $this->_connection;
 		$success = false;
 
-		if ($db)
-		{				
+		if ( Value::isNotNull($db) ) {				
 			$document = $db->{$collection}->find($data);
 
 			$success = ( $document ) ? true : false;
 
 			$this->_result = $document;
-		}
-		else
-		{
+		} else {
 			$this->status( $status );
 			return $success;
 		}
@@ -291,8 +288,7 @@ class MongoLink extends Connection
 		$db = $this->_connection;
 		$success = false;
 
-		if ($db)
-		{
+		if (Value::isNotNull($db)) {
 			if ($replace){
 				$success = ( $db->{$collection}->replaceMany($filter, $data) ) ? true : false;
 			} else {
@@ -304,9 +300,7 @@ class MongoLink extends Connection
 			$this->_result = $success;
 			
 			$status = ($success) ? $this->error() : self::STATUS_SUCCESS;
-		}
-		else
-		{
+		} else {
 			$this->status( $status );
 			return $success;
 		}
@@ -333,18 +327,15 @@ class MongoLink extends Connection
 		$replace = false;
 		$last_row = null; 
 
-		if ($filter == '' && ($type == self::INSERT || $type == self::UPDATE)) 
-		{
+		if ($filter == '' && ($type == self::INSERT || $type == self::UPDATE)) {
 			$filter = '';
-		} 
-		elseif (isset($filter) && $filter != '' && $type != self::REPLACE) 
-		{
+		} elseif (isset($filter) && $filter != '' && $type != self::REPLACE) {
 			$type = self::UPDATE;
 		}
-		if (isset($collection) && $collection != '') 
-		{ //if a collection is specified
-			if (count($data) >= 1) 
-			{ //validates number of fields and values
+		if (isset($collection) && $collection != '') { 
+			//if a collection is specified
+			if (count($data) >= 1) { 
+				//validates number of fields and values
 				switch ($type) 
 				{
 				case self::INSERT:
@@ -387,15 +378,11 @@ class MongoLink extends Connection
 					$status = "Query Type Not Supported.";
 					break;
 				}
-			} 
-			else 
-			{
+			} else {
 				//if the arrays do not align or match
 				$status = "Fields and Values do not match or Insufficient Fields.";
 			}
-		} 
-		else 
-		{
+		} else {
 			//no table has been assigned
 			$status = "No Target Table Specified";
 		}
@@ -420,16 +407,13 @@ class MongoLink extends Connection
 		$db = $this->_connection;
 		$success = false;
 
-		if ($db)
-		{
+		if ($db) {
 			$success = ( $db->{$collection}->deleteMany($data) ) ? true : false;
 
 			$this->_result = $success;
 			
 			$status = ($success) ? $this->error() : self::STATUS_SUCCESS;
-		}
-		else
-		{
+		} else {
 			$this->status( $status );
 			return $success;
 		}
@@ -454,12 +438,13 @@ class MongoLink extends Connection
 		$reduce = new Javascript($reduce);
 		$collection = $this->config('collection');
 
-		$command = array(
+		$command = [
 		    "mapreduce" => $collection, 
 		    "map" => $map,
 		    "reduce" => $reduce,
 		    "query" => $this->_data,
-		    "out" => array($action => $output));
+		    "out" => array($action => $output)
+		];
 		    // "out" => array("reduce" => $output)));
 
 		$response = $db->command($command);
@@ -507,8 +492,9 @@ class MongoLink extends Connection
 	 */
 	public function database( $database = null )
 	{
-		if ( DevValue::isNull( $database ) )
+		if ( Value::isNull( $database ) ) {
 			return $this->config('database');
+		}
 
 		// $this->close();
 		$this->config('database', $database);
@@ -522,7 +508,7 @@ class MongoLink extends Connection
 	 *
 	 * @return mixed The last row of data.
 	 */
-	public function last_row() {
+	public function lastRow() {
 		return $this->_last_row;
 	}
 	

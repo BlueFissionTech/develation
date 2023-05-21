@@ -1,8 +1,8 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevValue;
-use BlueFission\DevObject;
+use BlueFission\DevValue as Value;
+use BlueFission\DevObject as Object;
 use BlueFission\Collections\Collection;
 use BlueFission\Exceptions\NotImplementedException;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -20,7 +20,7 @@ use InvalidArgumentException;
  *
  * @package BlueFission\Behavioral
  */
-class Scheme extends DevObject 
+class Scheme extends Object 
 {
     /**
      * Collection to store history of performed behaviors.
@@ -158,7 +158,7 @@ class Scheme extends DevObject
 		if ( $this->is( State::READONLY ) )
 			$value = null;
 
-		if ( DevValue::isNotEmpty($value) ) 
+		if ( Value::isNotEmpty($value) ) 
 			$this->dispatch( Event::CHANGE );
 		
 		return parent::field($field, $value);

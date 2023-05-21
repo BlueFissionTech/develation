@@ -27,6 +27,17 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
     }
 
     /**
+     * Check if value is an array
+     *
+     * @param mixed $value
+     *
+     * @return bool
+     */
+    public function _is( $value ): bool {
+		return is_array( $value );
+	}
+
+    /**
      * check if the array is a hash
      * @return bool
      */
@@ -72,6 +83,16 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
     public function _isEmpty( ): bool {
         return !$this->isNotEmpty( $this->_data);
     }
+
+    /**
+     * gets the count length of the array
+     * 
+     * @return int
+     */
+    public function _count( ): int {
+		$var = $this->_data;
+		return count( $var );
+	}
 
     /**
      * get value for given key in an array if it exists
@@ -128,7 +149,7 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 	 */
 	public function _toArray( bool $allow_empty = false): array {
 		$value = $this->_data;
-		$value_r = array();
+		$value_r = [];
 		if (!is_string($value) || (!$value == '' || $allow_empty))
 			(is_array($value)) ? $value_r = $value : $value_r[] = $value;
 		return $value_r;
@@ -160,16 +181,18 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 				}
 			}
 		}
-		return $array;
+
+		return $this;
 	}
 
 	/**
 	 * Appends other arrays to local $_data array
 	 * @param array ...$arrays
 	 * 
-	 * @return void
+	 * @return DevArray
 	 */
-	public function _append( ...$arrays ): void {
+	public function _append( ...$arrays ): DevArray
+	{
 		$array = $this->_data;
 		foreach ($arrays as $arg) {
 			if (is_array($arg)) {
@@ -181,6 +204,8 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 			}
 		}
 		$this->alter($array);
+
+		return $this;
 	}
 
 	/**
@@ -221,11 +246,12 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 
 	/**
 	 * Remove duplicate values from an array as a reference
-	 * @return array
+	 * @return DevArray
 	 */
-	public function _removeDuplicates(): array {
+	public function _removeDuplicates(): DevArray
+	{
 		$array = $this->_data;
-		$hold = array();
+		$hold = [];
 		foreach ($array as $a=>$b) {
 			if (!in_array($b, $hold, true))	{ 
 				$hold[$a] = $b;
@@ -234,16 +260,18 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 		$array = $hold;
 		unset($hold);
 		$this->alter($array);
-		return $array;
+
+		return $this;
 	}
 
 	/**
 	 * Case insensitive remove duplicate values from an array as a reference
-	 * @return array
+	 * @return DevArray
 	 */
-	public function _iRemoveDuplicates(): array {
+	public function _iRemoveDuplicates(): DevArray
+	{
 		$array = $this->_data;
-		$hold = array();
+		$hold = [];
 		 foreach ($array as $a=>$b) 
 		 {
 			if (!in_array(strtolower($b), $hold) && !is_array($b)) 
@@ -254,7 +282,8 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 		$array = $hold;
 		unset($hold);
 		$this->alter($array);
-		return $array;
+
+		return $this;
 		
 	}
 

@@ -57,24 +57,28 @@ class DevNumber extends DevValue implements IDevValue {
     /**
      * Check if the value is a valid number
      *
-     * @param bool $allow_zero Whether to allow zero values
+     * @param bool $allowZero Whether to allow zero values
      *
      * @return bool If the value is a valid number
      */
-    // public function _isValid(bool $allow_zero = true) {
-    //     $number = $this->_data;
-    //     return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allow_zero));
-    // }    
+    public function _is(bool $allowZero = true): boolean
+    {
+        $number = $this->_data;
+        return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allowZero));
+    }    
 
 	/**
 	 * Sets string formatting for the output of the number
 	 *
 	 * @param string $format The format to use
 	 *
-	 * @return void
+	 * @return DevNumber
 	 */
-	public function _format(string $format): void {
+	public function _format(string $format): DevNumber 
+	{
 		$this->_format = $format;
+
+		return $this;
 	}
 
 	/**
@@ -82,11 +86,14 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param int $precision The number of decimals to use
 	 *
-	 * @return void
+	 * @return DevNumber
 	 */
 
-	public function _precision(int $precision): void {
+	public function _precision(int $precision): DevNumber 
+	{
 		$this->_precision = $precision;
+
+		return $this;
 	}
 
 	/**
@@ -94,11 +101,14 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param string $decimal The decimal separator to use
 	 *
-	 * @return void
+	 * @return DevNumber
 	 */
 
-	public function _decimal(string $decimal): void {
+	public function _decimal(string $decimal): DevNumber
+	{
 		$this->_decimal = $decimal;
+
+		return $this;
 	}
 
 	/**
@@ -106,10 +116,13 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param string $thousands The thousands separator to use
 	 *
-	 * @return void
+	 * @return DevNumber
 	 */
-	public function _thousands(string $thousands): void {
+	public function _thousands(string $thousands): DevNumber
+	{
 		$this->_thousands = $thousands;
+
+		return $this;
 	}
     
     /**
@@ -117,9 +130,10 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @param mixed $value The value to add
      *
-     * @return mixed The sum of the numbers
+     * @return DevNumber
      */
-    public function _add(): float {
+    public function _add(): DevNumber
+    {
     	$values = func_get_args();
 		$number = $this->_data;
 		if (!DevNumber::isValid($number)) $number = 0;
@@ -131,7 +145,7 @@ class DevNumber extends DevValue implements IDevValue {
 
 		$this->alter($number);
 
-		return $number;
+		return $this;
 	}
 
 	/**
@@ -139,9 +153,10 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value The value to subtract
 	 *
-	 * @return mixed The difference of the numbers
+	 * @return DevNumber
 	 */
-	public function _subtract(): float {
+	public function _subtract(): DevNumber
+	{
 		$values = func_get_args();
 		$number = $this->_data;
 		if (!DevNumber::isValid($number)) $number = 0;
@@ -153,7 +168,7 @@ class DevNumber extends DevValue implements IDevValue {
 
 		$this->alter($number);
 
-		return $number;
+		return $this;
 	}
 
 	/**
@@ -161,9 +176,10 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value The value to multiply
 	 *
-	 * @return mixed The product of the numbers
+	 * @return DevNumber
 	 */
-	public function _multiply(): float {
+	public function _multiply(): DevNumber
+	{
 		$values = func_get_args();
 		$number = $this->_data;
 		if (!DevNumber::isValid($number)) $number = 0;
@@ -175,7 +191,7 @@ class DevNumber extends DevValue implements IDevValue {
 
 		$this->alter($number);
 
-		return $number;
+		return $this;
 	}
 
 	/**
@@ -183,9 +199,10 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value The value to divide
 	 *
-	 * @return mixed The quotient of the numbers
+	 * @return DevNumber
 	 */
-	public function _divide(): float {
+	public function _divide(): DevNumber
+	{
 		$values = func_get_args();
 		$number = $this->_data;
 		if (!DevNumber::isValid($number)) $number = 0;
@@ -199,7 +216,7 @@ class DevNumber extends DevValue implements IDevValue {
 
 		$this->alter($number);
 
-		return $number;
+		return $this;
 	}
 
     /**
@@ -210,7 +227,8 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The ratio between two values
      */
-    public function _percentage(float $part = 0, bool $percent = false): float {
+    public function _percentage(float $part = 0, bool $percent = false): float
+    {
         $whole = $this->_data;
         if (!DevNumber::isValid($part)) $part = 0;
         if (!DevNumber::isValid($whole)) $whole = 1;
@@ -225,28 +243,43 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @param int $precision The number of decimal places to round to
      *
-     * @return float The rounded number
+     * @return DevNumber
      */
-    public function _round(int $precision = 0): float {
-        return round($this->_data, $precision);
+    public function _round(int $precision = 0): DevNumber
+    {
+        $value = round($this->_data, $precision);
+
+        $this->alter($value);
+
+        return $this;
     }
 
     /**
      * Get the absolute value of the number
      *
-     * @return float The absolute value of the number
+     * @return DevNumber
      */
-    public function _abs(): float {
-        return abs($this->_data);
+    public function _abs(): DevNumber
+    {
+        $value = abs($this->_data);
+
+        $this->alter($value);
+
+        return $this;
     }
 
     /**
      * Get the square of the number
      *
-     * @return float The square of the number
+     * @return DevNumber
      */
-    public function _square(): float {
-        return $this->pow(2);
+    public function _square(): DevNumber
+    {
+        $value = $this->pow(2)->value();
+
+        $this->alter($value);
+
+        return $this;
     }
 
  	/**
@@ -254,19 +287,29 @@ class DevNumber extends DevValue implements IDevValue {
  	 *
  	 * @param int $power The power to raise the number to
  	 *
- 	 * @return float The powered number
+ 	 * @return DevNumber
  	 */
- 	public function _pow($power): float {
-        return pow($this->_data, $power);
+ 	public function _pow($power): DevNumber
+ 	{
+        $value = pow($this->_data, $power);
+
+        $this->alter($value);
+
+        return $this;
     }
 
     /**
      * Get the square root of the number
      *
-     * @return float The square root of the number
+     * @return DevNumber
      */
-    public function _squareRoot(): float {
-        return sqrt($this->_data);
+    public function _squareRoot(): DevNumber 
+    {
+        $value = sqrt($this->_data);
+
+        $this->alter($value);
+
+        return $this;
     }
 
     /**
@@ -274,19 +317,29 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @param float $base The base of the logarithm
      *
-     * @return float The logarithm of the number in the specified base
+     * @return DevNumber
      */
-    public function _log(float $base = M_E): float {
-        return log($this->_data, $base);
+    public function _log(float $base = M_E): DevNumber
+    {
+        $value = log($this->_data, $base);
+
+        $this->alter($value);
+
+        return $this;
     }
 
     /**
      * Get the exponential of the number
      *
-     * @return float The exponential of the number
+     * @return DevNumber
      */
-    public function _exp(): float {
-        return exp($this->_data);
+    public function _exp(): DevNumber
+    {
+        $value = exp($this->_data);
+
+        $this->alter($value);
+
+        return $this;
     }
 
     /**
@@ -324,23 +377,29 @@ class DevNumber extends DevValue implements IDevValue {
 	/**
 	 * Increment value by one
 	 *
-	 * @return void
+	 * @return DevNumber
 	 */
-	public function _increment(): void {
+	public function _increment(): DevNumber
+	{
 		$number = $this->_data;
 		$number++;
 		$this->alter($number);
+
+		return $this;
 	}
 
 	/**
 	 * Decrement value by one
 	 *
-	 * @return void
+	 * @return DevNumber
 	 */
-	public function _decrement(): void {
+	public function _decrement(): DevNumber
+	{
 		$number = $this->_data;
 		$number--;
 		$this->alter($number);
+
+		return $this;
 	}
 
 	/**

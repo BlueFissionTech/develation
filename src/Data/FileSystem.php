@@ -22,9 +22,9 @@ class FileSystem extends Data implements IData {
 	/**
 	 * Indicates whether the file is locked or not
 	 *
-	 * @var bool $_is_locked
+	 * @var bool $_isLocked
 	 */
-	private $_is_locked = false;
+	private $_isLocked = false;
 
 	/**
 	 * The configuration options for the FileSystem class
@@ -75,7 +75,7 @@ class FileSystem extends Data implements IData {
 	 * @return bool
 	 */
 	public function isLocked() {
-		return $this->_is_locked;
+		return $this->_isLocked;
 	}
 
 	/**
@@ -108,14 +108,14 @@ class FileSystem extends Data implements IData {
 				$status = "Cannot access file ($path)\n";
 			} else {
 				if ($this->config('lock') && flock($handle, LOCK_EX)) {
-					$this->_is_locked = true;
+					$this->_isLocked = true;
 					$success = 'true';
 					$this->_handle = $handle;
 				} elseif (!$this->config('lock')) {
 					$this->_handle = $handle;
 					$success = 'true';
 				} else {
-					$this->_is_locked = false;
+					$this->_isLocked = false;
 					$status = "Couldn't acquire lock on file {$lock}.";
 				}
 			}
@@ -134,7 +134,7 @@ class FileSystem extends Data implements IData {
 		if ($this->_handle)
 			fclose ( $this->_handle );
 		$this->_handle = null;
-		$this->_is_locked = false;
+		$this->_isLocked = false;
 	}
 
 	/**

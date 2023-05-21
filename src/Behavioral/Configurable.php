@@ -1,8 +1,9 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\DevValue as Value;
+use BlueFission\DevArray as Array;
+use BlueFission\DevString as String;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -36,10 +37,10 @@ class Configurable extends Scheme implements IConfigurable {
 	{
 		parent::__construct( );
 		if (!isset($this->_config))
-			$this->_config = array();
+			$this->_config = [];
 		
 		if (!isset($this->_status))
-			$this->_status = array();
+			$this->_status = [];
 
 		$this->dispatch( State::NORMAL );
 	}
@@ -57,18 +58,18 @@ class Configurable extends Scheme implements IConfigurable {
 	 */
 	public function config( $config = null, $value = null )
 	{
-		if (DevValue::isEmpty($config))
+		if (Value::isEmpty($config))
 			return $this->_config;
-		elseif (is_string($config))
+		elseif (String::isString($config))
 		{
-			if (DevValue::isEmpty ($value))
+			if (Value::isEmpty ($value))
 				return isset($this->_config[$config]) ? $this->_config[$config] : null;
 						
 			if ( ( array_key_exists($config, $this->_config) || $this->is(State::DRAFT) ) && !$this->is(State::READONLY)) {
 				$this->_config[$config] = $value; 
 			}
 		}
-		elseif (is_array($config) && !$this->is(State::READONLY))
+		elseif (Array::isArray($config) && !$this->is(State::READONLY))
 		{
 			$this->perform( State::BUSY );
 			if ( $this->is(State::DRAFT) ) {
@@ -92,7 +93,7 @@ class Configurable extends Scheme implements IConfigurable {
 	 */
 	public function status($message = null)
 	{
-		if (DevValue::isNull($message))
+		if (Value::isNull($message))
 		{
 			$message = end($this->_status);
 			return $message;
@@ -130,7 +131,7 @@ class Configurable extends Scheme implements IConfigurable {
 	 */
 	public function assign( $data )
 	{
-		if ( is_object( $data ) || DevArray::isAssoc( $data ) ) {
+		if ( is_object( $data ) || Array::isAssoc( $data ) ) {
 			$this->perform( State::BUSY );
 			foreach ( $data as $a=>$b ) {
 				$this->field($a, $b);

@@ -1,10 +1,11 @@
 <?php
 namespace BlueFission\Connections\Database;
 
-use BlueFission\DevValue;
-use BlueFission\Connections\Connection;
-use BlueFission\DevArray;
+use BlueFission\DevValue as Value;
+use BlueFission\DevArray as Array;
+use BlueFission\DevString as String;
 use BlueFission\Net\HTTP;
+use BlueFission\Connections\Connection;
 use BlueFission\Behavioral\IConfigurable;
 
 /**
@@ -48,10 +49,10 @@ class MysqlLink extends Connection implements IConfigurable
     public function __construct( $config = null )
     {
         parent::__construct( $config );
-        if (DevValue::isNull(self::$_database)) {
-            self::$_database = array();
+        if (Value::isNull(self::$_database)) {
+            self::$_database = [];
         } else {
-            $this->_connection = end ( self::$_database );
+            $this->_connection = end( self::$_database );
         }
         return $this;
     }
@@ -102,7 +103,7 @@ class MysqlLink extends Connection implements IConfigurable
 	 */
 	public function stats()
 	{
-		return array('query'=>$this->_query);
+		return ['query'=>$this->_query];
 	}
 	
 	/**
@@ -118,11 +119,11 @@ class MysqlLink extends Connection implements IConfigurable
 		if ( $db )
 		{
 			
-			if (DevValue::isNotNull($query))
+			if (Value::isNotNull($query))
 			{
 				$this->_query = $query;
 
-				if (DevArray::isAssoc($query))
+				if (Array::isAssoc($query))
 				{
 					$this->_data = $query; 
 				}
@@ -179,9 +180,9 @@ class MysqlLink extends Connection implements IConfigurable
 
 		if ($db)
 		{
-			$updates = array();
-			$temp_values = array();
-			$where = array(1);
+			$updates = [];
+			$temp_values = [];
+			$where = [1];
 			$where_str = '';
 			$query_str;
 			
@@ -236,7 +237,7 @@ class MysqlLink extends Connection implements IConfigurable
 		{
 			$field_string = '';
 			$value_string = '';
-			$temp_values = array();
+			$temp_values = [];
 			
 			// Turn array into a string
 			$field_string = implode( '`, `', array_keys($data));
@@ -293,8 +294,8 @@ class MysqlLink extends Connection implements IConfigurable
 
 		if ($db)
 		{
-			$updates = array();
-			$temp_values = array();
+			$updates = [];
+			$temp_values = [];
 			$update_string = '';
 			$query_str;
 			
@@ -446,7 +447,7 @@ class MysqlLink extends Connection implements IConfigurable
 	 */
 	public function database( $database = null )
 	{
-		if ( DevValue::isNull( $database ) )
+		if ( Value::isNull( $database ) )
 			return $this->config('database');
 
 		$this->config('database', $database);
@@ -499,18 +500,59 @@ class MysqlLink extends Connection implements IConfigurable
 	{
 		$db = end ( self::$_database );
 		//Create regular expression patterns
-		$pattern = array( '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' );
-		$replacement = array( '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', 'NULL' );
-		if ($datetime === true) $replacement = array( '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', 'NULL' );
+		// $pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
+		// $replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', 'NULL' ];
 		
-		if ($string) {
-			$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
+		// if ($datetime === true) {
+		// 	$replacement = [ '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', 'NULL' ];
+		// }
+
+		$pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
+		$replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', '' ];
+		
+		if ($datetime === true) {
+			$replacement = [ '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', '' ];
 		}
+
+		$string = new String($string);
+
+		$string->constraint(function(&$value) {
+			if (Value::isNull($value) || Value::isEmpty($value) || String::length($value) <= 0) {
+				$value = '';
+			}
+		});
+
+		$string->constraint(function(&$value) use ($db, $pattern, $replacement) {
+			if (Value::isNotNull($string)) {
+				$value = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($value)));
+			}
+		});
+
+		$string->constraint(function(&$value) {
+			if (Value::isNull($value)) {
+				$value = 'NULL';
+			}
+		});
+
+		$string->constraint(function(&$value) {
+			if ($value == '\'NOW()\'') {
+				$value = 'NOW()';
+			}
+		});
 		
-		if ($string === null || strlen($string) <= 0) $string = 'NULL';
-		if ($string == '\'NOW()\'') $string = 'NOW()';
+		// if ( Value::isNotNull($string) ) {
+		// 	$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
+		// }
 		
-		return $string;
+		// if ( Value::isNull($string) || String::length($string) <= 0) {
+		// 	$string = 'NULL';
+		// }
+
+		// if ($string == '\'NOW()\'') {
+		// 	$string = 'NOW()';
+		// }
+		
+		return $string();
 	}
 
 	/**
@@ -522,13 +564,14 @@ class MysqlLink extends Connection implements IConfigurable
 	 */
 	static function tableExists($table)
 	{
-	    $db = end ( self::$_database );
+	    $db = end( self::$_database );
 	    $table = self::sanitize($table);
 	    $result = $db->query("SHOW TABLES LIKE {$table}");
 
-	    if($result && $result->num_rows==1) 
+	    if ($result && $result->num_rows == 1) {
 	        return true;
-	    else
+	    } else {
 	        return false;
+	    }
 	}
 }

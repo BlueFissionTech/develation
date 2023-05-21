@@ -5,7 +5,6 @@ use ReflectionClass;
 use BlueFission\DevValue;
 use BlueFission\DevObject;
 use BlueFission\DevArray;
-use BlueFission\Behavioral\Dispatcher;
 use BlueFission\Behavioral\Behaviors\Behavior;
 
 /**
@@ -13,7 +12,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
  *
  * @package BlueFission\Services
  */
-class Service extends Dispatcher {
+class Service extends DevObject {
 
 	/**
 	 * @var array $registrations

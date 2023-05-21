@@ -18,15 +18,26 @@ class DevString extends DevValue implements IDevValue {
      */
     const SHA = 'sha1';
 
+    /**
+     * Checks is value is a string
+     *
+     * @param mixed $value
+     * 
+     * @return bool
+     */
+    public function _is($value): bool {
+    	return is_string($value);
+	}
+
 	/**
 	 * Generate a random string
 	 * 
 	 * @param int $length The length of the desired random string. Default is 8.
 	 * @param bool $symbols If set to true, special characters are included in the random string. Default is false.
 	 * 
-	 * @return string The generated random string
+	 * @return DevString
 	 */
-	public function _random(int $length = 8, bool $symbols = false): string {
+	public function _random(int $length = 8, bool $symbols = false): DevString {
 		$alphanum = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		if ($symbols) $alphanum .= "~!@#\$%^&*()_+=";
 
@@ -34,19 +45,22 @@ class DevString extends DevValue implements IDevValue {
 			$this->_data = $alphanum;
 		}
 		$rand_string = '';
-		for($i=0; $i<$length; $i++)
+		for($i=0; $i<$length; $i++) {
 			$rand_string .= $this->_data[rand(0, strlen($this->_data)-1)];
+		}
 
-		return $rand_string;
+		$this->alter($rand_string);
+
+		return $this;
 	}
 
 	// https://www.uuidgenerator.net/dev-corner/php
 	/**
      * Generates a version 4 UUID
      *
-     * @return string
+     * @return DevString
      */
-	public function _uuid4(): string
+	public function _uuid4(): DevString
 	{
 	    // Generate 16 bytes (128 bits) of random data or use the data passed into the function.
 	    if (!function_exists('random_bytes')) {
@@ -61,21 +75,28 @@ class DevString extends DevValue implements IDevValue {
 	    $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
 
 	    // Output the 36 character UUID.
-	    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+	    $string = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+
+	    $this->alter($string);
+
+	    return $this;
 	}
 
 	/**
 	 * Truncates a string to a given number of words using space as a word boundary.
 	 * 
 	 * @param int $limit The number of words to limit the string to. Default is 40.
-	 * @return string The truncated string.
+	 * @return DevString
 	 */
-	public function _truncate(int $limit = 40): string {
+	public function _truncate(int $limit = 40): DevString {
 		$string = trim( $this->_data );
 		$string_r = explode(' ', $string, ($limit+1));
 		if (count($string_r) >= $limit && $limit > 0) array_pop($string_r);
-		$output = implode (' ', $string_r);
-		return $output;
+		$string = implode (' ', $string_r);
+
+		$this->alter($string);
+		
+		return $this
 	}
 
 	/**
@@ -94,9 +115,9 @@ class DevString extends DevValue implements IDevValue {
 	 * Encrypt a string
 	 *
 	 * @param string $mode The encryption mode to use. Can be 'md5' or 'sha1'. Default is 'md5'
-	 * @return string The encrypted string
+	 * @return DevString
 	 */
-	public function _encrypt(string $mode = null): string {
+	public function _encrypt(string $mode = null): DevString {
 		$string = $this->_data;
 		switch ($mode) {
 		default:
@@ -108,13 +129,29 @@ class DevString extends DevValue implements IDevValue {
 			break;
 		}
 		
-		return $output;
+		$this->alter($string);
+
+		return $this;
 	}
 
+	/**
+	 * Returns the position of the first occurrence of a substring in a string
+	 *
+	 * @param string $needle The substring to search for
+	 *
+	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
+	 */
 	public function _strpos(string $needle): int {
 		return strpos($this->_data, $needle);
 	}
 
+	/**
+	 * Returns the position of the first occurrence of a case-insensitive substring in a string
+	 *
+	 * @param string $needle The substring to search for
+	 *
+	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
+	 */
 	public function _stripos(string $needle): int {
 		return stripos($this->_data, $needle);
 	}
@@ -150,28 +187,37 @@ class DevString extends DevValue implements IDevValue {
 	/**
 	 * Converts all characters of the string to lowercase
 	 *
-	 * @return string The lowercase string
+	 * @return DevString
 	 */
-	public function _lower(): string {
-		return strtolower($this->_data);
+	public function _lower(): DevString {
+		$string = strtolower($this->_data);
+		$this->alter($string);
+
+		return $this;
 	}
 
 	/**
 	 * Converts all characters of the string to uppercase
 	 *
-	 * @return string The uppercase string
+	 * @return DevString
 	 */
-	public function _upper(): string {
-		return strtoupper($this->_data);
+	public function _upper(): DevString {
+		$string =strtoupper($this->_data);
+		$this->alter($string);
+
+		return $this;
 	}
 
 	/**
 	 * Capitalizes the first letter of each word in the string
 	 *
-	 * @return string The capitalized string
+	 * @return DevString
 	 */
-	public function _capitalize(): string {
-		return ucwords($this->_data);
+	public function _capitalize(): DevString {
+		$string = ucwords($this->_data);
+		$this->alter($string);
+
+		return $this;
 	}
 
 	/**
@@ -179,10 +225,14 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @param int $times The number of times to repeat the string
 	 *
-	 * @return string The repeated string
+	 * @return DevString
 	 */
-	public function _repeat(int $times): string {
-		return str_repeat($this->_data, $times);
+	public function _repeat(int $times): DevString {
+		$string str_repeat($this->_data, $times);
+
+		$this->alter($string);
+
+		$return $this;
 	}
 
 	/**
@@ -191,10 +241,14 @@ class DevString extends DevValue implements IDevValue {
 	 * @param string $search The value to search for
 	 * @param string $replace The value to replace the search value with
 	 *
-	 * @return string The resulting string
+	 * @return DevString
 	 */
-	public function _replace(string $search, string $replace): string {
-		return str_replace($search, $replace, $this->_data);
+	public function _replace(string $search, string $replace): DevString {
+		$string = str_replace($search, $replace, $this->_data);
+
+		$this->alter($string);
+
+		return $this;
 	}
 
 	/**
@@ -212,10 +266,14 @@ class DevString extends DevValue implements IDevValue {
 	/**
 	 * Trims whitespace from the beginning and end of the string
 	 *
-	 * @return string The trimmed string
+	 * @return DevString
 	 */
-	public function _trim(): string {
-		return trim($this->_data);
+	public function _trim(): DevString {
+		$string trim($this->_data);
+
+		$this->alter($string);
+
+		return $this;
 	}
 
 

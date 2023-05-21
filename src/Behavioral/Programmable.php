@@ -2,7 +2,9 @@
 namespace BlueFission\Behavioral;
 
 use \RuntimeException;
-use BlueFission\DevValue;
+use BlueFission\DevValue as Value;
+use BlueFission\DevArray as Array;
+use BlueFission\DevString as String;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -30,7 +32,7 @@ class Programmable extends Configurable
 	public function __construct( )
 	{
 		parent::__construct();
-		$this->_tasks = array();
+		$this->_tasks = [];
 	}
 
 	/**
@@ -51,7 +53,7 @@ class Programmable extends Configurable
 		{
 			return call_user_func_array(array($this, $name), $args);
 		}
-		if (isset($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
+		if (Value::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
 		{
 			$result = call_user_func_array($this->_tasks[$name], $args);
 			$this->perform('On'.$name);
@@ -72,12 +74,12 @@ class Programmable extends Configurable
 	 * @param callable $callback A function to be executed when the behavior is triggered.
 	 */
 	public function behavior( $behavior, $callback = null ) {
-		if ( is_string($behavior) && DevValue::isNotEmpty($behavior) ) {
-			if ( strpos ( $behavior, 'Do') === 0 ) {
+		if ( String::isString($behavior) && Value::isNotEmpty($behavior) ) {
+			if ( String::strpos ( $behavior, 'Do') === 0 ) {
 				$behavior = new Action($behavior);
-			} elseif ( strpos ( $behavior, 'Is') === 0 ) {
+			} elseif ( String::strpos ( $behavior, 'Is') === 0 ) {
 				$behavior = new State($behavior);
-			} elseif ( strpos ( $behavior, 'On') === 0 ) {
+			} elseif ( String::strpos ( $behavior, 'On') === 0 ) {
 				$behavior = new Event($behavior);
 			} else {
 				$behavior = new Behavior($behavior);
@@ -124,7 +126,7 @@ class Programmable extends Configurable
 	 */
 	public function forget($task)
 	{
-		if ( $this->is( State::DRAFT ) && isset( $this->_tasks[$task] ) ) {
+		if ( $this->is( State::DRAFT ) && Value::is( $this->_tasks[$task] ) ) {
 			unset( $this->_tasks[$task] );
 			$this->perform( Event::CHANGE );
 		}
