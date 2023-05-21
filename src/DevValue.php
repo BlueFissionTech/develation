@@ -32,6 +32,8 @@ class DevValue extends Dispatcher implements IDevValue {
 	 * @param mixed $value
 	 */
 	public function __construct( $value = null ) {
+		parent::__construct();
+		
 		$this->_data = $value;
 		if ( $this->_type ) {
 			settype($this->_data, $this->_type);
@@ -157,8 +159,10 @@ class DevValue extends Dispatcher implements IDevValue {
 	 * @param  callable $callable The function to be called on the valu
 	 * @return void
 	 */
-	public function _constraint( $callable ) {
-		$this->_constraints[] = $callable;
+	public function _constraint( $callable, priority = 10 ) {
+		$this->_constraints[$priority] = $this->_constraints[$priority] ?? [];
+		$this->_constraints[$priority][] = $callable;
+		ksort($this->_constraints);
 	}
 
 	/**
@@ -178,7 +182,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	 */
 	public function alter($value) {
 		foreach ($this->_constraints as $constraint) {
-			$this->_data = $constraint($this->_data);
+			foreach ($constraint as $callable) {
+				$value = call_user_func($callable, $value);
+			}
 		}
 		if ($this->_data != $value) {
 			$this->dispatch(new Event(Event::CHANGE));

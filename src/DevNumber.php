@@ -42,6 +42,8 @@ class DevNumber extends DevValue implements IDevValue {
      * @param mixed|null $value The value to set, if any
      */
     public function __construct( $value = null ) {
+		parent::__construct($value);
+
         $this->_data = $value;
         if ( $this->_type ) {
             $clone = $this->_data;

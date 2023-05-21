@@ -34,7 +34,6 @@ class Dispatcher {
 	 * @param HandlerCollection $handlers Optional collection of handlers to add to the Dispatcher object
 	 */
 	public function __construct( HandlerCollection $handlers = null ) {
-		parent::__construct();
 		$this->_behaviors = new BehaviorCollection();
 
 		if ($handlers)

@@ -19,6 +19,8 @@ class DevObject extends Dispatcher implements IDevObject
      * DevObject constructor.
      */
     public function __construct() {
+        parent::__construct();
+        
         if (!isset($this->_data))
             $this->_data = [];
         
