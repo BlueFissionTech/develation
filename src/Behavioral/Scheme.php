@@ -2,6 +2,7 @@
 namespace BlueFission\Behavioral;
 
 use BlueFission\DevValue;
+use BlueFission\DevObject;
 use BlueFission\Collections\Collection;
 use BlueFission\Exceptions\NotImplementedException;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -13,13 +14,13 @@ use InvalidArgumentException;
 /**
  * Class Scheme
  * 
- * A Scheme is an extension of the Dispatcher class that provides
+ * A Scheme is an extension of the DevObject class that provides
  * additional behaviors and control structures for managing the state
  * of objects.
  *
  * @package BlueFission\Behavioral
  */
-class Scheme extends Dispatcher 
+class Scheme extends DevObject 
 {
     /**
      * Collection to store history of performed behaviors.

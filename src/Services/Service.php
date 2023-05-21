@@ -31,6 +31,11 @@ class Service extends Dispatcher {
 	protected $_parent;
 
 	/**
+	 * @var string $response
+	 */
+	protected $_response;
+
+	/**
 	 * @var int $LOCAL_LEVEL
 	 */
 	const LOCAL_LEVEL = 1;
@@ -154,7 +159,7 @@ class Service extends Dispatcher {
 	    if ($instance instanceof Dispatcher && is_callable(array($instance, 'behavior'))) {
 	        $instance->dispatch($behavior, $args);
 	    } else {
-	        $this->call($behavior, $args);
+	        $this->_response = $this->call($behavior, $args);
 	    }
 	}
 
@@ -250,7 +255,9 @@ class Service extends Dispatcher {
 		}		
 	}
 
-
+	public function response(): ?string {
+		return $this->_response;
+	}
 	// public function dispatch( $behavior, $args = null ) {
 	// 	// echo "{$behavior}\n";
 	// 	if ( $behavior instanceof Behavior && $behavior->_target == $this->instance ) {

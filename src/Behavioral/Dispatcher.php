@@ -1,8 +1,6 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevObject;
-use BlueFission\DevValue;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -15,7 +13,7 @@ use InvalidArgumentException;
 /**
  * Class Dispatcher is used to dispatch events and handlers 
  */
-class Dispatcher extends DevObject {
+class Dispatcher {
 	/**
 	 * Holds a collection of behaviors
 	 *
@@ -68,7 +66,7 @@ class Dispatcher extends DevObject {
 	 * @throws InvalidArgumentException if the behavior is not a string or an instance of Behavior.
 	 */
 	public function behavior( $behavior, $callback = null ) {
-		if ( is_string($behavior) && DevValue::isNotEmpty($behavior))
+		if ( is_string($behavior) && !empty($behavior))
 			$behavior = new Behavior($behavior);
 
 		if ( !($behavior instanceof Behavior) ) {
@@ -107,7 +105,11 @@ class Dispatcher extends DevObject {
 		if (is_string($behavior))
 			$behavior = new Behavior($behavior);
 
-		$this->trigger( $behavior, array($args) );
+			if (!is_array($args)) {
+				$args = array($args);
+			}
+
+		$this->trigger( $behavior, $args);
 	}
 	
 	/**

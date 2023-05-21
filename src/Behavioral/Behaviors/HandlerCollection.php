@@ -2,7 +2,6 @@
 namespace BlueFission\Behavioral\Behaviors;
 
 use BlueFission\Collections\Collection;
-use BlueFission\Exceptions\NotImplementedException;
 
 /**
  * Class HandlerCollection

@@ -47,7 +47,7 @@ class Process {
      *
      * @var array
      */
-    protected $pipes = [];
+    protected $_pipes = [];
 
     /**
 	 * Private variable that holds the default pipe specifications for the process.
@@ -103,6 +103,14 @@ class Process {
      */
     public function start() {
         $this->_process = proc_open($this->_command, $this->_descriptorspec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
+
+        // Make the streams non-blocking
+        stream_set_blocking($this->_pipes[1], false);
+        stream_set_blocking($this->_pipes[2], false);
+    }
+
+    public function pipes($index = 1) {
+        return $this->_pipes[$index];
     }
 
     /**
@@ -128,7 +136,7 @@ class Process {
 			return $this->_status['running'];
 		}
 		else
-			return fread($this->pipes[2]);
+			return fread($this->_pipes[2]);
 	}
 
     /**

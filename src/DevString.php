@@ -1,6 +1,4 @@
 <?php
-
-
 namespace BlueFission;
 
 class DevString extends DevValue implements IDevValue {
@@ -113,6 +111,14 @@ class DevString extends DevValue implements IDevValue {
 		return $output;
 	}
 
+	public function _strpos(string $needle): int {
+		return strpos($this->_data, $needle);
+	}
+
+	public function _stripos(string $needle): int {
+		return stripos($this->_data, $needle);
+	}
+
 	// Reverse strpos
 	/**
      * Finds the position of the last occurrence of a substring in a string
@@ -221,7 +227,7 @@ class DevString extends DevValue implements IDevValue {
 	 */
 	public function _has(string $needle): bool {
 		$haystack = $this->_data;
-		return (strpos($haystack, $needle) !== false);
+		return (\strpos($haystack, $needle) !== false);
 	}
 
 	/**

@@ -238,6 +238,9 @@ class DateTime extends Configurable
 			$timestamp = $this->timestamp();
 			$time = date($format, $timestamp);
 		break;
+		case 1:
+			$timestamp = $this->timestamp(func_get_arg(0));
+		break;
 		case 2:
 			$timestamp = mktime (func_get_arg(0), func_get_arg(1), 0, $this->_data['month'], $this->_data['day'], $this->_data['year']);
 		break;
@@ -245,12 +248,12 @@ class DateTime extends Configurable
 			$timestamp = mktime (func_get_arg(0), func_get_arg(1), func_get_arg(2), $this->_data['month'], $this->_data['day'], $this->_data['year']);
 		break;
 		}
-		
+
 		$this->_data = $this->info($timestamp);
 		
 		if (DevValue::isNull($time))
 			$time = date($format);
-		
+
 		return $time;
 	}
 
@@ -305,7 +308,7 @@ class DateTime extends Configurable
 		}
 		
 		$this->_data = $this->info($timestamp);
-		
+
 		if (DevValue::isNull($date))	
 			$date = date($this->config('date_format'), $timestamp);
 		

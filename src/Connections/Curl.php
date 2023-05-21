@@ -23,18 +23,26 @@ class Curl extends Connection implements IConfigurable
 	protected $_result;
 
 	/**
+	 * Options to use
+	 *
+	 * @var array
+	 */
+	protected $_options = [];
+
+	/**
 	 * Configuration data for the cURL connection.
 	 *
 	 * @var array
 	 */
-	protected $_config = array( 
+	protected $_config = [
 		'target'=>'',
 		'username'=>'',
 		'password'=>'',
 		'method'=>'',
+		'headers'=>[],
 		'refresh'=>false,
 		'validate_host'=>false,
-	);
+	];
 	
 	/**
 	 * Constructor that sets the configuration data.
@@ -46,6 +54,19 @@ class Curl extends Connection implements IConfigurable
 		parent::__construct();
 		if (is_array($config))
 			$this->config($config);
+	}
+
+	/**
+	 * Sets options for the cURL connection.
+	 *
+	 * @param string $option Option to set.
+	 * @param mixed $value Value of the option.
+	 * 
+	 * @return void
+	 */
+	public function option($option, $value)
+	{
+		$this->_options[$option] = $value;
 	}
 	
 	/**
@@ -68,6 +89,7 @@ class Curl extends Connection implements IConfigurable
 			
 			curl_setopt($this->_connection, CURLOPT_URL, $target);
 			curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
+			curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $this->config('headers'));
 
 			if ( $this->config('username') && $this->config('password') )
     			curl_setopt($this->_connection, CURLOPT_USERPWD, $this->config('username') . ':' . $this->config('password'));
@@ -120,11 +142,14 @@ class Curl extends Connection implements IConfigurable
 			//set the url, number of POST vars, POST data
 			if ( $method == 'post' ) {
 				curl_setopt($curl,CURLOPT_POST, count($data));
-				curl_setopt($curl,CURLOPT_POSTFIELDS, HTTP::query($data));
+				curl_setopt($curl,CURLOPT_POSTFIELDS, HTTP::jsonEncode($data));
 			} elseif ( $method == 'get') {
 				curl_setopt($curl, CURLOPT_URL, $this->config('target').'/'.HTTP::query($data));
 			}
-			curl_setopt($curl,CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			foreach ($this->_options as $option=>$value) {
+				curl_setopt($curl, $option, $value);
+			}
 			
 			//execute post
 			$this->_result = curl_exec($curl);

@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission;
 
+use BlueFission\Behavioral\Behaviors\Event;
 use ArrayAccess;
 
 /**
@@ -93,6 +94,7 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
      */
     public function set( $key, $value ) {
         $this->_data[$key] = $value;
+        $this->dispatch(new Event(Event::CHANGE));
     }
 
     /**
@@ -133,6 +135,83 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 	}
 
 	/**
+	 * Merges any number of arrays / parameters recursively with the local $_data array
+	 * Replaces entries with string keys with values from latter arrays.
+	 * If the entry or the next value to be assigned is an array, then it automagically treats both arguments as an array.
+	 * Numeric entries are appended, not replaced, but only if they are unique
+	 * @param array ...$arrays
+	 * 
+	 * @return array
+	 */
+	public function _merge( ...$arrays ): array {
+		$array = $this->_data;
+		foreach ($arrays as $arg) {
+			if (is_array($arg)) {
+				foreach ($arg as $key=>$value) {
+					if (is_array($value) && isset($array[$key]) && is_array($array[$key])) {
+						$array[$key] = $this->_merge($array[$key], $value);
+					}
+					else if (is_numeric($key) && !in_array($value, $array)) {
+						$array[] = $value;
+					}
+					else {
+						$array[$key] = $value;
+					}
+				}
+			}
+		}
+		return $array;
+	}
+
+	/**
+	 * Appends other arrays to local $_data array
+	 * @param array ...$arrays
+	 * 
+	 * @return void
+	 */
+	public function _append( ...$arrays ): void {
+		$array = $this->_data;
+		foreach ($arrays as $arg) {
+			if (is_array($arg)) {
+				foreach ($arg as $key=>$value) {
+					if (is_numeric($key) && !in_array($value, $array)) {
+						$array[] = $value;
+					}
+				}
+			}
+		}
+		$this->alter($array);
+	}
+
+	/**
+	 * get intersection between the $_data and the argument array
+	 * @param array $array
+	 *
+	 * @return array
+	 */
+	public function _intersect( array $array ): array {
+		return array_intersect($this->_data, $array);
+	}
+
+	/**
+	 * get difference between the $_data and the argument array
+	 * @param array $array
+	 *
+	 * @return array
+	 */
+	public function _diff( array $array ): array {
+		return array_diff($this->_data, $array);
+	}
+
+	/**
+	 * get the keys of the $_data array
+	 * @return array
+	 */
+	public function _keys(): array {
+		return array_keys($this->_data);
+	}
+		
+	/**
 	 * Return the data as an array
 	 * @return array
 	 */
@@ -142,47 +221,41 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 
 	/**
 	 * Remove duplicate values from an array as a reference
-	 * @return bool
+	 * @return array
 	 */
-	public function _removeDuplicates(): bool {
+	public function _removeDuplicates(): array {
 		$array = $this->_data;
-		if (is_array($array)) {
-			$hold = array();
-			foreach ($array as $a=>$b) {
-				if (!in_array($b, $hold, true))	{ 
-					$hold[$a] = $b;
-				}
+		$hold = array();
+		foreach ($array as $a=>$b) {
+			if (!in_array($b, $hold, true))	{ 
+				$hold[$a] = $b;
 			}
-			$array = $hold;
-			unset($hold);
-			return true;
 		}
-		else 
-			return false;
+		$array = $hold;
+		unset($hold);
+		$this->alter($array);
+		return $array;
 	}
 
 	/**
 	 * Case insensitive remove duplicate values from an array as a reference
-	 * @return bool
+	 * @return array
 	 */
-	public function _iRemoveDuplicates(): bool {
+	public function _iRemoveDuplicates(): array {
 		$array = $this->_data;
-		if (is_array($array)) 
-		{
-			$hold = array();
-			 foreach ($array as $a=>$b) 
-			 {
-				if (!in_array(strtolower($b), $hold) && !is_array($b)) 
-				{ 
-					$hold[$a] = strtolower($b); 
-				}
+		$hold = array();
+		 foreach ($array as $a=>$b) 
+		 {
+			if (!in_array(strtolower($b), $hold) && !is_array($b)) 
+			{ 
+				$hold[$a] = strtolower($b); 
 			}
-			$array = $hold;
-			unset($hold);
-			return true;
-		} 
-		else 
-			return false;
+		}
+		$array = $hold;
+		unset($hold);
+		$this->alter($array);
+		return $array;
+		
 	}
 
 	/**
@@ -228,5 +301,4 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 		if ( $this->offsetExists ( $offset ) )
 			unset( $this->_data[$offset] );
 	}
-
 }

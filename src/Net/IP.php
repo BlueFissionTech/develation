@@ -152,7 +152,7 @@ class IP {
 			$ip = (dev_is_null($ip)) ? $this->remote() : $ip;
 			$quit = false;
 			while (list($a, $b) = $line || $quit) {
-				if ($b[0] == $ip && $b[1] == $href) Boolean::opposite(&$quit);
+				if ($b[0] == $ip && $b[1] == $href) DevBoolean::opposite(&$quit);
 			}
 			if (($b[3] >= $limit) && (dev_time_difference($b[2], $timestamp, 'minutes') <= $interval)) {
 				dev_ip_deny($ip);

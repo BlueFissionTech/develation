@@ -1,12 +1,15 @@
 <?php
 namespace BlueFission;
 
-class DevObject implements IDevObject
+use BlueFission\Behavioral\Dispatcher;
+
+class DevObject extends Dispatcher implements IDevObject
 {
     /**
      * @var array
      */
     protected $_data;
+
     /**
      * @var string
      */

@@ -246,8 +246,9 @@ class FileSystem extends Data implements IData {
 		if ($file != '' && !$this->config('lock')) {
 			if (!$this->exists($path)) $status = "File '$file' does not exist. Creating.\n";
 			if (is_writable($path)) {
-				if (!file_put_contents($path, $content) )
-				{
+				if (empty($content)) {
+					$status = "File '$file' has been created\n";
+				} elseif (!file_put_contents($path, $content) ) {
 					$status = "Cannot write to file ($file)\n";
 					//exit;
 				} else {	
@@ -291,7 +292,7 @@ class FileSystem extends Data implements IData {
 			return false;
 		}
 
-		$content = stripslashes($this->contents());
+		$content = (!empty($this->contents()) && is_string($this->contents()) ) ? stripslashes($this->contents()) : $this->contents();
 		$status = '';
 		if ($file != '') {
 			if (!$this->exists($path)) {

@@ -33,4 +33,59 @@ class DevBoolean extends DevValue implements IDevValue {
 		$bool = $this->_data;
 	    return (!($bool === true));
 	}
+
+	/**
+	 * Check if the boolean value is true
+	 *
+	 * @return bool If the boolean value is true
+	 */
+	public function _isTrue(): bool {
+	    return $this->_data === true;
+	}
+
+	/**
+	 * Check if the boolean value is false
+	 *
+	 * @return bool If the boolean value is false
+	 */
+	public function _isFalse(): bool {
+	    return $this->_data === false;
+	}
+
+	/**
+	 * Returns the boolean representation of a given value
+	 *
+	 * @param mixed $value The value to cast to a boolean
+	 *
+	 * @return bool The boolean representation of the given value
+	 */
+	public static function _toBoolean($value): bool {
+	    return (bool) $value;
+	}
+	/**
+	 * Check if the stored value is empty
+	 *
+	 * @return bool True if the stored value is empty, false otherwise
+	 */
+	public function _isEmpty(): bool {
+	    return !isset($this->_data);
+	}
+
+	/**
+	 * Convert the stored boolean value to an integer
+	 *
+	 * @return int The stored boolean value as an integer (1 for true, 0 for false)
+	 */
+	public function _toInt(): int {
+	    return (int) $this->_data;
+	}
+
+	/**
+	 * Convert the stored boolean value to a string
+	 *
+	 * @return string The stored boolean value as a string ("true" for true, "false" for false)
+	 */
+	public function _toString(): string {
+	    return $this->_data ? "true" : "false";
+	}
 }

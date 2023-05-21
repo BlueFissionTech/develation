@@ -75,7 +75,7 @@ class MysqlLink extends Connection implements IConfigurable
         $connection_id = count(self::$_database);
         
         if ( !class_exists('mysqli') ) return;
-        $db = new \mysqli($host, $username, $password, $database, $port);
+        $db = $connection_id > 0 ? end(self::$_database) : new \mysqli($host, $username, $password, $database, $port);
         
         if (!$db->connect_error) {
             self::$_database[$connection_id] = $this->_connection = $db;
@@ -289,6 +289,7 @@ class MysqlLink extends Connection implements IConfigurable
 	{
 		$db = $this->_connection;
 		$success = false;
+		$status = self::STATUS_NOTCONNECTED;
 
 		if ($db)
 		{
@@ -303,18 +304,22 @@ class MysqlLink extends Connection implements IConfigurable
 			foreach (array_keys($data) as $a) 
 			{
 				//convert into query string
-				if ($ignore_null === true) 
+				if ($ignore_null === true ) 
 				{
-					$temp_values[$count] = $this->getExistingValueIfNull($table, $a, $temp_values[$count], $where);
+					// $temp_values[$count] = $this->getExistingValueIfNull($table, $a, $temp_values[$count], $where);
+					if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
+						array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
+					}
+				} else {
+					array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
 				}
-				array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
 				$count++;
 			}
 	
 			$update_string = implode(', ', $updates);
 			
 			$query = "UPDATE `".$table."` SET ".$update_string." WHERE ".$where;
-			
+
 			$this->_query = $query;
 			// $query_str = $query;
 			 
@@ -334,6 +339,7 @@ class MysqlLink extends Connection implements IConfigurable
 			return $success;
 		}
 		
+		$status = ($success) ? $db->error : self::STATUS_SUCCESS;
 		$this->status($status);
 		return $success;
 	}
@@ -501,7 +507,7 @@ class MysqlLink extends Connection implements IConfigurable
 			$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
 		}
 		
-		if ($string == null || strlen($string) <= 0) $string = 'NULL';
+		if ($string === null || strlen($string) <= 0) $string = 'NULL';
 		if ($string == '\'NOW()\'') $string = 'NOW()';
 		
 		return $string;

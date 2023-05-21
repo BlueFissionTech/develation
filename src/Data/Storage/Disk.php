@@ -83,10 +83,11 @@ class Disk extends Storage implements IData
 		$source->read();
 
 		$value = $source->contents();
-		if ( function_exists(json_decode))
+		if ( function_exists('json_decode'))
 		{
-			$value = json_decode($value);
-			$this->loadArray($value);
+			$value = json_decode($value, true);
+			$this->contents($value);
+			$this->assign((array)$value);
 		}	
 		return $value;
 	}

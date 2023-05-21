@@ -106,11 +106,11 @@ class Log extends Data implements iData
 	{
 		$destination = $this->config('file');
 		$type = $destination ? $this->config('storage') : self::SYSTEM;
-		if ($type == self::FILE && $destination && class_exists('FileSystem') )
+		if ($type == self::FILE && $destination )
 		{
 			$file_config = array('mode'=>'a'); 
 			$messenger = new FileSystem($file_config);
-			$messenger->file( $destination );
+			$messenger->open( $destination );
 			$messenger->read();
 			$status = $messenger->status();
 			$data = $messenger->data();
@@ -166,7 +166,7 @@ class Log extends Data implements iData
 					}
 					else
 					{
-						$status = mail($destination, $from, $subject, $message) ? "Log emailed to recipient" : error_log($message, $type, $destination) ? "Errors emailed by system" : "Unable to send email report";
+						$status = mail($destination, $from, $subject, $message) ? "Log emailed to recipient" : ( error_log($message, $type, $destination) ? "Errors emailed by system" : "Unable to send email report" );
 					}
 				break;
 				default:
@@ -240,7 +240,7 @@ class Log extends Data implements iData
 		}
 		else
 		{
-			$status = mail($destination, $from, $subject, $message) ? "Alert emailed to recipient" : error_log($message, $type, $destination) ? "Alert emailed by system" : "Unable to send alert";
+			$status = mail($destination, $from, $subject, $message) ? "Alert emailed to recipient" : (error_log($message, $type, $destination) ? "Alert emailed by system" : "Unable to send alert");
 		}
 		
 		$this->status($status);

@@ -83,11 +83,26 @@ class Machine {
         if (\substr(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting temperature
             $this->_system->run("WMIC /Namespace:\\\\root\\WMI PATH MSAcpi_ThermalZoneTemperature GET CurrentTemperature");
-            $temperature = $this->_system->_response;
+            $temperature = $this->_system->response();
         } else {
             // Linux command for getting temperature
-            $this->_system->run("cat /sys/class/thermal/thermal_zone*/temp");
-            $temperature = $this->_system->_response;
+            $possiblePaths = [
+                "/sys/class/thermal/thermal_zone*/temp",
+                "/sys/devices/virtual/thermal/thermal_zone*/temp",
+                "/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input",
+                "/sys/bus/acpi/devices/LNXTHERM:*/thermal_zone/temp",
+                "/sys/class/hwmon/hwmon*/temp*_input",
+                // Add more possible paths here if needed
+            ];
+
+            foreach ($possiblePaths as $path) {
+                $matches = glob($path);
+                if (!empty($matches)) {
+                    $this->_system->run("cat {$matches[0]}");
+                    $temperature = $this->_system->response();
+                    break;
+                }
+            }
         }
         return $temperature;
     }
@@ -102,11 +117,26 @@ class Machine {
         if (\substr(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting fan speed
             $this->_system->run("WMIC /Node:localhost PATH Win32_Fan GET Descriptions, VariableSpeed");
-            $fanSpeed = $this->_system->_response;
+            $fanSpeed = $this->_system->response();
         } else {
             // Linux command for getting fan speed
-            $this->_system->run("cat /proc/acpi/fan/FAN*/state");
-            $fanSpeed = $this->_system->_response;
+            $possiblePaths = [
+                "/proc/acpi/fan/FAN*/state",
+                "/sys/devices/platform/applesmc.768/fan*_input",
+                "/sys/devices/virtual/thermal/cooling_device*/cur_state",
+                "/sys/class/hwmon/hwmon*/pwm*_enable",
+                "/sys/class/hwmon/hwmon*/fan*_input",
+                // Add more possible paths here if needed
+            ];
+
+            foreach ($possiblePaths as $path) {
+                $matches = glob($path);
+                if (!empty($matches)) {
+                    $this->_system->run("cat {$matches[0]}");
+                    $fanSpeed = $this->_system->response();
+                    break;
+                }
+            }
         }
         return $fanSpeed;
     }
@@ -124,16 +154,30 @@ class Machine {
      */
     public function getPowerConsumption() {
         $powerConsumption = "";
-        if (\substr(\php_uname(), 0, 7) == "Windows") { 
+        if (\substr(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting power consumption
             $this->_system->run("WMIC /Node:localhost PATH Win32_PerfFormattedData_PerfOS_System GET ProcessorQueueLength");
-            $powerConsumption = $this->_system->_response;
+            $powerConsumption = $this->_system->response();
         } else {
             // Linux command for getting power consumption
-            $this->_system->run("cat /sys/class/power_supply/BAT0/power_now");
-            $powerConsumption = $this->_system->_response;
+            $potentialPaths = [
+                "/sys/class/power_supply/BAT0/power_now",
+                "/sys/class/power_supply/BAT0/energy_now",
+                "/sys/class/power_supply/BAT1/power_now",
+                "/sys/class/power_supply/BAT1/energy_now",
+            ];
+
+            foreach ($potentialPaths as $path) {
+                $matches = glob($path);
+                if (!empty($matches)) {
+                    $this->_system->run("cat {$matches[0]}");
+                    $powerConsumption = $this->_system->response();
+                    break;
+                }
+            }
         }
         return $powerConsumption;
     }
+
 
 }

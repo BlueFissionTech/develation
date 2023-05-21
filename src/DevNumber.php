@@ -12,9 +12,29 @@ namespace BlueFission;
  */
 class DevNumber extends DevValue implements IDevValue {
     /**
-     * @var string $_type The type of number, "int" or "double"
+     * @var string $_type The type of number, "integer" or "double"
      */
     protected $_type = "double";
+
+    /**
+	 * @var string $_format The format of the number
+	 */
+    protected $_format = "";
+
+    /**
+     * @var string $_decimals The decimals of the number
+     */
+    protected $_precision = 2;
+
+    /**
+	 * @var string $_decimal The decimal separator
+	 */
+    protected $_decimal = ".";
+
+    /**
+     * @var string $_thousands The thousands separator
+     */
+    protected $_thousands = ",";
 
     /**
      * DevNumber constructor.
@@ -27,7 +47,7 @@ class DevNumber extends DevValue implements IDevValue {
             $clone = $this->_data;
             settype($clone, $this->_type);
             $remainder = $clone % 1;
-            $this->_type = $remainder ? $this->_type : "int";
+            $this->_type = $remainder ? $this->_type : "integer";
             settype($this->_data, $this->_type);
         }
     }
@@ -39,10 +59,146 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return bool If the value is a valid number
      */
-    public function _isValid(bool $allow_zero = true) {
-        $number = $this->_data;
-        return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allow_zero));
-    }
+    // public function _isValid(bool $allow_zero = true) {
+    //     $number = $this->_data;
+    //     return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allow_zero));
+    // }    
+
+	/**
+	 * Sets string formatting for the output of the number
+	 *
+	 * @param string $format The format to use
+	 *
+	 * @return void
+	 */
+	public function _format(string $format): void {
+		$this->_format = $format;
+	}
+
+	/**
+	 * Sets the number of decimals to use
+	 *
+	 * @param int $precision The number of decimals to use
+	 *
+	 * @return void
+	 */
+
+	public function _precision(int $precision): void {
+		$this->_precision = $precision;
+	}
+
+	/**
+	 * Sets the decimal separator
+	 *
+	 * @param string $decimal The decimal separator to use
+	 *
+	 * @return void
+	 */
+
+	public function _decimal(string $decimal): void {
+		$this->_decimal = $decimal;
+	}
+
+	/**
+	 * Sets the thousands separator
+	 *
+	 * @param string $thousands The thousands separator to use
+	 *
+	 * @return void
+	 */
+	public function _thousands(string $thousands): void {
+		$this->_thousands = $thousands;
+	}
+    
+    /**
+     * Adds the numbers to the current value
+     *
+     * @param mixed $value The value to add
+     *
+     * @return mixed The sum of the numbers
+     */
+    public function _add(): float {
+    	$values = func_get_args();
+		$number = $this->_data;
+		if (!DevNumber::isValid($number)) $number = 0;
+
+		foreach ($values as $value) {
+			if (!DevNumber::isValid($value)) $value = 0;
+			$number += $value;
+		}
+
+		$this->alter($number);
+
+		return $number;
+	}
+
+	/**
+	 * Subtracts the numbers from the current value
+	 *
+	 * @param mixed $value The value to subtract
+	 *
+	 * @return mixed The difference of the numbers
+	 */
+	public function _subtract(): float {
+		$values = func_get_args();
+		$number = $this->_data;
+		if (!DevNumber::isValid($number)) $number = 0;
+
+		foreach ($values as $value) {
+			if (!DevNumber::isValid($value)) $value = 0;
+			$number -= $value;
+		}
+
+		$this->alter($number);
+
+		return $number;
+	}
+
+	/**
+	 * Multiplies the numbers to the current value
+	 *
+	 * @param mixed $value The value to multiply
+	 *
+	 * @return mixed The product of the numbers
+	 */
+	public function _multiply(): float {
+		$values = func_get_args();
+		$number = $this->_data;
+		if (!DevNumber::isValid($number)) $number = 0;
+
+		foreach ($values as $value) {
+			if (!DevNumber::isValid($value)) $value = 0;
+			$number *= $value;
+		}
+
+		$this->alter($number);
+
+		return $number;
+	}
+
+	/**
+	 * Divides the numbers to the current value
+	 *
+	 * @param mixed $value The value to divide
+	 *
+	 * @return mixed The quotient of the numbers
+	 */
+	public function _divide(): float {
+		$values = func_get_args();
+		$number = $this->_data;
+		if (!DevNumber::isValid($number)) $number = 0;
+
+		foreach ($values as $value) {
+			if (!DevNumber::isValid($value)) $value = 0;
+			if ($value != 0) {
+				$number /= $value;
+			}
+		}
+
+		$this->alter($number);
+
+		return $number;
+	}
 
     /**
      * Calculate the ratio between two values
@@ -69,7 +225,7 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The rounded number
      */
-    public function round(int $precision = 0): float {
+    public function _round(int $precision = 0): float {
         return round($this->_data, $precision);
     }
 
@@ -78,7 +234,7 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The absolute value of the number
      */
-    public function abs(): float {
+    public function _abs(): float {
         return abs($this->_data);
     }
 
@@ -87,8 +243,19 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The square of the number
      */
-    public function square(): float {
-        return pow($this->_data, 2);
+    public function _square(): float {
+        return $this->pow(2);
+    }
+
+ 	/**
+ 	 * Increase the value of the number by $power
+ 	 *
+ 	 * @param int $power The power to raise the number to
+ 	 *
+ 	 * @return float The powered number
+ 	 */
+ 	public function _pow($power): float {
+        return pow($this->_data, $power);
     }
 
     /**
@@ -96,7 +263,7 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The square root of the number
      */
-    public function squareRoot(): float {
+    public function _squareRoot(): float {
         return sqrt($this->_data);
     }
 
@@ -107,7 +274,7 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The logarithm of the number in the specified base
      */
-    public function log(float $base = M_E): float {
+    public function _log(float $base = M_E): float {
         return log($this->_data, $base);
     }
 
@@ -116,7 +283,7 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The exponential of the number
      */
-    public function exp(): float {
+    public function _exp(): float {
         return exp($this->_data);
     }
 
@@ -127,7 +294,7 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The minimum of the two numbers
      */
-    public function min(float $number): float {
+    public function _min(float $number): float {
         return min($this->_data, $number);
     }
 
@@ -138,7 +305,54 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return float The maximum of the two numbers
      */
-    public function max(float $number): float {
+    public function _max(float $number): float {
         return max($this->_data, $number);
     }
+
+    /**
+     * Return int value of the $_value
+     *
+     * @return int The int value of the $_value
+	 *
+     */
+    public function _int(): int {
+		return (int)$this->_data;
+	}
+
+	/**
+	 * Increment value by one
+	 *
+	 * @return void
+	 */
+	public function _increment(): void {
+		$number = $this->_data;
+		$number++;
+		$this->alter($number);
+	}
+
+	/**
+	 * Decrement value by one
+	 *
+	 * @return void
+	 */
+	public function _decrement(): void {
+		$number = $this->_data;
+		$number--;
+		$this->alter($number);
+	}
+
+	/**
+	 * Returns the string representation of the class instance.
+	 * @return string
+	 */
+	public function __toString(): string {
+		if ( $this->_format ) {
+			$output = sprintf($this->_format, $this->_data);
+		} elseif ($this->_precision) {
+			$output = number_format($this->_data, $this->_precision, $this->_decimal, $this->_thousands);
+		} else {
+			$output = (string)$this->_data;
+		}
+		return $output;
+	}
 }

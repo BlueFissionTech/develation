@@ -80,9 +80,9 @@ class Queue implements IQueue {
 	public static function dequeue($queue, $after_id=false, $till_id=false) {
 		$stack = self::instance();
 		if($after_id === false && $till_id === false) {
-			if ( self::$_mode == static::FILO ) {
+			if ( self::$_mode == static::FIFO ) {
 				$item = array_shift( $stack[$queue] );
-			} elseif ( self::$_mode == static::FIFO ) {
+			} elseif ( self::$_mode == static::FILO ) {
 				$item = array_pop( $stack[$queue] );
 			}
 			return $item;

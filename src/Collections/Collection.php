@@ -6,8 +6,6 @@ use ArrayObject;
 use ArrayIterator;
 use IteratorAggregate;
 use InvalidArgumentException;
-use BlueFission\DevValue;
-use BlueFission\DevArray;
 
 /**
  * Class Collection 
@@ -15,10 +13,10 @@ use BlueFission\DevArray;
  * An implementation of an array collection that implements ICollection, ArrayAccess, IteratorAggregate
  * 
  * @package BlueFission\Collections
- * @author  Daisuke Aoyama <aoyama.daisuke87@gmail.com>
- * @link    https://www.php.net/manual/en/class.ds-vector.php
+ * @author  Devon Scott <dscott@bluefission.com>
+ * @link    https://bluefission.com/develation
  */
-class Collection extends DevArray implements ICollection, ArrayAccess, IteratorAggregate {
+class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	/**
 	 * The actual value of the collection.
 	 *
@@ -53,7 +51,7 @@ class Collection extends DevArray implements ICollection, ArrayAccess, IteratorA
 		}
 		else
 		{
-			$this->_value = new ArrayObject( DevArray::toArray() );
+			$this->_value = new ArrayObject( DevArray::toArray($value) );
 		}
 
 		$this->_iterator = new ArrayIterator($this->_value);	

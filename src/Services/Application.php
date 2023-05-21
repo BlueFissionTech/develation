@@ -677,7 +677,8 @@ class Application extends Programmable {
 		try {
 			$service = $this->_services[$serviceName]->instance();
 		} catch( \Exception $e ) {
-			$service = getServiceInstance($serviceName);
+			error_log($e->getMessage());
+			$service = $this->getServiceInstance($serviceName);
 		}
 		if ( $call )
 		{

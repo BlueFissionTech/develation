@@ -184,9 +184,11 @@ class Mysql extends Storage implements IData
 			$data = [];
 			$fields = $this->_fields[$table] ?? $this->_data;
 
-			foreach ($fields as $field) {
-				$field = $field['Field'];
-				if ( is_array($this->config('fields')) && count($this->config('fields')) > 0 && !in_array($field, $this->config('fields')) ) {
+			foreach ($fields as $column) {
+				$field = $column['Field'];
+				if ( is_array($this->config('fields')) && count($this->config('fields')) > 0 
+					&& (!in_array($field, $this->config('fields')) ||
+					($column['Default'] !== null && $this->field($field) === null))) {
 					continue;
 				}
 				$data[$field] = $this->field($field);
@@ -825,7 +827,7 @@ class Mysql extends Storage implements IData
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;
 							}
-						} else {
+						} elseif (!$this->config('ignore_null')) {
 							$this->status("Field '$field_name' cannot be empty!");
 							$passed = false;
 						}

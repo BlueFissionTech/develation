@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Data\Storage\Structure;
 
+use BlueFission\Connections\Database\MysqlLink;
 use BlueFission\DevString;
 
 /**
@@ -39,6 +40,11 @@ class MysqlField {
     private $_null;
 
     /**
+     * @var mixed The default value of the field.
+     */
+    private $_default;
+
+    /**
      * @var boolean If the field is a binary.
      */
     private $_binary;
@@ -54,6 +60,11 @@ class MysqlField {
     private $_autoincrement;
 
     /**
+     * @var MysqlLink a connection to the target database.
+     */
+    private $_link;
+
+    /**
      * Constructor for the MysqlField class.
      *
      * @param string $name The name of the field.
@@ -63,6 +74,7 @@ class MysqlField {
     public function __construct($name)
     {
         $this->_name = $name;
+        $this->_link = new MysqlLink();
 
         return $this;
     }
@@ -144,11 +156,24 @@ class MysqlField {
 	 * @return object Returns the instance of the class
 	 */
 	public function null( $isTrue = true)
-		{
-			$this->_null = $isTrue;
+	{
+		$this->_null = $isTrue;
 
-			return $this;
-		}
+		return $this;
+	}
+
+	/**
+	 * Set the default value of the field
+	 * 
+	 * @param mixed $value the default value of the field
+	 * @return object Returns the instance of the class
+	 */
+	public function default( mixed $value )
+	{
+		$this->_default = $value;
+
+		return $this;
+	}
 
 	/**
 	 * Set the required property of the field
@@ -201,6 +226,10 @@ class MysqlField {
 			$definition[] = "INT";
 			break;
 
+			case 'longtext':
+			$definition[] = "LONGTEXT";
+			break;
+
 			default:
 			case 'text':
 			$definition[] = "VARCHAR";
@@ -209,6 +238,10 @@ class MysqlField {
 
 		if ( $this->_size ) {
 			$definition[] = "({$this->_size})";
+		}
+
+		if ( $this->_default !== null ) {
+			$definition[] = "DEFAULT '".$this->_link->sanitize($this->_default)."'";
 		}
 		
 		if ( !$this->_null ) {

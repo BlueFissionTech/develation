@@ -133,11 +133,6 @@ class Authenticator extends Configurable {
 		}
 	}
 
-	public function userID()
-	{
-		return is_defined('USER_ID') ? USER_ID : null;
-	}
-
 	/**
 	 * Method confirmIPAddress
 	 * 
