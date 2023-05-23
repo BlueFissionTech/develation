@@ -70,7 +70,7 @@ class Behavior
 	 *
 	 * @return bool True if the behavior is persistent, false otherwise.
 	 */
-	public function is_persistent(): boolean
+	public function is_persistent(): bool
 	{
 		return $this->_persistent;
 	}
@@ -80,7 +80,7 @@ class Behavior
 	 *
 	 * @return bool True if the behavior is passive, false otherwise.
 	 */
-	public function is_passive(): boolean
+	public function is_passive(): bool
 	{
 		return $this->_passive;
 	}

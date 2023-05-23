@@ -2,9 +2,8 @@
 namespace BlueFission\Behavioral;
 
 use \RuntimeException;
-use BlueFission\DevValue as Value;
-use BlueFission\DevArray as Array;
-use BlueFission\DevString as String;
+use BlueFission\DevValue;
+use BlueFission\DevString;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -53,7 +52,7 @@ class Programmable extends Configurable
 		{
 			return call_user_func_array(array($this, $name), $args);
 		}
-		if (Value::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
+		if (DevValue::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
 		{
 			$result = call_user_func_array($this->_tasks[$name], $args);
 			$this->perform('On'.$name);
@@ -74,12 +73,12 @@ class Programmable extends Configurable
 	 * @param callable $callback A function to be executed when the behavior is triggered.
 	 */
 	public function behavior( $behavior, $callback = null ) {
-		if ( String::isString($behavior) && Value::isNotEmpty($behavior) ) {
-			if ( String::strpos ( $behavior, 'Do') === 0 ) {
+		if ( DevString::isString($behavior) && DevValue::isNotEmpty($behavior) ) {
+			if ( DevString::strpos ( $behavior, 'Do') === 0 ) {
 				$behavior = new Action($behavior);
-			} elseif ( String::strpos ( $behavior, 'Is') === 0 ) {
+			} elseif ( DevString::strpos ( $behavior, 'Is') === 0 ) {
 				$behavior = new State($behavior);
-			} elseif ( String::strpos ( $behavior, 'On') === 0 ) {
+			} elseif ( DevString::strpos ( $behavior, 'On') === 0 ) {
 				$behavior = new Event($behavior);
 			} else {
 				$behavior = new Behavior($behavior);
@@ -126,7 +125,7 @@ class Programmable extends Configurable
 	 */
 	public function forget($task)
 	{
-		if ( $this->is( State::DRAFT ) && Value::is( $this->_tasks[$task] ) ) {
+		if ( $this->is( State::DRAFT ) && DevValue::is( $this->_tasks[$task] ) ) {
 			unset( $this->_tasks[$task] );
 			$this->perform( Event::CHANGE );
 		}
@@ -138,7 +137,7 @@ class Programmable extends Configurable
 	 * @param string $field The name of the field to set
 	 * @param mixed $value The value of the field, or a callable function if learning a task
 	 */
-	public function __set($field, $value)
+	public function __set($field, $value): void
 	{
 		if (is_callable($value))
 			$this->learn($field, $value);

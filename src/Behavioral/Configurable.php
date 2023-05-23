@@ -1,9 +1,9 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevValue as Value;
-use BlueFission\DevArray as Array;
-use BlueFission\DevString as String;
+use BlueFission\DevValue;
+use BlueFission\DevArray;
+use BlueFission\DevString;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -58,19 +58,17 @@ class Configurable extends Scheme implements IConfigurable {
 	 */
 	public function config( $config = null, $value = null )
 	{
-		if (Value::isEmpty($config))
+		if (DevValue::isEmpty($config)) {
 			return $this->_config;
-		elseif (String::isString($config))
-		{
-			if (Value::isEmpty ($value))
+		} elseif (DevString::is($config)) {
+			if (DevValue::isEmpty ($value)) {
 				return isset($this->_config[$config]) ? $this->_config[$config] : null;
+			}
 						
 			if ( ( array_key_exists($config, $this->_config) || $this->is(State::DRAFT) ) && !$this->is(State::READONLY)) {
 				$this->_config[$config] = $value; 
 			}
-		}
-		elseif (Array::isArray($config) && !$this->is(State::READONLY))
-		{
+		} elseif (DevArray::is($config) && !$this->is(State::READONLY)) {
 			$this->perform( State::BUSY );
 			if ( $this->is(State::DRAFT) ) {
 				foreach ( $config as $a=>$b ) {
@@ -93,7 +91,7 @@ class Configurable extends Scheme implements IConfigurable {
 	 */
 	public function status($message = null)
 	{
-		if (Value::isNull($message))
+		if (DevValue::isNull($message))
 		{
 			$message = end($this->_status);
 			return $message;
@@ -110,9 +108,9 @@ class Configurable extends Scheme implements IConfigurable {
 	 * @param  mixed|null  $value  The value to set for the field. If not provided, the current value of the field is returned.
 	 * @return mixed|false  The field value, or `false` if the field does not exist and is not in a draft state.
 	 */
-	public function field( $field, $value = null )
+	public function field( string $field, $value = null ): mixed
 	{
-		if ( array_key_exists($field, $this->_data) || $this->is( State::DRAFT ) )
+		if ( DevArray::hasKey($this->_data, $field) || $this->is( State::DRAFT ) )
 		{	
 			$value = parent::field($field, $value);
 			return $value;
@@ -131,7 +129,7 @@ class Configurable extends Scheme implements IConfigurable {
 	 */
 	public function assign( $data )
 	{
-		if ( is_object( $data ) || Array::isAssoc( $data ) ) {
+		if ( is_object( $data ) || DevArray::isAssoc( $data ) ) {
 			$this->perform( State::BUSY );
 			foreach ( $data as $a=>$b ) {
 				$this->field($a, $b);

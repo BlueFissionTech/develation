@@ -85,7 +85,7 @@ class DevBoolean extends DevValue implements IDevValue {
 	 *
 	 * @return string The stored boolean value as a string ("true" for true, "false" for false)
 	 */
-	public function _toString(): string {
+	public function __toString(): string {
 	    return $this->_data ? "true" : "false";
 	}
 }

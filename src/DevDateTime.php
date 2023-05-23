@@ -4,16 +4,17 @@ namespace BlueFission;
 use BlueFission\DevValue;
 use BlueFission\DevNumber;
 use BlueFission\DevArray;
+use BlueFission\Behavioral\Behaviors\Event;
 use \DateTime;
 
 class DevDateTime extends DevValue implements IDevValue
 {
-	protected $_type = "datetime";
+	protected $_type = "";
 
     /**
 	 * @var string $_format The format of the date
 	 */
-    protected $_format = "Y-m-d G:i:s";
+    protected $_format = "c"; //"Y-m-d H:i:s";
 
     /**
 	 * @var string $_timezone The timezone of the date
@@ -35,7 +36,9 @@ class DevDateTime extends DevValue implements IDevValue
         $this->_datetime = ($value instanceof DateTime) ? $value : new DateTime($value);
         $this->_timezone = $timezone ?? $this->_datetime->getTimezone()->getName();
 
-        $value = new DevArray([
+		parent::__construct($value);
+
+        $this->_data = new DevArray([
 	        'second'=>$this->_datetime->format('s'), 
 	        'minute'=>$this->_datetime->format('i'), 
 	        'hour'=>$this->_datetime->format('G'), 
@@ -46,10 +49,10 @@ class DevDateTime extends DevValue implements IDevValue
 	        'offset'=>$this->_datetime->format('Z')
 	    ]);
 
-		parent::__construct($value);
-
 		// Register date Array changes as changes to DevDateTime object
-        $this->_data->behavior(new Event( Event::CHANGE ), function($behavior) use ( $this ) {
+        $this->_data->behavior(new Event( Event::CHANGE ), function($behavior) {
+        	$this->_datetime = new DateTime( $this->timestamp() );
+        	$this->_timezone = $this->_datetime->getTimezone()->getName();
         	$this->dispatch($event);
         });
     }
@@ -57,7 +60,7 @@ class DevDateTime extends DevValue implements IDevValue
     public function value($value = null): mixed
     {
     	$value = parent::value($value);
-    	return $value->format($this->_format);
+    	return $this->_datetime->format($this->_format);
     }
 
 	/**
@@ -67,17 +70,17 @@ class DevDateTime extends DevValue implements IDevValue
      * 
      * @return bool
      */
-    public function _is($value): bool {
-    	return ( $value instanceof DateTime || strtotime($value) !== false || $this->isValidTimestamp($value) );
+    public function _is( ): bool {
+    	return ( $this->_data instanceof DateTime || strtotime($this->_data) !== false || $this->isValidTimestamp($this->_data) );
 	}
 
 	/**
 	 * Checks if a value is a valid unix timestamp
 	 * 
 	 * @param  int  $timestamp the proposed unix timestamp
-	 * @return boolean 		 true if the value is a valid unix timestamp
+	 * @return bool 		 true if the value is a valid unix timestamp
 	 */
-	private function isValidTimestamp($timestamp): boolean {
+	private function isValidTimestamp($timestamp): bool {
 	    return is_numeric($timestamp)
 	        && ($timestamp <= PHP_INT_MAX)
 	        && ($timestamp >= ~PHP_INT_MAX)
@@ -147,6 +150,22 @@ class DevDateTime extends DevValue implements IDevValue
 	}
 
 	/**
+	 * set the format for the date
+	 *
+	 * @param string|null $format The format to set
+	 * @return string The format
+	 */
+	public function format( string $format = null ): string
+	{
+		if ( DevValue::isNull($format) ) {
+			return $this->_format;
+		}
+
+		$this->_format = $format;
+		return $this->_format;
+	}
+
+	/**
 	 * Get the date
 	 *
 	 * @param string|null $date Date string in the format specified in config
@@ -204,7 +223,7 @@ class DevDateTime extends DevValue implements IDevValue
 	public static function _difference($time2, $interval = null): float
 	{
 		if (DevValue::isNull($interval)) $interval = 'seconds';
-		$a = $this->timestamp()
+		$a = $this->timestamp();
 		$b = $this->timestamp($time2);
 		$difference = (($a > $b) ? ($a - $b) : ($b - $a));
 		
@@ -230,5 +249,13 @@ class DevDateTime extends DevValue implements IDevValue
 		
 		$output = ($difference / $div);
 		return $output;
+	}
+
+	/**
+	 * Returns the string representation of the class instance.
+	 * @return string
+	 */
+	public function __toString(): string {
+		return $this->value();
 	}
 }

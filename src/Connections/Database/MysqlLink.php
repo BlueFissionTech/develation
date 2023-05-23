@@ -1,9 +1,9 @@
 <?php
 namespace BlueFission\Connections\Database;
 
-use BlueFission\DevValue as Value;
-use BlueFission\DevArray as Array;
-use BlueFission\DevString as String;
+use BlueFission\DevValue;
+use BlueFission\DevArray;
+use BlueFission\DevString;
 use BlueFission\Net\HTTP;
 use BlueFission\Connections\Connection;
 use BlueFission\Behavioral\IConfigurable;
@@ -33,7 +33,7 @@ class MysqlLink extends Connection implements IConfigurable
         'password'=>'',
         'database'=>'',
         'table'=>'',
-        'port'=>'',
+        'port'=>3306,
         'key'=>'_rowid',
         'ignore_null'=>false,
     );
@@ -49,7 +49,7 @@ class MysqlLink extends Connection implements IConfigurable
     public function __construct( $config = null )
     {
         parent::__construct( $config );
-        if (Value::isNull(self::$_database)) {
+        if (DevValue::isNull(self::$_database)) {
             self::$_database = [];
         } else {
             $this->_connection = end( self::$_database );
@@ -119,11 +119,11 @@ class MysqlLink extends Connection implements IConfigurable
 		if ( $db )
 		{
 			
-			if (Value::isNotNull($query))
+			if (DevValue::isNotNull($query))
 			{
 				$this->_query = $query;
 
-				if (Array::isAssoc($query))
+				if (DevArray::isAssoc($query))
 				{
 					$this->_data = $query; 
 				}
@@ -447,7 +447,7 @@ class MysqlLink extends Connection implements IConfigurable
 	 */
 	public function database( $database = null )
 	{
-		if ( Value::isNull( $database ) )
+		if ( DevValue::isNull( $database ) )
 			return $this->config('database');
 
 		$this->config('database', $database);
@@ -514,22 +514,22 @@ class MysqlLink extends Connection implements IConfigurable
 			$replacement = [ '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', '' ];
 		}
 
-		$string = new String($string);
+		$string = new DevString($string);
 
 		$string->constraint(function(&$value) {
-			if (Value::isNull($value) || Value::isEmpty($value) || String::length($value) <= 0) {
+			if (DevValue::isNull($value) || DevValue::isEmpty($value) || DevString::length($value) <= 0) {
 				$value = '';
 			}
 		});
 
 		$string->constraint(function(&$value) use ($db, $pattern, $replacement) {
-			if (Value::isNotNull($string)) {
+			if (DevValue::isNotNull($string)) {
 				$value = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($value)));
 			}
 		});
 
 		$string->constraint(function(&$value) {
-			if (Value::isNull($value)) {
+			if (DevValue::isNull($value)) {
 				$value = 'NULL';
 			}
 		});
@@ -540,11 +540,11 @@ class MysqlLink extends Connection implements IConfigurable
 			}
 		});
 		
-		// if ( Value::isNotNull($string) ) {
+		// if ( DevValue::isNotNull($string) ) {
 		// 	$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
 		// }
 		
-		// if ( Value::isNull($string) || String::length($string) <= 0) {
+		// if ( DevValue::isNull($string) || DevString::length($string) <= 0) {
 		// 	$string = 'NULL';
 		// }
 

@@ -1,7 +1,8 @@
 <?php
 namespace BlueFission\Services;
 
-use BlueFission\Net\HTTP;
+use BlueFission\DevNumber;
+use BlueFission\DevString;
 use BlueFission\DevArray;
 use BlueFission\DevObject;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -57,7 +58,6 @@ class Response extends DevObject
 		if ( $depth > self::MAX_DEPTH ) {
 			return;
 		}
-
 		if ( \is_array($values) ) {
 			$mapped = false;
 			$iterations = 0;
@@ -66,7 +66,7 @@ class Response extends DevObject
 					break;
 				}
 
-				if ( $depth == 0 && \array_key_exists($key, $this->_data) && $this->$key == null ) {
+				if ( $depth == 0 && DevArray::hasKey($this->_data, $key) && $this->$key == null ) {
 					$mapped = true;
 					$this->$key = $value;
 				} else {
@@ -89,11 +89,11 @@ class Response extends DevObject
 			} 
 		}
 
-		if ( $depth < 2 && \is_numeric($values) && $this->id == null  ) {
+		if ( $depth < 2 && DevNumber::is($values) && $this->id == null  ) {
 			$this->id = $values;
 		}
 
-		if ( $depth < 2 && \is_string($values) && $this->status == null  ) {
+		if ( $depth < 2 && DevString::is($values) && $this->status == null  ) {
 			$this->status = $values;
 		}
 
@@ -111,7 +111,7 @@ class Response extends DevObject
 	 */
 	public function send()
 	{
-		$this->_message = HTTP::jsonEncode($this->_data);
+		$this->_message = $this->_data->toJson();
 		$this->dispatch( Event::COMPLETE);
 	}
 

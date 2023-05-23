@@ -19,14 +19,25 @@ class DevString extends DevValue implements IDevValue {
     const SHA = 'sha1';
 
     /**
+	 * Constructor to initialize value of the class
+	 *
+	 * @param mixed $value
+	 */
+	public function __construct( $value = null ) {
+		$value = is_string( $value ) ? $value : null;
+		parent::__construct($value);
+	}
+
+    /**
      * Checks is value is a string
      *
      * @param mixed $value
      * 
      * @return bool
      */
-    public function _is($value): bool {
-    	return is_string($value);
+    public function _is( ): bool
+    {
+    	return is_string($this->_data);
 	}
 
 	/**
@@ -88,7 +99,8 @@ class DevString extends DevValue implements IDevValue {
 	 * @param int $limit The number of words to limit the string to. Default is 40.
 	 * @return DevString
 	 */
-	public function _truncate(int $limit = 40): DevString {
+	public function _truncate(int $limit = 40): DevString
+	{
 		$string = trim( $this->_data );
 		$string_r = explode(' ', $string, ($limit+1));
 		if (count($string_r) >= $limit && $limit > 0) array_pop($string_r);
@@ -96,7 +108,7 @@ class DevString extends DevValue implements IDevValue {
 
 		$this->alter($string);
 		
-		return $this
+		return $this;
 	}
 
 	/**
@@ -106,7 +118,8 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @return bool True if the two strings match, false otherwise
 	 */
-	public function _match(string $str2): bool {
+	public function _match(string $str2): bool
+	{
 		$str1 = $this->_data;
 		return ($str1 == $str2);
 	}
@@ -228,11 +241,11 @@ class DevString extends DevValue implements IDevValue {
 	 * @return DevString
 	 */
 	public function _repeat(int $times): DevString {
-		$string str_repeat($this->_data, $times);
+		$string = str_repeat($this->_data, $times);
 
 		$this->alter($string);
 
-		$return $this;
+		return $this;
 	}
 
 	/**
@@ -269,7 +282,7 @@ class DevString extends DevValue implements IDevValue {
 	 * @return DevString
 	 */
 	public function _trim(): DevString {
-		$string trim($this->_data);
+		$string = trim($this->_data);
 
 		$this->alter($string);
 

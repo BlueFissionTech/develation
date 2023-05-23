@@ -7,7 +7,7 @@ interface IDevValue {
      * 
      * @return mixed
      */
-	public function value(): mixed|null;
+	public function value(): mixed;
 
 	/**
 	 * Sets the var to null

@@ -65,7 +65,7 @@ class Request extends DevObject {
 	 *
 	 * @throws Exception An exception is thrown when this method is called.
 	 */
-	public function __set($field, $value)
+	public function __set($field, $value): void
 	{
 		throw new \Exception('Request Inputs Are Immutable');
 	}

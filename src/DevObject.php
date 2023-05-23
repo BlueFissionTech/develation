@@ -1,9 +1,10 @@
 <?php
 namespace BlueFission;
 
-use BlueFission\DevArray as Array;
-use BlueFission\DevValue as Value;
 use BlueFission\IDevValue;
+use BlueFission\DevValue;
+use BlueFission\DevArray;
+use BlueFission\DevValueFactory as Factory;
 
 use BlueFission\Behavioral\Behaviors\Event;
 
@@ -17,6 +18,11 @@ class DevObject extends Dispatcher implements IDevObject
     protected $_data;
 
     /**
+     * @var array
+     */
+    protected $_types = [];
+
+    /**
      * @var string
      */
     protected $_type;
@@ -24,7 +30,7 @@ class DevObject extends Dispatcher implements IDevObject
     /**
      * @var bool
      */
-    protected $_exposeValueObject = true;
+    protected $_exposeValueObject = false;
 
     /**
      * DevObject constructor.
@@ -32,11 +38,22 @@ class DevObject extends Dispatcher implements IDevObject
     public function __construct() {
         parent::__construct();
 
-        if ( !Value::is($this->_data) ) {
-            $this->_data = new Array;
+        if ( !DevValue::is($this->_data) ) {
+            $this->_data = new DevArray;
+        } elseif ( DevArray::is($this->_data) ) {
+            $this->_data = new DevArray($this->_data);
+        }
+
+        foreach ( $this->_types as $field=>$type ) {
+            $item = Factory::make($type, $this->_data[$field] ?? null);
+            $item->behavior(new Event( Event::CHANGE ), function($behavior, $args) {
+                $this->_data->dispatch($behavior, $args);
+            });
+
+            $this->_data[$field] = $item;
         }
         
-        if ( !Value::is($this->_type) ) {
+        if ( !DevValue::is($this->_type) ) {
             $this->_type = get_class( $this );
         }
 
@@ -50,10 +67,10 @@ class DevObject extends Dispatcher implements IDevObject
      * @param mixed|null $value
      * @return mixed|null
      */
-    public function field(string $field, $value = null): mixed|null
+    public function field(string $field, $value = null): mixed
     {
-        if ( Value::isNotEmpty($value) ) {
-            if (isset( $this->_data[$field] 
+        if ( DevValue::isNotEmpty($value) ) {
+            if (isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IDevValue
                 && $this->_data[$field]->isValid($value) ) {
                 $this->_data[$field]->value($value);
@@ -104,19 +121,41 @@ class DevObject extends Dispatcher implements IDevObject
     /**
      * event handler for data changes
      *
-     * @param  Event $event
+     * @param  Event $behavior
      * @return void
      */
     public function onDataChange($behavior): void
     {
         $this->dispatch($behavior);
     }
+
+    /**
+     * Method to expose IDevValue members when called as methods
+     *
+     * @param string $method
+     * @param array $args
+     * @return mixed
+     */
+    public function __call( $method, $args )
+    {
+        if ( method_exists($this, $method) ) {
+            return call_user_func_array([$this, $method], $args);
+        } elseif ( DevArray::hasKey($this->_data, $method) ) {
+            $output = call_user_func_array(function() use ( $method ) {
+                return $this->_data[$method];
+            }, $args);
+            
+            return $output;
+        } else {
+            return false;
+        }
+    }
     
     /**
      * @param string $field
      * @return mixed|null
      */
-    public function __get($field): mixed|null
+    public function __get($field): mixed
     {
         return $this->field($field);
     }

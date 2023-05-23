@@ -45,7 +45,7 @@ class DevNumber extends DevValue implements IDevValue {
 		parent::__construct($value);
 
         $this->_data = $value;
-        if ( $this->_type ) {
+        if ( $this->_type && $this->_forceType == true ) {
             $clone = $this->_data;
             settype($clone, $this->_type);
             $remainder = $clone % 1;
@@ -61,7 +61,7 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @return bool If the value is a valid number
      */
-    public function _is(bool $allowZero = true): boolean
+    public function _is(bool $allowZero = true): bool
     {
         $number = $this->_data;
         return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allowZero));

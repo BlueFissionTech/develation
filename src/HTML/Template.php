@@ -101,7 +101,7 @@ class Template extends Configurable {
 	 * public function clear()
 	 * This method clears the content of the template and resets it.
 	 */
-	public function clear () 
+	public function clear (): void
 	{
 		parent::clear();
 		$this->reset();
@@ -180,10 +180,11 @@ class Template extends Configurable {
 	 * @throws InvalidArgumentException If $content is empty or $formatted is not boolean
 	 * @return mixed The content of the field
 	 */
-	public function field( $var, $content = null, $formatted = null ) 
+	public function field( string|object|array $var, $content = null, $formatted = null ): mixed
 	{
-		if ($formatted)
+		if ($formatted) {
 			$content = HTML::format($content);
+		}
 
 		if (is_string($var))
 		{
@@ -214,6 +215,8 @@ class Template extends Configurable {
 		{
 			throw new InvalidArgumentException( 'Invalid property' );
 		}
+
+		return true;
 	}
 
 	/**

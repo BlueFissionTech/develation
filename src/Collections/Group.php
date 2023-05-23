@@ -3,7 +3,7 @@ namespace BlueFission\Collections;
 
 use ArrayAccess;
 use ArrayObject;
-use BlueFission\DevValue as Value;
+use BlueFission\DevValue;
 use BlueFission\Behavioral\Behaviors\Configurable;
 
 /**
@@ -31,7 +31,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 * @return null|string
 	 */
 	public function type( $type = null ) {
-		if ( Value::isNull($type) ) {
+		if ( DevValue::isNull($type) ) {
 			return $this->_type;
 		}
 		$this->_type = $type;

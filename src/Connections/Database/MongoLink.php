@@ -2,8 +2,8 @@
 namespace BlueFission\Connections\Database;
 
 use BlueFission\Connections\Connection;
-use BlueFission\DevValue as Value;
-use BlueFission\DevArray as Array;
+use BlueFission\DevValue;
+use BlueFission\DevArray;
 use MongoDB\BSON\Javascript;
 use MongoDB\Client;
 use Exception;
@@ -146,16 +146,16 @@ class MongoLink extends Connection
 
 		if ( $db )
 		{
-			if (Value::isNotNull($query))
+			if (DevValue::isNotNull($query))
 			{
 				$this->_query = $query;
 
-				if (Array::isAssoc($query))
+				if (DevArray::isAssoc($query))
 				{
 					$this->_dataset = null;
 					$this->_data = $query;
 				}
-				else if ( is_array($query) && !Array::isAssoc($query) )
+				else if ( is_array($query) && !DevArray::isAssoc($query) )
 				{
 					$this->_dataset = $query;
 					$this->_data = $query[0];
@@ -215,7 +215,7 @@ class MongoLink extends Connection
 		$db = $this->_connection;
 		$success = false;
 
-		if ( Value::isNotNull($db) ) {				
+		if ( DevValue::isNotNull($db) ) {				
 			$document = $db->{$collection}->find($data);
 
 			$success = ( $document ) ? true : false;
@@ -288,7 +288,7 @@ class MongoLink extends Connection
 		$db = $this->_connection;
 		$success = false;
 
-		if (Value::isNotNull($db)) {
+		if (DevValue::isNotNull($db)) {
 			if ($replace){
 				$success = ( $db->{$collection}->replaceMany($filter, $data) ) ? true : false;
 			} else {
@@ -398,7 +398,7 @@ class MongoLink extends Connection
 	 * Deletes documents from the specified collection.
 	 *
 	 * @param string $collection Collection name
-	 * @param array $data Array of data to delete
+	 * @param array $data DevArray of data to delete
 	 * @return bool success status
 	 */
 	public function delete($collection, $data) {
@@ -492,7 +492,7 @@ class MongoLink extends Connection
 	 */
 	public function database( $database = null )
 	{
-		if ( Value::isNull( $database ) ) {
+		if ( DevValue::isNull( $database ) ) {
 			return $this->config('database');
 		}
 

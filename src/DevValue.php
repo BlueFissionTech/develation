@@ -24,6 +24,11 @@ class DevValue extends Dispatcher implements IDevValue {
 	 */
 	protected $_type = "";
 
+	/**
+	 * @var string $_forceType
+	 */
+	protected $_forceType = false;
+
 	const PRIVATE_PREFIX = '_';
 
 	/**
@@ -34,8 +39,12 @@ class DevValue extends Dispatcher implements IDevValue {
 	public function __construct( $value = null ) {
 		parent::__construct();
 
+		if ( $value instanceof IDevValue ) {
+			$value = $value->value();
+		}
+
 		$this->_data = $value;
-		if ( $this->_type ) {
+		if ( $this->_type && $this->_forceType ) {
 			settype($this->_data, $this->_type);
 		}
 	}
@@ -46,9 +55,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * checks if the value is set
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _is( ): boolean
+	public function _is( ): bool
 	{
 		return isset($this->_data);
 	}
@@ -56,50 +65,51 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * Check if var is a valid instance of $_type
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _isValid( $value = null ): boolean
+	public function _isValid( $value = null ): bool
 	{
 		$var = $value ?? $this->_data;
 		if ( $this->_type ) {
-		switch ($this->_type) {
-			case '': // redundant catch for no type set
-				return true;
-				break;
-			case 'string':
-				return is_string($var);
-				break;
-			case 'number':
-				// validates that value is numeric including zero
-				return is_numeric($var);
-				break;
-			case 'integer':
-				return is_int($var);
-				break;
-			case 'float':
-				return is_float($var);
-				break;
-			case 'boolean':
-				return is_bool($var);
-				break;
-			case 'array':
-				return is_array($var);
-				break;
-			case 'object':
-				return is_object($var);
-				break;
-			case 'resource':
-				return is_resource($var);
-				break;
-			case 'null':
-				return is_null($var);
-				break;
-			case 'scalar':
-				return is_scalar($var);
-				break;
-			default:
-				return false;
-				break;
+			switch ($this->_type) {
+				case '': // redundant catch for no type set
+					return true;
+					break;
+				case 'string':
+					return is_string($var);
+					break;
+				case 'number':
+					// validates that value is numeric including zero
+					return is_numeric($var);
+					break;
+				case 'integer':
+					return is_int($var);
+					break;
+				case 'float':
+					return is_float($var);
+					break;
+				case 'bool':
+					return is_bool($var);
+					break;
+				case 'array':
+					return is_array($var);
+					break;
+				case 'object':
+					return is_object($var);
+					break;
+				case 'resource':
+					return is_resource($var);
+					break;
+				case 'null':
+					return is_null($var);
+					break;
+				case 'scalar':
+					return is_scalar($var);
+					break;
+				default:
+					return false;
+					break;
+			}
 		}
 		return true;
 	}
@@ -107,9 +117,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * Ensure that a var is not null
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _isNotNull(): boolean
+	public function _isNotNull(): bool
 	{
 		return !$this->isNull();
 	}
@@ -117,9 +127,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * Check if a var is null
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _isNull( ): boolean
+	public function _isNull( ): bool
 	{
 		return ( is_null( $this->_data ) );
 	}
@@ -127,9 +137,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * Check if a var doesn't have an empty value
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _isNotEmpty( ): boolean
+	public function _isNotEmpty( ): bool
 	{
 		return !$this->isEmpty( );
 	}
@@ -137,9 +147,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * Check if a var has an empty value
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _isEmpty( ): boolean
+	public function _isEmpty( ): bool
 	{
 		return ( empty($this->_data) && !is_numeric( $this->_data ) );
 	}
@@ -147,9 +157,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * Check if a var is falsy
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _isFalsy(): boolean
+	public function _isFalsy(): bool
 	{
 		return !$this->isTruthy();
 	}
@@ -157,9 +167,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	/**
 	 * Check if a var is truthy
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _isTruthy(): boolean
+	public function _isTruthy(): bool
 	{
 		return (bool)$this->_data;
 	}
@@ -188,8 +198,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	 */
 	public function value($value = null): mixed
 	{
-		if ( DevValue::isNotNull($value) ) {
-    		if (DevValue::isValid($alue)) {
+		// if ( DevValue::isNotNull($value) ) {
+		if ( !is_null($value) ) {
+    		if (DevValue::isValid($value)) {
     			throw new \Exception("Value is not a valid type '{$this->_type}'", 1);
     		}
     		$this->alter($value);
@@ -247,9 +258,9 @@ class DevValue extends Dispatcher implements IDevValue {
 	{
 		if ( method_exists($this, self::PRIVATE_PREFIX.$method) ) {
 			$output = call_user_func_array(array($this, self::PRIVATE_PREFIX.$method), $args);
-			if ($output instanceof DevValue) {
-				$output = $output->value();
-			}
+			// if ($output instanceof DevValue) {
+			// 	$output = $output->value();
+			// }
 			return $output;
 		} else {
 			// throw new Exception("Method {$method} not defined", 1);

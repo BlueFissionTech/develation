@@ -1,8 +1,8 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevValue as Value;
-use BlueFission\DevObject as Object;
+use BlueFission\DevValue;
+use BlueFission\DevObject;
 use BlueFission\Collections\Collection;
 use BlueFission\Exceptions\NotImplementedException;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -20,7 +20,7 @@ use InvalidArgumentException;
  *
  * @package BlueFission\Behavioral
  */
-class Scheme extends Object 
+class Scheme extends DevObject 
 {
     /**
      * Collection to store history of performed behaviors.
@@ -153,12 +153,12 @@ class Scheme extends Object
 	 * 
 	 * @return mixed The value of the field.
 	 */
-	public function field($field, $value = null)
+	public function field(string $field, $value = null): mixed
 	{		
 		if ( $this->is( State::READONLY ) )
 			$value = null;
 
-		if ( Value::isNotEmpty($value) ) 
+		if ( DevValue::isNotEmpty($value) ) 
 			$this->dispatch( Event::CHANGE );
 		
 		return parent::field($field, $value);
@@ -167,7 +167,8 @@ class Scheme extends Object
 	/**
 	 * Clear the object.
 	 */
-	public function clear() {
+	public function clear(): void
+	{
 		parent::clear();
 		$this->dispatch( Event::CHANGE );
 	}

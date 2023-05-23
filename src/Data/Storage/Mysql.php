@@ -4,7 +4,7 @@ namespace BlueFission\Data\Storage;
 use BlueFission\DevValue;
 use BlueFission\DevArray;
 use BlueFission\DevString;
-use BlueFission\Utils\DateTime;
+use BlueFission\DevDateTime;
 use BlueFission\Data\IData;
 use BlueFission\Connections\Database\MysqlLink;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -574,7 +574,7 @@ class Mysql extends Storage implements IData
 					}
 					elseif (is_string($b))
 					{
-						if ( DateTime::stringIsDate( $b ) )
+						if ( DevDateTime::is( $b ) )
 							$type = "DATETIME";
 						else
 						{
@@ -823,7 +823,7 @@ class Mysql extends Storage implements IData
 						if (DevString::has($type, 'date')) {
 							//$this->field($field_name, dev_join_date($field_name));
 							$this->field($field_name, date('Y-m-d'));
-							if (!is_string($this->field($field_name)) || !DateTime::stringIsDate($this->field($field_name))) {
+							if (!is_string($this->field($field_name)) || !DevDateTime::is($this->field($field_name))) {
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;
 							}
@@ -851,9 +851,9 @@ class Mysql extends Storage implements IData
 						}
 					}
 					if (DevString::has($type, 'date')) {
-						if (!is_string($this->field($field_name)) || !DateTime::stringIsDate(($this->field($field_name)))) {
+						if (!is_string($this->field($field_name)) || !DevDateTime::is(($this->field($field_name)))) {
 							$this->field($field_name, dev_join_date($field_name));
-							if (!is_string($this->field($field_name)) || !DateTime::stringIsDate($this->field($field_name))) {
+							if (!is_string($this->field($field_name)) || !DevDateTime::is($this->field($field_name))) {
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;
 							}

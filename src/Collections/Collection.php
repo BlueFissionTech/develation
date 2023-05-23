@@ -50,7 +50,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		}
 		else
 		{
-			$this->_value = new ArrayObject( [$value] );
+			$this->_value = new ArrayObject( (is_array($value)) ? $value : [$value] );
 		}
 
 		$this->_iterator = new ArrayIterator($this->_value);	

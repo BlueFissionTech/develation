@@ -33,8 +33,31 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
      *
      * @return bool
      */
-    public function _is( $value ): bool {
-		return is_array( $value );
+    public function _is( ): bool
+    {
+		return is_array( $this->_data );
+	}
+
+	/**
+	 * Checks if value exists in array
+	 * 
+	 * @param  mixed  $value the value to find
+	 * @return bool        true if value is found
+	 */
+	public function _has( mixed $value ): bool
+	{
+		return in_array($value, $this->_data);
+	}
+
+	/**
+	 * Checks if key is registered in the array
+	 * 
+	 * @param  string|int  $key the key to search for
+	 * @return bool      true if found
+	 */
+	public function _hasKey( string|int $key ): bool
+	{
+		return array_key_exists($key, $this->_data);
 	}
 
     /**
@@ -150,10 +173,30 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 	public function _toArray( bool $allow_empty = false): array {
 		$value = $this->_data;
 		$value_r = [];
-		if (!is_string($value) || (!$value == '' || $allow_empty))
-			(is_array($value)) ? $value_r = $value : $value_r[] = $value;
+		if (!is_string($value) || (!$value == '' || $allow_empty)) {
+			(is_array($value)) ? $value_r = $value : ((is_null($value)) ? $value_r : $value_r[] = $value);
+		}
 		return $value_r;
 	}
+
+	/**
+	 * Display representation of the array as a string
+	 *
+	 * @return string
+	 */
+	public function __toString(): string {
+		return print_r(array_slice($this->_data, 0, 10), true);
+	}
+
+	/**
+     * Convert the array data a JSON string
+     * 
+     * @return string The array data as a JSON string
+     */
+    public function toJson(): string
+    {
+        return json_encode($this->toArray());
+    }
 
 	/**
 	 * Merges any number of arrays / parameters recursively with the local $_data array
@@ -240,7 +283,7 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 	 * Return the data as an array
 	 * @return array
 	 */
-	public function value(): array {
+	public function value($value = null): array {
 		return $this->_toArray();
 	}
 
