@@ -8,10 +8,12 @@ use BlueFission\DevValueFactory as Factory;
 
 use BlueFission\Behavioral\Behaviors\Event;
 
-use BlueFission\Behavioral\Dispatcher;
+use BlueFission\Behavioral\Dispatches;
 
-class DevObject extends Dispatcher implements IDevObject
+class DevObject implements IDevObject
 {
+    use Dispatches;
+
     /**
      * @var DevArray
      */

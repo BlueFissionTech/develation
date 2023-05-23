@@ -12,16 +12,19 @@ use BlueFission\Behavioral\Behaviors\Action;
 use InvalidArgumentException;
 
 /**
- * Class Scheme
+ * Trait Behavioral
  * 
- * A Scheme is an extension of the DevObject class that provides
+ * A Behavioral is an extension of the Dispatches trait that provides
  * additional behaviors and control structures for managing the state
  * of objects.
  *
+ * To be paired with IBehavioral
+ *
  * @package BlueFission\Behavioral
  */
-class Scheme extends DevObject 
+trait Behavioral 
 {
+	use Dispatches;
     /**
      * Collection to store history of performed behaviors.
      *
@@ -44,7 +47,7 @@ class Scheme extends DevObject
     protected $_multistate = true;
 
     /**
-     * Scheme constructor.
+     * Behavioral constructor.
      */
     public function __construct()
     {

@@ -5,6 +5,8 @@ use ReflectionClass;
 use BlueFission\DevValue;
 use BlueFission\DevObject;
 use BlueFission\DevArray;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Behavior;
 
 /**
@@ -12,7 +14,8 @@ use BlueFission\Behavioral\Behaviors\Behavior;
  *
  * @package BlueFission\Services
  */
-class Service extends DevObject {
+class Service extends DevObject implements IDispatcher {
+	use Dispatcher;
 
 	/**
 	 * @var array $registrations
@@ -155,7 +158,7 @@ class Service extends DevObject {
 	public function message($behavior, $args = null) 
 	{
 	    $instance = $this->instance();
-	    if ($instance instanceof Dispatcher && is_callable(array($instance, 'behavior'))) {
+	    if ($instance instanceof IDispatcher && is_callable(array($instance, 'behavior'))) {
 	        $instance->dispatch($behavior, $args);
 	    } else {
 	        $this->_response = $this->call($behavior, $args);
@@ -235,16 +238,16 @@ class Service extends DevObject {
 
 		$callback = $this->prepareCallback($callback);
 
-		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof Dispatcher && is_callable( array( $this->scope, 'behavior')) )
+		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof IDispatcher && is_callable( array( $this->scope, 'behavior')) )
 		{
-			if ( $this->instance instanceof Dispatcher && is_callable( array( $this->instance, 'behavior')) ) {	
+			if ( $this->instance instanceof IDispatcher && is_callable( array( $this->instance, 'behavior')) ) {	
 				$this->instance->behavior($handler->name(), $callback);
 			} else {
 				$this->scope->behavior($handler->name(), $callback);
 			}
 			$this->scope->behavior($handler->name(), $this->message);
 		}
-		elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof Dispatcher && is_callable( array( $this->instance, 'behavior')) )
+		elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof IDispatcher && is_callable( array( $this->instance, 'behavior')) )
 		{
 			$this->instance->behavior($handler->name(), $callback);
 			$this->instance->behavior($handler->name(), $this->message);

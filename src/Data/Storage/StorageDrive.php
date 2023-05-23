@@ -4,13 +4,17 @@ namespace BlueFission\Data\Storage;
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\Configurable;
+use BlueFission\Behavioral\IConfigurable;
 
 /**
  * Class StorageDrive
  *
  * @package BlueFission\Data\Storage
  */
-class StorageDrive extends Configurable {
+class StorageDrive implements IConfigurable {
+	use Configurable;
 	/**
 	 * An array of storage devices in the drive
 	 *
@@ -107,7 +111,7 @@ class StorageDrive extends Configurable {
 	 * @param $object
 	 */
 	public function bind($object) {
-		if ( $object instanceof Dispatcher ) {
+		if ( $object instanceof IDispatcher ) {
 			$object->behavior( Event::CHANGE, array($this ,'_onObjectUpdate') );
 		}
 	}

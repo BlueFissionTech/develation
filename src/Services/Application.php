@@ -2,9 +2,10 @@
 namespace BlueFission\Services;
 
 use BlueFission\Behavioral\Programmable;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\IBehavioral;
+use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Utils\Util;
-use BlueFission\Behavioral\Scheme;
-use BlueFission\Behavioral\Dispatcher;
 use BlueFission\Collections\Collection;
 use BlueFission\Services\Mapping;
 use BlueFission\DevValue;
@@ -20,7 +21,9 @@ use Exception;
  * 
  * @package BlueFission\Services
  */
-class Application extends Programmable {
+class Application implements IConfigurable, IDispatcher, IBehavioral {
+	use Programmable;
+
 	/**
 	 * A collection of instances of this class
 	 *
@@ -836,9 +839,9 @@ class Application extends Programmable {
 			$recipient->execute($behavior, $data);
 		} elseif ( $recipient instanceof Service ) {
 			$recipient->message($behavior, $data);
-		} elseif ( $recipient instanceof Scheme ) {
+		} elseif ( $recipient instanceof IBehavioral ) {
 			$recipient->perform($behavior, $data);
-		} elseif ( $recipient instanceof Dispatcher ) {
+		} elseif ( $recipient instanceof IDispatcher ) {
 			$recipient->dispatch($behavior, $data);
 		} elseif ( \is_callable(array($recipient, $behavior->name() ) ) ) {
 			call_user_func_array(array($recipient, $behavior->name()), array($data));

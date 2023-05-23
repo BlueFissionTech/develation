@@ -2,13 +2,15 @@
 namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
-use BlueFission\Behavioral\Dispatcher;
+use BlueFission\Behavioral\Dispatches;
 use Exception;
 
 /**
  * The DevValue class is meant to be inherited.
  */
-class DevValue extends Dispatcher implements IDevValue {
+class DevValue implements IDevValue {
+	use Dispatches;
+
 	/**
 	 * @var mixed $_data
 	 */

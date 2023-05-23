@@ -10,12 +10,14 @@ use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
 
 /**
- * Class Programmable
+ * Trait Programmable
  * 
  * Extends the Configurable class and provides additional methods for handling programmatic behaviors.
  */
-class Programmable extends Configurable
+trait Programmable
 {
+	use Configurable;
+
 	/**
 	 * An array of tasks that can be performed by the object.
 	 * 

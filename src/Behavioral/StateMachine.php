@@ -13,12 +13,13 @@ use BlueFission\Behavioral\Behaviors\Handler;
 /**
  * Class StateMachine
  *
- * A class that extends the Programmable class and implements the concept of
+ * A trait that extends the Programmable trait and implements the concept of
  * state machines, allowing for allowed and denied behaviors.
  *
  * @package BlueFission\Behavioral
  */
-class StateMachine extends Programmable {
+trait StateMachine {
+	use Programmable;
 
 	/**
 	 * Array that holds the names of behaviors that are denied in a certain state

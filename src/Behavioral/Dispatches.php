@@ -11,9 +11,10 @@ use BlueFission\Behavioral\Behaviors\BehaviorCollection;
 use InvalidArgumentException;
 
 /**
- * Class Dispatcher is used to dispatch events and handlers 
+ * Trait Dispatches is used to dispatch events and handlers 
+ * To be paired with IDispatcher
  */
-class Dispatcher {
+trait Dispatches {
 	/**
 	 * Holds a collection of behaviors
 	 *
@@ -29,9 +30,9 @@ class Dispatcher {
 	protected $_handlers;
 	
 	/**
-	 * Constructor of the Dispatcher class
+	 * Constructor of the Dispatches class
 	 *
-	 * @param HandlerCollection $handlers Optional collection of handlers to add to the Dispatcher object
+	 * @param HandlerCollection $handlers Optional collection of handlers to add to the Dispatches object
 	 */
 	public function __construct( HandlerCollection $handlers = null ) {
 		$this->_behaviors = new BehaviorCollection();
@@ -46,7 +47,7 @@ class Dispatcher {
 	}
 
 	/**
-	 * Destructor of the Dispatcher class
+	 * Destructor of the Dispatches class
 	 */
 	public function __destruct() {
 		if ( $this->_behaviors ) {

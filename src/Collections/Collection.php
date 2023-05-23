@@ -6,6 +6,8 @@ use ArrayObject;
 use ArrayIterator;
 use IteratorAggregate;
 use InvalidArgumentException;
+use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\IDispatcher;
 
 /**
  * Class Collection 
@@ -16,7 +18,9 @@ use InvalidArgumentException;
  * @author  Devon Scott <dscott@bluefission.com>
  * @link    https://bluefission.com/develation
  */
-class Collection implements ICollection, ArrayAccess, IteratorAggregate {
+class Collection implements ICollection, IDispatcher, ArrayAccess, IteratorAggregate {
+	use Dispatches;
+
 	/**
 	 * The actual value of the collection.
 	 *

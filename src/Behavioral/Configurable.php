@@ -10,15 +10,19 @@ use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
 
 /**
- * Class Configurable
+ * Trait Configurable
  * 
  * @package BlueFission\Behavioral
  * 
- * The Configurable class is an implementation of the IConfigurable interface,
- * extending the functionality of the Scheme class. It is used to define the
+ * The Configurable trait is an implementation of the IConfigurable interface,
+ * extending the functionality of the Scheme trait. It is used to define the
  * configuration of an object, as well as its current status.
+ *
+ * To be paired with IConfigurable interface.
  */
-class Configurable extends Scheme implements IConfigurable {
+trait Configurable {
+	use Behaves;
+
 	/**
 	 * @var array $_config The configuration for the object.
 	 */
@@ -29,7 +33,7 @@ class Configurable extends Scheme implements IConfigurable {
 	protected $_status;
 	
 	/**
-	 * Constructor for the Configurable class. Initializes the parent class, and sets
+	 * Constructor for the Configurable trait. Initializes the parent trait, and sets
 	 * the _config and _status properties to arrays if they are not already set. 
 	 * Dispatches the State::NORMAL event.
 	 */

@@ -9,8 +9,9 @@ use BlueFission\Behavioral\Configurable;
  * 
  * An abstract class that defines the structure for database connections.
  */
-abstract class Connection extends Configurable implements IConfigurable
+abstract class Connection implements IConfigurable
 {	
+    use Configurable;
     /**
      * Connection resource
      *
