@@ -8,13 +8,17 @@
  */
 namespace BlueFission\Services;
 
+use BlueFission\DevObject;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
 use BlueFission\Data\Storage\Storage;
 
-class Authenticator extends Configurable {
+class Authenticator extends DevObject {
+	use Configurable {
+        Configurable::__construct as private __configConstruct;
+	}
 	/**
 	 * Default configuration values
 	 *
@@ -59,7 +63,11 @@ class Authenticator extends Configurable {
 	 * @param array|null $config
 	 */
 	public function __construct( Storage $datasource, $config = null ) {
-		parent::__construct($config);
+		$this->__configConstruct();
+		parent::__construct();
+		if (is_array($config)) {
+			$this->config($config);
+        }
 		$this->_datasource = $datasource;
 	}
 
@@ -154,7 +162,7 @@ class Authenticator extends Configurable {
 		$last = $attempts->data();
 
 		
-		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('logout_interval') ) )
+		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('lockout_interval') ) )
 		{
 			$last['attempts']++;
 		}
@@ -192,7 +200,7 @@ class Authenticator extends Configurable {
 		$last = $attempts->data();
 
 		
-		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('logout_interval') ) )
+		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('lockout_interval') ) )
 		{
 			if (isset( $last['attempts']) && $last['attempts'] >= $this->config('max_attempts') )
 			{
@@ -217,7 +225,7 @@ class Authenticator extends Configurable {
 		$attempts->read();
 		$last = $attempts->data();
 
-		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('logout_interval') ) )
+		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('lockout_interval') ) )
 		{
 			$db->delete('dash_login_attempts', 'ip_address', $_SERVER['REMOTE_ADDR']);
 		}

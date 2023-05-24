@@ -851,8 +851,8 @@ class Mysql extends Storage implements IData
 						}
 					}
 					if (DevString::has($type, 'date')) {
-						if (!is_string($this->field($field_name)) || !DevDateTime::is(($this->field($field_name)))) {
-							$this->field($field_name, dev_join_date($field_name));
+						if (!is_string($this->field($field_name)) || !DevDateTime::is($this->field($field_name))) {
+							$this->field($field_name, (new DevDateTime($field_name))->value());
 							if (!is_string($this->field($field_name)) || !DevDateTime::is($this->field($field_name))) {
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;

@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Connections;
 
+use BlueFission\DevObject;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Behavioral\Configurable;
 
@@ -9,9 +10,11 @@ use BlueFission\Behavioral\Configurable;
  * 
  * An abstract class that defines the structure for database connections.
  */
-abstract class Connection implements IConfigurable
+abstract class Connection extends DevObject implements IConfigurable
 {	
-    use Configurable;
+    use Configurable {
+        Configurable::__construct as private __configConstruct;
+    };
     /**
      * Connection resource
      *
@@ -58,10 +61,12 @@ abstract class Connection implements IConfigurable
      */
 	public function __construct( $config = null )
 	{
+        $this->__configConstruct();
 		parent::__construct();
 		$this->status( self::STATUS_NOTCONNECTED );
-		if (is_array($config))
+		if (is_array($config)) {
 			$this->config($config);
+        }
 	}
 		
     /**

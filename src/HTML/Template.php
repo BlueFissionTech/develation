@@ -3,6 +3,7 @@ namespace BlueFission\HTML;
 
 use BlueFission\DevValue;
 use BlueFission\DevArray;
+use BlueFission\DevObject;
 use BlueFission\HTML\HTML;
 use BlueFission\Utils\Util;
 use BlueFission\Behavioral\Configurable;
@@ -16,7 +17,11 @@ use \InvalidArgumentException;
  *
  * This class provides functionality for handling templates. It extends the Configurable class to handle configuration.
  */
-class Template extends Configurable {
+class Template extends DevObject {
+	use Configurable {
+		Configurable::__construct as private __configConstruct;
+	}
+
     /**
      * @var string $_template The contents of the template file
      */
@@ -53,6 +58,7 @@ class Template extends Configurable {
      */
     public function __construct ( $config = null ) 
     {
+    	$this->__configConstruct();
         parent::__construct( $config );
         if ( DevValue::isNotNull( $config ) ) {
             if (DevArray::isAssoc($config)) {

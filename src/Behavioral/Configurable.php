@@ -21,12 +21,16 @@ use BlueFission\Behavioral\Behaviors\Action;
  * To be paired with IConfigurable interface.
  */
 trait Configurable {
-	use Behaves;
+	use Behaves {
+        Behaves::__construct as private __behavesConstruct;
+        Behaves::init as private behavesInit;
+    }
 
 	/**
 	 * @var array $_config The configuration for the object.
 	 */
-	protected $_config;
+	// protected $_config;
+
 	/**
 	 * @var array $_status The current status of the object.
 	 */
@@ -39,12 +43,14 @@ trait Configurable {
 	 */
 	public function __construct( )
 	{
-		parent::__construct( );
-		if (!isset($this->_config))
+		$this->__behavesConstruct( );
+		if (!isset($this->_config)) {
 			$this->_config = [];
+		}
 		
-		if (!isset($this->_status))
+		if (!isset($this->_status)) {
 			$this->_status = [];
+		}
 
 		$this->dispatch( State::NORMAL );
 	}
@@ -152,7 +158,7 @@ trait Configurable {
 	 */
 	protected function init()
 	{
-		parent::init();
+		$this->behavesInit();
 		$this->behavior( new Event( Event::MESSAGE ) );
 	}
 }

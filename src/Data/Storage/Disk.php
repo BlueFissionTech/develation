@@ -45,13 +45,15 @@ class Disk extends Storage implements IData
 		}
 
 		$filesystem = new FileSystem( array('mode'=>'c+','filter'=>'file') );
-		if ( $filesystem->open($file) )
+		if ( $filesystem->open($file) ) {
 			$this->_source = $filesystem;
+		}
 
-		if ( !$this->_source ) 
+		if ( !$this->_source )  {
 			$this->status( self::STATUS_FAILED_INIT );
-		else
+		} else {
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
+		}
 	}
 	
 	/**

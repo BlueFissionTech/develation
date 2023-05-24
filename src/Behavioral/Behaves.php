@@ -12,9 +12,9 @@ use BlueFission\Behavioral\Behaviors\Action;
 use InvalidArgumentException;
 
 /**
- * Trait Behavioral
+ * Trait Behaves
  * 
- * A Behavioral is an extension of the Dispatches trait that provides
+ * A Behaves is an extension of the Dispatches trait that provides
  * additional behaviors and control structures for managing the state
  * of objects.
  *
@@ -22,9 +22,12 @@ use InvalidArgumentException;
  *
  * @package BlueFission\Behavioral
  */
-trait Behavioral 
+trait Behaves 
 {
-	use Dispatches;
+	use Dispatches {
+        Dispatches::__construct as private __dispatchesConstruct;
+        Dispatches::init as private dispatchesInit;
+    }
     /**
      * Collection to store history of performed behaviors.
      *
@@ -54,7 +57,7 @@ trait Behavioral
         $this->_history = new Collection();
         $this->_state = new Collection();
 
-        parent::__construct();
+        $this->__dispatchesConstruct();
 
         $this->perform( State::DRAFT );
     }
@@ -149,39 +152,11 @@ trait Behavioral
 	}
 
 	/**
-	 * Get or set the value of the specified field.
-	 * 
-	 * @param string $field The name of the field.
-	 * @param mixed $value The value to set.
-	 * 
-	 * @return mixed The value of the field.
-	 */
-	public function field(string $field, $value = null): mixed
-	{		
-		if ( $this->is( State::READONLY ) )
-			$value = null;
-
-		if ( DevValue::isNotEmpty($value) ) 
-			$this->dispatch( Event::CHANGE );
-		
-		return parent::field($field, $value);
-	}
-
-	/**
-	 * Clear the object.
-	 */
-	public function clear(): void
-	{
-		parent::clear();
-		$this->dispatch( Event::CHANGE );
-	}
-
-	/**
 	 * Initialize the object.
 	 */
 	protected function init()
 	{
-		parent::init();
+		$this->dispatchesInit();
 		$this->behavior( new Event( Event::CHANGE ) );
 		$this->behavior( new Event( Event::ACTIVATED ) );
 		$this->behavior( new Event( Event::COMPLETE ) );

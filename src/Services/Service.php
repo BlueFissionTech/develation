@@ -15,7 +15,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
  * @package BlueFission\Services
  */
 class Service extends DevObject implements IDispatcher {
-	use Dispatcher;
+	use Dispatches;
 
 	/**
 	 * @var array $registrations

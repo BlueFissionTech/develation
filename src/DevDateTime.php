@@ -71,7 +71,7 @@ class DevDateTime extends DevValue implements IDevValue
      * @return bool
      */
     public function _is( ): bool {
-    	return ( $this->_data instanceof DateTime || strtotime($this->_data) !== false || $this->isValidTimestamp($this->_data) );
+    	return ( $this->isValidTimestamp($this->timestamp()) );
 	}
 
 	/**
@@ -86,18 +86,18 @@ class DevDateTime extends DevValue implements IDevValue
 	        && ($timestamp >= ~PHP_INT_MAX)
 	        && ((string) (int) $timestamp === (string) $timestamp)
 	        && ($timestamp <= strtotime('+100 year'))  // Any timestamps too far in the future may be invalid
-	        && (date('U', $timestamp) === $timestamp);
+	        && (date('U', $timestamp) === (string)$timestamp);
 	}
 
 	/**
 	 * Returns the timestamp value of the date and time represented by the current instance
 	 * @param $data - optional timestamp value, if passed, it will set the timestamp of the current instance
-	 * @return int - timestamp value
+	 * @return int|null - timestamp value
 	 */
-	public function _timestamp( $data = null ): int
-	{
-	    if ( DevValue::isNull($data) ) {
-	        return mktime ((int)$this->_data['hour'], (int)$this->_data['minute'], (int)$this->_data['second'], (int)$this->_data['month'], (int)$this->_data['day'], (int)$this->_data['year']);
+	public function _timestamp( $data = null ): int|null
+	{		
+	    if ( is_null($data) ) {
+	        $timestamp = mktime ((int)$this->_data['hour'], (int)$this->_data['minute'], (int)$this->_data['second'], (int)$this->_data['month'], (int)$this->_data['day'], (int)$this->_data['year']);
 	    } elseif ( DevNumber::is($data) ) {
 	        $timestamp = $this->isValidTimestamp($data) ? $data : null;
 	    } elseif ( $data instanceof DateTime ) {

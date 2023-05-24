@@ -10,6 +10,7 @@ use BlueFission\Collections\Collection;
 use BlueFission\Services\Mapping;
 use BlueFission\DevValue;
 use BlueFission\DevArray;
+use BlueFission\DevObject;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Handler;
@@ -21,8 +22,10 @@ use Exception;
  * 
  * @package BlueFission\Services
  */
-class Application implements IConfigurable, IDispatcher, IBehavioral {
-	use Programmable;
+class Application extends DevObject implements IConfigurable, IDispatcher, IBehavioral {
+	use Programmable {
+        Programmable::__construct as private __tConstruct;
+    }
 
 	/**
 	 * A collection of instances of this class
@@ -64,23 +67,23 @@ class Application implements IConfigurable, IDispatcher, IBehavioral {
 	 *
 	 * @var array
 	 */
-	protected $_config = array(
+	protected $_config = [
 		'template'=>'',
 		'storage'=>'',
 		'name'=>'Application',
-	);
+	];
 
 	/**
 	 * A collection of parameters for this application
 	 *
 	 * @var array
 	 */
-	protected $_parameters = array(
+	protected $_parameters = [
 		'_method',
 		'service',
 		'behavior',
 		'data',
-	);
+	];
 
 	/**
 	 * The context for this application
@@ -179,7 +182,7 @@ class Application implements IConfigurable, IDispatcher, IBehavioral {
             return self::$_instances[$calledClass];
         }
 
-        parent::__construct();
+        $this->__tConstruct(); // Call trait constructor
         $this->_services = new Collection();
         $this->_broadcasted_events[$this->name()] = [];
 

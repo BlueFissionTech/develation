@@ -9,7 +9,9 @@ use Exception;
  * The DevValue class is meant to be inherited.
  */
 class DevValue implements IDevValue {
-	use Dispatches;
+	use Dispatches {
+        Dispatches::__construct as private __tConstruct;
+    }
 
 	/**
 	 * @var mixed $_data
@@ -211,7 +213,7 @@ class DevValue implements IDevValue {
 			$value = $this->_data;
 			foreach ($this->_constraints as $constraint) {
 				foreach ($constraint as $callable) {
-					call_user_func($callable, $value);
+					call_user_func_array($callable, [&$value]);
 				}
 			}
 		}

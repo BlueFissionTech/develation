@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Data;
 
+use BlueFission\DevObject;
 use BlueFission\Behavioral\Configurable;
 
 /**
@@ -8,11 +9,12 @@ use BlueFission\Behavioral\Configurable;
  *
  * @package BlueFission\Data
  * 
- * The Data class extends the Configurable class and implements the IData interface.
+ * The Data class extends the DevObject class and implements the IData interface.
  * This class is used to manage data objects and their properties.
  */
-class Data extends Configurable implements IData
+class Data extends DevObject implements IData
 {
+    use Configurable;
     /**
      * This method is used to read data.
      *

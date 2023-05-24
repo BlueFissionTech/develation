@@ -64,8 +64,9 @@ class Storage extends Data implements IData
 	public function __construct( $config = null )
 	{
 		parent::__construct();
-		if (is_array($config))
+		if (is_array($config)) {
 			$this->config($config);
+		}
 	} 
 	
 	/**

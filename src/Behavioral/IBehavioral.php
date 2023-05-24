@@ -43,19 +43,4 @@ interface IBehavioral
 	 * @param string $behaviorName The name of the behavior to halt.
 	 */
 	public function halt( $behaviorName );
-
-	/**
-	 * Get or set the value of the specified field.
-	 * 
-	 * @param string $field The name of the field.
-	 * @param mixed $value The value to set.
-	 * 
-	 * @return mixed The value of the field.
-	 */
-	public function field(string $field, $value = null): mixed;
-
-	/**
-	 * Clear the object.
-	 */
-	public function clear(): void;
 }

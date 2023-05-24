@@ -7,12 +7,15 @@ use BlueFission\DevArray;
 use BlueFission\DevValueFactory as Factory;
 
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\State;
 
-use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\Behaves;
 
 class DevObject implements IDevObject
 {
-    use Dispatches;
+    use Dispatches {
+        Dispatches::__construct as private __dispatchConstruct;
+    }
 
     /**
      * @var DevArray
@@ -38,7 +41,7 @@ class DevObject implements IDevObject
      * DevObject constructor.
      */
     public function __construct() {
-        parent::__construct();
+        $this->__dispatchConstruct();
 
         if ( !DevValue::is($this->_data) ) {
             $this->_data = new DevArray;
@@ -66,26 +69,35 @@ class DevObject implements IDevObject
      * Sets one of the object fields by name
      * 
      * @param string $field
-     * @param mixed|null $value
-     * @return mixed|null
+     * @param mixed|null $value The value to set for the field. If not provided, the current value of the field is returned.
+     * @return mixed|null  The field value, or `false` if the field does not exist and is not in a draft state.
      */
     public function field(string $field, $value = null): mixed
     {
-        if ( DevValue::isNotEmpty($value) ) {
-            if (isset( $this->_data[$field] )
-                && $this->_data[$field] instanceof IDevValue
-                && $this->_data[$field]->isValid($value) ) {
-                $this->_data[$field]->value($value);
+        if ( DevArray::hasKey($this->_data, $field) || $this->is( State::DRAFT ) )
+        {   
+            if ( $this->is( State::READONLY ) ) {
+                $value = null;
+            }
+
+            if ( DevValue::isNotEmpty($value) ) {
+                if (isset( $this->_data[$field] )
+                    && $this->_data[$field] instanceof IDevValue
+                    && $this->_data[$field]->isValid($value) ) {
+                    $this->_data[$field]->value($value);
+                } else {
+                    $this->_data[$field] = $value;
+                }
             } else {
-                $this->_data[$field] = $value;
+                $value = $this->_data[$field] ?? null;
+                if ( $value instanceof IDevValue && $this->_exposeValueObject == false ) {
+                    $value = $value->value();
+                }
             }
+            return $value;
         } else {
-            $value = $this->_data[$field] ?? null;
-            if ( $value instanceof IDevValue && $this->_exposeValueObject == false ) {
-                $value = $value->value();
-            }
+            return null;
         }
-        return $value;
     }
 
     /**
@@ -118,6 +130,26 @@ class DevObject implements IDevObject
                 $value = null; 
             }
 		});
+    }
+
+    /**
+     * Assign values to fields in this object.
+     *
+     * @param  object|array  $data  The data to import into this object.
+     * @throws InvalidArgumentException  If the data is not an object or associative array.
+     */
+    public function assign( $data )
+    {
+        if ( is_object( $data ) || DevArray::isAssoc( $data ) ) {
+            $this->perform( State::BUSY );
+            foreach ( $data as $a=>$b ) {
+                $this->field($a, $b);
+            }
+            $this->halt( State::BUSY );
+            $this->dispatch( Event::CHANGE );
+        }
+        else
+            throw new \InvalidArgumentException( "Can't import from variable type " . gettype($data) );
     }
 
     /**

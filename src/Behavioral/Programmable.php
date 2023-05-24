@@ -16,7 +16,9 @@ use BlueFission\Behavioral\Behaviors\State;
  */
 trait Programmable
 {
-	use Configurable;
+	use Configurable {
+        Configurable::__construct as private __configConstruct;
+    }
 
 	/**
 	 * An array of tasks that can be performed by the object.
@@ -32,7 +34,7 @@ trait Programmable
 	 */
 	public function __construct( )
 	{
-		parent::__construct();
+		$this->__configConstruct();
 		$this->_tasks = [];
 	}
 
