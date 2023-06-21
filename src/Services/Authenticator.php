@@ -159,7 +159,7 @@ class Authenticator extends DevObject {
 		$last = array();
 		$attempts->field('ip_address', $value);
 		$attempts->read();
-		$last = $attempts->data();
+		$last = $attempts->data()->value();
 
 		
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('lockout_interval') ) )

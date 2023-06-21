@@ -222,8 +222,24 @@ class MysqlField {
 			$definition[] = "DATE";
 			break;
 
+			case 'boolean':
+			$definition[] = "TINYINT";
+			break; 
+
 			case 'numeric':
 			$definition[] = "INT";
+			break;
+
+			case 'decimal':
+			$definition[] = "DECIMAL";
+			break;
+
+			case 'tinytext':
+			$definition[] = "TINYTEXT";
+			break;
+
+			case 'mediumtext':
+			$definition[] = "MEDIUMTEXT";
 			break;
 
 			case 'longtext':
@@ -232,7 +248,11 @@ class MysqlField {
 
 			default:
 			case 'text':
-			$definition[] = "VARCHAR";
+			if ($this->_size > 255) {
+				$definition[] = "TEXT";
+			} else {
+				$definition[] = "VARCHAR";
+			}
 			break;
 		}
 
@@ -241,7 +261,7 @@ class MysqlField {
 		}
 
 		if ( $this->_default !== null ) {
-			$definition[] = "DEFAULT '".$this->_link->sanitize($this->_default)."'";
+			$definition[] = "DEFAULT ".$this->_link->sanitize((string)$this->_default);
 		}
 		
 		if ( !$this->_null ) {

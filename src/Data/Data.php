@@ -14,7 +14,16 @@ use BlueFission\Behavioral\Configurable;
  */
 class Data extends DevObject implements IData
 {
-    use Configurable;
+    use Configurable {
+        Configurable::__construct as private __configConstruct;
+    }
+
+    public function __construct( $config = null )
+    {
+        $this->__configConstruct($config);
+        parent::__construct();
+    }
+    
     /**
      * This method is used to read data.
      *

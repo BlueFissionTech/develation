@@ -3,6 +3,7 @@ namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
 use ArrayAccess;
+use Countable;
 
 /**
  * Class DevArray
@@ -14,7 +15,7 @@ use ArrayAccess;
  * @implements IDevValue
  * @implements ArrayAccess
  */
-class DevArray extends DevValue implements IDevValue, ArrayAccess {
+class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable {
     protected $_type = "array";
 
     /**
@@ -285,6 +286,15 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess {
 	 */
 	public function value($value = null): array {
 		return $this->_toArray();
+	}
+
+	/**
+	 * Return a count of the base array
+	 * @return int the number of elements in $_data
+	 */
+	public function count(): int
+	{
+		return count($this->_data);
 	}
 
 	/**

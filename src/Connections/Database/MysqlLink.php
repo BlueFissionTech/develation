@@ -235,19 +235,31 @@ class MysqlLink extends Connection implements IConfigurable
 
 		if ($db)
 		{
+			$insert = [];
 			$field_string = '';
 			$value_string = '';
 			$temp_values = [];
 			
 			// Turn array into a string
-			$field_string = implode( '`, `', array_keys($data));
 			
 			// Prepare each value for input
 			foreach ($data as $a) {
 				array_push($temp_values, self::sanitize($a));
 			}
+
+			$count = 0;
+			foreach (array_keys($data) as $a) 
+			{
+				if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
+					// array_push($insert, $temp_values[$count]);
+					$insert[$a] = $temp_values[$count];
+				}
+				
+				$count++;
+			}
 			
-			$value_string = implode(', ', $temp_values);
+			$field_string = implode( '`, `', array_keys($insert));
+			$value_string = implode(', ', $insert);
 			
 			$query = "INSERT INTO `".$table."`(`".$field_string."`) VALUES(".$value_string.")";
 
@@ -517,26 +529,32 @@ class MysqlLink extends Connection implements IConfigurable
 		$string = new DevString($string);
 
 		$string->constraint(function(&$value) {
-			if (DevValue::isNull($value) || DevValue::isEmpty($value) || DevString::length($value) <= 0) {
-				$value = '';
-			}
-		});
-
-		$string->constraint(function(&$value) use ($db, $pattern, $replacement) {
-			if (DevValue::isNotNull($string)) {
-				$value = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($value)));
-			}
-		});
-
-		$string->constraint(function(&$value) {
 			if (DevValue::isNull($value)) {
 				$value = 'NULL';
 			}
 		});
 
 		$string->constraint(function(&$value) {
+			if (DevValue::isNull($value) || DevValue::isEmpty($value) || DevString::length($value) <= 0) {
+				$value = '';
+			}
+		});
+
+		$string->constraint(function(&$value) use ($db, $pattern, $replacement) {
+			if (DevValue::isNotNull($value)) {
+				$value = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($value)));
+			}
+		});
+
+		$string->constraint(function(&$value) {
 			if ($value == '\'NOW()\'') {
 				$value = 'NOW()';
+			}
+		});
+
+		$string->constraint(function(&$value) {
+			if ($value == '\'NULL\'') {
+				$value = 'NULL';
 			}
 		});
 		

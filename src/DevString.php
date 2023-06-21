@@ -23,8 +23,8 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value
 	 */
-	public function __construct( $value = null ) {
-		$value = is_string( $value ) ? $value : null;
+	public function __construct( $value = null, $force = false ) {
+		$value = is_string( $value ) ? $value : ( ($force && $value != null) ? (string)$value : null );
 		parent::__construct($value);
 	}
 

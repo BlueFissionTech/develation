@@ -55,9 +55,34 @@ class MysqlStructure extends Structure {
 	const NUMERIC_FIELD = 'numeric';
 
 	/**
+	 * Constant for decimal field type
+	 */
+	const DECIMAL_FIELD = 'decimal';
+
+	/**
+	 * Constant for boolean field type
+	 */
+	const BOOLEAN_FIELD = 'boolean';
+
+	/**
+	 * Constant for tinytext field type
+	 */
+	const TINYTEXT_FIELD = 'tinytext';
+
+	/**
 	 * Constant for text field type
 	 */
 	const TEXT_FIELD = 'text';
+
+	/**
+	 * Constant for mediumtext field type
+	 */
+	const MEDIUMTEXT_FIELD = 'mediumtext';
+
+	/**
+	 * Constant for longtext field type
+	 */
+	const LONGTEXT_FIELD = 'longtext';
 
 	/**
 	 * Constant for date field type
@@ -141,6 +166,42 @@ class MysqlStructure extends Structure {
 	}
 
 	/**
+	 * Creates a new decimal field.
+	 *
+	 * @param string $name The name of the field.
+	 * @param int $size The size of the field.
+	 * @return object
+	 */
+	public function decimal($name, $size = 11)
+	{
+		return $this->newField($name, self::DECIMAL_FIELD, $size);
+	}
+
+	/**
+	 * Creates a new boolean field.
+	 *
+	 * @param string $name The name of the field.
+	 * @param int $size The size of the field.
+	 * @return object
+	 */
+	public function boolean($name, $size = 1)
+	{
+		return $this->newField($name, self::BOOLEAN_FIELD, $size);
+	}
+
+	/**
+	 * Creates a new text field.
+	 *
+	 * @param string $name The name of the field.
+	 * @param int $size The size of the field.
+	 * @return object
+	 */
+	public function tinytext($name, $size = 255)
+	{
+		return $this->newField($name, self::TINYTEXT_FIELD, $size);
+	}
+
+	/**
 	 * Creates a new text field.
 	 *
 	 * @param string $name The name of the field.
@@ -150,6 +211,30 @@ class MysqlStructure extends Structure {
 	public function text($name, $size = 45)
 	{
 		return $this->newField($name, self::TEXT_FIELD, $size);
+	}
+
+	/**
+	 * Creates a new mediumtext field.
+	 *
+	 * @param string $name The name of the field.
+	 * @param int $size The size of the field.
+	 * @return object
+	 */
+	public function mediumtext($name, $size = null)
+	{
+		return $this->newField($name, self::MEDIUMTEXT_FIELD, $size);
+	}
+
+	/**
+	 * Creates a new longtext field.
+	 *
+	 * @param string $name The name of the field.
+	 * @param int $size The size of the field.
+	 * @return object
+	 */
+	public function longtext($name, $size = null)
+	{
+		return $this->newField($name, self::LONGTEXT_FIELD, $size);
 	}
 
 	/**

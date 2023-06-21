@@ -34,6 +34,16 @@ class Template extends DevObject {
      * @var FileSystem $_file An object to represent the file system
      */
     private $_file;
+
+    /**
+     * $_placeholders full text for the template placeholder tags
+     * @var array
+     */
+    private $_placeholders;
+
+    private $_placeholderNames;
+
+    private $_conditions;
     /**
      * @var array $_config Default configuration for the Template class
      */
@@ -123,6 +133,67 @@ class Template extends DevObject {
 	}
 
 	/**
+	 * parses options from template tags
+	 * @param  string $str the option string
+	 * @return array      the parsed options
+	 */
+	private function parseOptions(string $str)
+    {
+        $str = preg_replace("/\s*,\s*/", ",", $str); // Remove spaces surrounding commas
+        $str = preg_replace("/\s*\:\s*/", ":", $str); // Remove spaces surrounding colons
+        
+        // Matches key-value pairs. This pattern considers the options inside single quotes, brackets and commas.
+        preg_match_all("/(\w+):'([^']*)'|\d|(\w+):([^']*)|\[(.*?)\]/", $str, $matches);
+
+        $options = [];
+
+        // Group the matches into key-value pairs
+        for ($i = 0; $i < count($matches[0]); $i++) {
+            if(!empty($matches[1][$i])) {
+                $options[$matches[1][$i]] = $matches[3][$i] != "" ? $matches[3][$i] : ($this->vars[$matches[2][$i]] ?? $matches[2][$i]);
+                if (preg_match("/\[(.*?)\]/", $options[$matches[1][$i]], $matches2)) {
+                    $value = explode(",", trim($matches2[1]));
+                    $options[$matches[1][$i]] = array_map(function($v) { return trim($v, " '\""); }, $value);
+                }
+            } else {
+                $options['options'] = explode(',', str_replace('\'', '', $matches[4][$i]));
+            }
+        }
+        if (isset($options['stop'])) {
+            $options['stop'] = str_replace('\n', "\n", $options['stop']);
+        }
+
+        return $options;
+    }
+
+    /**
+     * Parses a template conditional tag
+     * @param  mixed $left     left side value of the equality
+     * @param  mixed $right    right side value of the equality
+     * @param  string $operator comparison operator of the equality
+     * @return bool           whether the equality is true
+     */
+    private function parseCondition($left, $right, $operator = self::OPERATOR_EQUALS): bool
+    {
+        switch($operator)
+        {
+            default:
+            case self::OPERATOR_EQUALS:
+                return $left == $right;
+            case self::OPERATOR_NOT_EQUALS:
+                return $left != $right;
+            case self::OPERATOR_GREATER_THAN:
+                return $left > $right;
+            case self::OPERATOR_LESS_THAN:
+                return $left < $right;
+            case self::OPERATOR_GREATER_THAN_EQUALS:
+                return $left >= $right;
+            case self::OPERATOR_LESS_THAN_EQUALS:
+                return $left <= $right;
+        }
+    }
+
+	/**
 	 * public function set( $var, $content = null, $formatted = null, $repetitions = null )
 	 * This method sets the content of the template.
 	 * @param  mixed  $var        the variable name or data
@@ -135,19 +206,14 @@ class Template extends DevObject {
 		if ($formatted)
 			$content = HTML::format($content);
 
-		if (is_string($var))
-		{
-			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) )
-			{
+		if (is_string($var)) {
+			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) ) {
 				throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
-			if ( is_string($content) )
-			{
+			if ( is_string($content) ) {
 				$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
-			}
-			elseif ( is_object( $content ) || DevArray::isAssoc( $content ) )
-			{
+			} elseif ( is_object( $content ) || DevArray::isAssoc( $content ) )	{
 				foreach ($content as $a=>$b) 
 				{
 					$this->set($var.'.'.$a, $b, $formatted, $repetitions);
@@ -158,20 +224,17 @@ class Template extends DevObject {
 			{
 				$this->field($var, $content);
 			}
-		}
-		elseif ( is_object( $var ) || DevArray::isAssoc( $var ) )
-		{
+		} elseif ( is_object( $var ) || DevArray::isAssoc( $var ) ) {
 
-			if ( $formatted == null )
+			if ( $formatted == null ) {
 				$formatted = $content;
+			}
 
 			foreach ($var as $a=>$b) 
 			{
 				$this->set($a, $b, $formatted, $repetitions);
 			}
-		}
-		else
-		{
+		} else {
 			throw new InvalidArgumentException( 'Invalid property' );
 		}
 	}
@@ -274,6 +337,150 @@ class Template extends DevObject {
 		$this->_cached = ($value == true);
 	}
 
+	private function extractPlaceholders()
+    {
+        // Extract placeholders
+        if(preg_match_all("/\{=(.*?)\}/", $this->_template, $matches)) {
+            foreach($matches[1] as $placeholder){
+                // Extract placeholder options
+                preg_match("/([^[\s]+)(?:\[(.*?)\])?/", $placeholder, $optionMatches);
+                if (!empty($optionMatches)) {
+                    $this->_placeholderNames[] = $optionMatches[1];
+                    $this->_placeholders[] = $placeholder;
+                }
+            }
+        }
+    }
+
+    private function handleVariables()
+    {
+        if(preg_match_all("/\{#var (.*?) = (.*?)\}/", $this->_template, $matches)) {
+            $vars = array_combine($matches[1], $matches[2]);
+            $this->_template = preg_replace("/\{#var (.*?) = (.*?)\}/", "", $this->_template);
+        }
+
+        $this->assign($vars);
+
+        // Process variables, conditions, and loops directly within the run method
+        foreach($this->_data as $var => $value) {
+            // Handle array variables
+            if (is_array($value)) {
+                $value = implode(", ", $value);
+            }
+
+            // Also replace variables in conditions and loops
+            foreach($this->_conditions as &$condition) {
+                $condition['condition'] = str_replace($var, $value, $condition['condition']);
+                $condition['value'] = str_replace($var, $value, $condition['value']);
+                $condition['content'] = str_replace($var, $value, $condition['content']);
+            }
+        }
+    }
+
+    private function handleConditions()
+    {
+        if(preg_match_all("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $this->_template, $matches)) {
+            $this->conditions = array_map(function($condition, $operator, $value, $content) {
+                return ['condition' => $condition, 'operator' => $operator, 'value' => $value, 'content' => $content];
+            }, $matches[1], $matches[2], $matches[3], $matches[4]);
+            $condition = $matches[1][0];
+            $operator = $matches[2][0];
+            $value = $matches[3][0];
+
+            if (strpos($condition, "'") === false && strpos($condition, "\"") === false) {
+                $condition = $this->_data[$condition] ?? null;
+            }
+
+            if (strpos($value, "'") === false && strpos($value, "\"") === false) {
+                $value = $this->_data[$value] ?? null;
+            }
+
+            $condition = trim($condition, "'\"");
+            $value = trim($value, "'\"");
+
+            if ( !$this->parseCondition($condition, $value, $operator) ) {
+                // $this->_data[$placeholderName] = "";
+                // $i++;
+                // continue;
+            }
+
+        }
+
+
+        foreach ($this->conditions as $condition) {
+            $conditionValue = $this->_data[$condition['condition']] ?? null;
+
+            $conditionValue = trim($conditionValue, "'\"");
+            $condition['value'] = trim($condition['value'], "'\"");
+            if ( $this->parseCondition($conditionValue, $condition['value'], $condition['operator']) ) {
+                $this->_template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $condition['content'], $this->_template);
+            } else {
+                $this->_template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", "", $this->_template);
+            }
+        }
+    }
+
+	protected function handleLoops()
+	{
+        if(preg_match_all("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $this->_template, $matches)) {
+        	$rules = $matches[1][0];
+            $iteratedContent ??= $matches[2][0];
+            $iteratedData = null;
+            $iteratedMax = null;
+            $loopGlue = null;
+            $iterationAssignment = null;
+            $vars = [];
+
+            if (strpos($rules, "[") === 0) {
+                $options = trim($rules, '[]');
+                $options = $this->parseOptions($options);
+            } else {
+                $vars = explode('=', $rules);
+                $var = trim($vars[0]);
+                $value = trim($vars[1]);
+            }
+
+            if (isset($options)) {
+                $iteratedMax = $options['iterations'];
+                $loopGlue = $options['glue'];
+                $iterationAssignment = $placeholderNames[$position];
+            } elseif ($value !== "") {
+                if (strpos($value, "'") === false && strpos($value, "\"") === false) {
+                    $value = $data[$value] ?? $vars[$value] ?? null;
+                } else {
+                    $value = trim($value, "'\"");
+                }
+
+                $iteratedData = (strpos($value, '[') === 0) ? $value : $vars[$value];
+                if (preg_match("/\[(.*?)\]/", $iteratedData, $matches2)) {
+                    $value = explode(",", trim($matches2[1]));
+                    $iteratedData = array_map(function($v) { return trim($v, " '\""); }, $value);
+                }
+
+                $iterationAssignment = $var;
+            }
+
+            // TODO: fix this!
+            for ($i = 0; $i < $iteratedMax; $i++ ) {
+	            $render = "";
+	            if ( isset($iterationAssignment) && !isset($data[$iterationAssignment])) {
+	                $render = $iteratedContent;
+	                if (!empty($iteratedData)) {
+	                    $render = str_replace('{@current}', $iteratedData[$index], $render);
+	                }
+	                $render = str_replace('{@index}', $index+1, $render);
+
+	                $data[$iterationAssignment] = [];
+	            }
+
+	            // $chunk = preg_replace("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)$/s", $render, $chunk);
+	            $this->_template = str_replace($iteratedContent, $render, $this->_template);
+	        }
+        	
+        	preg_replace("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $matches[2][0], $this_template);
+		}
+	}
+
 	/**
 	 * Method to commit the data and formatting to the template
 	 *
@@ -296,7 +503,9 @@ class Template extends DevObject {
 	{
 		$output = '';
 		$count = 0;
-		if (DevValue::isNull($formatted)) $formatted = true;
+		if (DevValue::isNull($formatted)) {
+			$formatted = true;
+		}
 		foreach ($recordSet as $a) {
 			$this->clear();
 			$this->set($a, $formatted);
