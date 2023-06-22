@@ -41,7 +41,7 @@ class DevValue implements IDevValue {
 	 * @param mixed $value
 	 */
 	public function __construct( $value = null ) {
-		parent::__construct();
+		$this->__tConstruct();
 
 		if ( $value instanceof IDevValue ) {
 			$value = $value->value();
