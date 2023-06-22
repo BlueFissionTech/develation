@@ -526,7 +526,7 @@ class MysqlLink extends Connection implements IConfigurable
 			$replacement = [ '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', '' ];
 		}
 
-		$string = new DevString($string);
+		$string = new DevString($string, true);
 
 		$string->constraint(function(&$value) {
 			if (DevValue::isNull($value)) {
