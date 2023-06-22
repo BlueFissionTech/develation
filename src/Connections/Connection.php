@@ -14,7 +14,7 @@ abstract class Connection extends DevObject implements IConfigurable
 {	
     use Configurable {
         Configurable::__construct as private __configConstruct;
-    };
+    }
     /**
      * Connection resource
      *
