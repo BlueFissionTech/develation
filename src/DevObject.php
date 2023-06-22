@@ -9,7 +9,7 @@ use BlueFission\DevValueFactory as Factory;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 
-use BlueFission\Behavioral\Behaves;
+use BlueFission\Behavioral\Dispatches;
 
 class DevObject implements IDevObject
 {
@@ -36,6 +36,11 @@ class DevObject implements IDevObject
      * @var bool
      */
     protected $_exposeValueObject = false;
+
+    /**
+     * @var bool
+     */
+    protected $_lockDataType = false;
 
     /**
      * DevObject constructor.
@@ -69,35 +74,34 @@ class DevObject implements IDevObject
      * Sets one of the object fields by name
      * 
      * @param string $field
-     * @param mixed|null $value The value to set for the field. If not provided, the current value of the field is returned.
-     * @return mixed|null  The field value, or `false` if the field does not exist and is not in a draft state.
+     * @param mixed|null $value
+     * @return mixed|null
      */
     public function field(string $field, $value = null): mixed
     {
-        if ( DevArray::hasKey($this->_data, $field) || $this->is( State::DRAFT ) )
-        {   
-            if ( $this->is( State::READONLY ) ) {
-                $value = null;
-            }
-
-            if ( DevValue::isNotEmpty($value) ) {
-                if (isset( $this->_data[$field] )
-                    && $this->_data[$field] instanceof IDevValue
-                    && $this->_data[$field]->isValid($value) ) {
+        if ( DevValue::isNotEmpty($value) ) {
+            if ( $this->_lockDataType 
+                && isset( $this->_data[$field] )
+                && $this->_data[$field] instanceof IDevValue ) {
+                if ( $this->_data[$field]->isValid($value) ) {
                     $this->_data[$field]->value($value);
                 } else {
-                    $this->_data[$field] = $value;
+                    throw new \Exception("Invalid value for field $field");
                 }
+            } elseif (isset( $this->_data[$field] )
+                && $this->_data[$field] instanceof IDevValue
+                && $this->_data[$field]->isValid($value) ) {
+                $this->_data[$field]->value($value);
             } else {
-                $value = $this->_data[$field] ?? null;
-                if ( $value instanceof IDevValue && $this->_exposeValueObject == false ) {
-                    $value = $value->value();
-                }
+                $this->_data[$field] = $value;
             }
-            return $value;
         } else {
-            return null;
+            $value = $this->_data[$field] ?? null;
+            if ( $value instanceof IDevValue && $this->_exposeValueObject == false ) {
+                $value = $value->value();
+            }
         }
+        return $value;
     }
 
     /**
@@ -129,7 +133,7 @@ class DevObject implements IDevObject
             } else {
                 $value = null; 
             }
-		});
+        });
     }
 
     /**
