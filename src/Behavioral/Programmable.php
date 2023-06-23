@@ -77,7 +77,7 @@ trait Programmable
 	 * @param callable $callback A function to be executed when the behavior is triggered.
 	 */
 	public function behavior( $behavior, $callback = null ) {
-		if ( DevString::isString($behavior) && DevValue::isNotEmpty($behavior) ) {
+		if ( DevString::is($behavior) && DevValue::isNotEmpty($behavior) ) {
 			if ( DevString::strpos ( $behavior, 'Do') === 0 ) {
 				$behavior = new Action($behavior);
 			} elseif ( DevString::strpos ( $behavior, 'Is') === 0 ) {
