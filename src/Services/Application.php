@@ -63,27 +63,34 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	private $_depth = 0;
 
 	/**
+	 * Store directory to proxy files from
+	 *
+	 * @var string
+	 */
+	private $_assetDir = "";
+
+	/**
 	 * Default configuration for the application
 	 *
 	 * @var array
 	 */
-	protected $_config = [
+	protected $_config = array(
 		'template'=>'',
 		'storage'=>'',
 		'name'=>'Application',
-	];
+	);
 
 	/**
 	 * A collection of parameters for this application
 	 *
 	 * @var array
 	 */
-	protected $_parameters = [
+	protected $_parameters = array(
 		'_method',
 		'service',
 		'behavior',
 		'data',
-	];
+	);
 
 	/**
 	 * The context for this application
@@ -288,6 +295,68 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 		return $this;
 	}
 
+	public function assetDir($directory = null) {
+		if ( $directory ) {
+			$this->_assetDir = $directory;
+		}
+		return $this->_assetDir;
+	}
+
+	public function fileExists($path) {
+		$templateDir = $this->assetDir();
+		if ( file_exists(OPUS_ROOT.'public/'.$path) ) {
+			return true;
+		} elseif ( file_exists( $templateDir.$path )) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public function fileContents($path) {
+		$templateDir = $this->assetDir();
+		if ( file_exists(OPUS_ROOT.'public/'.$path) && $path != "") {
+			header('Content-type: '. $this->getMimeType(OPUS_ROOT.'public/'.$path));
+			return file_get_contents(OPUS_ROOT.'public/'.$path);
+		} elseif ( file_exists( $templateDir.$path ) && $path != "") {
+			header('Content-type: '. $this->getMimeType($templateDir.$path));
+			return file_get_contents($templateDir.$path);
+		} else {
+			return null;
+		}
+	}
+
+	public function getMimeType($filename) {
+	    $realpath = realpath($filename);
+	    
+	    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+
+	    switch (strtolower($extension)) {
+	        case 'css':
+	            return 'text/css';
+	        case 'js':
+	            return 'application/javascript';
+	        case 'html':
+	            return 'text/html';
+	        case 'gif':
+	            return 'image/gif';
+	        case 'png':
+	            return 'image/png';
+	        case 'jpg':
+	        case 'jpeg':
+	            return 'image/jpeg';
+	        // Add more common web formats here as needed
+	        default:
+				if ($realpath && function_exists('mime_content_type')) {
+			        $mimeType = mime_content_type($realpath);
+			        if (!empty($mimeType)) {
+			            return $mimeType;
+			        }
+			    }
+	            return 'application/octet-stream'; // Return a generic MIME type if not matched
+	    }
+	}
+
 	public function process() {
 		$args = array_slice($this->_arguments, 1);
 		// die(var_dump($this->_mappings));
@@ -331,6 +400,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	public function run() {
 		$args = array_slice($this->_arguments, 1);
 		$behavior = $args['behavior'];
+		$uri = new Uri();
 
 		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
 			// TODO make this more elegant
@@ -348,14 +418,16 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($this->_cmdpath, $this->_arguments['_method']) ?? $this->_cmdpath);
 
 			print($result);
-		}
-		elseif ( $args['service'] == $this->name() ) {
-			$data = isset($args['data'])?$args['data']:null;
+		} elseif ( $args['service'] == $this->name() ) {
+			$data = isset($args['data']) ? $args['data'] : null;
 			
 			$this->boost($behavior, $data);
+		} elseif ($this->fileExists($uri->path) && $uri->path != "") {
+			print( $this->fileContents($uri->path) );
 		} else {
-			if (\is_string($behavior))
+			if (\is_string($behavior)) {
 				$behavior = new Behavior($behavior);
+			}
 
 			$behavior->_context = $args;
 			$behavior->_target = $this;
