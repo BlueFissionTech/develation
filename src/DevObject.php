@@ -127,14 +127,14 @@ class DevObject implements IDevObject
      */
     public function clear(): void
     {
-        array_walk($this->_data, function(&$value, $key) { 
+        foreach ( $this->_data as $key => &$value ) {
             if ( $value instanceof IDevValue ) {
                 $value->clear();
             } else {
                 $value = null;
                 $this->_data[$key] = $value;
             }
-        });
+        };
     }
 
     /**
