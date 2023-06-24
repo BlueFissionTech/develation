@@ -488,7 +488,7 @@ class Template extends DevObject {
 	 */
 	public function commit( $formatted = null )
 	{
-		$this->set( $this->_data, $formatted );
+		$this->set( $this->_data->value(), $formatted );
 	}
 
 	/**
