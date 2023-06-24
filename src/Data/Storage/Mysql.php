@@ -715,8 +715,9 @@ class Mysql extends Storage implements IData
 					while ($column = $result->fetch_assoc()) 
 					{
 						$fields[$column['Field']] = $column;
-						if ( in_array($column['Field'], $active_fields) || $this->is(State::DRAFT) )
+						if ( in_array($column['Field'], $active_fields) || $this->is(State::DRAFT) ) {
 							$this->_data[$column['Field']] = isset( $this->_data[$column['Field']] ) ? $this->_data[$column['Field']] : $column['Default'];
+						}
 					}
 					$this->_fields[$table] = $fields;
 				}

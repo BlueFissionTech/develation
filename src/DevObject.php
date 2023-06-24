@@ -131,7 +131,8 @@ class DevObject implements IDevObject
             if ( $value instanceof IDevValue ) {
                 $value->clear();
             } else {
-                $value = null; 
+                $value = null;
+                $this->_data[$key] = $value;
             }
         });
     }
