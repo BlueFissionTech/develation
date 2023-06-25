@@ -23,8 +23,8 @@ class MysqlLink extends Connection implements IConfigurable
 
     // protected property to store the database connection
     protected static $_database;
-    private static $_query;
-    private static $_last_row;
+    private $_query;
+    private $_last_row;
     
     // property to store the configuration
     protected $_config = array( 
