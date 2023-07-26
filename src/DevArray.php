@@ -183,6 +183,15 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	}
 
 	/**
+	 * outputs any value as an array element or returns value if it is an array
+	 * @param bool $allow_empty
+	 * @return array
+	 */
+	public function _rand( ): mixed {
+		return $this->_data[array_rand($this->_data)];
+	}
+
+	/**
 	 * Display representation of the array as a string
 	 *
 	 * @return string

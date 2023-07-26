@@ -555,6 +555,7 @@ class Template extends DevObject {
 			$file = $matches[1][$i];
 			$template = new Template();
 			$template->load( $this->config('module_directory').DIRECTORY_SEPARATOR.$file);
+			$template->set( $this->_data->value() );
 			$content = $template->render();
 			$this->_template = str_replace($match, $content, $this->_template);
 		}

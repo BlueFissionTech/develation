@@ -2,6 +2,9 @@
 namespace BlueFission\Net;
 
 use BlueFission\Behavioral\Configurable;
+use BlueFission\Behavioral\IConfigurable;
+use BlueFission\HTML\HTML;
+use BlueFission\DevObject;
 use BlueFission\DevValue;
 use BlueFission\DevArray;
 
@@ -10,8 +13,12 @@ use BlueFission\DevArray;
  * 
  * @package BlueFission\Net
  */
-class Email extends Configurable
-{
+class Email extends DevObject implements IConfigurable
+{	
+    use Configurable {
+        Configurable::__construct as private __configConstruct;
+    }
+
     /**
      * An array that stores the email configurations.
      * 
@@ -74,6 +81,7 @@ class Email extends Configurable
         'from'=>'',
         'message'=>'',
         'subject'=>'',
+        'additional'=>''
     );
 
     /**
@@ -92,6 +100,9 @@ class Email extends Configurable
      */
     public function __construct($recipient = null, $from = null, $subject = null, $message = null, $cc = null, $bcc = null, $html = false, $headers_r = null, $additional = null, $attachments = null)
     {
+    	$this->__configConstruct();
+		parent::__construct();
+    	
         //Prepare addresses
         $this->recipients($recipient);
         $this->recipients($cc, self::$CC);
@@ -99,21 +110,23 @@ class Email extends Configurable
         $this->from( $from );
         $this->subject( $subject );
         $this->message( $message );
+        $this->additional( $additional );
         $this->headers( $headers_r );
     }
 
     /**
-     * A private function to set or get the value of an email data field.
+     * A function to set or get the value of an email data field.
      * 
      * @param string $field
      * @param null $value
      * @return mixed
      */
-	private function field($field, $value = null)
+	public function field(string $field, $value = null): mixed
 	{
-		if ( !array_key_exists( $field, $this->_data ) )
+		if ( !$this->_data->hasKey($field) ) {
 			return null;
-		if ( DevValue:isNotNull($value) ) 
+		}
+		if ( DevValue::isNotNull($value) ) 
 		{
 			$this->_data[$field] = $value;
 		}
@@ -214,10 +227,10 @@ class Email extends Configurable
 	 */
 	public function from($value = null)
 	{
-	    if ( (DevValue:isNotNull($value)) && !self::validateAddress($value));
+	    if ( (DevValue::isNotNull($value)) && !self::validateAddress($value));
 	        return false;
 	    $this->field('from', $value);
-	    return $this->field('from') ? $this->field('from', $value) : $this->config('sender');
+	    return $this->field('from') ? $this->field('from') : $this->config('sender');
 	}
 
 	/**
@@ -313,7 +326,7 @@ class Email extends Configurable
 	 */
 	public function filterAddresses($addresses = null) 
 	{
-		$address_r = dev_value_to_array($addresses);
+		$address_r = DevArray::toArray($addresses);
 		$valid_address_r = array();
 		foreach ($address_r as $a) if (self::validateAddress($a)) $valid_address_r[] = self::sanitize($a);
 		if ( count($valid_address_r) == 0 ) return false;
@@ -328,6 +341,7 @@ class Email extends Configurable
 	 */
 	static function sanitize( $field )
 	{
+		if (DevValue::isNull($field)) return null;
 		//Remove line feeds
 		$ret = str_replace("\r", "", $field);
 		// Remove injected headers
@@ -357,34 +371,34 @@ class Email extends Configurable
 		$mime_boundary=md5(time());
 		
 		//Build Headers
-		$this->headers = array();
+		$this->_headers = array();
 		if ( $this->_attachments ) 
 		{
-			$this->headers['MIME-Version'] = "1.0";
-			$this->headers['Content-Type'] = "multipart/mixed; boundary=\"mixed-{$mime_boundary}\"";
+			$this->_headers['MIME-Version'] = "1.0";
+			$this->_headers['Content-Type'] = "multipart/mixed; boundary=\"mixed-{$mime_boundary}\"";
 		}
 		elseif ($this->sendHTML()) 
 		{
-			$this->headers['MIME-Version'] = "1.0";
-			$this->headers['Content-Type'] = "multipart/related; boundary=\"mixed-{$mime_boundary}\"";
+			$this->_headers['MIME-Version'] = "1.0";
+			$this->_headers['Content-Type'] = "multipart/related; boundary=\"mixed-{$mime_boundary}\"";
 		}
 		else
 		{
-			$this->headers['Content-Type'] = "text/plain; charset=iso-8859-1";
+			$this->_headers['Content-Type'] = "text/plain; charset=iso-8859-1";
 		}
 		
 		if ($from != '' && self::validateAddress($this->from())) {
-			$this->headers['From'] = "{$from}";
-	   		$this->headers['Reply-To'] = "{$from}";
-	   		$this->headers['Return-Path'] = "{$from}";
-	   		$this->headers['Message-ID'] = "<".time()."-{$from}>";
+			$this->_headers['From'] = "{$from}";
+	   		$this->_headers['Reply-To'] = "{$from}";
+	   		$this->_headers['Return-Path'] = "{$from}";
+	   		$this->_headers['Message-ID'] = "<".time()."-{$from}>";
 		}
 		$recipients = $this->getRecipients();
 		$cc = $this->getRecipients(self::$CC);
 		$bcc = $this->getRecipients(self::$BCC);
 		if (count($cc) > 0) $this->_headers["Cc"] = implode(', ', $cc);
 		if (count($bcc) > 0) $this->_headers["Bcc"] = implode(', ', $bcc);
-		$this->headers['X-Mailer'] = "PHP/" . phpversion();
+		$this->_headers['X-Mailer'] = "PHP/" . phpversion();
 		
 		//Compile mail data
 		
@@ -442,7 +456,7 @@ class Email extends Configurable
 		}	
 		
 		// Plain Text
-		$body .= strip_tags(dev_br2nl( $message )).$eol.$eol;
+		$body .= strip_tags(HTML::br2nl( $message )).$eol.$eol;
 		
 		// Body end
 		if ( $this->sendHTML() )
