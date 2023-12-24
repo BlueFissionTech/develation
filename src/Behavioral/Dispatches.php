@@ -117,7 +117,9 @@ trait Dispatches {
 	 * @param mixed|null $args The arguments to pass to the handler.
 	 */
 	protected function trigger($behavior, $args = null) {
-		$this->_handlers->raise($behavior, $this, $args);
+		if ( $this->_handlers != null ) {
+			$this->_handlers->raise($behavior, $this, $args);
+		}
 	}
 	
 	/**
