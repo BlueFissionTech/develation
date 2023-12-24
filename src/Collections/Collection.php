@@ -19,7 +19,9 @@ use BlueFission\Behavioral\IDispatcher;
  * @link    https://bluefission.com/develation
  */
 class Collection implements ICollection, IDispatcher, ArrayAccess, IteratorAggregate {
-	use Dispatches;
+	use Dispatches {
+        Dispatches::__construct as private __tConstruct;
+    }
 
 	/**
 	 * The actual value of the collection.
@@ -48,6 +50,8 @@ class Collection implements ICollection, IDispatcher, ArrayAccess, IteratorAggre
 	 * @param mixed $value Initial value for the collection.
 	 */
 	public function __construct( $value = null ) {
+		$this->__tConstruct();
+		
 		if ( empty( $value ) )
 		{
 			$this->_value = new ArrayObject( );
@@ -348,9 +352,11 @@ class Collection implements ICollection, IDispatcher, ArrayAccess, IteratorAggre
     	// } else {
     	// 	$rand = array_rand( $this->_value->getArrayCopy() );
     	// }
-
+		if (count($this->_value) == 0) {
+    		return null;
+    	}
     	$rand = array_rand( $this->_value->getArrayCopy() );
 
-    	return $rand;
+    	return $this->_value[$rand];
     }
 }
