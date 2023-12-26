@@ -129,5 +129,4 @@ trait Dispatches {
 		$this->behavior(new Event(Event::LOAD));
 		$this->behavior(new Event(Event::UNLOAD));
 	}
-
 }

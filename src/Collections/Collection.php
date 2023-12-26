@@ -6,8 +6,6 @@ use ArrayObject;
 use ArrayIterator;
 use IteratorAggregate;
 use InvalidArgumentException;
-use BlueFission\Behavioral\Dispatches;
-use BlueFission\Behavioral\IDispatcher;
 
 /**
  * Class Collection 
@@ -18,10 +16,7 @@ use BlueFission\Behavioral\IDispatcher;
  * @author  Devon Scott <dscott@bluefission.com>
  * @link    https://bluefission.com/develation
  */
-class Collection implements ICollection, IDispatcher, ArrayAccess, IteratorAggregate {
-	use Dispatches {
-        Dispatches::__construct as private __tConstruct;
-    }
+class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 
 	/**
 	 * The actual value of the collection.
@@ -50,8 +45,6 @@ class Collection implements ICollection, IDispatcher, ArrayAccess, IteratorAggre
 	 * @param mixed $value Initial value for the collection.
 	 */
 	public function __construct( $value = null ) {
-		$this->__tConstruct();
-		
 		if ( empty( $value ) )
 		{
 			$this->_value = new ArrayObject( );
