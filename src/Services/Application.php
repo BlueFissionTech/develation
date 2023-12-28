@@ -286,15 +286,12 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 			    $csrf = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'];
 			}
 
-			
 			if (!$csrf) {
 				die('Invalidateable Request');
 			} elseif (!$_SESSION['_token']) {
 				die('Invalidateable Session');
 			} elseif (!hash_equals($_SESSION['_token'], $csrf)) {
 				die('Invalid Request');
-			} else {
-				die('Request can\'t be validated');
 			}
 		}
 		return $this;
