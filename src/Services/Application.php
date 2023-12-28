@@ -291,6 +291,8 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 			} elseif (!$_SESSION['_token']) {
 				die('Invalidateable Session');
 			} elseif (!hash_equals($_SESSION['_token'], $csrf)) {
+				var_dump($csrf);
+				var_dump($_SESSION['_token']);
 				die('Invalid Request');
 			}
 		}
