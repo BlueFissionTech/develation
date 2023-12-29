@@ -13,7 +13,7 @@ use BlueFission\DevArray;
  * 
  * @package BlueFission\Net
  */
-class Email extends DevObject implements IConfigurable
+class Email extends DevObject implements IConfigurable, IEmail
 {	
     use Configurable {
         Configurable::__construct as private __configConstruct;
@@ -35,21 +35,21 @@ class Email extends DevObject implements IConfigurable
      * 
      * @var array
      */
-    private $_headers = array();
+    private $_headers = [];
 
     /**
      * An array that stores the email attachments.
      * 
      * @var array
      */
-    private $_attachments = array();
+    private $_attachments = [];
 
     /**
      * An array that stores the email recipients.
      * 
      * @var array
      */
-    private $_recipients = array();
+    private $_recipients = [];
 
     /**
      * A constant to represent default recipients.
@@ -77,12 +77,12 @@ class Email extends DevObject implements IConfigurable
      * 
      * @var array
      */
-    protected $_data = array(
+    protected $_data = [
         'from'=>'',
         'message'=>'',
         'subject'=>'',
         'additional'=>''
-    );
+    ];
 
     /**
      * Constructor function to initialize email data such as recipients, from, subject, message, cc, bcc, html, headers_r, additional and attachments.
@@ -102,11 +102,15 @@ class Email extends DevObject implements IConfigurable
     {
     	$this->__configConstruct();
 		parent::__construct();
+
+		$recipient = DevArray::toArray($recipient);
+		$cc = DevArray::toArray($cc);
+		$bcc = DevArray::toArray($bcc);
     	
         //Prepare addresses
         $this->recipients($recipient);
-        $this->recipients($cc, self::$CC);
-        $this->recipients($bcc, self::$BCC);
+        $this->recipients($cc, null, self::$CC);
+        $this->recipients($bcc, null, self::$BCC);
         $this->from( $from );
         $this->subject( $subject );
         $this->message( $message );
@@ -191,14 +195,18 @@ class Email extends DevObject implements IConfigurable
 	 * recipients - retrieves or sets the recipients
 	 * 
 	 * @param mixed $value  the value of the recipient
+	 * @param mixed $name   the name of the recipient
 	 * @param mixed $type   the type of the recipient
 	 * 
 	 * @return mixed the recipients if $value is not provided, or the value of the recipient if it exists, or an empty array if it does not
 	 */
-	public function recipients($value = null, $type = null)
+	public function recipients($value = null, $name = null, $type = null)
 	{
 		if (DevValue::isNull($value))
 			return $this->_recipients;
+
+		if (!DevArray::is($value) && !DevValue::isNull($name))
+			$value = [$name=>$value];
 			
 		$type = $type ? $type : self::$DEFAULT;
 		$value = self::filterAddresses($value);
@@ -215,20 +223,31 @@ class Email extends DevObject implements IConfigurable
 	private function getRecipients( $type = null )
 	{
 	    $type = (DevValue::isNull($type)) ? self::$DEFAULT : $type;
-	    return isset($this->_recipients[$type]) ? $this->_recipients[$type] : array();
+
+	    $recipients = isset($this->_recipients[$type]) ? $this->_recipients[$type] : [];
+
+	    foreach ($recipients as $email=>$name) {
+	    	$recipients[$email] = $name ? "{$name} <{$email}>" : $email;
+	    }
+	    return $recipients;
 	}
 
 	/**
 	 * Set the 'From' field of the email.
 	 * 
 	 * @param string|null $value Email address to set as the 'From' field
+	 * @param string|null $name Name to set as the 'From' field
 	 * 
 	 * @return string|false Returns the 'From' field if set, otherwise returns the default sender address
 	 */
-	public function from($value = null)
+	public function from($value = null, $name = null)
 	{
 	    if ( (DevValue::isNotNull($value)) && !self::validateAddress($value));
 	        return false;
+
+		if (!DevArray::is($value) && !DevValue::isNull($name))
+			$value = [$name=>$value]
+
 	    $this->field('from', $value);
 	    return $this->field('from') ? $this->field('from') : $this->config('sender');
 	}
@@ -305,12 +324,20 @@ class Email extends DevObject implements IConfigurable
 		$p .= '|\.com|\.net|\.edu|\.org|\.gov|\.mil|\.int|\.biz|\.pro|\.info|\.arpa|\.aero|\.coop|\.name|\.museum|\.au|\.jp|\.tv|\.us|\.nz|\.nt)$/ix';
 
 		$pattern = $p;
+
+		// Regex to get email address from out of  User Name <email@address> format
+		$filter = '/(?<=<)?[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}(?=>)?/';
+
 		$passed = false;
 		$i = 0;
 		$count = count($address);
 		do 
 		{
-			$match = preg_match($pattern, $address[$i]);
+			// get email from User Name <email@address> format
+			preg_match($filter, $address[$i], $matches);
+			$email = $matches[0];
+
+			$match = preg_match($pattern, $email);
 			$passed = ($match > 0 && $match !== false) ? true : false;
 			$i++;
 		} while ($passed === true && $i < $count);
@@ -327,7 +354,7 @@ class Email extends DevObject implements IConfigurable
 	public function filterAddresses($addresses = null) 
 	{
 		$address_r = DevArray::toArray($addresses);
-		$valid_address_r = array();
+		$valid_address_r = [];
 		foreach ($address_r as $a) if (self::validateAddress($a)) $valid_address_r[] = self::sanitize($a);
 		if ( count($valid_address_r) == 0 ) return false;
 		return $valid_address_r;
@@ -371,7 +398,7 @@ class Email extends DevObject implements IConfigurable
 		$mime_boundary=md5(time());
 		
 		//Build Headers
-		$this->_headers = array();
+		$this->_headers = [];
 		if ( $this->_attachments ) 
 		{
 			$this->_headers['MIME-Version'] = "1.0";
@@ -488,4 +515,4 @@ class Email extends DevObject implements IConfigurable
 		
 		$this->status($status);
 	}
-}
+}	
