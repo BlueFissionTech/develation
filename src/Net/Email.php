@@ -113,7 +113,7 @@ class Email extends DevObject implements IConfigurable, IEmail
         $this->recipients($bcc, null, self::$BCC);
         $this->from( $from );
         $this->subject( $subject );
-        $this->message( $message );
+        $this->body( $message );
         $this->additional( $additional );
         $this->headers( $headers_r );
     }
@@ -246,7 +246,7 @@ class Email extends DevObject implements IConfigurable, IEmail
 	        return false;
 
 		if (!DevArray::is($value) && !DevValue::isNull($name))
-			$value = [$name=>$value]
+			$value = [$name=>$value];
 
 	    $this->field('from', $value);
 	    return $this->field('from') ? $this->field('from') : $this->config('sender');
@@ -259,7 +259,7 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 * 
 	 * @return string The sanitized message content
 	 */
-	public function message($value = null)
+	public function body($value = null)
 	{   
 	    $value = self::sanitize($value);
 	    return $this->field('message', $value);
@@ -434,7 +434,7 @@ class Email extends DevObject implements IConfigurable, IEmail
 			$headers = "{$a}: $b";
 		}
 		$header_info = implode($eol, $this->_headers);
-		$message = $this->message();
+		$message = $this->body();
 		$message = wordwrap($message, 70);
 		
 		$body = "";
