@@ -3,7 +3,7 @@ namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Connection;
  
-abstract class ConnectionTest extends \PHPUnit_Framework_TestCase {
+abstract class ConnectionTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Connections\Connection';
  	static $canbetested = false;

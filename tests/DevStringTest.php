@@ -3,7 +3,7 @@ namespace BlueFission\Tests;
 
 use BlueFission\DevString;
  
-class DevStringTest extends \PHPUnit_Framework_TestCase {
+class DevStringTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevString';
 	public function setup()

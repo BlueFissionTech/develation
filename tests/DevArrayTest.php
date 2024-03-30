@@ -3,7 +3,7 @@ namespace BlueFission\Tests;
 
 use BlueFission\DevArray;
  
-class DevArrayTest extends \PHPUnit_Framework_TestCase {
+class DevArrayTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevArray';
 	public function setup()

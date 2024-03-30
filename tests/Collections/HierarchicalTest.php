@@ -3,7 +3,7 @@ namespace BlueFission\Tests\Collections;
 
 use BlueFission\Collections\Hierarchical;
  
-class HierarchicalTest extends \PHPUnit_Framework_TestCase {
+class HierarchicalTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Hierarchical';
 

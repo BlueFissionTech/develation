@@ -3,7 +3,7 @@ namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Application;
  
-class ApplicationTest extends \PHPUnit_Framework_TestCase {
+class ApplicationTest extends \PHPUnit\Framework\TestCase {
 
  	static $classname = 'BlueFission\Services\Application';
 

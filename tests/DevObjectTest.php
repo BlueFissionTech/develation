@@ -3,7 +3,7 @@ namespace BlueFission\Tests;
 
 use BlueFission\DevObject;
  
-class DevObjectTest extends \PHPUnit_Framework_TestCase {
+class DevObjectTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevObject';
 	

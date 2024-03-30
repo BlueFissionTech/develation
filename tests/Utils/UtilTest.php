@@ -6,7 +6,7 @@ use BlueFission\DevValue;
 use BlueFission\Net\HTTP;
 use BlueFission\Net\Email;
 
-class UtilTest extends \PHPUnit_Framework_TestCase {
+class UtilTest extends \PHPUnit\Framework\TestCase {
     public function testEmailAdmin() {
         //Test sending email with all default values
         $status = Util::emailAdmin();

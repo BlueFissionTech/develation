@@ -3,7 +3,7 @@ namespace BlueFission\Tests\Data;
 
 use BlueFission\Data\FileSystem;
  
-class FileSystemTest extends \PHPUnit_Framework_TestCase {
+class FileSystemTest extends \PHPUnit\Framework\TestCase {
  
 	static $testdirectory = '../../testdirectory';
 

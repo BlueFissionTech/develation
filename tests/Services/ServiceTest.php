@@ -5,7 +5,7 @@ use BlueFission\Services\Service;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Handler;
  
-class ServiceTest extends \PHPUnit_Framework_TestCase {
+class ServiceTest extends \PHPUnit\Framework\TestCase {
 
  	static $classname = 'BlueFission\Services\Service';
 

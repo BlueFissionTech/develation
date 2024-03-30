@@ -3,7 +3,7 @@ namespace BlueFission\Tests\Collections;
 
 use BlueFission\Collections\Collection;
  
-class CollectionTest extends \PHPUnit_Framework_TestCase {
+class CollectionTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Collection';
 

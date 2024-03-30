@@ -3,7 +3,7 @@ namespace BlueFission\Tests;
 
 use BlueFission\DevBoolean;
  
-class DevBooleanTest extends \PHPUnit_Framework_TestCase {
+class DevBooleanTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevBoolean';
 	public function setup()

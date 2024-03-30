@@ -3,7 +3,7 @@ namespace BlueFission\Tests\Behavioral;
 
 use BlueFission\Behavioral\Dispatcher;
  
-class DispatcherTest extends \PHPUnit_Framework_TestCase {
+class DispatcherTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Behavioral\Dispatcher';
 	

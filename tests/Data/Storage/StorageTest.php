@@ -3,7 +3,7 @@ namespace BlueFission\Tests\Data\Storage;
 
 use BlueFission\Data\Storage\Storage;
  
-abstract class StorageTest extends \PHPUnit_Framework_TestCase {
+abstract class StorageTest extends \PHPUnit\Framework\TestCase {
  
 	static $testdirectory = '../../testdirectory';
 

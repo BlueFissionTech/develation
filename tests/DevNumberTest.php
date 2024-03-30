@@ -3,7 +3,7 @@ namespace BlueFission\Tests;
 
 use BlueFission\DevNumber;
  
-class DevNumberTest extends \PHPUnit_Framework_TestCase {
+class DevNumberTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevNumber';
 	public function setup()
