@@ -7,7 +7,7 @@ class HierarchicalTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Hierarchical';
 
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 		$this->object->label('main');

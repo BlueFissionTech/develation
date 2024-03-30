@@ -7,7 +7,7 @@ class GroupTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Group';
 
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 	}

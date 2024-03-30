@@ -11,7 +11,7 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 
  	static $configuration = array( 'mode'=>'rw', 'filter'=>array('..','.htm','.html','.pl','.txt'), 'root'=>'../../testdirectory', 'doNotConfirm'=>'false', 'lock'=>false );
 	
-	public function setup()
+	public function setUp(): void
 	{
 		chdir(__DIR__);
 		$this->object = new static::$classname(static::$configuration);

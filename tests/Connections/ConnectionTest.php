@@ -9,7 +9,7 @@ abstract class ConnectionTest extends \PHPUnit\Framework\TestCase {
  	static $canbetested = false;
  	static $configuration = array();
 	
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 	}

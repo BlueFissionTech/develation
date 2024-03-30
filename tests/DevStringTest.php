@@ -6,7 +6,7 @@ use BlueFission\DevString;
 class DevStringTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevString';
-	public function setup()
+	public function setUp(): test
 	{
 		$this->object = new DevString('My Name Is John');
 	}

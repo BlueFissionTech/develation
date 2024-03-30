@@ -6,7 +6,7 @@ use BlueFission\DevValue;
 class DevValueTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = '\BlueFission\DevValue';
-	public function setup()
+	public function setUp(): test
 	{
 		$this->blankObject = new static::$classname;
 		$this->nullObject = new static::$classname(null);

@@ -7,14 +7,14 @@ class CurlTest extends ConnectionTest {
  
  	static $classname = 'BlueFission\Connections\Curl';
 
- 	public function setup()
+ 	public function setUp(): void
  	{
  		// Set up a bunch of conditions to create an acceptable test connection here
- 		$location = 'http://www.google.com';
+ 		$location = 'https://www.bluefission.com';
  		if ( file_get_contents($location) ) {
  			static::$canbetested = true;
- 			static::$configuration['location'] = 'http://www.google.com';
+ 			static::$configuration['location'] = 'https://www.bluefission.com';
  		}
- 		parent::setup();
+ 		parent::setUp();
  	}
 }

@@ -7,11 +7,12 @@ class MongoLinkTest extends ConnectionTest {
  
  	static $classname = 'BlueFission\Connections\Database\MongoLink';
 
- 	public function setup()
+ 	public function setUp(): void
  	{
  		// Set up a bunch of conditions to create an acceptable test connection here
- 		if ( class_exists('\MongoDB\Client'))
+ 		if ( class_exists('\MongoDB\Client')) {
  			static::$canbetested = true;
- 		parent::setup();
+ 		}
+ 		parent::setUp();
  	}
 }

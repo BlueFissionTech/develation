@@ -7,7 +7,7 @@ class CollectionTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Collection';
 
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 	}

@@ -6,7 +6,7 @@ use BlueFission\DevArray;
 class DevArrayTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevArray';
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname('First Item');
 	}

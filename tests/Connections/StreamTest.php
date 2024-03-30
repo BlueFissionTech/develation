@@ -7,10 +7,10 @@ class StreamTest extends ConnectionTest {
  
  	static $classname = 'BlueFission\Connections\Stream';
 
- 	public function setup()
+ 	public function setUp(): void
  	{
  		// Set up a bunch of conditions to create an acceptable test connection here
- 		parent::setup();
+ 		parent::setUp();
  	}
 
  	public function testOpen()

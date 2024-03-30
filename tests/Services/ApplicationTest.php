@@ -7,7 +7,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase {
 
  	static $classname = 'BlueFission\Services\Application';
 
-	public function setup()
+	public function setUp(): void
 	{
 		// $this->object = new static::$classname();
 		$this->object = (static::$classname)::instance();

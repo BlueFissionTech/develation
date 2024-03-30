@@ -11,7 +11,7 @@ class DiskTest extends StorageTest {
 
  	static $configuration = array( 'location'=>__DIR__.'/../../../testdirectory', 'name'=>'storage.tmp' );
 	
-	public function setup()
+	public function setUp(): void
 	{
 		chdir(__DIR__);
 		// die(var_dump(__DIR__.'/../../../testdirectory'));

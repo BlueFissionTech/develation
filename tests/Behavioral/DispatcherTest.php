@@ -7,7 +7,7 @@ class DispatcherTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Behavioral\Dispatcher';
 	
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 	}

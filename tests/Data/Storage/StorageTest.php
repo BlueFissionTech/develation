@@ -11,7 +11,7 @@ abstract class StorageTest extends \PHPUnit\Framework\TestCase {
 
  	static $configuration = array( );
 	
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname(static::$configuration);
 	}

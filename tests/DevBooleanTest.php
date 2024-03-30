@@ -6,7 +6,7 @@ use BlueFission\DevBoolean;
 class DevBooleanTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevBoolean';
-	public function setup()
+	public function setUp(): void
 	{
 		$this->blankObject = new static::$classname;
 		$this->trueObject = new static::$classname(true);

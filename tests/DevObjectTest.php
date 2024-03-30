@@ -7,7 +7,7 @@ class DevObjectTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\DevObject';
 	
-	public function setup()
+	public function setUp(): test
 	{
 		$this->object = new static::$classname();
 	}
