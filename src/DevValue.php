@@ -83,6 +83,7 @@ class DevValue implements IDevValue {
 					return is_string($var);
 					break;
 				case 'number':
+				case 'double':
 					// validates that value is numeric including zero
 					return is_numeric($var);
 					break;

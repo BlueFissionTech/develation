@@ -27,6 +27,11 @@ class Storage extends Data implements IData
 	protected $_source;
 	
 	/**
+	 * @var array The configuration data for the storage
+	 */
+	protected $_config = [];
+
+	/**
 	 * @var string A constant string indicating a successful operation
 	 */
 	const STATUS_SUCCESS = 'Success.';

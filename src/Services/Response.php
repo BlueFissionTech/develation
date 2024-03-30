@@ -122,7 +122,8 @@ class Response extends DevObject
 	 */
 	public function deliver() 
 	{
-		die($this->_message);
+		echo $this->_message ?? '{}';
+		exit;
 	}
 
 	/**

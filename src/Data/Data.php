@@ -71,7 +71,7 @@ class Data extends DevObject implements IData
      */
     public function data() 
     {
-        return $this->_data;
+        return $this->_data->value();
     }
     
     /**

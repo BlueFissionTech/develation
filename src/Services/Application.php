@@ -630,7 +630,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	public function delegate( $name, $reference = null, $args = null )
 	{
 		$params = func_get_args();
-		$args = array_slice( $params, 2 );
+		$args = $args ?? array_slice( $params, 2 );
 
 		$service = new Service();
 		$service->parent($this);

@@ -289,6 +289,40 @@ class DevString extends DevValue implements IDevValue {
 		return $this;
 	}
 
+	/**
+	 * Converts a string to snake case
+	 * 
+	 * @return DevString
+	 */
+	public function _snake(): DevString {
+		$string = $this->_data;
+		$string = preg_replace('/\s+/', '_', $string);
+		$string = preg_replace('/[^a-zA-Z0-9_]/', '', $string);
+		$string = strtolower($string);
+
+		$this->alter($string);
+
+		return $this;
+	}
+
+	/**
+	 * Converts a string to camel case
+	 * 
+	 * @return DevString
+	 */
+	public function _camel(): DevString {
+		$string = $this->_data;
+		$string = preg_replace('/\s+/', '', $string);
+		$string = preg_replace('/[^a-zA-Z0-9_]/', '', $string);
+		$string = ucwords($string);
+		$string = str_replace(' ', '', $string);
+		$string = lcfirst($string);
+
+		$this->alter($string);
+
+		return $this;
+	}
+
 
 	/**
 	 * Check if a string exists in another string

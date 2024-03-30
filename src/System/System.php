@@ -33,6 +33,10 @@ class System {
 	 */
 	protected $_output_file;
 
+	protected $_command;
+
+	protected $_process;
+
 	protected $_read_streams;
 
 	/**

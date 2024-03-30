@@ -50,7 +50,14 @@ class Cookie extends Storage implements IData
 		$cookiesecure = $this->config('secure');
 		$name = $this->config('name') ? (string)$this->config('name') : DevString::random();
 		
-		$this->_source = HTTP::cookie($name, "", $expire, $path = null, $cookiesecure) ? $name : null;
+		if (isset($_COOKIE[$name])) {
+			$this->_contents = $_COOKIE[$name];
+		} else {
+			$_COOKIE[$name] = serialize([]);
+			$this->_contents = null;
+		}
+
+		$this->_source = isset($_COOKIE[$name]) ? $name : null;
 		
 		if ( !$this->_source ) 
 			$this->status( self::STATUS_FAILED_INIT );
@@ -65,7 +72,7 @@ class Cookie extends Storage implements IData
 	 */
 	public function write()
 	{	
-		$value = HTTP::jsonEncode( $this->_data ? $this->_data : $this->_contents);
+		$value = HTTP::jsonEncode( !empty($this->_data->value()) ? $this->_data->value() : $this->_contents);
 		$label = $this->_source;
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
@@ -73,7 +80,7 @@ class Cookie extends Storage implements IData
 		
 		$path = ($path) ? $path : HTTP::domain();
 		$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
-		$cookiesecure = (bool)$secure;
+		$cookiesecure = (bool)$cookiesecure;
 		$status = ( HTTP::cookie($label, $value, $cookiedie, $path = null, $cookiesecure) ) ?  self::STATUS_SUCCESS : self::STATUS_FAILED;
 		
 		$this->status( $status );	
@@ -87,7 +94,7 @@ class Cookie extends Storage implements IData
 	public function read()
 	{
 		$value = HTTP::cookie($this->_source);
-		if ( function_exists('json_decode'))
+		if ( function_exists('json_decode') && !empty($value) )
 		{
 			$value = json_decode($value);
 			$this->contents($value);
@@ -104,6 +111,6 @@ class Cookie extends Storage implements IData
 	public function delete()
 	{
 		$label = $this->_source;
-		unset($_COOKIES[$label]);
+		unset($_COOKIE[$label]);
 	}
 }

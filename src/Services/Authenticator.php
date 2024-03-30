@@ -8,14 +8,14 @@
  */
 namespace BlueFission\Services;
 
-use BlueFission\DevObject;
+use BlueFission\DevValue;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
 use BlueFission\Data\Storage\Storage;
 
-class Authenticator extends DevObject {
+class Authenticator extends Service {
 	use Configurable {
         Configurable::__construct as private __configConstruct;
 	}
@@ -62,13 +62,17 @@ class Authenticator extends DevObject {
 	 * @param Storage $datasource
 	 * @param array|null $config
 	 */
-	public function __construct( Storage $datasource, $config = null ) {
-		$this->__configConstruct();
+	public function __construct( Storage $session, Storage $datasource, $config = null ) {
+		$this->__configConstruct($config);
 		parent::__construct();
-		if (is_array($config)) {
-			$this->config($config);
-        }
-		$this->_datasource = $datasource;
+		// if (is_array($config)) {
+		// 	$this->config($config);
+        // }
+        $this->_datasource = $datasource;
+
+        $session->config('name', $this->config('session'));
+        $session->activate();
+		$this->_session = $session;
 	}
 
 	/**
@@ -102,10 +106,10 @@ class Authenticator extends DevObject {
 		
 		$savedpass = $userinfo[$this->config('password_field')];
 		$id = $userinfo['user_id'];
-		
+
 		// $password = password_hash($password, PASSWORD_DEFAULT);
 
-		if ( !password_verify($password, $savedpass) ) {
+		if ( empty($savedpass) || !password_verify($password, $savedpass) ) {
 			$this->_status[] = "Username or password incorrect";
 			return false;
 		}
@@ -126,8 +130,9 @@ class Authenticator extends DevObject {
 	 */
 	public function isAuthenticated() {
 		// return true;
-		if ( isset( $_COOKIE[$this->config('session')] ) ) {
-			$data = json_decode($_COOKIE[$this->config('session')]);
+		$this->_session->read();
+		$data = $this->_session->data();
+		if ( DevValue::isNotEmpty( $data ) ) {
 			$this->assign($data);
 		}
 		
@@ -159,7 +164,7 @@ class Authenticator extends DevObject {
 		$last = array();
 		$attempts->field('ip_address', $value);
 		$attempts->read();
-		$last = $attempts->data()->value();
+		$last = $attempts->data();
 
 		
 		if (isset( $last['last_attempt'] ) && strtotime( $last['last_attempt'] ) > strtotime( $this->config('lockout_interval') ) )
@@ -235,9 +240,12 @@ class Authenticator extends DevObject {
 	 * Destroy the current session.
 	 */
 	public function destroySession() {
-		$this->setAuthCookie("", -3600);
-		unset($_COOKIE[$this->config('session')]);
+		$this->setAuthCookie([], -3600);
+		$this->_session->clear();
+		$this->_session->write();
+		$this->_session->delete();
 
+		$this->displayname = '';
 		$this->username = '';
 		$this->id = 0;
 
@@ -253,7 +261,7 @@ class Authenticator extends DevObject {
 		$user = $this->_datasource;
 		$user->reset();
 		$user->clear();
-		$user->config('name', [$this->config('credentials_table')]);
+		$user->config('name', $this->config('credentials_table'));
 		$user->activate();
 		$user->field('username', $username);
 		$user->read();
@@ -272,9 +280,9 @@ class Authenticator extends DevObject {
 	 */
 	public function setSession() {
 		if ( isset( $_COOKIE[$this->config('session')] ) ) {
-			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')])))
+			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')]))) {
 				return true;
-			else {
+			} else {
 				$this->_status[] = "Could not save session";
 				return false;
 			}
@@ -289,9 +297,9 @@ class Authenticator extends DevObject {
 
 		$cookie = HTTP::jsonEncode( ($loginData) );
 
-		if ($this->setAuthCookie($cookie))
+		if ($this->setAuthCookie($cookie)) {
 			return true;
-		else {
+		} else {
 			$this->_status[] = "Could not save session";
 			return false;
 		}
@@ -314,7 +322,8 @@ class Authenticator extends DevObject {
 	 *
 	 * @return HTTP::cookie The newly set cookie
 	 */
-	private function setAuthCookie($value, $duration = ""){
+	private function setAuthCookie($value, $duration = "") {
+		/*
 		if($duration == ""){
 			$duration = $this->config('duration');
 		}
@@ -326,8 +335,13 @@ class Authenticator extends DevObject {
 		$cookiesecure = false;
 		
 		$var = $this->config('session');
-		
-		return HTTP::cookie($var, $value, $cookiedie, $dir, $cookiesecure);
+		*/
+	
+		$this->_session->clear();
+		$this->_session->assign($value);
+		$this->_session->write();
+
+		return true;
 	}
 
 }
