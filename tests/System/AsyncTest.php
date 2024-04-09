@@ -2,7 +2,7 @@
 namespace BlueFission\Tests;
 
 use PHPUnit\Framework\TestCase;
-use BlueFission\Utils\Async;
+use BlueFission\System\Async;
 
 class AsyncTest extends TestCase
 {
@@ -14,7 +14,7 @@ class AsyncTest extends TestCase
     public function testPost()
     {
         $async = new Async();
-        $url = 'https://www.example.com';
+        $url = 'https://bluefission.com';
         $params = [
             'key1' => 'value1',
             'key2' => 'value2',

@@ -2,8 +2,9 @@
 
 namespace BlueFission\Data\Storage;
 
-use BlueFission\DevString;
-use BlueFission\DevNumber;
+use BlueFission\Str;
+use BlueFission\Num;
+use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
 
@@ -22,11 +23,11 @@ class Cookie extends Storage implements IData
 	 *
 	 * @var array
 	 */
-	protected $_config = array( 'location'=>'',
+	protected $_config = [ 'location'=>'',
 		'name'=>'storage',
 		'expire'=>'3600',
 		'secure'=>false,
-	);
+	];
 	
 	/**
 	 * Constructor for the Cookie class.
@@ -41,14 +42,14 @@ class Cookie extends Storage implements IData
 	/**
 	 * Activates the cookie.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function activate()
+	public function activate(): IObj
 	{
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
 		$cookiesecure = $this->config('secure');
-		$name = $this->config('name') ? (string)$this->config('name') : DevString::random();
+		$name = $this->config('name') ? (string)$this->config('name') : Str::random();
 		
 		if (isset($_COOKIE[$name])) {
 			$this->_contents = $_COOKIE[$name];
@@ -63,35 +64,39 @@ class Cookie extends Storage implements IData
 			$this->status( self::STATUS_FAILED_INIT );
 		else
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
+
+		return $this;
 	}
 	
 	/**
 	 * Writes data to the cookie.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function write()
+	public function write(): IObj
 	{	
-		$value = HTTP::jsonEncode( !empty($this->_data->value()) ? $this->_data->value() : $this->_contents);
+		$value = HTTP::jsonEncode( !empty($this->_data->val()) ? $this->_data->val() : $this->_contents);
 		$label = $this->_source;
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
 		$cookiesecure = $this->config('secure');
 		
 		$path = ($path) ? $path : HTTP::domain();
-		$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
+		$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 		$cookiesecure = (bool)$cookiesecure;
 		$status = ( HTTP::cookie($label, $value, $cookiedie, $path = null, $cookiesecure) ) ?  self::STATUS_SUCCESS : self::STATUS_FAILED;
 		
-		$this->status( $status );	
+		$this->status( $status );
+
+		return $this;
 	}
 	
 	/**
 	 * Reads the cookie and returns its value.
 	 *
-	 * @return mixed The value of the cookie.
+	 * @return IObj
 	 */
-	public function read()
+	public function read(): IObj
 	{
 		$value = HTTP::cookie($this->_source);
 		if ( function_exists('json_decode') && !empty($value) )
@@ -100,17 +105,20 @@ class Cookie extends Storage implements IData
 			$this->contents($value);
 			$this->loadArray((array)$value);
 		}	
-		return $value;
+
+		return $this;
 	}
 
 	/**
 	 * Deletes the cookie.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function delete()
+	public function delete(): IObj
 	{
 		$label = $this->_source;
 		unset($_COOKIE[$label]);
+
+		return $this;
 	}
 }

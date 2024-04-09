@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Data\Storage;
 
+use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Collections\Group;
 
@@ -44,10 +45,10 @@ class MysqlBulk extends Mysql implements IData
 	 * 
 	 * @param string $query The SQL query to run.
 	 */
-	public function run( $query = "" )
+	public function run( $query = "" ): IObj
 	{
 		parent::run($query);
-		$res = array();
+		$res = [];
 		if (method_exists('mysqli_result', 'fetch_all')) # Compatibility layer with PHP < 5.3
 			if ($this->_result)
 				$res = $this->_result->fetch_all( MYSQLI_ASSOC );
@@ -58,6 +59,8 @@ class MysqlBulk extends Mysql implements IData
 
 		$this->_rows = new Group( $res );
 		$this->_rows->type('\BlueFission\Data\Storage\Mysql');
+
+		return $this;
 	}
 
 	/**
@@ -91,10 +94,12 @@ class MysqlBulk extends Mysql implements IData
 	 * @param int $start (optional) The start index of the result to be retrieved.
 	 * @param int $end (optional) The end index of the result to be retrieved.
 	 */
-	public function limit($start = 0, $end = '') 
+	public function limit($start = 0, $end = ''): IObj
 	{
 		$this->_row_start = $start;
 		$this->_row_end = $end;
+
+		return $this;
 	}
 
 	/**

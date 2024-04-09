@@ -1,7 +1,8 @@
 <?php
 namespace BlueFission\Data;
 
-use BlueFission\DevValue;
+use BlueFission\Val;
+use BlueFission\IObj;
 use BlueFission\Data\FileSystem;
 use BlueFission\Net\Email;
 
@@ -74,7 +75,7 @@ class Log extends Data implements iData
      */
     public static function instance()
     {
-        if (DevValue::isNull(Log::$_instance))
+        if (Val::isNull(Log::$_instance))
             Log::$_instance = new Log();
             
         return Log::$_instance;
@@ -85,7 +86,7 @@ class Log extends Data implements iData
      * 
      * @param string $message - The log message to be added.
      */
-    public function push($message)
+    public function push($message): IObj
 	{
 		$time = date('Y-m-d G:i:s');
 		$this->field($time, $message);
@@ -93,6 +94,8 @@ class Log extends Data implements iData
 			$this->write();
 			$this->clear();
 		}
+
+		return $this;
 	}
 	
 	/**
@@ -100,25 +103,26 @@ class Log extends Data implements iData
 	 * If the storage type is `FILE`, it uses the `FileSystem` class to read the log file.
 	 * If the storage type is not specified, it defaults to `SYSTEM`.
 	 * 
-	 * @return mixed data Returns the log data if it was able to be read, otherwise returns false.
+	 * @return IObj
 	 */
-	public function read() 
+	public function read(): IObj
 	{
 		$destination = $this->config('file');
 		$type = $destination ? $this->config('storage') : self::SYSTEM;
 		if ($type == self::FILE && $destination )
 		{
-			$file_config = array('mode'=>'a'); 
+			$file_config = ['mode'=>'a']; 
 			$messenger = new FileSystem($file_config);
 			$messenger->open( $destination );
 			$messenger->read();
 			$status = $messenger->status();
 			$data = $messenger->data();
-			
-			return $data;
+
+			return $this;
 		}
 		$this->status("Cannot open log files with current settings.");
-		return false;
+		
+		return $this;
 	}
 	
 	/**
@@ -128,9 +132,9 @@ class Log extends Data implements iData
 	 * If the storage type is not specified, it defaults to `SYSTEM`.
 	 * 
 	 * @param string $file The file name to be used for writing log data. 
-	 * @return void
+	 * @return IObj
 	 */
-	public function write($file = null)
+	public function write($file = null): IObj
 	{
 		$message = $this->message();
 		$status = null;
@@ -145,7 +149,7 @@ class Log extends Data implements iData
 				case self::FILE:
 					if ( class_exists('FileSystem') )
 					{
-						$file_config = array('mode'=>'a'); 
+						$file_config = ['mode'=>'a']; 
 						$messenger = new FileSystem($file_config);
 						$messenger->file( $this->config('file') );
 						$messenger->contents( $message );
@@ -177,29 +181,32 @@ class Log extends Data implements iData
 		}
 		
 		$this->status($status);	
+
+		return $this;
 	}
 	
 	/**
      * Deletes the log file
      * 
-     * @return bool
+     * @return IObj
      */
-	public function delete()
+	public function delete(): IObj
 	{
 		$destination = $this->config('file');
 		$type = $destination ? $this->config('storage') : self::SYSTEM;
 		if ($type == self::FILE && class_exists('FileSystem') )
 		{
-			$file_config = array('mode'=>'a'); 
+			$file_config = ['mode'=>'a']; 
 			$messenger = new FileSystem($file_config);
 			$messenger->file( $destination );
 			$messenger->delete();
 			$status = $messenger->status();
 			
-			return true;
+			return $this;
 		}
 		$this->status("Cannot delete log files with current settings.");
-		return false;
+		
+		return $this;
 	}
 	
 	/**
@@ -208,9 +215,9 @@ class Log extends Data implements iData
      * @param null $records
      * @return string
      */
-	private function message( $records = null )
+	private function message( $records = null ): string
 	{
-		$records = (DevValue::isNull($records)) ? $records : $this->config('max_logs');
+		$records = (Val::isNull($records)) ? $records : $this->config('max_logs');
 		$message = array_slice($this->_data, -($records));
 		$message = array_filter($message);
 		// $output = implode("\n", $message)."\n";
@@ -224,9 +231,9 @@ class Log extends Data implements iData
 	/**
      * Sends an alert message to the specified email address
      * 
-     * @return void
+     * @return IObj
      */ 
-	public function alert()
+	public function alert(): IObj
 	{
 		$destination = $this->config('email');
 		$type = self::EMAIL;
@@ -244,6 +251,8 @@ class Log extends Data implements iData
 		}
 		
 		$this->status($status);
+
+		return $this;
 	}
 
 	/**

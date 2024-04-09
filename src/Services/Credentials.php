@@ -1,14 +1,15 @@
 <?php
 namespace BlueFission\Services;
-// @include_once('Loader.php');
-// $loader = Loader::instance();
-// $loader->load('com.bluefission.develation.DevConfigurable');
 
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Obj;
 
-class Credentials extends Configurable
-{
+class Credentials extends Obj {
+	use Configurable {
+		Configurable::__construct as private __configConstruct;
+	}
+
     /**
      * Error message for an empty username
      */
@@ -24,10 +25,14 @@ class Credentials extends Configurable
      *
      * @var array
      */
-	protected $_data = array(
+	protected $_data = [
 		'username'=>'',
 		'password'=>'',
-	);
+	];
+
+	public function __construct() {
+		$this->__configConstruct();
+	}
 
     /**
      * Validates the username and password
@@ -49,13 +54,5 @@ class Credentials extends Configurable
 			$this->dispatch( Event::SUCCESS );
 
 		return $valid;
-	}
-
-    /**
-     * Initializes the class
-     */
-	protected function init()
-	{
-		parent::init();
 	}
 }

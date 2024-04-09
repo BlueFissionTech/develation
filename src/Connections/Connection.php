@@ -1,7 +1,8 @@
 <?php
 namespace BlueFission\Connections;
 
-use BlueFission\DevObject;
+use BlueFission\Obj;
+use BlueFission\IObj;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Behavioral\Configurable;
 
@@ -10,7 +11,7 @@ use BlueFission\Behavioral\Configurable;
  * 
  * An abstract class that defines the structure for database connections.
  */
-abstract class Connection extends DevObject implements IConfigurable
+abstract class Connection extends Obj implements IConfigurable
 {	
     use Configurable {
         Configurable::__construct as private __configConstruct;
@@ -72,15 +73,17 @@ abstract class Connection extends DevObject implements IConfigurable
     /**
      * Abstract method to open a connection
      */
-	abstract public function open();
+	abstract public function open(): IObj;
 		
     /**
      * Close the connection
      */
-	public function close()
+	public function close(): IObj
 	{
 		$this->_connection = null;
 		$this->status(self::STATUS_DISCONNECTED);
+
+        return $this;
 	}
 	
     /**

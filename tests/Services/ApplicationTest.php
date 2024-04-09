@@ -6,6 +6,7 @@ use BlueFission\Services\Application;
 class ApplicationTest extends \PHPUnit\Framework\TestCase {
 
  	static $classname = 'BlueFission\Services\Application';
+ 	protected $object;
 
 	public function setUp(): void
 	{
@@ -13,7 +14,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase {
 		$this->object = (static::$classname)::instance();
 	}
 
-	public function teardown()
+	public function tearDown(): void
 	{
 		$this->object->__destruct();
 		$this->object = null;

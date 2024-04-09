@@ -8,25 +8,54 @@ use IteratorAggregate;
 use Traversable;
 
 /**
- * Class DevArray
+ * Class Arr
  * This class is a value object for arrays.
  * It has various array helper methods for checking array type, getting/setting values, removing duplicates etc.
  * It also implements ArrayAccess interface
  * 
  * @package BlueFission
- * @implements IDevValue
+ * @implements IVal
  * @implements ArrayAccess
  */
-class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, IteratorAggregate {
+class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate {
     protected $_type = "array";
 
+    protected $_forceType = false;
+
     /**
-     * DevArray constructor.
+     * Arr constructor.
      * @param null|mixed $value
      */
-    public function __construct( $value = null ) {
-        parent::__construct( $value );
-        $this->_data = $this->_toArray();
+    public function __construct( $value = null, bool $snapshot = true, $convert = true ) {
+        parent::__construct( $value, $snapshot, $convert );
+
+        if ($convert) {
+    		$this->_data = $this->_toArray();
+        }
+    }
+
+    /**
+	 * Convert the value to the type of the var
+	 *
+	 * @return IVal
+	 */
+	public function convert(): IVal
+	{
+		if ( $this->_type ) {
+			$this->_data = $this->toArray();
+		}
+
+		return $this;
+	}
+
+    public function setValue($value) {
+    	if ( $value instanceof IVal ) {
+			$value = $value->val();
+		}
+
+		$this->_data = $value;
+
+    	$this->_data = $this->_toArray();
     }
 
     /**
@@ -49,7 +78,24 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 */
 	public function _has( mixed $value ): bool
 	{
+		if (!$this->is($this->_data)) {
+			return false;
+		}
 		return in_array($value, $this->_data);
+	}
+
+	/**
+	 * Searches for a value in the array
+	 * 
+	 * @param  mixed  $value the value to search for
+	 * @return bool        true if value is found
+	 */
+	public function _search( mixed $value ): bool
+	{
+		if (!$this->is($this->_data)) {
+			return false;
+		}
+		return array_search($value, $this->_data);
 	}
 
 	/**
@@ -60,16 +106,22 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 */
 	public function _hasKey( string|int $key ): bool
 	{
+		if (!$this->is($this->_data)) {
+			return false;
+		}
 		return array_key_exists($key, $this->_data);
 	}
-
+	
     /**
      * check if the array is a hash
      * @return bool
      */
     public function _isHash( ): bool {
+    	if (!$this->is($this->_data)) {
+			return false;
+		}
         $var = $this->_data;
-        return ((is_array( $var )) && !is_numeric( implode( array_keys( $var ))));
+        return !(is_numeric( implode( array_keys( $var ))));
     }
 
     /**
@@ -85,8 +137,11 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
      * @return bool
      */
     public function _isIndexed( ): bool {
+    	if (!$this->is($this->_data)) {
+			return false;
+		}
         $var = $this->_data;
-        return ((is_array( $var )) && is_numeric( implode( array_keys( $var ))));
+        return (is_numeric( implode( array_keys( $var ))));
     }
 
     /**
@@ -94,9 +149,12 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
      * @return bool
      */
     public function _isNotEmpty( ): bool {
-        $var = $this->_data;
+    	if (!$this->is($this->_data)) {
+			return false;
+		}
 
-        if ( !empty( $var ) && is_array($var) && count($var) >= 1) {
+        $var = $this->_data;
+        if ( !empty( $var ) && count($var) >= 1) {
             if ( count($var) == 1 && !$this->isAssoc($var) && empty( $var[0]) ) return false;
         }
         return true;
@@ -115,7 +173,10 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
      * 
      * @return int
      */
-    public function _count( ): int {
+    public function _size( ): int {
+    	if (!$this->is($this->_data)) {
+			return false;
+		}
 		$var = $this->_data;
 		return count( $var );
 	}
@@ -126,6 +187,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
      * @return mixed|null
      */
     public function get( $key ) {
+    	if (!$this->is($this->_data)) {
+			return false;
+		}
         $var = $this->_data;
         $keys = array_keys( $var );
         if ( in_array( $key, $keys ) )
@@ -140,6 +204,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
      * @param mixed $value
      */
     public function set( $key, $value ) {
+    	if (!$this->is($this->_data)) {
+			return false;
+		}
         $this->_data[$key] = $value;
         $this->dispatch(new Event(Event::CHANGE));
     }
@@ -149,6 +216,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
      * @return int
      */
 	public function _max( ): int {
+		if (!$this->is($this->_data)) {
+			return false;
+		}
 		$array = $this->_data;
 		if (sort($array)) {
 			$max = (int)array_pop($array);
@@ -161,6 +231,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return int
 	 */
 	public function _min(): int {
+		if (!$this->is($this->_data)) {
+			return false;
+		}
 		$array = $this->_data;
 		if (rsort($array)) {
 			$max = (int)array_pop($array);
@@ -188,6 +261,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return array
 	 */
 	public function _rand( ): mixed {
+		if (!$this->is($this->_data)) {
+			return false;
+		}
 		return $this->_data[array_rand($this->_data)];
 	}
 
@@ -197,6 +273,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return string
 	 */
 	public function __toString(): string {
+		if (!$this->is($this->_data)) {
+			return false;
+		}
 		return print_r(array_slice($this->_data, 0, 10), true);
 	}
 
@@ -217,9 +296,12 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * Numeric entries are appended, not replaced, but only if they are unique
 	 * @param array ...$arrays
 	 * 
-	 * @return array
+	 * @return IVal
 	 */
-	public function _merge( ...$arrays ): array {
+	public function _merge( ...$arrays ): IVal {
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
 		$array = $this->_data;
 		foreach ($arrays as $arg) {
 			if (is_array($arg)) {
@@ -244,10 +326,13 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * Appends other arrays to local $_data array
 	 * @param array ...$arrays
 	 * 
-	 * @return DevArray
+	 * @return IVal
 	 */
-	public function _append( ...$arrays ): DevArray
+	public function _append( ...$arrays ): IVal
 	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
 		$array = $this->_data;
 		foreach ($arrays as $arg) {
 			if (is_array($arg)) {
@@ -263,6 +348,20 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 		return $this;
 	}
 
+	public function push( $var ): IVal
+	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+
+		$array = $this->_data;
+		array_push($array, $var);
+		$this->alter($array);
+
+		return $this;
+	}
+
+
 	/**
 	 * get intersection between the $_data and the argument array
 	 * @param array $array
@@ -270,6 +369,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return array
 	 */
 	public function _intersect( array $array ): array {
+		if (!$this->is($this->_data)) {
+			return [];
+		}
 		return array_intersect($this->_data, $array);
 	}
 
@@ -280,6 +382,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return array
 	 */
 	public function _diff( array $array ): array {
+		if (!$this->is($this->_data)) {
+			return [];
+		}
 		return array_diff($this->_data, $array);
 	}
 
@@ -288,16 +393,22 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return array
 	 */
 	public function _keys(): array {
+		if (!$this->is($this->_data)) {
+			return [];
+		}
 		return array_keys($this->_data);
 	}
 		
-	/**
-	 * Return the data as an array
-	 * @return array
-	 */
-	public function value($value = null): array {
-		return $this->_toArray();
-	}
+	// /**
+	//  * Return the data as an array
+	//  * @return IVal | mixed
+	//  */
+	// public function _val($value = null): IVal | mixed {
+	// 	if ($value && Arr::is($value)) {
+	// 		return parent::_val($value);
+	// 	}
+	// 	return $this->_toArray();
+	// }
 
 	/**
 	 * Return a count of the base array
@@ -305,15 +416,21 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 */
 	public function count(): int
 	{
+		if (!$this->is($this->_data)) {
+			return null;
+		}
 		return count($this->_data);
 	}
 
 	/**
 	 * Remove duplicate values from an array as a reference
-	 * @return DevArray
+	 * @return IVal
 	 */
-	public function _removeDuplicates(): DevArray
+	public function _removeDuplicates(): IVal
 	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
 		$array = $this->_data;
 		$hold = [];
 		foreach ($array as $a=>$b) {
@@ -330,10 +447,13 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 
 	/**
 	 * Case insensitive remove duplicate values from an array as a reference
-	 * @return DevArray
+	 * @return IVal
 	 */
-	public function _iRemoveDuplicates(): DevArray
+	public function _iRemoveDuplicates(): IVal
 	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
 		$array = $this->_data;
 		$hold = [];
 		 foreach ($array as $a=>$b) 
@@ -348,7 +468,16 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 		$this->alter($array);
 
 		return $this;
-		
+	}
+
+	/**
+	 * Get the change between the current value and the snapshot
+	 *
+	 * @return mixed
+	 */
+	public function delta()
+	{
+		return Arr::diff($this->_data, $this->_snapshot);
 	}
 
 	/**
@@ -357,6 +486,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return bool
 	 */
 	public function offsetExists ( $offset ) : bool {
+		if (!$this->is($this->_data)) {
+			return false;
+		}
 		return isset( $this->_data[$offset] );
 	}
 
@@ -366,6 +498,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return mixed
 	 */
 	public function offsetGet ( $offset ) : mixed {
+		if (!$this->is($this->_data)) {
+			return null;
+		}
 		return $this->get( $offset );
 	}
 
@@ -376,6 +511,9 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return void
 	 */
 	public function offsetSet ( $offset, $value ) : void {
+		if (!$this->is($this->_data)) {
+			return;
+		}
 		if (is_null($offset)) {
 			while (array_key_exists($offset, $this->_data) || !$offset) {
 				$offset = count($this->_data);
@@ -391,11 +529,37 @@ class DevArray extends DevValue implements IDevValue, ArrayAccess, Countable, It
 	 * @return void
 	 */
 	public function offsetUnset ( $offset ) : void {
-		if ( $this->offsetExists ( $offset ) )
+		if (!$this->is($this->_data)) {
+			return;
+		}
+
+		if ( $this->offsetExists ( $offset ) ) {
 			unset( $this->_data[$offset] );
+		}
 	}
 
 	public function getIterator() : Traversable {
         return new \ArrayIterator($this->_data);
+    }
+
+     /**
+     * Magic method for handling static calls.
+     * Overrides to specially handle the 'count' method due to Countable interface.
+     *
+     * @param string $method The name of the method being called.
+     * @param array $args The arguments passed to the method.
+     * @return mixed
+     */
+    public static function __callStatic($method, $args)
+    {
+        if (strtolower($method) === 'count' && empty($args)) {
+            // Instantiate the object to access its non-static context.
+            $object = new static();
+            // Return the count result directly.
+            return $object->count();
+        }
+
+        // Fallback to parent handling for all other methods.
+        return parent::__callStatic($method, $args);
     }
 }

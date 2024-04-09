@@ -1,11 +1,17 @@
 <?php
 namespace BlueFission\Tests;
 
-use BlueFission\DevNumber;
+use BlueFission\Num;
  
-class DevNumberTest extends \PHPUnit\Framework\TestCase {
+class NumTest extends \PHPUnit\Framework\TestCase {
  
- 	static $classname = 'BlueFission\DevNumber';
+ 	static $classname = 'BlueFission\Num';
+ 	protected $object;
+ 	protected $blankObject;
+ 	protected $zeroObject;
+ 	protected $integerObject;
+ 	protected $largeObject;
+
 	public function setUp(): void
 	{
 		$this->blankObject = new static::$classname;
@@ -21,20 +27,16 @@ class DevNumberTest extends \PHPUnit\Framework\TestCase {
 	// Default
 	public function testValueReturnsAsNumeric()
 	{
-		$object = new DevNumber('letters');
-		$this->assertTrue(is_numeric($object->value()));
+		$object = new Num('letters');
+		$this->assertFalse(is_numeric($object->val()));
+		$this->assertTrue(is_numeric($object()));
+		$this->assertTrue(is_numeric($object->convert()->val()));
 	}
 
 	public function testZeroAsValidNumber()
 	{
 		$this->assertTrue($this->zeroObject->isValid());
-		$this->assertTrue($this->blankObject->isValid());
-	}
-
-	public function testBlankAsInvalidNumberWhenNotAllowed()
-	{
-		$this->assertFalse($this->zeroObject->isValid(false));
-		$this->assertFalse($this->blankObject->isValid(false));
+		$this->assertFalse($this->blankObject->isValid());
 	}
 
 	public function testPercentageReturnsCorrectValue()

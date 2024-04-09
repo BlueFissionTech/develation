@@ -1,11 +1,13 @@
 <?php
 namespace BlueFission\Tests;
 
-use BlueFission\DevArray;
+use BlueFission\Arr;
  
-class DevArrayTest extends \PHPUnit\Framework\TestCase {
+class ArrTest extends \PHPUnit\Framework\TestCase {
  
- 	static $classname = 'BlueFission\DevArray';
+ 	static $classname = 'BlueFission\Arr';
+ 	protected $object;
+
 	public function setUp(): void
 	{
 		$this->object = new static::$classname('First Item');

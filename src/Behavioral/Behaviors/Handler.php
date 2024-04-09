@@ -1,7 +1,7 @@
 <?php
 namespace BlueFission\Behavioral\Behaviors;
 
-use BlueFission\DevArray;
+use BlueFission\Arr;
 
 /**
  * Class Handler
@@ -56,13 +56,10 @@ class Handler
 	public function raise(Behavior $behavior, $args) {
 		if ($this->_callback)
 		{
-			$args = DevArray::isEmpty($args) ? null : $args;
-			
-			if ( !is_array($args) )
-				$args = array( $args );
-			
+			$args = Arr::isEmpty($args) ? null : $args;
+						
 			if (is_callable($this->_callback)) {
-				call_user_func_array($this->_callback, array($behavior, $args));
+				call_user_func_array($this->_callback, [$behavior, $args]);
 			}
 		}
 	}

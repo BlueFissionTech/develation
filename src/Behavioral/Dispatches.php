@@ -1,6 +1,9 @@
 <?php
 namespace BlueFission\Behavioral;
 
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -64,7 +67,7 @@ trait Dispatches {
 	 * @throws InvalidArgumentException if the behavior is not a string or an instance of Behavior.
 	 */
 	public function behavior( $behavior, $callback = null ) {
-		if ( is_string($behavior) && !empty($behavior))
+		if ( is_string($behavior) && Val::isNotEmpty($behavior))
 			$behavior = new Behavior($behavior);
 
 		if ( !($behavior instanceof Behavior) ) {
@@ -104,10 +107,10 @@ trait Dispatches {
 			$behavior = new Behavior($behavior);
 
 			if (!is_array($args)) {
-				$args = array($args);
+				$args = [$args];
 			}
 
-		$this->trigger( $behavior, $args);
+		$this->trigger( $behavior, $args );
 	}
 	
 	/**

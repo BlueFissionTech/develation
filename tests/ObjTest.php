@@ -1,13 +1,14 @@
 <?php
 namespace BlueFission\Tests;
 
-use BlueFission\DevObject;
+use BlueFission\Obj;
  
-class DevObjectTest extends \PHPUnit\Framework\TestCase {
+class ObjTest extends \PHPUnit\Framework\TestCase {
  
- 	static $classname = 'BlueFission\DevObject';
+ 	static $classname = 'BlueFission\Obj';
+ 	protected $object;
 	
-	public function setUp(): test
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 	}

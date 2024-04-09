@@ -4,16 +4,18 @@ namespace BlueFission\Net;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\HTML\HTML;
-use BlueFission\DevObject;
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\Obj;
+use BlueFission\Val;
+use BlueFission\Num;
+use BlueFission\Str;
+use BlueFission\Arr;
 
 /**
  * Class Email
  * 
  * @package BlueFission\Net
  */
-class Email extends DevObject implements IConfigurable, IEmail
+class Email extends Obj implements IConfigurable, IEmail
 {	
     use Configurable {
         Configurable::__construct as private __configConstruct;
@@ -24,11 +26,11 @@ class Email extends DevObject implements IConfigurable, IEmail
      * 
      * @var array
      */
-    protected $_config = array(
+    protected $_config = [
         'sender' => '',
         'html'=>false,
         'eol' => "\r\n",
-    );
+    ];
 
     /**
      * An array that stores the email headers.
@@ -56,21 +58,21 @@ class Email extends DevObject implements IConfigurable, IEmail
      * 
      * @var string
      */
-    static $DEFAULT = 'default';
+    const TO = 'default';
 
     /**
      * A constant to represent CC recipients.
      * 
      * @var string
      */
-    static $CC = 'cc';
+    const CC = 'cc';
 
     /**
      * A constant to represent BCC recipients.
      * 
      * @var string
      */
-    static $BCC = 'bcc';
+    const BCC = 'bcc';
 
     /**
      * An array that stores the email data such as 'from', 'message', 'subject'.
@@ -103,14 +105,14 @@ class Email extends DevObject implements IConfigurable, IEmail
     	$this->__configConstruct();
 		parent::__construct();
 
-		$recipient = DevArray::toArray($recipient);
-		$cc = DevArray::toArray($cc);
-		$bcc = DevArray::toArray($bcc);
+		$recipient = Arr::toArray($recipient);
+		$cc = Arr::toArray($cc);
+		$bcc = Arr::toArray($bcc);
     	
         //Prepare addresses
         $this->recipients($recipient);
-        $this->recipients($cc, null, self::$CC);
-        $this->recipients($bcc, null, self::$BCC);
+        $this->recipients($cc, null, self::CC);
+        $this->recipients($bcc, null, self::BCC);
         $this->from( $from );
         $this->subject( $subject );
         $this->body( $message );
@@ -130,9 +132,12 @@ class Email extends DevObject implements IConfigurable, IEmail
 		if ( !$this->_data->hasKey($field) ) {
 			return null;
 		}
-		if ( DevValue::isNotNull($value) ) 
+
+		if ( Val::isNotNull($value) ) 
 		{
 			$this->_data[$field] = $value;
+
+			return $this;
 		}
 		else 
 		{
@@ -151,19 +156,25 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 */
 	public function headers( $input = null, $value = null )
 	{
-		if (DevValue::isNull ($input))
-			return $this->_headers;
-		elseif (is_string($input))
+		if (Str::is($input))
 		{
-			if (DevValue::isNull ($value))
+			if (Val::isNull ($value))
 				return isset($this->_headers[$input]) ? $this->_headers[$input] : false;
+			
 			$this->_headers[$input] = self::sanitize($value); 
+
+			return $this;
 		}
-		elseif (is_array($input))
+		elseif (Arr::is($input))
 		{
 			foreach ($input as $a=>$b)
 				$this->_headers[self::sanitize($a)] = self::sanitize($b);
+
+			return $this;
 		}
+
+		if ( Val::isNull($input) )
+			return $this->_headers;
 	}
 
 	/**
@@ -176,19 +187,25 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 */
 	public function attach( $input = null, $value = null )
 	{
-		if (DevValue::isNull ($input))
-			return $this->_attachments;
-		elseif (is_string($input))
+		if ( Str::is($input) )
 		{
-			if (DevValue::isNull ($value))
+			if ( Val::isNull ($value) )
 				return isset($this->_attachments[$input]) ? $this->_attachments[$input] : null;
+			
 			$this->_attachments[$input] = $value; 
+
+			return $this;
 		}
-		elseif (is_array($input))
+		elseif ( Arr::is($input) )
 		{
 			foreach ($input as $a=>$b)
 				$this->_attachments[$a] = $b;
+
+			return $this;
 		}
+
+		if ( Val::isNull($input) )
+			return $this->_attachments;
 	}
 
 	/**
@@ -202,32 +219,56 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 */
 	public function recipients($value = null, $name = null, $type = null)
 	{
-		if (DevValue::isNull($value))
-			return $this->_recipients;
+		if ( !Arr::is($value) && Val::isNotNull($name) ) {
+			$value = [$value=>$name];
+		}
 
-		if (!DevArray::is($value) && !DevValue::isNull($name))
-			$value = [$name=>$value];
+		if ( !Arr::is($value) ) {
+			$value = [$value];
+		}
 			
-		$type = $type ? $type : self::$DEFAULT;
+		$type = $type ?? self::TO;
+
 		$value = self::filterAddresses($value);
-		$this->_recipients[$type] = ( isset($this->_recipients[$type]) && count( $this->_recipients[$type] ) > 0 ) ? array_merge( $this->_recipients[$type], $value ) : $value;	 
+
+		if ( !$value ) {
+			return $this;
+		}
+
+		$this->_recipients[$type] = $this->_recipients[$type] ?? [];
+
+		$this->_recipients[$type] = ( Val::is($this->_recipients[$type]) && Arr::size( $this->_recipients[$type] ) > 0 ) 
+			? Arr::merge( $this->_recipients[$type], $value ) : $value;	
+		 
+		if (Val::isNull($value)) {
+			return $this->_recipients;
+		}
+
+		return $this;
 	}
 	
 	/**
+	 * 
 	 * Get recipients based on the type provided or default type.
 	 * 
 	 * @param string|null $type Type of recipients to get
 	 * 
 	 * @return array Array of recipients
 	 */
-	private function getRecipients( $type = null )
+	public function getRecipients( $type = null )
 	{
-	    $type = (DevValue::isNull($type)) ? self::$DEFAULT : $type;
+	    $type = $type ?? Email::TO;
 
-	    $recipients = isset($this->_recipients[$type]) ? $this->_recipients[$type] : [];
+	    $recipients = $this->_recipients[$type] ?? [];
 
-	    foreach ($recipients as $email=>$name) {
-	    	$recipients[$email] = $name ? "{$name} <{$email}>" : $email;
+	    $isAssoc = Arr::isAssoc($recipients);
+
+	    foreach ($recipients as $a=>$b) {
+	    	if ( Num::is($a) ) {
+	    		$recipients[$b] = $b;
+	    	} else {
+	    		$recipients[$a] = "{$b} <{$a}>";
+	    	}
 	    }
 	    return $recipients;
 	}
@@ -238,18 +279,23 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 * @param string|null $value Email address to set as the 'From' field
 	 * @param string|null $name Name to set as the 'From' field
 	 * 
-	 * @return string|false Returns the 'From' field if set, otherwise returns the default sender address
+	 * @return mixed
 	 */
 	public function from($value = null, $name = null)
 	{
-	    if ( (DevValue::isNotNull($value)) && !self::validateAddress($value));
-	        return false;
+		if (Val::isNull($value)) {
+			return $this->field('from') ? $this->field('from') : $this->config('sender');
+		}
 
-		if (!DevArray::is($value) && !DevValue::isNull($name))
+	    if ( (Val::isNotNull($value)) && !self::validateAddress($value));
+	        return $this;
+
+		if (!Arr::is($value) && Val::isNotNull($name))
 			$value = [$name=>$value];
 
 	    $this->field('from', $value);
-	    return $this->field('from') ? $this->field('from') : $this->config('sender');
+
+	    return $this;
 	}
 
 	/**
@@ -257,12 +303,18 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 * 
 	 * @param string|null $value Message content for the email
 	 * 
-	 * @return string The sanitized message content
+	 * @return mixes The sanitized message content
 	 */
 	public function body($value = null)
 	{   
+		if (Val::isNull($value)) {
+			return $this->field('message');
+		}
+
 	    $value = self::sanitize($value);
-	    return $this->field('message', $value);
+	    $this->field('message', $value);
+
+	    return $this;
 	}
 
 	/**
@@ -270,12 +322,18 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 * 
 	 * @param string|null $value Subject of the email
 	 * 
-	 * @return string The sanitized subject of the email
+	 * @return mixed
 	 */
 	public function subject($value = null)
 	{
+		if ( Val::isNull($value) ) {
+			return $this->field('subject');
+		}
+
 	    $value = self::sanitize($value);
-	    return $this->field('subject', $value);
+	    $this->field('subject', $value);
+
+	    return $this;
 	}
 
 	/**
@@ -283,11 +341,17 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 * 
 	 * @param bool|null $value Boolean value to set the 'sendHTML' config
 	 * 
-	 * @return bool The value of the 'sendHTML' config
+	 * @return mixed
 	 */
 	public function sendHTML($value = null)
 	{
-	    return $this->config('html', $value);
+	    if (Val::isNull($value)) {
+	        return $this->config('html');
+	    }
+
+	    $this->config('html', $value);
+
+	    return $this;
 	}    
 
 	/**
@@ -299,12 +363,15 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 */
 	public function status($message = null)
 	{
-	    if (DevValue::isNull($message))
+	    if (Val::isNull($message))
 	    {
 	        $message = end($this->_status);
 	        return $message;
 	    }
-	    $this->_status[] = $message;    
+
+	    $this->_status[] = $message;
+
+	    return $this;
 	}
 
 	/**
@@ -316,7 +383,7 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 */
 	static function validateAddress($address = null) 
 	{
-		$address = DevArray::toArray($address); //dev_value_to_array($address);
+		$address = Arr::toArray($address); //dev_value_to_array($address);
 		$p = '/^[a-z0-9!#$%&*+-=?^_`{|}~\.]+([\.\+][a-z0-9!#$%&*+-=?^_`{|}~\.]+)*';
 		$p .= '@[a-z0-9][-a-z0-9]*(\.[a-z0-9][-a-z0-9]*)*';
 		$p .= '(\.[a-z]{2,}';
@@ -334,9 +401,10 @@ class Email extends DevObject implements IConfigurable, IEmail
 		do 
 		{
 			// get email from User Name <email@address> format
-			preg_match($filter, $address[$i], $matches);
+			preg_match($filter, $address[$i] ?? '', $matches);
 			$email = $matches[0];
 
+			$email = $email ?? '';
 			$match = preg_match($pattern, $email);
 			$passed = ($match > 0 && $match !== false) ? true : false;
 			$i++;
@@ -353,10 +421,12 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 */
 	public function filterAddresses($addresses = null) 
 	{
-		$address_r = DevArray::toArray($addresses);
+		$address_r = Arr::toArray($addresses);
 		$valid_address_r = [];
 		foreach ($address_r as $a) if (self::validateAddress($a)) $valid_address_r[] = self::sanitize($a);
-		if ( count($valid_address_r) == 0 ) return false;
+		if ( count($valid_address_r) == 0 ) {
+			return false;
+		}
 		return $valid_address_r;
 	}
 
@@ -368,7 +438,7 @@ class Email extends DevObject implements IConfigurable, IEmail
 	 */
 	static function sanitize( $field )
 	{
-		if (DevValue::isNull($field)) return null;
+		if (Val::isNull($field)) return null;
 		//Remove line feeds
 		$ret = str_replace("\r", "", $field);
 		// Remove injected headers
@@ -385,7 +455,7 @@ class Email extends DevObject implements IConfigurable, IEmail
 	/**
 	 * Send an email
 	 * 
-	 * @return string A status message indicating success or failure
+	 * @return IObj
 	 */
 	public function send() {
 		$status = 'Failed to send mail. ';
@@ -395,7 +465,7 @@ class Email extends DevObject implements IConfigurable, IEmail
 		$attachments = $this->_attachments;
 		
 		$eol = $this->config('eol');
-		$mime_boundary=md5(time());
+		$mime_boundary = md5(time());
 		
 		//Build Headers
 		$this->_headers = [];
@@ -420,15 +490,17 @@ class Email extends DevObject implements IConfigurable, IEmail
 	   		$this->_headers['Return-Path'] = "{$from}";
 	   		$this->_headers['Message-ID'] = "<".time()."-{$from}>";
 		}
+
 		$recipients = $this->getRecipients();
-		$cc = $this->getRecipients(self::$CC);
-		$bcc = $this->getRecipients(self::$BCC);
+		$cc = $this->getRecipients(self::CC) ?? [];
+		$bcc = $this->getRecipients(self::BCC) ?? [];
+		
 		if (count($cc) > 0) $this->_headers["Cc"] = implode(', ', $cc);
 		if (count($bcc) > 0) $this->_headers["Bcc"] = implode(', ', $bcc);
 		$this->_headers['X-Mailer'] = "PHP/" . phpversion();
 		
 		//Compile mail data
-		
+
 		foreach ( $this->headers() as $a=>$b )
 		{
 			$headers = "{$a}: $b";
@@ -514,5 +586,15 @@ class Email extends DevObject implements IConfigurable, IEmail
 		ini_restore( "sendmail_from" );
 		
 		$this->status($status);
+
+		return $this;
 	}
-}	
+
+	public static function sendMail($to, $from, $subject, $message, $cc = null, $bcc = null, $html = false, $headers_r = null, $additional = null, $attachments = null)
+	{
+		$mail = new Email($to, $from, $subject, $message, $cc, $bcc, $html, $headers_r, $additional, $attachments);
+		$mail->send();
+		return $mail->status();
+	}
+
+}

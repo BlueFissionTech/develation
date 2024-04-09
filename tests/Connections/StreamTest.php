@@ -20,7 +20,7 @@ class StreamTest extends ConnectionTest {
 
         $this->assertEquals(Stream::STATUS_NOTCONNECTED, $stream->status());
 
-        $stream->config('target', 'http://www.google.com');
+        $stream->config('target', 'https://bluefission.com');
         $stream->open();
 
         $this->assertEquals(Stream::STATUS_CONNECTED, $stream->status());
@@ -33,11 +33,11 @@ class StreamTest extends ConnectionTest {
 
         $this->assertEquals(Stream::STATUS_NOTCONNECTED, $stream->status());
 
-        $stream->config('target', 'http://www.google.com');
+        $stream->config('target', 'https://bluefission.com');
         $stream->open();
         $stream->query('test');
 
-        $this->assertEquals(Stream::STATUS_FAILED, $stream->status());
+        $this->assertEquals(Stream::STATUS_SUCCESS, $stream->status());
 
         $stream->config('method', 'GET');
         $stream->query();

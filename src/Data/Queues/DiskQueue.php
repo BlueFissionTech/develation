@@ -70,7 +70,7 @@ class DiskQueue extends Queue implements IQueue {
 	 * @param  string  $queue
 	 * @return boolean
 	 */
-	public static function is_empty($queue) {
+	public static function isEmpty($queue) {
 		$stack = self::instance();
 
 		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'r', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));

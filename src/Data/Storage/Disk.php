@@ -1,8 +1,10 @@
 <?php
 namespace BlueFission\Data\Storage;
 
-use BlueFission\DevValue;
-use BlueFission\DevString;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Data\FileSystem;
 use BlueFission\Net\HTTP;
@@ -14,10 +16,10 @@ class Disk extends Storage implements IData
 	 * 
 	 * @var array 
 	 */
-	protected $_config = array( 
+	protected $_config = [ 
 		'location'=>'', 
 		'name'=>'' 
-	);
+	];
 		
 	/**
 	 * Constructor method for the disk storage object.
@@ -31,40 +33,52 @@ class Disk extends Storage implements IData
 	/**
 	 * Activates the disk storage object.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function activate( ) {
-		$path = $this->config('location') ? $this->config('location') : sys_get_temp_dir();
+	public function activate( ): IObj
+	{
+		$path = $this->config('location') ?? sys_get_temp_dir();
 		
-		$name = $this->config('name') ? (string)$this->config('name') : '';
+		$name = $this->config('name') ?? '';
 			
-		if (!$this->config('name'))	{
-			$file = tempnam($path, 'store_');
-		} else {
-			$file = $path.DIRECTORY_SEPARATOR.$name;
+		if (!$name)	{
+			$name = basename(tempnam($path, 'store_'));
 		}
 
-		$filesystem = new FileSystem( array('mode'=>'c+','filter'=>'file') );
-		if ( $filesystem->open($file) ) {
+		$filesystem = new FileSystem( [
+			'mode'=>'c+',
+			'filter'=>'file',
+			'root'=>realpath($path),
+		] );
+
+		if ( $filesystem->open($name) ) {
 			$this->_source = $filesystem;
+			$this->status( self::STATUS_SUCCESSFUL_INIT );
+		} else {
+			$this->status( self::STATUS_FAILED_INIT );
 		}
 
-		if ( !$this->_source )  {
-			$this->status( self::STATUS_FAILED_INIT );
-		} else {
-			$this->status( self::STATUS_SUCCESSFUL_INIT );
-		}
+		parent::activate();
+
+		return $this;
 	}
 	
 	/**
 	 * Writes data to disk storage object.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function write() {
+	public function write(): IObj
+	{
 		$source = $this->_source;
 		$status = self::STATUS_FAILED;
-		$data = DevValue::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data) : $this->_contents; 
+		if (!$source) {
+			$this->status( $status );
+
+			return $this;
+		}
+
+		$data = Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents;
 		
 		$source->flush();
 		$source->contents( $data );
@@ -73,15 +87,23 @@ class Disk extends Storage implements IData
 		$status = self::STATUS_SUCCESS;
 		
 		$this->status( $status );
+
+		return $this;
 	}
 	
 	/**
 	 * Reads data from disk storage object.
 	 * 
-	 * @return mixed 
+	 * @return IObj 
 	 */
-	public function read() {	
+	public function read(): IObj
+	{	
 		$source = $this->_source;
+		if (!$source) {
+			$this->status( $status );
+
+			return $this;
+		}
 		$source->read();
 
 		$value = $source->contents();
@@ -90,18 +112,27 @@ class Disk extends Storage implements IData
 			$value = json_decode($value, true);
 			$this->contents($value);
 			$this->assign((array)$value);
-		}	
-		return $value;
+		}
+
+		return $this;
 	}
 	
 	/**
 	 * Delete the stored data in the underlying source
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function delete() {
+	public function delete(): IObj
+	{
 		$source = $this->_source;
+		if (!$source) {
+			$this->status( $status );
+			return $this;
+		}
+
 		$source->delete();
+
+		return $this;
 	}
 
 	/**
@@ -110,8 +141,9 @@ class Disk extends Storage implements IData
 	 * @return void
 	 */
 	public function __destruct() {
-		if (isset($this->_source))
+		if (Val::is($this->_source)) {
 			$this->_source->close();
+		}
 		parent::__destruct();
 	}
 

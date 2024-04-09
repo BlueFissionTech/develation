@@ -1,8 +1,10 @@
 <?php
 namespace BlueFission\Connections;
 
-use BlueFission\DevValue as Value;
-use BlueFission\DevArray as Array;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
@@ -19,12 +21,12 @@ class Stream extends Connection implements IConfigurable
 	/**
 	 * @var array $_config Configuration options for the stream connection
 	 */
-	protected $_config = array( 
+	protected $_config = [
 		'target' => '',  // target URL for the stream connection
 		'wrapper' => 'http', // wrapper for the stream context
 		'method' => 'GET',  // HTTP method for the stream connection
 		'header' => "Content-type: application/x-www-form-urlencoded\r\n", // header for the stream connection
-	);
+	];
 	
 	/**
 	 * Stream constructor.
@@ -33,17 +35,17 @@ class Stream extends Connection implements IConfigurable
 	 */
 	public function __construct( $config = null )
 	{
-		parent::__construct();
+		parent::__construct($config);		
 	}
 	
 	/**
 	 * Opens a stream connection.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function open() 
+	public function open(): IObj
 	{
-		$target = $this->config('target') ? $this->config('target') : HTTP::domain();
+		$target = $this->config('target') ?? HTTP::domain();
 		$method = $this->config('method');
 		$header = $this->config('header'); 
 		$wrapper = $this->config('wrapper');
@@ -51,15 +53,15 @@ class Stream extends Connection implements IConfigurable
 		// Check if target URL exists
 		if ( HTTP::urlExists($target) )
 		{
+			$this->config('target', $target);
 			// Create a stream context with the options provided in the config
-			$options = array(
-				$wrapper => array(
+			$options = [
+				$wrapper => [
 					'header'	=>	$header,
 					'method'	=>	$method,
-				),
-			);
+				],
+			];
 			$this->_connection = stream_context_create($options);
-			
 			// Set the connection status
 			$status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 		}
@@ -68,51 +70,55 @@ class Stream extends Connection implements IConfigurable
 			$status = self::STATUS_NOTCONNECTED;
 		}
 		$this->status($status);
+
+		return $this;
 	}
 	
 	/**
 	 * Sends a query to the target URL and retrieves the result.
 	 *
 	 * @param mixed|null $query Query to be sent to the target URL
-	 * @return bool
+	 * @return IObj
 	 */
-	public function query ( $query = null )
+	public function query ( $query = null ): IObj
 	{ 
 		// Set the connection status as not connected
 		$status = self::STATUS_NOTCONNECTED;
 		$context = $this->_connection;
 		$wrapper = $this->config('wrapper');
+		$target = $this->config('target');
 		
 		// If the stream context exists
 		if ($context)
 		{
 			// If a query is not null
-			if (Value::isNotNull($query))
+			if (Val::isNotNull($query))
 			{
-				if (Array::isAssoc($query))
+				if (Arr::isAssoc($query))
 				{
-					$this->_data = $query; 
-				}
-				else if (is_string($query))
-				{
+					$this->assign($query); 
+				} elseif (Str::is($query)) {
 					$data = urlencode($query);	
 					stream_context_set_option ( $context, $wrapper, 'content', $data );			
 					$this->_result = file_get_contents($target, false, $context);
-					
+
 					$this->status( $this->_result !== false ? self::STATUS_SUCCESS : self::STATUS_FAILED );
-					return true;
+					return $this;
 				}
 			}
-			$data = HTTP::query( $this->_data );	
+			$data = HTTP::query( $this->_data );
 	
 			stream_context_set_option ( $context, $wrapper, 'content', $data );			
 	
 			$this->_result = file_get_contents($target, false, $context);
 			
-			if ($this->_result !== false)
+			if ($this->_result !== false) {
 				$status = self::STATUS_SUCCESS;
+			}
 			
 		}
 		$this->status($status);
+
+		return $this;
 	}
 }

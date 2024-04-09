@@ -1,16 +1,16 @@
 <?php
 namespace BlueFission\Services;
 
-use BlueFission\DevObject;
+use BlueFission\Obj;
 
 /**
  * Class Request
  *
- * This class extends the DevObject class and provides a mechanism for managing incoming request data.
+ * This class extends the Obj class and provides a mechanism for managing incoming request data.
  *
  * @package BlueFission\Services
  */
-class Request extends DevObject {
+class Request extends Obj {
 	
 	/**
 	 * Request constructor.
@@ -40,7 +40,11 @@ class Request extends DevObject {
 				$request = filter_input_array(INPUT_POST);
 				break;
 			default:
-				$request = filter_input_array(INPUT_REQUEST);
+				// $request = filter_input_array(INPUT_REQUEST); // Awaiting implmentation
+				$get = filter_input_array(INPUT_GET) ?? [];
+				$post = filter_input_array(INPUT_POST) ?? [];
+				
+				$request = array_merge($get, $post);
 				break;
 		}
 

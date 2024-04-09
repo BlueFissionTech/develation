@@ -69,13 +69,13 @@ class Hierarchical extends Collection implements ICollection
 	 *
 	 * @param Hierarchical $object
 	 * @param string|null $label
-	 * @return void
+	 * @return ICollection
 	 */
-	public function add( $object, $label = null)
+	public function add( $object, $label = null): ICollection
 	{
 		$object->parent($this);
 		$label = $object->label($label);
-		parent::add($object, $label);
+		return parent::add($object, $label);
 	}
 
 	/**

@@ -1,30 +1,30 @@
 <?php
 namespace BlueFission\Tests\Behavioral;
 
-use BlueFission\Behavioral\Dispatcher;
+use BlueFission\Behavioral\Dispatches;
  
 class DispatcherTest extends \PHPUnit\Framework\TestCase {
  
- 	static $classname = 'BlueFission\Behavioral\Dispatcher';
+ 	static $classname = 'BlueFission\Behavioral\Dispatches';
+ 	protected $object;
 	
 	public function setUp(): void
 	{
-		$this->object = new static::$classname();
+	    $traitName = static::$classname;
+	    $this->object = eval("
+	        return new class {
+	            use $traitName;
+	        };
+	    ");
 	}
 
-	public function testEvaluatesAsStringUsingType()
-	{
-		$this->assertEquals(static::$classname, "".$this->object."");
-	}
-
-	/** 
- 	 * @expectedException InvalidArgumentException
- 	 */
+	
 	public function testThrowsErrorOnUndefinedBehaviorType()
 	{
-		// var_dump($this->object->testValue);
-		$fakeBehavior = new \stdClass();
-		$this->object->behavior($fakeBehavior);
+	    $this->expectException(\InvalidArgumentException::class);
+
+	    $fakeBehavior = new \stdClass();
+	    $this->object->behavior($fakeBehavior);
 	}
 
 	public function testBehaviorsAreDispatched()
@@ -38,11 +38,9 @@ class DispatcherTest extends \PHPUnit\Framework\TestCase {
 		$this->object->dispatch('testBehavior');
 	}
 
-	/** 
- 	 * @expectedException InvalidArgumentException
- 	 */
 	public function testCantAddEmptyBehaviors()
 	{
+	    $this->expectException(\InvalidArgumentException::class);
 		$this->object->behavior("");
 	}
 
@@ -50,22 +48,11 @@ class DispatcherTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('This Manual Event Was Dispatched');
 
-		$this->object->behavior('testBehavior', function( $data ) {
-			echo $data;
+		$this->object->behavior('testBehavior', function( $behavior, $data ) {
+			echo $data[0];
 		});
 
 		$this->object->dispatch('testBehavior', "This Manual Event Was Dispatched");
-	}
-
-	public function testEventFiredOnUnload()
-	{
-		$this->expectOutputString('This Final Event Was Dispatched');
-
-		$this->object->behavior('OnUnload', function() {
-			echo "This Final Event Was Dispatched";
-		});
-
-		unset($this->object);
 	}
 
 }

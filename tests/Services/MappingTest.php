@@ -3,6 +3,7 @@
 namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Mapping;
+use BlueFission\Services\Application as App;
 use PHPUnit\Framework\TestCase;
 
 class MappingTest extends TestCase
@@ -33,7 +34,7 @@ class MappingTest extends TestCase
 
         Mapping::crud($root, $package, $controller, $idField, $gateway);
 
-        $app = \App::instance();
+        $app = App::instance();
         $maps = $app->maps();
 
         $this->assertCount(4, $maps);

@@ -6,13 +6,21 @@ use BlueFission\Net\IP;
 
 class IPTest extends TestCase
 {
+    static $testdirectory = '/../../../testdirectory';
+    static $accessLog = 'access.log';
+    static $ipFile = 'ip.txt';
+
+    public function setUp(): void
+    {
+        IP::accessLog(self::$testdirectory . DIRECTORY_SEPARATOR . self::$accessLog);
+        IP::ipFile(self::$testdirectory . DIRECTORY_SEPARATOR . self::$ipFile);
+    }
     /**
      * Test remote() method returns the remote IP address
      */
     public function testRemote()
     {
-        $ip = new IP();
-        $this->assertEquals($_SERVER['REMOTE_ADDR'], $ip->remote());
+        $this->assertEquals($_SERVER['REMOTE_ADDR'], IP::remote());
     }
  
     /**
@@ -20,10 +28,9 @@ class IPTest extends TestCase
      */
     public function testDeny()
     {
-        $ip = new IP();
         $ipAddress = '127.0.0.1';
-        $expected = "Blocking IP address $ipAddress.\n";
-        $this->assertEquals($expected, $ip->deny($ipAddress));
+        $expected = "Blocking IP address $ipAddress";
+        $this->assertEquals($expected, IP::deny($ipAddress));
     }
  
     /**
@@ -31,10 +38,9 @@ class IPTest extends TestCase
      */
     public function testAllow()
     {
-        $ip = new IP();
         $ipAddress = '127.0.0.1';
-        $expected = "IP Allow Failed\n";
-        $this->assertEquals($expected, $ip->allow($ipAddress));
+        $expected = "IP Allow Failed";
+        $this->assertEquals($expected, IP::allow($ipAddress));
     }
  
     /**
@@ -42,9 +48,8 @@ class IPTest extends TestCase
      */
     public function testHandle()
     {
-        $ip = new IP();
         $expected = '';
-        $this->assertEquals($expected, $ip->handle());
+        $this->assertEquals($expected, IP::handle());
     }
  
     /**
@@ -52,9 +57,7 @@ class IPTest extends TestCase
      */
     public function testLog()
     {
-        $ip = new IP();
-        $file = '/path/to/file';
-        $expected = "IP logging failed.\n";
-        $this->assertEquals($expected, $ip->log($file));
+        $expected = "IP logging failed";
+        $this->assertEquals($expected, IP::log());
     }
 }

@@ -2,6 +2,7 @@
 
 namespace BlueFission\Data\Storage;
 
+use BlueFission\IObj;
 use BlueFission\Connections\Database\MongoLink;
 
 /**
@@ -19,10 +20,10 @@ class Mongo extends Storage {
 	/**
 	 * @var array $_config The configuration options for the Mongo storage class.
 	 */
-	protected $_config = array( 
+	protected $_config = [
 		'location'=>'',
 		'name'=>'',
-	);
+	];
 	
 	/**
 	 * Mongo constructor.
@@ -37,7 +38,7 @@ class Mongo extends Storage {
 	/**
 	 * Activates the Mongo storage class and sets up the connection to the MongoDB database.
 	 */
-	public function activate( )
+	public function activate( ): IObj
 	{
 		$this->_source = new MongoLink();
 		if ($this->config('location'))
@@ -48,12 +49,15 @@ class Mongo extends Storage {
 
 		if ( !$this->_source ) 
 			$this->status( self::STATUS_FAILED_INIT );
+
+		return $this;
 	}
 
 	/**
 	 * Reads data from the MongoDB database.
 	 */
-	public function read() {
+	public function read(): IObj
+	{
 		$db = $this->_source;
 
 		if ($db) {
@@ -69,15 +73,16 @@ class Mongo extends Storage {
 
 			$status = $success ? self::STATUS_SUCCESS : ( $db->status() ? $db->status : self::STATUS_FAILED );
 			$this->status( $status );
-			if (!$success)
-				return false;
 		}
+
+		return $this;
 	}
 
 	/**
 	 * Deletes data from the MongoDB database.
 	 */
-	public function delete() {
+	public function delete(): IObj
+	{
 		$db = $this->_source;
 
 		if ($db) {
@@ -91,15 +96,16 @@ class Mongo extends Storage {
 
 			$status = $success ? self::STATUS_SUCCESS : ( $db->status() ? $db->status : self::STATUS_FAILED );
 			$this->status( $status );
-			if (!$success)
-				return false;
 		}
+
+		return $this;
 	}
 
 	/**
 	 * Writes data to the MongoDB database.
 	 */
-	public function write() {
+	public function write(): IObj
+	{
 	
 		$db = $this->_source;
 
@@ -117,10 +123,9 @@ class Mongo extends Storage {
 
 			$status = $success ? self::STATUS_SUCCESS : ( $db->status() ? $db->status : self::STATUS_FAILED );
 			$this->status( $status );
-			if (!$success)
-				return false;
 		}
-		// $this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
+		
+		return $this;
 	}
 
 	/**

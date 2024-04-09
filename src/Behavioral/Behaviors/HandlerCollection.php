@@ -2,6 +2,7 @@
 namespace BlueFission\Behavioral\Behaviors;
 
 use BlueFission\Collections\Collection;
+use BlueFission\Collections\ICollection;
 
 /**
  * Class HandlerCollection
@@ -15,13 +16,15 @@ class HandlerCollection extends Collection
 	 *
 	 * @param object $handler The handler to add
 	 * @param int $priority The priority value for the handler
-	 * @return void
+	 * @return ICollection
 	 */
-	public function add($handler, $priority = null)
+	public function add($handler, $priority = null): ICollection
 	{
 		$handler->priority($priority);
 		$this->_value->append($handler);
 		$this->prioritize();
+
+		return $this;
 	}
 
 	/**
@@ -63,9 +66,9 @@ class HandlerCollection extends Collection
 	 * @param object $behavior The behavior object to raise
 	 * @param object $sender The sender object of the behavior event
 	 * @param array $args An array of arguments for the behavior event
-	 * @return void
+	 * @return ICollection
 	 */
-	public function raise($behavior, $sender, $args)
+	public function raise($behavior, $sender, $args): ICollection
 	{
 		if (is_string($behavior))
 			$behavior = new Behavior($behavior);
@@ -79,6 +82,8 @@ class HandlerCollection extends Collection
 				$c->raise($behavior, $args);
 			}
 		}
+
+		return $this;
 	}
 
 	/**

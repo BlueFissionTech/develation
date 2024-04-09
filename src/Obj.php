@@ -1,24 +1,24 @@
 <?php
 namespace BlueFission;
 
-use BlueFission\IDevValue;
-use BlueFission\DevValue;
-use BlueFission\DevArray;
-use BlueFission\DevValueFactory as Factory;
+use BlueFission\IVal;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\ValFactory as Factory;
 
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 
 use BlueFission\Behavioral\Dispatches;
 
-class DevObject implements IDevObject
+class Obj implements IObj
 {
     use Dispatches {
         Dispatches::__construct as private __dispatchConstruct;
     }
 
     /**
-     * @var DevArray
+     * @var Arr
      */
     protected $_data;
 
@@ -43,15 +43,15 @@ class DevObject implements IDevObject
     protected $_lockDataType = false;
 
     /**
-     * DevObject constructor.
+     * Obj constructor.
      */
     public function __construct() {
         $this->__dispatchConstruct();
 
-        if ( !DevValue::is($this->_data) ) {
-            $this->_data = new DevArray;
-        } elseif ( DevArray::is($this->_data) ) {
-            $this->_data = new DevArray($this->_data);
+        if ( !Val::is($this->_data) ) {
+            $this->_data = new Arr();
+        } elseif ( Arr::is($this->_data) ) {
+            $this->_data = new Arr($this->_data);
         }
 
         foreach ( $this->_types as $field=>$type ) {
@@ -63,7 +63,7 @@ class DevObject implements IDevObject
             $this->_data[$field] = $item;
         }
         
-        if ( !DevValue::is($this->_type) ) {
+        if ( !Val::is($this->_type) ) {
             $this->_type = get_class( $this );
         }
 
@@ -79,26 +79,28 @@ class DevObject implements IDevObject
      */
     public function field(string $field, $value = null): mixed
     {
-        if ( DevValue::isNotEmpty($value) ) {
+        if ( Val::isNotEmpty($value) ) {
             if ( $this->_lockDataType 
                 && isset( $this->_data[$field] )
-                && $this->_data[$field] instanceof IDevValue ) {
+                && $this->_data[$field] instanceof IVal ) {
                 if ( $this->_data[$field]->isValid($value) ) {
-                    $this->_data[$field]->value($value);
+                    $this->_data[$field]->val($value);
                 } else {
                     throw new \Exception("Invalid value for field $field");
                 }
             } elseif (isset( $this->_data[$field] )
-                && $this->_data[$field] instanceof IDevValue
+                && $this->_data[$field] instanceof IVal
                 && $this->_data[$field]->isValid($value) ) {
-                $this->_data[$field]->value($value);
+                $this->_data[$field]->val($value);
             } else {
                 $this->_data[$field] = $value;
             }
+
+            return $this;
         } else {
             $value = $this->_data[$field] ?? null;
-            if ( $value instanceof IDevValue && $this->_exposeValueObject == false ) {
-                $value = $value->value();
+            if ( $value instanceof IVal && $this->_exposeValueObject == false ) {
+                $value = $value->val();
             }
         }
         return $value;
@@ -107,45 +109,56 @@ class DevObject implements IDevObject
     /**
      * add field constraints to the object members
      * @param  callable $callable a function to run on the value before setting
-     * @return IDevObject
+     * @return IObj
      */
-    public function constraint( $callable ): IDevObject
+    public function constraint( $callable ): IObj
     {
         $this->_data->contraint( $callable );
 
         return $this;
     }
 
-    public function exposeValueObject( bool $expose = true )
+    /**
+     * Sets whether the value object should be returned as the value or the object
+     * 
+     * @param  bool $expose
+     * @return IObj
+     */
+    public function exposeValueObject( bool $expose = true ): IObj
     {
         $this->_exposeValueObject = $expose;
+
+        return $this;
     }
 
     /**
      * clear all the data of the object
-     * @return void
+     * @return IObj
      */
-    public function clear(): void
+    public function clear(): IObj
     {
         foreach ( $this->_data as $key => &$value ) {
-            if ( $value instanceof IDevValue ) {
+            if ( $value instanceof IVal ) {
                 $value->clear();
             } else {
                 $value = null;
                 $this->_data[$key] = $value;
             }
         };
+
+        return $this;
     }
 
     /**
      * Assign values to fields in this object.
      *
      * @param  object|array  $data  The data to import into this object.
+     * @return IObj
      * @throws InvalidArgumentException  If the data is not an object or associative array.
      */
-    public function assign( $data )
+    public function assign( $data ): IObj
     {
-        if ( is_object( $data ) || DevArray::isAssoc( $data ) ) {
+        if ( is_object( $data ) || Arr::isAssoc( $data ) ) {
             $this->perform( State::BUSY );
             foreach ( $data as $a=>$b ) {
                 $this->field($a, $b);
@@ -155,21 +168,25 @@ class DevObject implements IDevObject
         }
         else
             throw new \InvalidArgumentException( "Can't import from variable type " . gettype($data) );
+
+        return $this;
     }
 
     /**
      * event handler for data changes
      *
      * @param  Event $behavior
-     * @return void
+     * @return IObj
      */
-    public function onDataChange($behavior): void
+    public function onDataChange($behavior): IObj
     {
         $this->dispatch($behavior);
+
+        return $this;
     }
 
     /**
-     * Method to expose IDevValue members when called as methods
+     * Method to expose IVal members when called as methods
      *
      * @param string $method
      * @param array $args
@@ -179,7 +196,7 @@ class DevObject implements IDevObject
     {
         if ( method_exists($this, $method) ) {
             return call_user_func_array([$this, $method], $args);
-        } elseif ( DevArray::hasKey($this->_data, $method) ) {
+        } elseif ( Arr::hasKey($this->_data, $method) ) {
             $output = call_user_func_array(function() use ( $method ) {
                 return $this->_data[$method];
             }, $args);
@@ -256,8 +273,8 @@ class DevObject implements IDevObject
     {
         $array = $this->_data->toArray();
         foreach ( $array as $key => $value ) {
-            if ( $value instanceof IDevValue ) {
-                $array[$key] = $value->value();
+            if ( $value instanceof IVal ) {
+                $array[$key] = $value->val();
             }
         }
         return $array;

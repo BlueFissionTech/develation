@@ -1,7 +1,8 @@
 <?php
 namespace BlueFission\Data;
 
-use BlueFission\DevObject;
+use BlueFission\IObj;
+use BlueFission\Obj;
 use BlueFission\Behavioral\Configurable;
 
 /**
@@ -9,10 +10,10 @@ use BlueFission\Behavioral\Configurable;
  *
  * @package BlueFission\Data
  * 
- * The Data class extends the DevObject class and implements the IData interface.
+ * The Data class extends the Obj class and implements the IData interface.
  * This class is used to manage data objects and their properties.
  */
-class Data extends DevObject implements IData
+class Data extends Obj implements IData
 {
     use Configurable {
         Configurable::__construct as private __configConstruct;
@@ -27,9 +28,9 @@ class Data extends DevObject implements IData
     /**
      * This method is used to read data.
      *
-     * @return void
+     * @return IObj
      */
-    public function read() 
+    public function read(): IObj 
     {
         // method implementation
     }
@@ -37,9 +38,9 @@ class Data extends DevObject implements IData
     /**
      * This method is used to write data.
      *
-     * @return void
+     * @return IObj
      */
-    public function write() 
+    public function write(): IObj 
     {
         // method implementation
     }
@@ -47,9 +48,9 @@ class Data extends DevObject implements IData
     /**
      * This method is used to delete data.
      *
-     * @return void
+     * @return IObj
      */
-    public function delete() 
+    public function delete(): IObj 
     {
         // method implementation
     }
@@ -57,9 +58,9 @@ class Data extends DevObject implements IData
     /**
      * This method is used to get the contents of data.
      *
-     * @return void
+     * @return mixed
      */
-    public function contents() 
+    public function contents($data = null): mixed
     {
         // method implementation
     }
@@ -69,9 +70,9 @@ class Data extends DevObject implements IData
      *
      * @return mixed
      */
-    public function data() 
+    public function data(): mixed
     {
-        return $this->_data->value();
+        return $this->_data->val();
     }
     
     /**
@@ -79,9 +80,9 @@ class Data extends DevObject implements IData
      *
      * @param string $source
      *
-     * @return void
+     * @return IObj
      */
-    public function registerGlobals( string $source = null )
+    public function registerGlobals( string $source = null ): IObj
     {
         $source = strtolower($source);
         switch( $source )
@@ -109,5 +110,7 @@ class Data extends DevObject implements IData
         }
 
         $this->assign($vars);
+
+        return $this;
     }
 }

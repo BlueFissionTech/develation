@@ -6,9 +6,9 @@ use BlueFission\Behavioral\Dispatches;
 use Exception;
 
 /**
- * The DevValue class is meant to be inherited.
+ * The Val class is meant to be inherited.
  */
-class DevValue implements IDevValue {
+class Val implements IVal {
 	use Dispatches {
         Dispatches::__construct as private __tConstruct;
     }
@@ -29,6 +29,12 @@ class DevValue implements IDevValue {
 	protected $_type = "";
 
 	/**
+	 * Capture the value of the var at a specific time
+	 * @var null
+	 */
+	protected $_snapshot = null;
+
+	/**
 	 * @var string $_forceType
 	 */
 	protected $_forceType = false;
@@ -40,18 +46,39 @@ class DevValue implements IDevValue {
 	 *
 	 * @param mixed $value
 	 */
-	public function __construct( $value = null ) {
+	public function __construct( $value = null, bool $takeSnapshot = true, bool $convert = false ) {
 		$this->__tConstruct();
 
-		if ( $value instanceof IDevValue ) {
-			$value = $value->value();
+		if ( $value instanceof IVal ) {
+			$value = $value->val();
 		}
 
 		$this->_data = $value;
-		if ( $this->_type && $this->_forceType ) {
+		if ( $this->_type && $this->_forceType || $convert ) {
 			settype($this->_data, $this->_type);
 		}
+
+		if ( $takeSnapshot ) {
+			$this->snapshot();
+		}
+
+		$this->dispatch(new Event(Event::LOAD));
 	}
+
+	/**
+	 * Convert the value to the type of the var
+	 *
+	 * @return IVal
+	 */
+	public function convert(): IVal
+	{
+		if ( $this->_type ) {
+			settype($this->_data, $this->_type);
+		}
+
+		return $this;
+	}
+
 	///
 	//Variable value functions
 	///////
@@ -136,7 +163,7 @@ class DevValue implements IDevValue {
 	 */
 	public function _isNull( ): bool
 	{
-		return ( is_null( $this->_data ) );
+		return is_null( $this->_data );
 	}
 
 	/**
@@ -156,7 +183,7 @@ class DevValue implements IDevValue {
 	 */
 	public function _isEmpty( ): bool
 	{
-		return ( empty($this->_data) && !is_numeric( $this->_data ) );
+		return empty($this->_data) && !is_numeric( $this->_data );
 	}
 
 	/**
@@ -183,9 +210,9 @@ class DevValue implements IDevValue {
 	 * Add a constraint to the value of the var
 	 * 
 	 * @param  callable $callable The function to be called on the valu
-	 * @return IDevValue
+	 * @return IVal
 	 */
-	public function _constraint( $callable, $priority = 10 ): IDevValue
+	public function _constraint( $callable, $priority = 10 ): IVal
 	{
 		$this->_constraints[$priority] = $this->_constraints[$priority] ?? [];
 		$this->_constraints[$priority][] = $callable;
@@ -201,14 +228,16 @@ class DevValue implements IDevValue {
 	 *
 	 * @return mixed The value of the data member `_data`
 	 */
-	public function value($value = null): mixed
+	public function val($value = null): mixed
 	{
-		// if ( DevValue::isNotNull($value) ) {
+		// if ( Val::isNotNull($value) ) {
 		if ( !is_null($value) ) {
-    		if (DevValue::isValid($value)) {
+    		if (Val::isValid($value)) {
     			throw new \Exception("Value is not a valid type '{$this->_type}'", 1);
     		}
     		$this->alter($value);
+
+    		return $this;
 		} else {
 			// Always return a constrained value
 			$value = $this->_data;
@@ -223,13 +252,99 @@ class DevValue implements IDevValue {
 	}
 
 	/**
-	 * Set the local var to null
-	 * 
+	 * pass the value as a reference bound to $_data
+	 *
+	 * @param mixed $value
 	 * @return void
 	 */
-	public function clear(): void
+	public function ref(&$value)
+	{
+		$this->alter($value);
+		$this->_data = &$value;
+
+		return $this;
+	}
+
+	/**
+	 * Snapshot the value of the var
+	 *
+	 * @return mixed
+	 */
+	public function snapshot()
+	{
+		$this->_snapshot = $this->_data;
+
+		return $this;
+	}
+
+	/**
+	 * Clear the value of the snapshot
+	 * 
+	 */
+	public function clearSnapshot()
+	{
+		$this->_snapshot = null;
+
+		return $this;
+	}
+
+	/**
+	 * Reset the value of the var to the snapshot
+	 *
+	 * @return mixed
+	 */
+	public function reset()
+	{
+		$this->_data = $this->_snapshot;
+
+		return $this;
+	}
+
+	/**
+	 * Get the change between the current value and the snapshot
+	 *
+	 * @return mixed
+	 */
+	public function delta()
+	{
+		return $this->_data - $this->_snapshot;
+	}
+
+	/**
+	 * Magic method to get the value of the var
+	 *
+	 * @param string $name
+	 * @return mixed
+	 */
+	public function __get( $name ) {
+		if ( 'value' === $name ) {
+			return $this->val();
+		}
+	}
+
+	/**
+	 * Magic method to set the value of the var
+	 *
+	 * @param string $name
+	 * @param mixed $value
+	 * @return void
+	 */
+	public function __set( $name, $value ) {
+		if ( 'value' === $name ) {
+			$this->value($value);
+		}
+	}
+
+	/**
+	 * Set the local var to null
+	 * 
+	 * @return IVal
+	 */
+	public function clear(): IVal
 	{
 		$this->_data = null;
+
+		return $this;
 	}
 
 	/**
@@ -263,13 +378,13 @@ class DevValue implements IDevValue {
 	{
 		if ( method_exists($this, self::PRIVATE_PREFIX.$method) ) {
 			$output = call_user_func_array(array($this, self::PRIVATE_PREFIX.$method), $args);
-			// if ($output instanceof DevValue) {
-			// 	$output = $output->value();
+			// if ($output instanceof Val) {
+			// 	$output = $output->val();
 			// }
 			return $output;
 		} else {
 			// throw new Exception("Method {$method} not defined", 1);
-			error_log("Method {$method} not defined in class " . get_class($self));
+			error_log("Method {$method} not defined in class " . get_class($this));
 			return false;
 		}
 	}
@@ -282,7 +397,13 @@ class DevValue implements IDevValue {
 	 */
     public function __invoke($value = null) 
     {
-        return $this->value($value);
+    	if ( !is_null($value) ) {
+			$this->val($value);
+		}
+
+		$clone = clone $this;
+		
+		return $clone->convert()->val();
     }
 
 	/**
@@ -298,11 +419,11 @@ class DevValue implements IDevValue {
 		if ( method_exists(get_called_class(), self::PRIVATE_PREFIX.$method) ) {
 			$class = get_called_class();
 			$value = array_shift( $args );
-			$var = new $class( $value );
-			$output = call_user_func_array(array($var, self::PRIVATE_PREFIX.$method), $args);
-			unset($var);
-			if ($output instanceof IDevValue) {
-				$output = $output->value();
+			$object = new $class( $value, false, false );
+			$output = call_user_func_array(array($object, self::PRIVATE_PREFIX.$method), $args);
+			unset($object);
+			if ($output instanceof IVal) {
+				$output = $output->val();
 			}
 			return $output;
 		} else {
@@ -310,5 +431,10 @@ class DevValue implements IDevValue {
 			error_log("Method {$method} not defined in class " . get_called_class());
 			return false;
 		}
+	}
+
+	public function __destroy()
+	{
+		$this->dispatch(new Event(Event::UNLOAD));
 	}
 }

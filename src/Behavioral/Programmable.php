@@ -2,8 +2,9 @@
 namespace BlueFission\Behavioral;
 
 use \RuntimeException;
-use BlueFission\DevValue;
-use BlueFission\DevString;
+use BlueFission\IObj;
+use BlueFission\Val;
+use BlueFission\Str;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -18,6 +19,8 @@ trait Programmable
 {
 	use Configurable {
         Configurable::__construct as private __configConstruct;
+        Configurable::behavior as private configBehavior;
+        Configurable::field as private configField;
     }
 
 	/**
@@ -56,7 +59,7 @@ trait Programmable
 		{
 			return call_user_func_array(array($this, $name), $args);
 		}
-		if (DevValue::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
+		if (Val::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
 		{
 			$result = call_user_func_array($this->_tasks[$name], $args);
 			$this->perform('On'.$name);
@@ -77,19 +80,19 @@ trait Programmable
 	 * @param callable $callback A function to be executed when the behavior is triggered.
 	 */
 	public function behavior( $behavior, $callback = null ) {
-		if ( DevString::is($behavior) && DevValue::isNotEmpty($behavior) ) {
-			if ( DevString::strpos ( $behavior, 'Do') === 0 ) {
+		if ( Str::is($behavior) && Val::isNotEmpty($behavior) ) {
+			if ( Str::pos ( $behavior, 'Do') === 0 ) {
 				$behavior = new Action($behavior);
-			} elseif ( DevString::strpos ( $behavior, 'Is') === 0 ) {
+			} elseif ( Str::pos ( $behavior, 'Is') === 0 ) {
 				$behavior = new State($behavior);
-			} elseif ( DevString::strpos ( $behavior, 'On') === 0 ) {
+			} elseif ( Str::pos ( $behavior, 'On') === 0 ) {
 				$behavior = new Event($behavior);
 			} else {
 				$behavior = new Behavior($behavior);
 			}
 		}
 
-		parent::behavior($behavior, $callback);
+		$this->configBehavior($behavior, $callback);
 	}
 
 	/**
@@ -129,7 +132,7 @@ trait Programmable
 	 */
 	public function forget($task)
 	{
-		if ( $this->is( State::DRAFT ) && DevValue::is( $this->_tasks[$task] ) ) {
+		if ( $this->is( State::DRAFT ) && Val::is( $this->_tasks[$task] ) ) {
 			unset( $this->_tasks[$task] );
 			$this->perform( Event::CHANGE );
 		}
@@ -143,9 +146,21 @@ trait Programmable
 	 */
 	public function __set($field, $value): void
 	{
-		if (is_callable($value))
+		if (!$this instanceof IObj) {
+            throw new \LogicException(
+            	sprintf(
+                    '%s must implement %s to use %s',
+                    get_class($this),
+                    IObj::class,
+                    __TRAIT__
+                )
+            );
+        }
+		
+		if (is_callable($value)) {
 			$this->learn($field, $value);
-		else
-			parent::__set($field, $value);
+		} else {
+			$this->configField($field, $value);
+		}
 	}
 }

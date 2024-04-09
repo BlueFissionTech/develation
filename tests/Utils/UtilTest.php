@@ -2,7 +2,7 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Utils\Util;
-use BlueFission\DevValue;
+use BlueFission\Val;
 use BlueFission\Net\HTTP;
 use BlueFission\Net\Email;
 

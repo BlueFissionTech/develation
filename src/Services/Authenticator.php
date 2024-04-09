@@ -8,7 +8,7 @@
  */
 namespace BlueFission\Services;
 
-use BlueFission\DevValue;
+use BlueFission\Val;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Data\IData;
@@ -132,7 +132,7 @@ class Authenticator extends Service {
 		// return true;
 		$this->_session->read();
 		$data = $this->_session->data();
-		if ( DevValue::isNotEmpty( $data ) ) {
+		if ( Val::isNotEmpty( $data ) ) {
 			$this->assign($data);
 		}
 		

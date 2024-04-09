@@ -1,12 +1,19 @@
 <?php
 namespace BlueFission\Tests;
 
-use BlueFission\DevValue;
+use BlueFission\Val;
  
-class DevValueTest extends \PHPUnit\Framework\TestCase {
+class ValTest extends \PHPUnit\Framework\TestCase {
  
- 	static $classname = '\BlueFission\DevValue';
-	public function setUp(): test
+ 	static $classname = '\BlueFission\Val';
+ 	protected $object;
+ 	protected $blankObject;
+ 	protected $nullObject;
+ 	protected $emptyObject;
+ 	protected $zeroObject;
+ 	protected $valueObject;
+
+	public function setUp(): void
 	{
 		$this->blankObject = new static::$classname;
 		$this->nullObject = new static::$classname(null);
@@ -114,8 +121,8 @@ class DevValueTest extends \PHPUnit\Framework\TestCase {
 	// Static Null Test
 	public function testRecognizesBlankAsNullStatically()
 	{
-		$trueResult = DevValue::isNull();
-		$falseResult = DevValue::isNotNull();
+		$trueResult = Val::isNull();
+		$falseResult = Val::isNotNull();
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -123,8 +130,8 @@ class DevValueTest extends \PHPUnit\Framework\TestCase {
 	
 	public function testRecognizesNullAsNullStatically()
 	{
-		$trueResult = DevValue::isNull(null);
-		$falseResult = DevValue::isNotNull(null);
+		$trueResult = Val::isNull(null);
+		$falseResult = Val::isNotNull(null);
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -132,8 +139,8 @@ class DevValueTest extends \PHPUnit\Framework\TestCase {
 
 	public function testRecognizesEmptyasNullStatically()
 	{
-		$trueResult = DevValue::isNotNull("");
-		$falseResult = DevValue::isNull("");
+		$trueResult = Val::isNotNull("");
+		$falseResult = Val::isNull("");
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -141,8 +148,8 @@ class DevValueTest extends \PHPUnit\Framework\TestCase {
 	
 	public function testDoesntRecognizeZeroAsNullStatically()
 	{
-		$falseResult = DevValue::isNull(0);
-		$trueResult = DevValue::isNotNull(0);
+		$falseResult = Val::isNull(0);
+		$trueResult = Val::isNotNull(0);
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -151,8 +158,8 @@ class DevValueTest extends \PHPUnit\Framework\TestCase {
 	public function testDoesntRecognizeValueAsNullStatically()
 	{
 		for ($i = 1; $i<100; $i++) {
-			$falseResult = DevValue::isNull($i);
-			$trueResult = DevValue::isNotNull($i);
+			$falseResult = Val::isNull($i);
+			$trueResult = Val::isNotNull($i);
 		
 			$this->assertTrue( $trueResult );
 			$this->assertFalse( $falseResult );

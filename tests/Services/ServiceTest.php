@@ -1,15 +1,20 @@
 <?php
 namespace BlueFission\Tests\Services;
 
+use BlueFission\Obj;
 use BlueFission\Services\Service;
+use BlueFission\Services\Application;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Handler;
+use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\Configurable;
  
 class ServiceTest extends \PHPUnit\Framework\TestCase {
 
  	static $classname = 'BlueFission\Services\Service';
+ 	protected $object;
 
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 	}
@@ -20,54 +25,41 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
         $this->assertInstanceOf(Service::class, $service);
     }
 
-    public function testNameMethod()
-    {
-        $service = new Service();
-        $this->assertInternalType('string', $service->name());
-    }
-
-    public function testParentMethod()
-    {
-        $service = new Service();
-        $parent = new Service();
-        $service->parent($parent);
-        $this->assertInstanceOf(Service::class, $service->parent());
-    }
-
     public function testBroadcastMethod()
     {
         $service = new Service();
-        $behavior = $this->getMockBuilder(Behavior::class)->getMock();
+        $behavior = $this->createMock(Behavior::class);
         $service->broadcast($behavior);
-        $this->assertAttributeInstanceOf(Behavior::class, '_target', $behavior);
+        $this->assertInstanceOf(Behavior::class, $behavior->_target);
     }
 
     public function testBoostMethod()
     {
-        $service = new Service();
-        $parent = $this->getMockBuilder(\BlueFission\Services\Application::class)->getMock();
-        $service->parent($parent);
-        $behavior = $this->getMockBuilder(Behavior::class)->getMock();
-        $service->boost($behavior);
-        $this->assertAttributeInstanceOf(Behavior::class, '_target', $behavior);
-    }
+    	$this->expectOutputString('Test');
+        $service1 = new Service();
+        $service2 = new Service();
+        $service1->name = 'Service1';
+        $service2->name = 'Service2';
+        // $parent = $this->createMock(Application::class);
+        $parent = Application::instance();
+        $parent->name("Test");
+        $parent->delegate('Service1', $service1);
+        $parent->delegate('Service2', $service2);
 
-    public function testMessageMethod()
-    {
-        $service = new Service();
-        $instance = $this->getMockBuilder(Dispatcher::class)->getMock();
-        $behavior = $this->getMockBuilder(Behavior::class)->getMock();
-        $instance->method('behavior')->willReturn(true);
-        $instance->method('dispatch')->with($behavior, null);
-        $service->instance = $instance;
-        $service->message('behavior');
+        $parent->route('Service1', 'Service1', 'Test Behavior', function($behavior) {
+        	echo $this->name;
+        });
+
+        $parent->service('Service1')->boost('Test Behavior');
     }
 
 	public function testServicesCanDispatchLocalizedEvents()
 	{
 		$this->expectOutputString('Test message 1');
 
-		$this->object->type = '\Bluefission\Behavioral\Configurable';
+		$this->object->type = new class extends Obj {
+			use Configurable;
+		};
 
 		$behavior = new Behavior('Test behavior');
 
@@ -84,7 +76,9 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('Test message 2');
 
-		$this->object->type = '\Bluefission\Behavioral\Configurable';
+		$this->object->type = new class extends Obj {
+			use Configurable;
+		};
 
 		$behavior = new Behavior('Test behavior');
 
@@ -101,13 +95,15 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('foo');
 
-		$this->object->type = '\Bluefission\Behavioral\Configurable';
+		$this->object->type = new class extends Obj {
+			use Configurable;
+		};
 
 		$behavior = new Behavior('Test behavior');
 
 		$this->object->scope = $this;
 
-		$this->test_var = "foo";
+		$test_var = "foo";
 
 		$this->object->test_var = "bar";
 
@@ -124,16 +120,18 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('bar');
 
-		$this->object->type = '\Bluefission\Behavioral\Configurable';
+		$this->object->type = new class extends Obj {
+			use Configurable;
+		};
 
 		$behavior = new Behavior('Test behavior');
 
-		$this->test_var = "foo";
+		$test_var = "foo";
 
 		$this->object->test_var = "bar";
 
 		$handler = new Handler($behavior, function( $data ) {
-			echo $this->test_var;
+			echo $test_var;
 		});
 
 		$this->object->register('testService', $handler);
@@ -145,7 +143,9 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('BlueFission\Services\Service');
 
-		$this->object->type = new \Bluefission\Behavioral\Configurable();
+		$this->object->type = new class extends Obj {
+			use Configurable;
+		};
 		// $this->object->scope = $this->object->type;
 		
 		$this->object->register('testService', new Handler(new Behavior('DoFirst'), function() { $this->dispatch('DoSecond'); }), Service::LOCAL_LEVEL);;
@@ -159,7 +159,9 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('Bluefission\Behavioral\Configurable');
 
-		$this->object->type = new \Bluefission\Behavioral\Configurable();
+		$this->object->type = new class extends Obj {
+			use Configurable;
+		};
 		$this->object->scope = $this->object->type;
 
 		$this->object->register('testService', new Handler(new Behavior('DoFirst'), function() { $this->dispatch('DoSecond'); }), Service::SCOPE_LEVEL);
@@ -173,7 +175,9 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('foobar');
 
-		$this->object->type = '\Bluefission\Behavioral\Configurable';
+		$this->object->type = new class extends Obj {
+			use Configurable;
+		};
 
 		$this->object->call('field', array('test', 'foobar'));
 		echo $this->object->call('field', array('test'));

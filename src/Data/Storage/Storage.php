@@ -1,7 +1,10 @@
 <?php
 namespace BlueFission\Data\Storage;
 
-use BlueFission\DevValue;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\IObj;
+use BlueFission\Net\HTTP;
 use BlueFission\Data\Data;
 use BlueFission\Data\IData;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -69,7 +72,7 @@ class Storage extends Data implements IData
 	public function __construct( $config = null )
 	{
 		parent::__construct();
-		if (is_array($config)) {
+		if (Arr::is($config)) {
 			$this->config($config);
 		}
 	} 
@@ -77,35 +80,60 @@ class Storage extends Data implements IData
 	/**
 	 * Method for initializing the storage
 	 */
-	protected function init() 
+	protected function init(): IObj
 	{
 		parent::init();
 
-		$this->behavior( new StorageAction( StorageAction::READ ), array(&$this, 'read') );
-		$this->behavior( new StorageAction( StorageAction::WRITE ), array(&$this, 'write') );
-		$this->behavior( new StorageAction( StorageAction::DELETE ), array(&$this, 'delete') );
+		$this->behavior( new StorageAction( StorageAction::READ ), [&$this, 'read'] );
+		$this->behavior( new StorageAction( StorageAction::WRITE ), [&$this, 'write'] );
+		$this->behavior( new StorageAction( StorageAction::DELETE ), [&$this, 'delete'] );
+
+		return $this;
 	}
 	
 	/**
 	 * Method for activating the storage
 	 */
-	public function activate() { 
-		if ( $this->_source )
+	public function activate(): IObj
+	{
+		// If this class is an instance of Storage, not a child class, then instantiate source
+		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
+			$this->_source = '';
+		}
+		if ( Val::isNotNull($this->_source) ) {
 			$this->perform( Event::ACTIVATED );
+		}
+
+		return $this;
 	}
 	
 	/**
 	 * Method for reading data from the storage
 	 */
-	public function read() { 
+	public function read(): IObj
+	{
+		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
+			$this->_contents = $this->_source;
+		}
 		
 		$this->perform( Event::COMPLETE );
+
+		return $this;
 	}
 	
 	/**
 	 * Method for writing data to the storage
 	 */
-	public function write() { $this->perform( Event::COMPLETE ); }
+	public function write(): IObj
+	{
+		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
+			$this->_source = $this->_contents ?? HTTP::jsonEncode($this->_data);
+		}
+
+		$this->perform( Event::COMPLETE ); 
+
+		return $this;
+	}
 	
 	/**
 	 * Method for deleting data from the storage
@@ -115,10 +143,17 @@ class Storage extends Data implements IData
 	 * Performs a delete operation on the contents of the storage.
 	 * Triggers the Event::COMPLETE event.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function delete() { 
+	public function delete(): IObj
+	{
+		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
+			$this->_source = '';
+		}
+		
 		$this->perform( Event::COMPLETE ); 
+
+		return $this;
 	}
 	
 	/**
@@ -129,12 +164,13 @@ class Storage extends Data implements IData
 	 * 
 	 * @return mixed The contents of the storage if $data is not set, otherwise void.
 	 */
-	public function contents($data = null)
+	public function contents($data = null): mixed
 	{
-		if (DevValue::isNull($data)) return $this->_contents;
+		if (Val::isNull($data)) return $this->_contents;
 		
 		$this->_contents = $data;
 		$this->perform( Event::CHANGE ); 
-	}
 
+		return null;
+	}
 }

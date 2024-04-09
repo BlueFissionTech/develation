@@ -1,11 +1,17 @@
 <?php
 namespace BlueFission\Tests;
 
-use BlueFission\DevBoolean;
+use BlueFission\Flag;
  
-class DevBooleanTest extends \PHPUnit\Framework\TestCase {
+class FlagTest extends \PHPUnit\Framework\TestCase {
  
- 	static $classname = 'BlueFission\DevBoolean';
+ 	static $classname = 'BlueFission\Flag';
+ 	protected $object;
+
+ 	protected $blankObject;
+ 	protected $trueObject;
+ 	protected $falseObject;
+
 	public function setUp(): void
 	{
 		$this->blankObject = new static::$classname;
@@ -18,19 +24,19 @@ class DevBooleanTest extends \PHPUnit\Framework\TestCase {
 	// }
 	
 	// Default
-	public function testDefaultIsEmpty()
+	public function testDefaultIsNotEmpty()
 	{
-		$trueResult = $this->blankObject->isEmpty();
 		$falseResult = $this->blankObject->isNotEmpty();
-	
-		$this->assertTrue( $trueResult );
+		$trueResult = $this->blankObject->isEmpty();
+
 		$this->assertFalse( $falseResult );
+		$this->assertTrue( $trueResult );
 	}
 
 	public function testDefaultIsNotNull()
 	{
-		$trueResult = $this->blankObject->isNotNull();
-		$falseResult = $this->blankObject->isNull();
+		$trueResult = $this->blankObject->isNull();
+		$falseResult = $this->blankObject->isNotNull();
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -38,40 +44,40 @@ class DevBooleanTest extends \PHPUnit\Framework\TestCase {
 
 	public function testDefaultIsFalse()
 	{
-		$falseResult = $this->blankObject->value();
+		$falseResult = $this->blankObject->convert()->val();
 	
 		$this->assertFalse( $falseResult );
 	}
 
 	public function testObjectYieldsOpposite()
 	{
-		$falseResult = $this->trueObject->opposite();
+		$falseResult = $this->trueObject->flip()->val();
 
 		$this->assertFalse( $falseResult );
 		
-		$trueResult = $this->falseObject->opposite();
+		$trueResult = $this->falseObject->flip()->val();
 
 		$this->assertTrue( $trueResult );
 	}
 
 	public function testObjectYieldsOppositeStatically()
 	{
-		$trueResult = DevBoolean::opposite(false);
+		$trueResult = Flag::flip(false);
 		$this->assertTrue( $trueResult );
 
-		$falseResult = DevBoolean::opposite(true);
+		$falseResult = Flag::flip(true);
 		$this->assertFalse( $falseResult );
 
-		$trueResult = DevBoolean::opposite(0);
+		$trueResult = Flag::flip(0);
 		$this->assertTrue( $trueResult );
 
-		$falseResult = DevBoolean::opposite(1);
+		$falseResult = Flag::flip(1);
 		$this->assertFalse( $falseResult );
 
-		$falseResult = DevBoolean::opposite('a');
+		$falseResult = Flag::flip('a');
 		$this->assertFalse( $falseResult );
 
-		$falseResult = DevBoolean::opposite(-3);
+		$falseResult = Flag::flip(-3);
 		$this->assertFalse( $falseResult );
 
 	}

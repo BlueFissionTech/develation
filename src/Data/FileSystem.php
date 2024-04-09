@@ -1,9 +1,13 @@
 <?php
 namespace BlueFission\Data;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\IObj;
 use BlueFission\HTML\HTML;
+use BlueFission\Net\HTTP;
+
 class FileSystem extends Data implements IData {
 	/**
 	 * The file handle for the file being processed
@@ -33,8 +37,8 @@ class FileSystem extends Data implements IData {
 	 */
 	protected $_config = array( 
 		'mode'=>'r', 
-		'filter'=>array('..','.htm','.html','.pl','.txt'), 
-		'root'=>'/', 
+		'filter'=>['..','.htm','.html','.pl','.txt'], 
+		'root'=>'', 
 		'doNotConfirm'=>'false', 
 		'lock'=>false 
 	);
@@ -54,18 +58,21 @@ class FileSystem extends Data implements IData {
 	/**
 	 * Constructor for the FileSystem class
 	 *
-	 * @param mixed $data 
+	 * @param mixed $config 
 	 */
-	public function __construct( $data = null ) {	
+	public function __construct( $config = null ) {	
 		parent::__construct();
-		if (DevValue::isNotNull($data)) {
-			if ( DevArray::isAssoc($data) )
+		
+		// Set the root directory to the current working directory
+		$this->config('root', $this->config('root') ?? $this->getSystemRoot());
+		
+		if ( Val::isNotNull($config) ) {
+			if ( Arr::isAssoc($config) )
 			{
-				$this->config($data);
-				// $this->dirname = $this->config('root') ? $this->config('root') : getcwd();
+				$this->config($config);
+			} elseif ( Str::is($config) ) {
+				$this->loadInfo($config);
 			}
-			elseif ( is_string($data))
-				$this->getInfo($data);
 		} 
 	}
 
@@ -74,7 +81,8 @@ class FileSystem extends Data implements IData {
 	 *
 	 * @return bool
 	 */
-	public function isLocked() {
+	public function isLocked(): bool
+	{
 		return $this->_isLocked;
 	}
 
@@ -82,11 +90,12 @@ class FileSystem extends Data implements IData {
 	 * Opens a file and sets up the file handle and lock status
 	 *
 	 * @param string $file
-	 * @return bool
+	 * @return IObj
 	 */
-	public function open( $file = null ) {
+	public function open( $file = null ): IObj
+	{
 		if ( $file ) {
-			$this->getInfo( $file );
+			$this->loadInfo( $file );
 		}
 			
 		$success = false;
@@ -96,16 +105,18 @@ class FileSystem extends Data implements IData {
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
-			return false;
+			return $this;
 		}
 
 		$this->close();
 
-		if ($file != '') {
-			if (!$this->exists($path)) $status = "File '$file' does not exist. Creating.\n";
+		$filepath = $path.DIRECTORY_SEPARATOR.$file;
+
+		if ($file) {
+			if (!$this->exists($filepath)) $status = "File '$file' does not exist. Creating.";
 			
-			if (!$handle = @fopen($path, $this->config('mode'))) {
-				$status = "Cannot access file ($path)\n";
+			if (!$handle = @fopen($filepath, $this->config('mode'))) {
+				$status = "Cannot access file ($filepath)";
 			} else {
 				if ($this->config('lock') && flock($handle, LOCK_EX)) {
 					$this->_isLocked = true;
@@ -113,69 +124,111 @@ class FileSystem extends Data implements IData {
 					$this->_handle = $handle;
 				} elseif (!$this->config('lock')) {
 					$this->_handle = $handle;
+					$this->close();
 					$success = 'true';
 				} else {
 					$this->_isLocked = false;
-					$status = "Couldn't acquire lock on file {$lock}.";
+					$status = "Couldn't acquire lock on file {$filepath}.";
 				}
 			}
 		} else {
-			$status = "No file specified for opening\n";
+			$status = "No file specified for opening";
 		}
 		
 		$this->status($status);
-		return $success;
+		
+		return $this;
 	}
 
 	/**
 	 * Close file handle
 	 */
-	public function close() {
-		if ($this->_handle)
+	public function close(): IObj
+	{
+		if ($this->_handle) {
 			fclose ( $this->_handle );
+		}
 		$this->_handle = null;
 		$this->_isLocked = false;
+
+		return $this;
+	}
+
+	// Determines the root directory of the system whether it is Windows or Unix
+	private function getSystemRoot(): string
+	{
+		$root = '/';
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			$root = '';
+			// We check if there's an existing drive letter at the beginning of $this->_info['dirname'] and use that if so
+			if (preg_match('/^[A-Z]:/', $this->_info['dirname'], $matches)) {
+				$root = $matches[0];
+			} else {
+				// If not, we check the __DIR__ constant
+				$root = substr(__DIR__, 0, 3);
+			}
+
+			if ($root == '') {
+				// If we still don't have a root, we check the drives on the system and use the first one that exists
+				// (this is the most reliable way to get the root on Windows, since __DIR__ might not be set correctly in some cases)
+				$drives = range('A', 'Z');
+				foreach ($drives as $drive) {
+					if (is_dir($drive.':\\')) {
+						$root = $drive.':\\';
+						break;
+					}
+				}
+			}
+
+		}
+		return $root;
 	}
 
 	/**
 	 * Get information about the path
 	 * @param string $path
 	 */
-	private function getInfo( $path ) {
+	private function loadInfo( $path ): IObj
+	{
 		$info = pathinfo($path);
-		if (is_array($info)) {
+
+		$this->config('root', $this->config('root') ?? $this->getSystemRoot());
+
+		if (Arr::is($info)) {
 			$dir = $info['dirname'] ?? '';
 			
 			if ($this->allowedDir($dir)) {
-				$info['dirname'] = substr($dir, strlen($this->config('root')), strlen($dir) );
+				$info['dirname'] = substr($dir, Str::len($this->config('root')), Str::len($dir) );
 			}
 			
 			$this->assign($info);
 		}
+
+		return $this;
 	}
 
 	/**
 	 * Get the file name
-	 * @return string
+	 * @return string|null
 	 */
-	private function file() {
-		if ( !$this->basename && $this->extension )
-			$this->basename = implode( '.', array($this->filename, $this->extension) );
-		elseif ( !$this->basename )
+	private function file(): string|null
+	{
+		if ( !$this->basename && $this->extension ) {
+			$this->basename = implode( '.', [$this->filename, $this->extension] );
+		} elseif ( !$this->basename ) {
 			$this->basename = $this->filename;
+		}
 
 		return $this->basename;
 	}
 
 	/**
 	 * Get the full path of the file
-	 * @return string
+	 * @return string|null
 	 */
-	private function path() {
-		if ($this->file())
-			$path = implode( DIRECTORY_SEPARATOR, array($this->config('root'), $this->dirname, $this->file()) );
-		else
-			$path = implode( DIRECTORY_SEPARATOR, array($this->config('root'), $this->dirname) );
+	private function path(): string|null
+	{
+		$path = implode( DIRECTORY_SEPARATOR, [$this->config('root'), $this->dirname] ) ?? $this->getcwd();
 
 		$realpath = realpath($path);
 		return $realpath ? $realpath : $path;
@@ -184,99 +237,112 @@ class FileSystem extends Data implements IData {
 	/**
 	 * Read a file
 	 * @param string $file
-	 * @return bool
+	 * @return IObj
 	 */
-	public function read( $file = null ) {
-		$file = (DevValue::isNotNull($file)) ? $file : $this->path();
+	public function read( $file = null ): IObj
+	{
+		$file = (Val::isNotNull($file)) ? $file : $this->file();
+		$path = $this->path();
+		$filepath = $path.DIRECTORY_SEPARATOR.$file;
 
-		if (!$this->file()) {
+		if (!$file) {
 			$this->status("No file specified");
-			return false;
+			return $this;
 		}
 
-		if (!$this->allowedDir($file)) {
+		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
-			return false;
+			return $this;
 		}
 		
-		if ( $this->exists($file) && !$this->config('lock'))
+		if ( $this->exists($filepath) && !$this->config('lock'))
 		{
-			$this->contents(file_get_contents($file));
-			return true;
+			$this->contents(file_get_contents($filepath));
+			return $this;
 		}
 		elseif ( $this->_handle )
 		{
-			$this->contents( fread( $this->_handle, filesize($file) ) );
+			$this->contents( fread( $this->_handle, filesize($filepath) ) );
 			if ( $this->contents() === false )
 			{
 				$this->status( "File $file could not be read" );
-				return false;
+				return $this;
 			}
-			else return true;
+			else return $this;
 		}
 		else	
 		{
-			$this->status( "No such file. File does not exist\n" );
-			return false;
+			$this->status( "No such file. File does not exist" );
+			return $this;
 		}
 	}
 
 	/**
 	 * Write contents to file
-	 * @return bool
+	 * @return IObj
 	 */
-	public function write() {
+	public function write(): IObj
+	{
 		$path = $this->path();
 		$file = $this->file();
 
 		if (!$this->file()) {
 			$this->status("No file specified");
-			return false;
+			return $this;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
-			return false;
+			return $this;
 		}
 
 		$finfo = finfo_open(FILEINFO_MIME);
 
-		$content = ( substr(finfo_file($finfo, $path), 0, 4) == 'text') ? stripslashes($this->contents()) : $this->contents();
+		$filepath = $path.DIRECTORY_SEPARATOR.$file;
+
+		$content = $this->contents();
+
+		$content = ( substr(finfo_file($finfo, $filepath), 0, 4) == 'text') ? stripslashes($content) : $content;
+
 		$status = '';
-		if ($file != '' && !$this->config('lock')) {
-			if (!$this->exists($path)) $status = "File '$file' does not exist. Creating.\n";
+		if ($file && !$this->config('lock')) {
 			if (is_writable($path)) {
-				if (empty($content)) {
-					$status = "File '$file' has been created\n";
-				} elseif (!file_put_contents($path, $content) ) {
-					$status = "Cannot write to file ($file)\n";
-					//exit;
+				if ( Val::isEmpty($content) ) {
+					if (!$this->exists($filepath) && touch($filepath) ) {
+						$status = "File '$file' has been created";
+					} else {
+						$status = "File '$file' already exists";
+					}
+				} elseif ( !file_put_contents($filepath, $content) ) {
+					$status = "Cannot write to file ($file)";
 				} else {	
-					$status = "Successfully wrote to file '$file'\n";
+					$status = "Successfully wrote to file '$file'";
 				}
 			} else {
-				$status = "The file '$file' is not writable\n";
+				$status = "The file '$file' is not writable";
 			}
 		} elseif ($this->_handle) {
 			if ( fwrite($this->_handle, $content) !== false) 
 			{
-				$status = "Successfully wrote to file '$file'\n";
+				$status = "Successfully wrote to file '$file'";
 			}
 			else
 			{
-				$status = "Failed to write to file '$file'\n";
+				$status = "Failed to write to file '$file'";
 			}
 		} else {
-			$status = "No file specified for edit\n";
+			$status = "No file specified for edit";
 		}
 		
 		$this->status($status);
+
+		return $this;
 	}
 	
 	/**
 	 * Flushes the contents of a file.
 	 * 
-	 * @return boolean true if the operation is successful, false otherwise
+	 * @return IObj
 	 */
 	public function flush() {
 		$path = $this->path();
@@ -284,41 +350,45 @@ class FileSystem extends Data implements IData {
 
 		if (!$this->file()) {
 			$this->status("No file specified");
-			return false;
+			return $this;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
-			return false;
+			return $this;
 		}
 
-		$content = (!empty($this->contents()) && is_string($this->contents()) ) ? stripslashes($this->contents()) : $this->contents();
+		$filepath = $path.DIRECTORY_SEPARATOR.$file;
+
+		$content = (!empty($this->contents()) && Str::is($this->contents()) ) ? stripslashes($this->contents()) : $this->contents();
 		$status = '';
 		if ($file != '') {
-			if (!$this->exists($path)) {
-				$status = "File '$file' does not exist.\n";
+			if (!$this->exists($filepath)) {
+				$status = "File '$file' does not exist.";
 			}
-			elseif (is_writable($path) && !$this->config('lock')) {
-				if (!file_put_contents($path, "") ) {
-					$status = "Cannot empty file ($file)\n";
+			elseif (is_writable($filepath) && !$this->config('lock')) {
+				if (!file_put_contents($filepath, "") ) {
+					$status = "Cannot empty file ($file)";
 					//exit;
 				} else {	
-					$status = "Successfully emptied '$file'\n";
+					$status = "Successfully emptied '$file'";
 				}
 			} else {
-				$status = "The file '$file' is not writable\n";
+				$status = "The file '$file' is not writable";
 			}
 		} elseif ($this->_handle) {
 			if ( ftruncate($this->_handle) !== false) {
-				$status = "Successfully emptied '$file'\n";
+				$status = "Successfully emptied '$file'";
 			} else {
-				$status = "Failed to empty file '$file'\n";
+				$status = "Failed to empty file '$file'";
 			}
 		} else {
-			$status = "No file specified for edit\n";
+			$status = "No file specified for edit";
 		}
 		
 		$this->status($status);	
+
+		return $this;
 	}
 
 	/**
@@ -326,48 +396,53 @@ class FileSystem extends Data implements IData {
 	 * 
 	 * @param boolean $confirm Confirm deletion
 	 * 
-	 * @return boolean true if the operation is successful, false otherwise
+	 * @return IObj
 	 */
-	public function delete( $confirm = null ) {
+	public function delete( $confirm = null ): IObj
+	{
 		$status = false;
 		$path = $this->path();
 		$file = $this->file();
 
 		if (!$this->file()) {
 			$this->status("No file specified");
-			return false;
+			return $this;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
-			return false;
+			return $this;
 		}
 
-		$confirm = DevValue::isNotNull($confirm) ? $confirm : $this->config('doNotConfirm');
+		$filepath = $path.DIRECTORY_SEPARATOR.$file;
+
+		$confirm = Val::isNotNull($confirm) ? $confirm : $this->config('doNotConfirm');
 		
-		if ($path != '') {
+		if ($filepath) {
 			if ($confirm === true) {
-				if ($this->exists($path)) {
-					if (is_writable($path)) {
-						if (unlink($path) === false) {
-							$status = "Cannot delete file ($file)\n";
+				if ($this->exists($filepath)) {
+					if (is_writable($filepath)) {
+						if (unlink($filepath) === false) {
+							$status = "Cannot delete file ($file)";
 						} else {
-							$status = "Successfully deleted file '$file'\n";
+							$status = "Successfully deleted file '$file'";
 						}	
 					} else {
-						$status = "The file '$file' is not editable\n";
+						$status = "The file '$file' is not editable";
 					}
 				} else {
-					$status = "File '$file' does not exist\n";
+					$status = "File '$file' does not exist";
 				}
 			} else {
-				$status = "Must confirm action before file deletion\n";		
+				$status = "Must confirm action before file deletion";		
 			}
 		} else {
-			$status = "No file specified for deletion\n";
+			$status = "No file specified for deletion";
 		}
 		
 		$this->status($status);
+
+		return $this;
 	}
 	/**
 	 * Check if the file exists at the given path
@@ -375,8 +450,9 @@ class FileSystem extends Data implements IData {
 	 * @param string|null $path The path to the file, if null, the file name is obtained from the $this->file() function
 	 * @return bool True if file exists, false otherwise
 	 */
-	public function exists($path = null) {
-		$file = DevValue::isNotNull($path) ? basename($path) : $this->file();
+	public function exists($path = null): bool
+	{
+		$file = Val::isNotNull($path) ? basename($path) : $this->file();
 		$directory = dirname($path) ? realpath( dirname($path) ) : $this->path();
 
 		
@@ -395,9 +471,10 @@ class FileSystem extends Data implements IData {
 	 * 
 	 * @param array $document The file to be uploaded
 	 * @param bool $overwrite Whether to overwrite the file if it already exists
-	 * @return void
+	 * @return IObj
 	 */
-	public function upload( $document, $overwrite = false ) {
+	public function upload( $document, $overwrite = false ): IObj
+	{
 		$status = '';
 			
 		if ($document['name'] != '') {
@@ -411,23 +488,23 @@ class FileSystem extends Data implements IData {
 
 						if (!$this->allowedDir($location)) {
 							$this->status( "Location is outside of allowed path.");
-							return false;
+							return $this;
 						}
 
 						if (!$this->exists( $location ) || $overwrite) {
 							if (move_uploaded_file( $document['tmp_name'], $location )) {
-								$status = 'Upload Completed Successfully' . "\n";
+								$status = 'Upload Completed Successfully';
 							} else {
-								$status = 'Transfer aborted for file ' . basename($document['name']) . '. Could not copy file' . "\n";
+								$status = 'Transfer aborted for file ' . basename($document['name']) . '. Could not copy file';
 							}
 						} else {
-							$status = 'Transfer aborted for file ' . basename($document['name']) . '. Cannot be overwritten' . "\n"; 
+							$status = 'Transfer aborted for file ' . basename($document['name']) . '. Cannot be overwritten'; 
 						}
 					} else {
-						$status = 'Transfer aborted for file ' . basename($document['name']) . '. Not a valid file' . "\n";
+						$status = 'Transfer aborted for file ' . basename($document['name']) . '. Not a valid file';
 					}
 				} else {
-					$status = 'Upload of file ' . basename($document['name']) . ' Unsuccessful' . "\n";
+					$status = 'Upload of file ' . basename($document['name']) . ' Unsuccessful';
 				}
 			} else {
 				$status = 'File "' . basename($document['name']) . '" is not an appropriate file type. Expecting '.$type.'. Upload failed.';
@@ -435,16 +512,19 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
+
+		return $this;
 	}
 
 	/**
 	 * Filter the files based on the specified type
 	 * 
 	 * @param mixed $type (null, 'image', 'document', 'file', 'web', or an array)
-	 * @return mixed (array of file extensions or false)
+	 * @return IObj|string|array
 	 */
-	public function filter($type = null) {
-		if ( DevValue::isNull($type) ) {
+	public function filter($type = null): Obj|string|array
+	{
+		if ( Val::isNull($type) ) {
 			return $this->config('filter');
 		}
 		
@@ -473,6 +553,8 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->config('filter', $extensions);
+
+		return $this;
 	}
 
 	/**
@@ -480,10 +562,11 @@ class FileSystem extends Data implements IData {
 	 * 
 	 * @return string (regex pattern)
 	 */
-	private function filter_regex () {
+	private function filter_regex (): string
+	{
 		$type = $this->config('filter');
 		$pattern = '';
-		if ( is_array($type) ) {
+		if ( Arr::is($type) ) {
 			$pattern = "/\\" . implode('$|\\', $type) . "$/i";
 		}
 		return $pattern;
@@ -508,9 +591,16 @@ class FileSystem extends Data implements IData {
 			return false;
 		}
 
-		$filter = count($this->config('filters')) > 0 ? '/{'.implode(',*', $this->config('filters')).'}' : '/*';
+		$filters = $this->config('filter');
 
-		$files = glob($this->path().$filter, GLOB_BRACE);
+		$filter = (Val::isNotNull($filters) && Arr::size($filters) > 0) 
+			? '{'.implode(',*', $filters ?? []).'}' : '*';
+
+		$files = glob($this->path().DIRECTORY_SEPARATOR.$filter, GLOB_BRACE);
+		
+		foreach ($files as $key=>$file) {
+			$files[$key] = basename($file);
+		}
 
 		// $files = scandir($this->path());
 		
@@ -532,12 +622,15 @@ class FileSystem extends Data implements IData {
 	 *
 	 * @param string|null $data The data to set as the contents of the file
 	 *
-	 * @return string The contents of the file
+	 * @return mixed The contents of the file
 	 */
-	public function contents($data = null) {
-		if (DevValue::isNull($data)) return $this->_contents;
+	public function contents($data = null): mixed
+	{
+		if (Val::isNull($data)) return $this->_contents;
 		
 		$this->_contents = $data;
+
+		return null;
 	}
 
 	/**
@@ -549,24 +642,25 @@ class FileSystem extends Data implements IData {
 	 *
 	 * @return string A status message indicating the result of the copy
 	 */
-	public function copy( $dest, $original = null, $remove_orig = false ) {
+	public function copy( $dest, $original = null, $remove_orig = false ): IObj
+	{
 		$status = false;
 
 		if (!$original && !$this->file) {
 			$this->status("No file specified");
-			return false;
+			return $this;
 		}
 
-		$file = DevValue::isNotNull($original) ? $original : $this->path(); 
+		$file = Val::isNotNull($original) ? $original : $this->path(); 
 
 		if (!$this->allowedDir($file)) {
 			$this->status( "Location is outside of allowed path.");
-			return false;
+			return $this;
 		}
 
 		if (!$this->allowedDir($dest)) {
 			$this->status( "Destination is outside of allowed path.");
-			return false;
+			return $this;
 		}
 
 		if ($file != '') {
@@ -575,29 +669,31 @@ class FileSystem extends Data implements IData {
 					if (!$this->exists( $dest ) || $overwrite) {
 						//copy process here
 						if ($success) {
-							$status = "Successfully copied file\n";
+							$status = "Successfully copied file";
 							if ($remove_orig) {
 								$this->delete($file);
 								if (!$this->exists($this->file()))
 									$this->dirname = $dest;
 							}
 						} else {
-							$status = "Copy failed: file could not be moved\n";
+							$status = "Copy failed: file could not be moved";
 						}
 					} else {
-						$status = "Copy aborted. File cannot be overwritten\n";
+						$status = "Copy aborted. File cannot be overwritten";
 					}
 				} else {
-					$status = "File '$file' does not exist\n";
+					$status = "File '$file' does not exist";
 				}
 			} else {
-				$status = "No file destination specified or destination does not exist\n";
+				$status = "No file destination specified or destination does not exist";
 			}
 		} else {
-			$status = "No file specified for deletion\n";
+			$status = "No file specified for deletion";
 		}
 		
 		$this->status($status);
+
+		return $this;
 	}
 
 	/**
@@ -608,11 +704,14 @@ class FileSystem extends Data implements IData {
 	 * @param string $dest    The destination to move the file or directory to.
 	 * @param string $original The original file or directory to be moved. If not provided, the current file or directory will be used.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function move( $dest, $original = null) {
-			$this->copy( $dest, $original, true );
-		}
+	public function move( $dest, $original = null): IObj
+	{
+		$this->copy( $dest, $original, true );
+
+		return $this;
+	}
 
 	/**
 	 * allowedDir function
@@ -623,7 +722,8 @@ class FileSystem extends Data implements IData {
 	 *
 	 * @return bool Returns true if the directory is within the allowed base directory, and false otherwise.
 	 */
-	private function allowedDir( $path ) {
+	private function allowedDir( $path )
+	{
 		// TODO: Check against basedir restrictions
 		// $basedir = ini_get('open_basedir');
 		// if ( $basedir ) {
@@ -648,14 +748,10 @@ class FileSystem extends Data implements IData {
 			// return false;
 			$root = @realpath($this->dirname) ? @realpath($this->dirname) : ( $this->dirname ? $this->dirname : DIRECTORY_SEPARATOR );
 		}
-		if (strpos($root, DIRECTORY_SEPARATOR) !== 0 ) {
-			$root = DIRECTORY_SEPARATOR . $root;
-		}
 
 		if ( !$dir ) {
 			$dir = str_replace(array('..'.DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR.'..'), array('',''), $path);
 		}
-
 
 		$len1 = strlen($root);
 		$len2 = strlen($dir);
@@ -683,18 +779,21 @@ class FileSystem extends Data implements IData {
 	 * Create a new directory.
 	 *
 	 * @param string|null $dir The name of the directory to be created.
-	 * @return void|false
+	 * @return IObj
 	 */
-	public function mkdir( $dir = null ) {
+	public function mkdir( $dir = null ): IObj
+	{
 	    $dir = $dir ? $this->path().DIRECTORY_SEPARATOR.$dir : $this->path();
 
 	    if (!$this->allowedDir($dir)) {
 	        $this->status( "Location is outside of allowed path.");
-	        return false;
+	        return $this;
 	    }
 
 	    if (!$this->exists($dir)) {
 	        mkdir($dir);
 	    }
+
+	    return $this;
 	}
 }

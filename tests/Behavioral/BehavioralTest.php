@@ -1,30 +1,35 @@
 <?php
 namespace BlueFission\Tests\Behavioral;
 
-use BlueFission\Behavioral\Scheme;
+use BlueFission\Behavioral\Behaves;
+use BlueFission\Behavioral\Behaviors\State;
  
-class SchemeTest extends DispatcherTest {
+class BehavioralTest extends DispatcherTest {
  
- 	static $classname = 'BlueFission\Behavioral\Scheme';
+ 	static $classname = 'BlueFission\Behavioral\Behaves';
 
-	public function testEventFiredOnUnload()
-	{
-		// For some reason the handlers don't fire on unload in children, so we need to investigate why
-	}
-
-	/** 
- 	 * @expectedException InvalidArgumentException
- 	 */
 	public function testThrowsErrorOnUndefinedBehaviorPerformance()
 	{
-		// var_dump($this->object->testValue);
+		$this->expectException(\InvalidArgumentException::class);
 		$fakeBehavior = new \stdClass();
 		$this->object->perform($fakeBehavior);
 	}
 
+	public function testChecksIfMaintainsState()
+	{
+		$this->object->perform(State::DRAFT);
+		$this->assertTrue($this->object->is(State::DRAFT));
+	}
+
+	public function testChecksIfReportsState()
+	{
+		$this->object->perform(State::DRAFT);
+		$this->assertEquals(State::DRAFT, $this->object->is());
+	}
+
 	public function testChecksIfCanPerformWhenDraft()
 	{
-		$this->object->perform('IsDraft');
+		$this->object->perform(State::DRAFT);
 		
 		$this->assertTrue($this->object->can('madeupBehavior'));
 
@@ -35,7 +40,7 @@ class SchemeTest extends DispatcherTest {
 
 	public function testChecksIfCanPerformWhenNotDraft()
 	{
-		$this->object->halt('IsDraft');
+		$this->object->halt(State::DRAFT);
 
 		$this->assertFalse($this->object->can('madeupBehavior'));
 

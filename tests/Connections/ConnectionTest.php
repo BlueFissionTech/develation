@@ -2,16 +2,32 @@
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Connection;
- 
-abstract class ConnectionTest extends \PHPUnit\Framework\TestCase {
+use BlueFission\IObj;
+
+class ConnectionTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Connections\Connection';
  	static $canbetested = false;
- 	static $configuration = array();
+ 	static $configuration = [];
+ 	protected $object;
 	
 	public function setUp(): void
 	{
-		$this->object = new static::$classname();
+		$className = static::$classname;
+
+		// Check if the $classname is abstract
+		$reflection = new \ReflectionClass($className);
+		if ($reflection->isAbstract()) {
+		    $this->object = eval("
+		        return new class extends $className {
+		        	public function open(): BlueFission\IObj { return \$this; }
+		        	public function query( \$query = null ): BlueFission\IObj { return \$this; }
+		        };
+		    ");
+		    $this->object->config(static::$configuration);
+		} else {
+		    $this->object = new $className(static::$configuration);
+		}
 	}
 
 	public function testDefaultStatusIsNotConnected()
@@ -20,7 +36,7 @@ abstract class ConnectionTest extends \PHPUnit\Framework\TestCase {
 		$this->assertEquals(Connection::STATUS_NOTCONNECTED, $this->object->status() );
 	}
 
-	public function testCorrectionStatusOnSuccessfulOpen()
+	public function testConnectionStatusOnSuccessfulOpen()
 	{
 		if ( !static::$canbetested ) return;
 		$this->object->open();

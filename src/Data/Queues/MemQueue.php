@@ -70,7 +70,7 @@ class MemQueue extends Queue implements IQueue
 	 * @param string $queue
 	 * @return bool
 	 */
-	public static function is_empty($queue) {
+	public static function isEmpty($queue) {
 		$stack = self::instance();
 		$head = $stack->get($queue."_head");
 		$tail = $stack->get($queue."_tail");

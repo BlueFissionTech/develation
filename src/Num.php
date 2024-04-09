@@ -3,14 +3,14 @@
 namespace BlueFission;
 
 /**
- * Class DevNumber
+ * Class Num
  *
- * DevNumber class that extends the DevValue class and implements the IDevValue interface.
+ * Num class that extends the Val class and implements the IVal interface.
  * It is used to handle numbers and provide additional functionality, such as checking if a value is valid, 
  * calculating percentages, and automatically casting values to int or double as needed.
  *
  */
-class DevNumber extends DevValue implements IDevValue {
+class Num extends Val implements IVal {
     /**
      * @var string $_type The type of number, "integer" or "double"
      */
@@ -37,22 +37,41 @@ class DevNumber extends DevValue implements IDevValue {
     protected $_thousands = ",";
 
     /**
-     * DevNumber constructor.
+     * Num constructor.
      *
      * @param mixed|null $value The value to set, if any
      */
-    public function __construct( $value = null ) {
-		parent::__construct($value);
+    public function __construct( $value = null, bool $takeSnapshot = true, bool $convert = false  ) {
 
         $this->_data = $value;
-        if ( $this->_type && $this->_forceType == true ) {
+        if ( $this->_type && ($this->_forceType == true || $convert) ) {
             $clone = $this->_data;
             settype($clone, $this->_type);
             $remainder = $clone % 1;
             $this->_type = $remainder ? $this->_type : "integer";
             settype($this->_data, $this->_type);
         }
+
+		parent::__construct($value, $takeSnapshot);
     }
+
+    /**
+	 * Convert the value to the type of the var
+	 *
+	 * @return IVal
+	 */
+	public function convert(): IVal
+	{
+		if ( $this->_type ) {
+            $clone = $this->_data;
+            settype($clone, $this->_type);
+            $remainder = $clone % 1;
+            $this->_type = $remainder ? $this->_type : "integer";
+            settype($this->_data, $this->_type);
+        }
+
+		return $this;
+	}
 
     /**
      * Check if the value is a valid number
@@ -64,7 +83,7 @@ class DevNumber extends DevValue implements IDevValue {
     public function _is(bool $allowZero = true): bool
     {
         $number = $this->_data;
-        return (is_numeric($number) && ((DevValue::isNotEmpty($number) && $number != 0) || $allowZero));
+        return (is_numeric($number) && ((Val::isNotEmpty($number) && $number != 0) || $allowZero));
     }    
 
 	/**
@@ -72,9 +91,9 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param string $format The format to use
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
-	public function _format(string $format): DevNumber 
+	public function _format(string $format): IVal 
 	{
 		$this->_format = $format;
 
@@ -86,10 +105,10 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param int $precision The number of decimals to use
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
 
-	public function _precision(int $precision): DevNumber 
+	public function _precision(int $precision): IVal 
 	{
 		$this->_precision = $precision;
 
@@ -101,10 +120,10 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param string $decimal The decimal separator to use
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
 
-	public function _decimal(string $decimal): DevNumber
+	public function _decimal(string $decimal): IVal
 	{
 		$this->_decimal = $decimal;
 
@@ -116,9 +135,9 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param string $thousands The thousands separator to use
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
-	public function _thousands(string $thousands): DevNumber
+	public function _thousands(string $thousands): IVal
 	{
 		$this->_thousands = $thousands;
 
@@ -130,16 +149,16 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @param mixed $value The value to add
      *
-     * @return DevNumber
+     * @return IVal
      */
-    public function _add(): DevNumber
+    public function _add(): IVal
     {
     	$values = func_get_args();
 		$number = $this->_data;
-		if (!DevNumber::isValid($number)) $number = 0;
+		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
-			if (!DevNumber::isValid($value)) $value = 0;
+			if (!Num::isValid($value)) $value = 0;
 			$number += $value;
 		}
 
@@ -153,16 +172,16 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value The value to subtract
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
-	public function _subtract(): DevNumber
+	public function _subtract(): IVal
 	{
 		$values = func_get_args();
 		$number = $this->_data;
-		if (!DevNumber::isValid($number)) $number = 0;
+		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
-			if (!DevNumber::isValid($value)) $value = 0;
+			if (!Num::isValid($value)) $value = 0;
 			$number -= $value;
 		}
 
@@ -176,16 +195,16 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value The value to multiply
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
-	public function _multiply(): DevNumber
+	public function _multiply(): IVal
 	{
 		$values = func_get_args();
 		$number = $this->_data;
-		if (!DevNumber::isValid($number)) $number = 0;
+		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
-			if (!DevNumber::isValid($value)) $value = 0;
+			if (!Num::isValid($value)) $value = 0;
 			$number *= $value;
 		}
 
@@ -199,16 +218,16 @@ class DevNumber extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value The value to divide
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
-	public function _divide(): DevNumber
+	public function _divide(): IVal
 	{
 		$values = func_get_args();
 		$number = $this->_data;
-		if (!DevNumber::isValid($number)) $number = 0;
+		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
-			if (!DevNumber::isValid($value)) $value = 0;
+			if (!Num::isValid($value)) $value = 0;
 			if ($value != 0) {
 				$number /= $value;
 			}
@@ -230,8 +249,8 @@ class DevNumber extends DevValue implements IDevValue {
     public function _percentage(float $part = 0, bool $percent = false): float
     {
         $whole = $this->_data;
-        if (!DevNumber::isValid($part)) $part = 0;
-        if (!DevNumber::isValid($whole)) $whole = 1;
+        if (!Num::isValid($part)) $part = 0;
+        if (!Num::isValid($whole)) $whole = 1;
 
         $ratio = $whole/($part * 100);
 
@@ -243,9 +262,9 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @param int $precision The number of decimal places to round to
      *
-     * @return DevNumber
+     * @return IVal
      */
-    public function _round(int $precision = 0): DevNumber
+    public function _round(int $precision = 0): IVal
     {
         $value = round($this->_data, $precision);
 
@@ -257,9 +276,9 @@ class DevNumber extends DevValue implements IDevValue {
     /**
      * Get the absolute value of the number
      *
-     * @return DevNumber
+     * @return IVal
      */
-    public function _abs(): DevNumber
+    public function _abs(): IVal
     {
         $value = abs($this->_data);
 
@@ -271,11 +290,11 @@ class DevNumber extends DevValue implements IDevValue {
     /**
      * Get the square of the number
      *
-     * @return DevNumber
+     * @return IVal
      */
-    public function _square(): DevNumber
+    public function _square(): IVal
     {
-        $value = $this->pow(2)->value();
+        $value = $this->pow(2)->val();
 
         $this->alter($value);
 
@@ -287,9 +306,9 @@ class DevNumber extends DevValue implements IDevValue {
  	 *
  	 * @param int $power The power to raise the number to
  	 *
- 	 * @return DevNumber
+ 	 * @return IVal
  	 */
- 	public function _pow($power): DevNumber
+ 	public function _pow($power): IVal
  	{
         $value = pow($this->_data, $power);
 
@@ -301,9 +320,9 @@ class DevNumber extends DevValue implements IDevValue {
     /**
      * Get the square root of the number
      *
-     * @return DevNumber
+     * @return IVal
      */
-    public function _squareRoot(): DevNumber 
+    public function _squareRoot(): IVal 
     {
         $value = sqrt($this->_data);
 
@@ -317,9 +336,9 @@ class DevNumber extends DevValue implements IDevValue {
      *
      * @param float $base The base of the logarithm
      *
-     * @return DevNumber
+     * @return IVal
      */
-    public function _log(float $base = M_E): DevNumber
+    public function _log(float $base = M_E): IVal
     {
         $value = log($this->_data, $base);
 
@@ -331,9 +350,9 @@ class DevNumber extends DevValue implements IDevValue {
     /**
      * Get the exponential of the number
      *
-     * @return DevNumber
+     * @return IVal
      */
-    public function _exp(): DevNumber
+    public function _exp(): IVal
     {
         $value = exp($this->_data);
 
@@ -341,6 +360,106 @@ class DevNumber extends DevValue implements IDevValue {
 
         return $this;
     }
+
+    /**
+     * Set or return the decimal representation of a number
+     * 
+     * @return mixed | Num
+     */
+    public function _dec(): mixed
+    {
+    	$values = func_get_args();
+    	if ( Arr::count($values) ) {
+    		$this->_data = $values[0];
+    		return $this;
+    	}
+
+    	return $this->_data;
+    }
+
+    /**
+	 * Set or return the binary representation of a number
+	 * 
+	 * @return string | Num
+	 */
+    public function _bin(): string|Num
+    {
+    	$values = func_get_args();
+    	if ( Arr::count($values) ) {
+			$this->_data = bindec($values[0]);
+			return $this;
+		}
+
+    	return decbin($this->_data);
+	}
+
+	/**
+	 * Set or return the hexadecimal representation of a number
+	 * 
+	 * @return string | Num
+	 */
+	public function _hex(): string|Num
+	{
+		$values = func_get_args();
+		if ( Arr::count($values) ) {
+			$this->_data = hexdec($values[0]);
+			return $this;
+		}
+
+		return dechex($this->_data);
+	}
+
+	/**
+	 * Set or return the octal representation of a number
+	 * 
+	 * @return string | Num
+	 */
+	public function _oct(): string|Num
+	{
+		$values = func_get_args();
+		if ( Arr::count($values) ) {
+			$this->_data = octdec($values[0]);
+			return $this;
+		}
+
+		return decoct($this->_data);
+	}
+
+	/**
+	 * Set or return the Roman numeral representation of a number
+	 * 
+	 * @return string | Num
+	 */
+	public function _rom(): string|Num
+	{
+	    $values = func_get_args();
+	    $rules = ['M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400, 'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40, 'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1];
+	    
+	    if (count($values)) {
+	        // Convert Roman numeral to int
+	        $roman = strtoupper($values[0]);
+	        $result = 0;
+	        foreach ($rules as $key => $value) {
+	            while (strpos($roman, $key) === 0) {
+	                $result += $value;
+	                $roman = substr($roman, strlen($key));
+	            }
+	        }
+	        $this->_data = $result;
+	        return $this;
+	    } else {
+	        // Convert int to Roman numeral
+	        $number = (int)$this->_data;
+	        $result = '';
+	        foreach ($rules as $key => $value) {
+	            while ($number >= $value) {
+	                $result .= $key;
+	                $number -= $value;
+	            }
+	        }
+	        return $result;
+	    }
+	}
 
     /**
      * Get the minimum of two numbers
@@ -377,9 +496,9 @@ class DevNumber extends DevValue implements IDevValue {
 	/**
 	 * Increment value by one
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
-	public function _increment(): DevNumber
+	public function _increment(): IVal
 	{
 		$number = $this->_data;
 		$number++;
@@ -391,9 +510,9 @@ class DevNumber extends DevValue implements IDevValue {
 	/**
 	 * Decrement value by one
 	 *
-	 * @return DevNumber
+	 * @return IVal
 	 */
-	public function _decrement(): DevNumber
+	public function _decrement(): IVal
 	{
 		$number = $this->_data;
 		$number--;

@@ -1,8 +1,9 @@
 <?php
 namespace BlueFission\HTML;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Obj;
 use BlueFission\Behavioral\Configurable;
 
 /**
@@ -12,7 +13,12 @@ use BlueFission\Behavioral\Configurable;
  *
  * @package BlueFission\HTML
  */
-class Table extends Configurable {
+class Table extends Obj {
+	use Configurable {
+		Configurable::__construct as private __configConstruct;
+	}
+
+
 	/**
 	 * @var array $_content Stores the content of the table
 	 */
@@ -21,20 +27,20 @@ class Table extends Configurable {
 	/**
 	 * @var array $_config The default configuration options for the table
 	 */
-	protected $_config = array(
+	protected $_config = [
 		'columns'=>'',
 		'href'=>'',
 		'query'=>'',
 		'highlight'=>'#efefef',
-		'headers'=>array(),
+		'headers'=>[],
 		'link_style'=>'',
 		'show_image'=>false,
 		'img_dir'=>'images/',
 		'document_dir'=>'documents/',
 		'icon'=>'',
 		'truncate'=>'',
-		'fields'=>array(),
-	);
+		'fields'=>[],
+	];
 
 	/**
 	 * Table constructor
@@ -42,7 +48,7 @@ class Table extends Configurable {
 	 * @param null $config Configuration options for the table
 	 */
 	public function __construct( $config = null ) {
-		parent::__construct( $config );
+		$this->__configConstruct( $config );
 	}
 
 	/**
@@ -53,8 +59,8 @@ class Table extends Configurable {
 	 * @return mixed The content of the table
 	 */
 	public function content( $content = null ) {
-		if (DevValue::isNotNull($content)) {
-			$content = DevArray::toArray($content);
+		if (Val::isNotNull($content)) {
+			$content = Arr::toArray($content);
 			$this->_content = $content;
 		}
 		return $this->_content;
@@ -69,7 +75,7 @@ class Table extends Configurable {
 		$header = $this->config('headers');
 		$trunc = $this->config('truncate');
 		$file_dir = $this->config('document_dir');
-		$cols = $this->config('columns');
+		$cols = (int)($this->config('columns') ?? Arr::size($this->config('headers'))) - 1;
 		$link_style = $this->config('link_style');
 		// $href = $this->config('href');
 		// $fields = $this->config('fields');
@@ -84,20 +90,20 @@ class Table extends Configurable {
 		$href = HTML::href($href);
 		$count = 0;
 		$new_row = 1;
-		
+
 		foreach ($content_r as $row) {
 			$fields = ($fields != '' && $fields >= 0 && $fields < count( $row )) ? $fields : count( $row );
 
 			if ($count == 0) {
 				if ($header !== false) {
 					$header = (is_array($header) && count($header) == count($row)) ? $header : $row;
-					if (DevArray::isAssoc($header)) $header = array_keys($header);
+					if (Arr::isAssoc($header)) $header = array_keys($header);
 					$output .= '<tr>';
 					$i = 0;
 					foreach ($header as $a) {
-						if ($i == 0 && $link_style != 1 && $link_style !== 0) {
+						if ($i == 0 && $link_style !== 1 && $link_style !== 0) {
 							$output .= '<th>';
-							$output .= '';
+							$output .= $a;
 							$output .= "</th>";
 						}
 						if ($i > 0) {
@@ -108,7 +114,7 @@ class Table extends Configurable {
 						$i++;
 						if ($i > $fields) break;
 					}
-					$output .= "</tr>\n";
+					$output .= "</tr>";
 				}
 			}
 			
@@ -120,10 +126,9 @@ class Table extends Configurable {
 			$i = 0;
 			
 			foreach ($row as $a=>$b) {
-				
-				if ($i > 0 || ($header === false && $link_style != 1)) {
+				if ($i > 0 || ($link_style !== 1 && $link_style !== 0)) {
 					if (!($icon != '' && $fields == 2 && $i == 2)) $output .= '<td>';
-					if (($i == 1 || ($icon != '' && $i = 2)) && $link_style == 1) $output .= '<a class="contentBox" href="' . $href . '?' . $varname . '=' . $value . ((DevArray::isAssoc($query_r)) ? '&' . http_build_query($query_r) : '') . '">';
+					if (($i == 1 || ($icon != '' && $i = 2)) && $link_style == 1) $output .= '<a class="contentBox" href="' . $href . '?' . $varname . '=' . $value . ((Arr::isAssoc($query_r)) ? ('&' . http_build_query($query_r)) : '') . '">';
 					if (!$show_image || $trunc != '') $data = HTML::format($b, '', $trunc);
 					else $data = $b;
 					if ($i != 1) $data = HTML::file($data, $file_dir);
@@ -136,14 +141,14 @@ class Table extends Configurable {
 					if ($link_style == 2) {
 						$output .= '<td>';
 						$output .= Form::open($href) . Form::field('hidden', $a, '', $b) . Form::field('submit', 'submit', '', 'Go'); 
-						if (DevArray::isAssoc($query_r)) foreach ($query_r as $c=>$d) $output .= Form::feld('hidden', $c, '', $d);
+						if (Arr::isAssoc($query_r)) foreach ($query_r as $c=>$d) $output .= Form::feld('hidden', $c, '', $d);
 						$output .= Form::close();
 						$output .= "</td>";
 					} elseif ($link_style == 3) {
 						$output .= '<td>';
 						
 						$output .= Form::field('checkbox', $a . '[]', '', $b);
-						if (DevArray::isAssoc($query_r)) foreach ($query_r as $c=>$d) $output .= Form::field('hidden', $c, '', $d);
+						if (Arr::isAssoc($query_r)) foreach ($query_r as $c=>$d) $output .= Form::field('hidden', $c, '', $d);
 						
 						$output .= "</td>";
 					} else {
@@ -152,20 +157,23 @@ class Table extends Configurable {
 					}			
 				}
 				$i++;
-				if ($i > $fields) break;
-			}		
-			
-			$output .= "\n";
+				if ($i > $fields) {
+					break;
+				}
+			}
+
+			$hori = $i;
+
 			if ($hori < $cols) {
 				$hori++;
 			} else {
-				$output .= "</tr>\n";
+				$output .= "</tr>";
 				$hori = 0;
 			}
 			$count++;
 		}
-		if ($hori != 0) $output .= "</tr>\n";
-		$output .= "</table>\n";
+		if ($hori != 0) $output .= "</tr>";
+		$output .= "</table>";
 		
 		return $output;
 	}

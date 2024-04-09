@@ -2,8 +2,9 @@
 namespace BlueFission\Connections\Database;
 
 use BlueFission\Connections\Connection;
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\IObj;
 use MongoDB\BSON\Javascript;
 use MongoDB\Client;
 use Exception;
@@ -89,7 +90,7 @@ class MongoLink extends Connection
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
-		if (DevValue::isNull(self::$_database))
+		if (Val::isNull(self::$_database))
 			self::$_database = array();
 		else
 			$this->_current = end ( self::$_database );
@@ -100,9 +101,9 @@ class MongoLink extends Connection
 	/**
 	 * Opens a connection to the MongoDB database
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function open()
+	public function open(): IObj
 	{
 		$host = ( $this->config('target') ) ? $this->config('target') : 'localhost';
 		$username = $this->config('username');
@@ -111,7 +112,7 @@ class MongoLink extends Connection
 		
 		$connection_id = count(self::$_database);
 
-		if ( !class_exists('MongoDB\Client') ) return;
+		if ( !class_exists('MongoDB\Client') ) return $this;
 
 		try {
 			$mongo = new Client("mongodb://{$username}:{$password}@{$host}:27017");
@@ -123,15 +124,19 @@ class MongoLink extends Connection
 		}
 
 		$this->status( $this->error() ? $this->error() : self::STATUS_CONNECTED );
+
+		return $this;
 	}
 		
 	/**
 	 * Close the connection to the MongoDB server.
 	 */
-	public function close()
+	public function close(): IObj
 	{
 		$this->_connection = null;
 		$this->status(self::STATUS_DISCONNECTED);
+
+		return $this;
 	}
 
 	/**
@@ -139,23 +144,24 @@ class MongoLink extends Connection
 	 *
 	 * @param mixed $query The query to be executed.
 	 *
-	 * @return bool Whether the query was successful.
+	 * @return IObj
 	 */
-	public function query( $query = null) {
+	public function query( $query = null): IObj
+	{
 		$db = $this->_connection;
 
 		if ( $db )
 		{
-			if (DevValue::isNotNull($query))
+			if (Val::isNotNull($query))
 			{
 				$this->_query = $query;
 
-				if (DevArray::isAssoc($query))
+				if (Arr::isAssoc($query))
 				{
 					$this->_dataset = null;
 					$this->_data = $query;
 				}
-				else if ( is_array($query) && !DevArray::isAssoc($query) )
+				else if ( is_array($query) && !Arr::isAssoc($query) )
 				{
 					$this->_dataset = $query;
 					$this->_data = $query[0];
@@ -165,7 +171,7 @@ class MongoLink extends Connection
 					$this->_result = $db->command(json_decode($query));
 					$this->status( $this->error() ? $this->error() : self::STATUS_SUCCESS );
 
-					return true;
+					return $this;
 				}
 			}
 
@@ -186,19 +192,18 @@ class MongoLink extends Connection
 			$result = false;
 
 			try {
-				$result = $this->post($collection, $data, $filter, $type);	
+				$this->post($collection, $data, $filter, $type);	
 			} catch( Exception $e ) {
 				$error = $e->getMessage();
 				$this->status($error);
 			}
-
-			return $result;
 		}
 		else
 		{
 			$this->status( self::STATUS_NOTCONNECTED );
-			return false;
-		}	
+		}
+
+		return $this;
 	}
 
 	/**
@@ -207,29 +212,28 @@ class MongoLink extends Connection
 	 * @param string $collection The name of the collection.
 	 * @param mixed  $data       The data to search for.
 	 *
-	 * @return bool Whether the find operation was successful.
+	 * @return IObj
 	 */
-	public function find($collection, $data) {
+	public function find($collection, $data): IObj
+	{
 		$status = self::STATUS_NOTCONNECTED;
 		
 		$db = $this->_connection;
 		$success = false;
 
-		if ( DevValue::isNotNull($db) ) {				
+		if ( Val::isNotNull($db) ) {				
 			$document = $db->{$collection}->find($data);
-
-			$success = ( $document ) ? true : false;
 
 			$this->_result = $document;
 		} else {
 			$this->status( $status );
-			return $success;
+			return $this;
 		}
 		
 		$status = ($success) ? $db->error : self::STATUS_SUCCESS;
 		$this->status($status);
 		
-		return $success;
+		return $this;
 	}
 
 	/**
@@ -237,9 +241,9 @@ class MongoLink extends Connection
 	 *
 	 * @param string $collection The name of the collection
 	 * @param array &$data The data to be inserted
-	 * @return bool true on success, false otherwise
+	 * @return IObj
 	 */
-	private function insert($collection, &$data) 
+	private function insert($collection, &$data): IObj
 	{
 		$status = self::STATUS_NOTCONNECTED;
 		
@@ -263,13 +267,13 @@ class MongoLink extends Connection
 		else
 		{
 			$this->status( self::STATUS_NOTCONNECTED );
-			return $success;
+			return $this;
 		}
 		
 		$status = ($success) ? $db->error : self::STATUS_SUCCESS;
 		$this->status($status);
 		
-		return $success;
+		return $this;
 	}
 
 	/**
@@ -279,16 +283,16 @@ class MongoLink extends Connection
 	 * @param array &$data The data to be updated
 	 * @param array $filter The filter used to determine which data to update
 	 * @param bool $replace Whether to replace the data or not
-	 * @return bool true on success, false otherwise
+	 * @return IObj
 	 */
-	private function update($collection, &$data, $filter, $replace = false) 
+	private function update($collection, &$data, $filter, $replace = false): IObj
 	{
 		$status = self::STATUS_NOTCONNECTED;
 
 		$db = $this->_connection;
 		$success = false;
 
-		if (DevValue::isNotNull($db)) {
+		if (Val::isNotNull($db)) {
 			if ($replace){
 				$success = ( $db->{$collection}->replaceMany($filter, $data) ) ? true : false;
 			} else {
@@ -302,11 +306,11 @@ class MongoLink extends Connection
 			$status = ($success) ? $this->error() : self::STATUS_SUCCESS;
 		} else {
 			$this->status( $status );
-			return $success;
+			return $this;
 		}
 		
 		$this->status($status);
-		return $success;
+		return $this;
 	}
 
 	/**
@@ -317,9 +321,9 @@ class MongoLink extends Connection
 	 * @param string $filter A string containing the conditions to be met for the update
 	 * @param int $type Specifies the type of query to be executed (INSERT, UPDATE, REPLACE)
 	 * 
-	 * @return bool Returns true if the operation is successful, false otherwise
+	 * @return IObj
 	 */
-	private function post($collection, $data, $filter = null, $type = null) 
+	private function post($collection, $data, $filter = null, $type = null): IObj
 	{
 		$db = $this->_connection;
 		$status = '';
@@ -391,17 +395,18 @@ class MongoLink extends Connection
 		
 		$this->_last_row = $last_row ? $last_row : $this->_last_row;
 
-		return $success;
+		return $this;
 	}
 
 	/**
 	 * Deletes documents from the specified collection.
 	 *
 	 * @param string $collection Collection name
-	 * @param array $data DevArray of data to delete
-	 * @return bool success status
+	 * @param array $data Arr of data to delete
+	 * @return IObj
 	 */
-	public function delete($collection, $data) {
+	public function delete($collection, $data): IObj
+	{
 		$status = self::STATUS_NOTCONNECTED;
 
 		$db = $this->_connection;
@@ -415,11 +420,13 @@ class MongoLink extends Connection
 			$status = ($success) ? $this->error() : self::STATUS_SUCCESS;
 		} else {
 			$this->status( $status );
-			return $success;
+			
+			return $this;
 		}
 		
 		$this->status($status);
-		return $success;
+		
+		return $this;
 	}
 
 	/** Performs a MapReduce operation on the specified collection.
@@ -430,7 +437,8 @@ class MongoLink extends Connection
 	 * @param string $action Action to perform on the output collection
 	 * @return array Result of the operation
 	 */
-	public function mapReduce( $map, $reduce, $output, $action = 'replace' ) {
+	public function mapReduce( $map, $reduce, $output, $action = 'replace' )
+	{
 		$db = $this->_connection;
 
 		// construct map and reduce functions
@@ -457,7 +465,8 @@ class MongoLink extends Connection
 	 *
 	 * @return mixed Current connection
 	 */
-	public function connection() {
+	public function connection()
+	{
 		return $this->_current;
 	}
 
@@ -492,7 +501,7 @@ class MongoLink extends Connection
 	 */
 	public function database( $database = null )
 	{
-		if ( DevValue::isNull( $database ) ) {
+		if ( Val::isNull( $database ) ) {
 			return $this->config('database');
 		}
 
@@ -500,7 +509,6 @@ class MongoLink extends Connection
 		$this->config('database', $database);
 		// $this->open();
 		$this->_connection = ($this->config('database') ? $this->_current->{$this->config('database')} : null);
-
 	}
 
 	/**

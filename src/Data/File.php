@@ -34,11 +34,11 @@ class File extends Hierarchical
      *
      * @param string|null $data
      *
-     * @return string|null
+     * @return mixed
      */
-    public function contents($data = null)
+    public function contents($data = null): mixed
     {
-        if (DevValue::isNull($data)) {
+        if (Val::isNull($data)) {
             return $this->_contents;
         }
 
@@ -50,15 +50,17 @@ class File extends Hierarchical
      *
      * @param string $data
      */
-    public function append($data)
+    public function append($data): IObj
     {
         $this->_contents .= $data;
+
+        return $this;
     }
 
     /**
      * Write the contents of the file to storage
      */
-    public function write()
+    public function write(): IObj
     {
         if ( method_exists($this->_root, 'write') ) // or is callable?
         {
@@ -69,5 +71,7 @@ class File extends Hierarchical
             $this->_root->contents( $this->contents() );
             $this->_root->write();
         }
+
+        return $this;
     }
 }

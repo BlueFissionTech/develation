@@ -1,10 +1,11 @@
 <?php
 namespace BlueFission\Data\Storage;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
-use BlueFission\DevString;
-use BlueFission\DevDateTime;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Str;
+use BlueFission\Date;
+use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Connections\Database\MysqlLink;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -34,7 +35,7 @@ use BlueFission\Data\Storage\Behaviors\StorageAction;
  */
 class Mysql extends Storage implements IData
 {
-	protected $_config = array(
+	protected $_config = [
 		'location'=>null,
 		'name'=>'',
 		'fields'=>'',
@@ -44,19 +45,19 @@ class Mysql extends Storage implements IData
 		'temporary'=>false,
 		'set_defaults'=>false,
 		'key'=>'',
-	);
+	];
 
 	private $_last_row_affected;
 	protected $_result;
 		
 	//declare query parts
-	private $_tables = array();
-	private $_fields = array();
-	private $_relations = array();
-	private $_conditions = array();
-	private $_order = array();
-	private $_aggregate = array();
-	private $_distinctions = array();
+	private $_tables = []
+	private $_fields = []
+	private $_relations = []
+	private $_conditions = []
+	private $_order = []
+	private $_aggregate = []
+	private $_distinctions = []
 	private $_query;
 
 	protected $_row_start = 0;
@@ -75,9 +76,9 @@ class Mysql extends Storage implements IData
 	/**
 	 * Activates the object by initializing the database connection and loading the object fields and related data.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function activate()
+	public function activate(): IObj
 	{
 		$this->_source = new MysqlLink( );
 		$this->_source->database( $this->config('location') );
@@ -86,6 +87,8 @@ class Mysql extends Storage implements IData
 		
 		if (!$this->_source) 
 			$this->status(self::STATUS_FAILED_INIT);
+
+		return $this;
 	}
 
 	/**
@@ -125,13 +128,13 @@ class Mysql extends Storage implements IData
 	/**
 	 * Writes the data to the database.
 	 *
-	 * @return boolean - Returns true on success, false otherwise
+	 * @return IObj
 	 */
-	public function write()
+	public function write(): IObj
 	{
 		$db = $this->_source;
 		$status = self::STATUS_FAILED;
-		$keys = array();
+		$keys = []
 		$success = true;
 
 		if (!$this->tables() || !$this->fields()) {
@@ -142,7 +145,7 @@ class Mysql extends Storage implements IData
 
 		if ( count($tables) < 1 ) {
 			$this->status( self::STATUS_FAILED );
-			return false;
+			return $this;
 		}
 
 		$table = $tables[0];
@@ -201,19 +204,18 @@ class Mysql extends Storage implements IData
 			//$status = $success ? self::STATUS_FAILED : self::STATUS_SUCCESS;
 
 			if (!$affected_row && $success && $key) {
-				$affected_row = DevValue::isNotNull($this->_data[$key]) ? $this->_data[$key] : $db->last_row();
+				$affected_row = Val::isNotNull($this->_data[$key]) ? $this->_data[$key] : $db->last_row();
 				$this->_last_row_affected = $affected_row;
 			}
 
 			$status = $success ? self::STATUS_SUCCESS : $db->status();
 			$this->status( $status );
-			if (!$success) {
-				return false;
-			} else {
+			if ($success) {
 				$this->id($this->lastRow());
-				return true;
 			}
 		}
+		
+		return $this;
 	}
 
 	/**
@@ -221,36 +223,37 @@ class Mysql extends Storage implements IData
 	 *
 	 * @return int The last affected row of the query.
 	 */
-	public function lastRow() {
+	public function lastRow()
+	{
 		return $this->_last_row_affected;
 	}
 
 	/**
 	 * Executes a read query to retrieve data from the database.
 	 *
-	 * @return array|bool The result of the query or false if the query failed.
+	 * @return IObj
 	 */
-	public function read()
+	public function read(): IObj
 	{
 		$tables = $this->tables();
 		if ( count($tables) < 1 ) {
 			$this->status( self::STATUS_FAILED );
-			return false;
+			return $this;
 		}
 		$table = $tables[0];
-		$fields = array();
+		$fields = []
 		$data = $this->data();
-		$active_fields = $this->config('fields') != '' ? DevArray::toArray( $this->config('fields') ) : array();
+		$active_fields = $this->config('fields') != '' ? Arr::toArray( $this->config('fields') ) : []
 		$field_info = $this->fields();
 		
 		$relations = $this->_relations;
-		$using = array();
-		$join = array();
-		$on = array();
+		$using = []
+		$join = []
+		$on = []
 		
-		$distinct = array();
+		$distinct = []
 		$where = array('1');
-		$sort = array();
+		$sort = []
 		
 		foreach ($data as $a=>$b) 
 		{
@@ -287,7 +290,7 @@ class Mysql extends Storage implements IData
 						$field = $this->arrayKeyIntersect($this->table($table), $join);
 						foreach ($field as $b=>$c) 
 						{
-							if (in_array($b, $active_fields) || DevValue::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
+							if (in_array($b, $active_fields) || Val::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
 						}
 					}
 					if (count($relations) > 0) 
@@ -345,7 +348,7 @@ class Mysql extends Storage implements IData
 		if ( count ( $this->tables() ) > 1 )
 			$left_join .= "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
 		
-		$select = array();
+		$select = []
 		foreach($active_fields as $a) 
 		{
 			if ($this->exists($a)){
@@ -371,8 +374,10 @@ class Mysql extends Storage implements IData
 		$start = $this->start();
 		$end = $this->end();
 		$result = false;
-		$query .= ((DevValue::isNotEmpty($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotEmpty($end)) ? ", " . $this->end() : '') : '');
+		$query .= ((Val::isNotEmpty($start)) ? " LIMIT " . $this->start() . ((Val::isNotEmpty($end)) ? ", " . $this->end() : '') : '');
 		$this->run($query);
+
+		return $this;
 	}
 
 	/**
@@ -380,13 +385,13 @@ class Mysql extends Storage implements IData
 	 * 
 	 * @param string $query The query to be executed
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function run( $query = "" )
+	public function run( $query = null ): IObj
 	{
 		$db = $this->_source;
 		
-		if ( $query == "" ) {
+		if ( !$query ) {
 			$query = $this->_query;
 		}
 
@@ -409,32 +414,34 @@ class Mysql extends Storage implements IData
 				$this->_result->data_seek(0);
 			}
 		}
+
+		return $this;
 	}
 	
 	/**
 	 * Deletes a record from the database
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function delete()
+	public function delete(): IObj
 	{
 		$db = $this->_source;
 		
 		$tables = $this->tables();
 		$table = $tables[0];
-		$fields = array();
+		$fields = []
 		$data = $this->data();
-		$active_fields = DevArray::toArray( $this->config('fields') );
+		$active_fields = Arr::toArray( $this->config('fields') );
 		$field_info = $this->fields();
 		
 		$relations = $this->_relations;
-		$using = array();
-		$join = array();
-		$on = array();
+		$using = []
+		$join = []
+		$on = []
 		
-		$distinct = array();
+		$distinct = []
 		$where = array('1');
-		$sort = array();
+		$sort = []
 		
 		foreach ($data as $a=>$b) 
 		{
@@ -462,12 +469,12 @@ class Mysql extends Storage implements IData
 			if ( $a != $table )
 			{
 				$join = $this->table($a);
-				if (is_array($join)) 
+				if (Arr::is($join)) 
 				{
 					$field = $this->arrayKeyIntersect($this->table($table), $join);
 					foreach ($field as $b=>$c) 
 					{ 
-						if (in_array($b, $active_fields) || DevValue::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
+						if (Arr::has($active_fields, $b) || Val::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
 					}
 	
 					if (count($relations) > 0) 
@@ -483,7 +490,7 @@ class Mysql extends Storage implements IData
 						$b = $tables[$i];
 						if ($a != $b) {
 							$join_2 = $this->table($b);
-							if (is_array($join_2)) {
+							if (Arr::is($join_2)) {
 								$fields = $this->arrayKeyIntersect($this->table($a), $join_2);
 								foreach ($fields as $c=>$d) {
 									$on[] = $a . ".$c  = $b.$c";
@@ -491,7 +498,7 @@ class Mysql extends Storage implements IData
 							}
 							
 							$join_2 = $this->arrayKeyIntersect($this->table($b), $relations);
-							if (is_array($join_2)) {	
+							if (Arr::is($join_2)) {	
 								$fields = $this->arrayKeyIntersect($this->tables($a), $join_2);
 								foreach ($fields as $c=>$d) {
 									$on[] = $a . ".$c  = $b.$c";
@@ -516,7 +523,7 @@ class Mysql extends Storage implements IData
 		if ( count ( $this->tables() ) > 1 )
 		$left_join = "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
 		
-		// $select = array();
+		// $select = []
 		// foreach($active_fields as $a) if ($this->exists($a)) $select[] = $field_info[$a]['Table'].'.'.$a;
 		// if (count($select) <= 0) $select_r[] = '*';
 
@@ -530,14 +537,14 @@ class Mysql extends Storage implements IData
 		//$start = $this->start();
 		//$end = $this->end();
 
-		//$query .= ((DevValue::isNotNull($start)) ? " LIMIT " . $this->start() . ((DevValue::isNotNull($end)) ? ", " . $this->end() : '') : '');
+		//$query .= ((Val::isNotNull($start)) ? " LIMIT " . $this->start() . ((Val::isNotNull($end)) ? ", " . $this->end() : '') : '');
 
 		$db->query($query);
 		$this->_query =$db->stats()['query'];
 		$result = $db->result();
 		$this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 		
-		//$this->_result = $result;
+		return $this;
 	}
 	
 	/**
@@ -547,19 +554,19 @@ class Mysql extends Storage implements IData
 	 * option, or from the name of the class if `self::NAME_FIELD` is not set.
 	 * The data types of each column in the table are inferred from the values in this object.
 	 * 
-	 * @return null
+	 * @return IObj
 	 */
-	private function create()
+	private function create(): IObj
 	{
 		$db = $this->_source;
-		//$tables = DevArray::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
-		$tables = DevArray::toArray( $this->config(self::NAME_FIELD) );
+		//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
+		$tables = Arr::toArray( $this->config(self::NAME_FIELD) );
 		$this->config(self::NAME_FIELD, $tables);
 
 		if ( MysqlLink::tableExists( current( $this->config(self::NAME_FIELD) ) ) )
-			return null;
+			return $this;
 		
-		$types = array();
+		$types = []
 		$key = '';
 		foreach ($this->_data as $a=>$b)
 		{
@@ -574,18 +581,18 @@ class Mysql extends Storage implements IData
 					}
 					elseif (is_string($b))
 					{
-						if ( DevDateTime::is( $b ) )
+						if ( Date::is( $b ) )
 							$type = "DATETIME";
 						else
 						{
-							$length = DevValue::isNotNull($b) ? (int)(strlen($b)*1.3) : 90; 
+							$length = Val::isNotNull($b) ? (int)(strlen($b)*1.3) : 90; 
 							$type = "VARCHAR(".$length.")";
 						}
 					}
 				}
 				else
 				{
-					if (DevArray::isAssoc($b) || is_object($b))
+					if (Arr::isAssoc($b) || is_object($b))
 					{
 						$type = "TEXT";
 					}
@@ -609,7 +616,7 @@ class Mysql extends Storage implements IData
 				{
 					$type = "DATE";
 				}
-				elseif ( strtolower(substr( $a, -2)) == 'id' )
+				elseif ( Str::lower(Str::sub( $a, -2)) == 'id' )
 				{
 					$type = "INT";
 				}
@@ -624,7 +631,7 @@ class Mysql extends Storage implements IData
 				$type .= " DEFAULT ".MysqlLink::sanitize($b);
 			}
 			
-			if ( strtolower(substr( $a, -2)) == 'id' && $type == "INT" && $key == '')
+			if ( Str::lower(Str::sub( $a, -2)) == 'id' && $type == "INT" && $key == '')
 			{
 				$key = $a;
 				$type .= " NOT NULL AUTO_INCREMENT, PRIMARY KEY($key)";
@@ -656,6 +663,8 @@ class Mysql extends Storage implements IData
 
 		$status = ( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 		$this->status($status);
+
+		return $this;
 	}
 	
 	/**
@@ -665,7 +674,7 @@ class Mysql extends Storage implements IData
 	 * 
 	 * @return mixed The contents of the data
 	 */
-	public function contents( $data = null )
+	public function contents( $data = null ): mixed
 	{
 		$data = ($this->_result) ? $this->_result : $this->data();
 
@@ -683,7 +692,7 @@ class Mysql extends Storage implements IData
 		// var_dump($this->config('name'));
 		//if (!$this->_fields || count( $this->config(self::NAME_FIELD) ) > 0 )
 		
-		$tableDiff = array_merge(array_diff($this->tables(), DevArray::toArray($this->config('name'))), array_diff(DevArray::toArray($this->config('name')), $this->tables()));
+		$tableDiff = Arr::merge(Arr::diff($this->tables(), Arr::toArray($this->config('name'))), Arr::diff(Arr::toArray($this->config('name')), $this->tables()));
 		if ( count($tableDiff) > 0 ) {
 			$this->_fields = [];
 		}
@@ -691,16 +700,16 @@ class Mysql extends Storage implements IData
 		// TODO make sure this works as expected and it actually compares the arrays
 		if ( !$this->_fields )
 		{
-			$data = array();
-			//$tables = DevArray::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
+			$data = []
+			//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
 			$tables = $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : ( $this->tables() ? $this->tables() : get_class($this) );
 
-			$tables = DevArray::toArray( $tables );
+			$tables = Arr::toArray( $tables );
 			//if ( MysqlLink::tableExists( current( $tables ) ) )
-				//return array();
+				//return []
 			
 			$this->perform( State::DRAFT );
-			$active_fields = DevArray::toArray( $this->config('fields') );
+			$active_fields = Arr::toArray( $this->config('fields') );
 			foreach ($tables as $table)
 			{
 				$query = "SHOW COLUMNS FROM `$table`";
@@ -715,8 +724,8 @@ class Mysql extends Storage implements IData
 					while ($column = $result->fetch_assoc()) 
 					{
 						$fields[$column['Field']] = $column;
-						if ( in_array($column['Field'], $active_fields) || $this->is(State::DRAFT) ) {
-							$this->_data[$column['Field']] = isset( $this->_data[$column['Field']] ) ? $this->_data[$column['Field']] : $column['Default'];
+						if ( Arr::has($active_fields, $column['Field']) || $this->is(State::DRAFT) ) {
+							$this->_data[$column['Field']] = Val::is( $this->_data[$column['Field']] ) ? $this->_data[$column['Field']] : $column['Default'];
 						}
 					}
 					$this->_fields[$table] = $fields;
@@ -728,7 +737,7 @@ class Mysql extends Storage implements IData
 			$this->halt( State::DRAFT );
 			$this->perform( Event::CHANGE );
 		}
-		$fields = array();
+		$fields = []
 
 		reset($this->_fields);
 		// while ($table = each($this->_fields))
@@ -737,7 +746,7 @@ class Mysql extends Storage implements IData
 		{
 			$table = $value;
 			// $table = $this->_fields[$i]['value'];
-			$fields = array_merge($fields, $table);
+			$fields = Arr::merge($fields, $table);
 		}
 		reset($this->_fields);
 
@@ -751,7 +760,7 @@ class Mysql extends Storage implements IData
 	 */
 	private function tables()
 	{
-		$tables = array();
+		$tables = []
 		foreach ( $this->_fields as $table=>$fields)
 		{
 			$tables[] = $table;
@@ -768,7 +777,7 @@ class Mysql extends Storage implements IData
 	 */
 	private function table( $name )
 	{
-		$table = isset( $this->_fields[$name] ) ? $this->_fields[$name] : array();
+		$table = isset( $this->_fields[$name] ) ? $this->_fields[$name] : []
 		return $table;
 	}
 	
@@ -801,7 +810,7 @@ class Mysql extends Storage implements IData
 	{
 		$fields = $this->fields();
 		// if no table is specified, used the first available entry.
-		$table = $table ? $table : ( isset( $tables[0] ) ? $tables[0] :current( DevArray::toArray( $this->config(self::NAME_FIELD) ) ) );
+		$table = $table ? $table : ( isset( $tables[0] ) ? $tables[0] :current( Arr::toArray( $this->config(self::NAME_FIELD) ) ) );
 	
 		$passed = true;
 		
@@ -821,10 +830,10 @@ class Mysql extends Storage implements IData
 			} else {					
 				if ( $this->field($field_name) !== 0 && $this->field($field_name) == '' ) {
 					if (!$field['Null'] || $field['Null'] == 'NO') {
-						if (DevString::has($type, 'date')) {
+						if (Str::has($type, 'date')) {
 							//$this->field($field_name, dev_join_date($field_name));
 							$this->field($field_name, date('Y-m-d'));
-							if (!is_string($this->field($field_name)) || !DevDateTime::is($this->field($field_name))) {
+							if (!is_string($this->field($field_name)) || !Date::is($this->field($field_name))) {
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;
 							}
@@ -835,32 +844,32 @@ class Mysql extends Storage implements IData
 					}
 				} else {
 					//Correct Datatype/Size
-					if (DevString::has($type, 'int') || DevString::has($type, 'double') || DevString::has($type, 'float')) {
+					if (Str::has($type, 'int') || Str::has($type, 'double') || Str::has($type, 'float')) {
 						if (!is_numeric($this->field($field_name))) {
 							$this->status("Field '$field_name' must be numeric!");
 							$passed = false;
 						}
 					}
-					if (DevString::has($type, 'char') || DevString::has($type, 'text')) {
+					if (Str::has($type, 'char') || Str::has($type, 'text')) {
 						if (!is_string($this->field($field_name)) && !is_numeric($this->field($field_name))) {
 							$this->status("Field '$field_name' is not text!");
 							$passed = false;
 						}
-						if (isset($field['LENGTH']) && DevValue::isNotNull($field['LENGTH']) && strlen($this->field($field_name)) > $field['LENGTH'])  {
+						if (isset($field['LENGTH']) && Val::isNotNull($field['LENGTH']) && strlen($this->field($field_name)) > $field['LENGTH'])  {
 							$this->status("Field '$field_name' is greater than maximum allowed string length!");
 							$passed = false;
 						}
 					}
-					if (DevString::has($type, 'date')) {
-						if (!is_string($this->field($field_name)) || !DevDateTime::is($this->field($field_name))) {
-							$this->field($field_name, (new DevDateTime($field_name))->value());
-							if (!is_string($this->field($field_name)) || !DevDateTime::is($this->field($field_name))) {
+					if (Str::has($type, 'date')) {
+						if (!is_string($this->field($field_name)) || !Date::is($this->field($field_name))) {
+							$this->field($field_name, (new Date($field_name))->val());
+							if (!is_string($this->field($field_name)) || !Date::is($this->field($field_name))) {
 								$this->status("Field '$field_name' contains an inaccurate date format!");
 								$passed = false;
 							}
 						}
 					}
-					if (DevString::has($type, 'set')) {
+					if (Str::has($type, 'set')) {
 						if (is_array($this->field($field_name))) {
 							$this->field($field_name, implode(', ', $this->field($field_name)));
 						} elseif (!is_string($this->field($field_name))) {
@@ -901,23 +910,25 @@ class Mysql extends Storage implements IData
 	 * @param string|array $condition The condition to be set
 	 * @param mixed $value The value to be set
 	 * 
-	 * @return mixed Returns the condition if only $member is passed, returns boolean false on failure, returns $this if the method is successful
+	 * @return mixed
 	 */
-	public function condition($member, $condition = null, $value = null) 
+	public function condition($member, $condition = null, $value = null): mixed
 	{
 		//if (!$this->exists($member)) return false;
-		$values = array('=', '<=>', '>', '<', '>=', '<=', '<>', 'IS', 'IS NOT', 'LIKE', 'NOT LIKE');
-		if (DevValue::isNull($condition) && DevValue::isNull($value))
+		$values = ['=', '<=>', '>', '<', '>=', '<=', '<>', 'IS', 'IS NOT', 'LIKE', 'NOT LIKE'];
+		if ( Val::isNull($condition) && Val::isNull($value) )
 		{
 			foreach ($this->_conditions as $a=>$b) {
 				foreach (explode(',', $a) as $c) {
-					if (trim($c) == $member) return $b;
+					if (Str::trim($c) == $member) return $b;
 				}
 			}
 		}
-		if ( DevValue::isNotEmpty( $value ) ) 
+		if ( Val::isNotEmpty( $value ) ) 
 		{
-			if ( !is_array($condition) && !in_array(strtoupper($condition), $values)) return false;
+			if ( !Arr::is($condition) && !Arr::has($values, Str::upper($condition)))  {
+				return null;
+			}
 			$this->_conditions[$member] = $condition;
 			if (strpos($member, ',')) 
 			{
@@ -927,6 +938,8 @@ class Mysql extends Storage implements IData
 				$this->field($member, $value);
 			}
 		}
+
+		return $this;
 	}
 	
 	/**
@@ -937,11 +950,11 @@ class Mysql extends Storage implements IData
 	 * 
 	 * @return mixed Returns the order if only $member is passed, returns boolean false on failure, returns $this if the method is successful
 	 */
-	public function order($member, $order = null) 
+	public function order($member, $order = null): mixed
 	{
 		//if (!$this->exists($member)) return false;
 		$values = array('ASC', 'DESC');
-		if (DevValue::isNull($order))
+		if (Val::isNull($order))
 		{
 			foreach ($this->_order as $a=>$b) {
 				foreach (explode(',', $a) as $c) {
@@ -950,7 +963,9 @@ class Mysql extends Storage implements IData
 			}
 		}
 		if ( !in_array(strtoupper($order), $values)) return false;
+
 		$this->_order[$member] = $order;
+		return $this;
 	}
 	
 	/**
@@ -961,13 +976,13 @@ class Mysql extends Storage implements IData
 	 *
 	 * @return mixed  The aggregated result or the current object if setting the aggregation
 	 */
-	public function aggregate($member, $function = null) 
+	public function aggregate($member, $function = null): IObj
 	{
 		//if (!$this->exists($member)) return false;
 
 		$values = array('AVG', 'BIT_AND', 'BIT_OR', 'BIT_XOR', 'COUNT', 'GROUP_CONCAT', 'MAX', 'MIN', 'STD', 'STDDEV_POP', 'STDDEV_SAMP', 'STDDEV', 'SUM', 'VAR_POP', 'VAR_SAMP', 'VARIANCE');
 
-		if (DevValue::isNull($function))
+		if (Val::isNull($function))
 		{
 			return $this->_aggregate[$member];
 		}
@@ -986,14 +1001,16 @@ class Mysql extends Storage implements IData
 	 *
 	 * @return mixed  The current object if setting the relation or the related member if getting the relation
 	 */
-	public function relation($member, $field = null) 
+	public function relation($member, $field = null): mixed
 	{
 		//if (!$this->exists($member)) return false;
 		
-		if (DevValue::isNull($field))
+		if (Val::isNull($field))
 			return $this->_relations[$member];
 		
 		$this->_relations[$field] = $member;
+
+		return $this
 	}
 	
 	/**
@@ -1001,11 +1018,13 @@ class Mysql extends Storage implements IData
 	 *
 	 * @param string $member  The name of the member to be distinguished
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function distinction($member) 
+	public function distinction($member): IObj
 	{
 		$this->_distinctions[] = $member;
+
+		return $this;
 	}
 
 	/**
@@ -1015,7 +1034,7 @@ class Mysql extends Storage implements IData
 	 *
 	 * @return mixed  The condition key if found, false otherwise
 	 */
-	private function conditionKey($member) 
+	private function conditionKey($member): mixed
 	{
 		if (!$this->exists($member)) return false;
 		
@@ -1038,9 +1057,9 @@ class Mysql extends Storage implements IData
 	private function whereCase($table, $member, $value = '') 
 	{
 		$tables = $this->tables();
-		$table = ( DevValue::isNull( $table ) ) ? $tables[0] : $table;
+		$table = ( Val::isNull( $table ) ) ? $tables[0] : $table;
 		$where = '';
-		$where_r = array();
+		$where_r = []
 
 		$fields = $this->table($table);
 	
@@ -1049,7 +1068,7 @@ class Mysql extends Storage implements IData
 		if ($condition_str === null ) {
 			$condition_str = '';
 		}
-		if ( DevValue::isNotEmpty( $this->field($member) ) && array_key_exists($member, $fields) ) 
+		if ( Val::isNotEmpty( $this->field($member) ) && array_key_exists($member, $fields) ) 
 		{
 			//Allow for fulltext searches
 			if ( strtoupper( $condition_str ) == 'MATCH' ) 
@@ -1072,7 +1091,7 @@ class Mysql extends Storage implements IData
 				{
 					foreach ( $value as $a ) 
 					{
-						if ( DevValue::isNotNull( $a ) ) 
+						if ( Val::isNotNull( $a ) ) 
 						{
 							$where_r[] = "MATCH($match_str) AGAINST (" . MysqlLink::sanitize($a) . ")";
 						}
@@ -1090,7 +1109,7 @@ class Mysql extends Storage implements IData
 				{
 					foreach ( $value as $a )
 					{
-						if ( DevValue::isNotNull( $a ) ) 
+						if ( Val::isNotNull( $a ) ) 
 						{
 							$where_r[] = $table . ".$member " . ((array_key_exists($member, $this->_conditions)) ? "$condition ": "= ") . $a;
 						}
@@ -1108,7 +1127,7 @@ class Mysql extends Storage implements IData
 				{
 					foreach ( $value as $a )
 					{
-						if ( DevValue::isNotNull( $a ) ) 
+						if ( Val::isNotNull( $a ) ) 
 						{
 							$where_r[] = $table . ".$member " . ((array_key_exists($member, $this->_conditions)) ? "$condition ": "= ") . $a;
 						}
@@ -1127,7 +1146,7 @@ class Mysql extends Storage implements IData
 					$count = 0;
 					foreach ( $value as $a ) 
 					{
-						if ( DevValue::isNotNull( $a ) ) 
+						if ( Val::isNotNull( $a ) ) 
 						{
 							$temp_where = '';
 							$condition_str = ((array_key_exists($member, $this->_conditions)) ? ((is_array($condition)) ? $condition[$count] : $condition) : " = ");
@@ -1189,7 +1208,7 @@ class Mysql extends Storage implements IData
 					$where .= MysqlLink::sanitize( $value );	
 				}
 			}
-			if ( DevValue::isNotNull( $where ) ) $where = "($where) ";
+			if ( Val::isNotNull( $where ) ) $where = "($where) ";
 		}
 
 		return $where;
@@ -1206,7 +1225,7 @@ class Mysql extends Storage implements IData
 	private function orderCase($table, $member) 
 	{
 		$tables = $this->tables();
-		$table = (DevValue::isNull($table)) ? $tables[0] : $table;
+		$table = (Val::isNull($table)) ? $tables[0] : $table;
 		$sort = null;
 		$members = $this->table($table);
 		
@@ -1230,7 +1249,7 @@ class Mysql extends Storage implements IData
 	private function aggregateCase($table, $member) 
 	{
 		$tables = $this->tables();
-		$table = (DevValue::isNull($table)) ? $tables[0] : $table;
+		$table = (Val::isNull($table)) ? $tables[0] : $table;
 		$agg = null;
 		$members = $this->table($table);
 		
@@ -1253,7 +1272,7 @@ class Mysql extends Storage implements IData
 	private function distinctCase($table, $member) 
 	{
 		$tables = $this->tables();
-		$table = (DevValue::isNull($table)) ? $tables[0] : $table;
+		$table = (Val::isNull($table)) ? $tables[0] : $table;
 		$distinct = '';
 		if (in_array($member, $this->_distinctions)) 
 		{
@@ -1272,8 +1291,8 @@ class Mysql extends Storage implements IData
 	 */
 	private function arrayKeyIntersect($arr1, $arr2) 
 	{
-		$array = array();
-		if (DevValue::isNotNull($arr2)) {
+		$array = []
+		if (Val::isNotNull($arr2)) {
 			foreach ($arr1 as $a=>$b) if (array_key_exists ( $a, $arr2)) $array[$a] = $b;
 		}
 		return $array;
@@ -1284,17 +1303,19 @@ class Mysql extends Storage implements IData
 	 * 
 	 * Resets the conditions, distinctions, aggregate, row start and end, order, and query variables
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function reset()
+	public function reset(): IObj
 	{
-		$this->_conditions = array();
-		$this->_distinctions = array();
-		$this->_aggregate = array();
+		$this->_conditions = []
+		$this->_distinctions = []
+		$this->_aggregate = []
 		$this->_row_start = 0;
 		$this->_row_end = 1;
-		$this->_order = array();
+		$this->_order = []
 		$this->_query = null;
+
+		return $this;
 	}
 	
 	/**
@@ -1308,9 +1329,9 @@ class Mysql extends Storage implements IData
 	{
 		$fields = $this->fields();
 		$active_fields = $this->config('fields');
-		if ($var != '' && array_key_exists( $var, $fields ) ) 
+		if ($var != '' && Arr::hasKey( $fields, $var ) ) 
 		{
-			if (DevValue::isEmpty($active_fields) || in_array($var, $active_fields)) 
+			if (Val::isEmpty($active_fields) || Arr::has($active_fields, $var)) 
 			{
 				return true;
 			}	
@@ -1336,7 +1357,7 @@ class Mysql extends Storage implements IData
 	 */
 	public function fieldTable( $field ) {
 		foreach ( $this->_fields as $table=>$fields ) {
-			if ( array_key_exists($field, $fields)) {
+			if ( Arr::hasKey($fields, $field) ) {
 				return $table;
 			}
 		}
@@ -1354,6 +1375,7 @@ class Mysql extends Storage implements IData
 		if ($db) {
 			return $db->status();
 		}
+		
 		return $this->status();
 	}
 
@@ -1367,8 +1389,8 @@ class Mysql extends Storage implements IData
 	 * @return bool True if the value is in the database, false otherwise
 	 */
 	public static function inDB( $field, $value, $table ) {
-		$db = new MysqlLink( array( 'table'=>$table ) );
-		if ( DevValue::isNotNull ($value) )
+		$db = new MysqlLink( [ 'table'=>$table ] );
+		if ( Val::isNotNull ($value) )
 		{ 
 			//$db->field($field, $value);
 			$db->query("select * from `$table` where `$field` = '$value'");

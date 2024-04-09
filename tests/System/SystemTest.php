@@ -31,17 +31,17 @@ class SystemTest extends TestCase
 
         // Test without any options
         $system->run($command);
-        $this->assertNotEmpty($system->processes());
+        $this->assertNotEmpty($system->process());
         $this->assertEquals('Hello World' . PHP_EOL, $system->_response);
 
         // Test with background option
         $system->run($command, true);
-        $this->assertNotEmpty($system->processes());
+        $this->assertNotEmpty($system->process());
         $this->assertEquals('', $system->_response);
 
         // Test with additional options
         $system->run($command, false, ['-n']);
-        $this->assertNotEmpty($system->processes());
+        $this->assertNotEmpty($system->process());
         $this->assertEquals('Hello World', $system->_response);
 
         // Test with an invalid command

@@ -62,7 +62,7 @@ class Queue implements IQueue {
 	 *
 	 * @return bool true if the queue is empty, false otherwise.
 	 */
-	public static function is_empty($queue) {
+	public static function isEmpty($queue) {
 		$stack = self::instance();
 		$count = isset($stack[$queue]) && count($stack[$queue]);
 		return $count ? false : true;

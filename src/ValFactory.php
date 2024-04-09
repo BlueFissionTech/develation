@@ -1,7 +1,7 @@
 <?php
 namespace BlueFission;
 
-class DevValueFactory {
+class ValFactory {
 	static const GENERIC = 'generic';
 	static const STRING = 'string';
 	static const NUMBER = 'number';
@@ -10,30 +10,30 @@ class DevValueFactory {
 	static const ARRAY = 'array';
 	static const OBJECT = 'object';
 
-	static function make( $type = null, $args = null ): IDevValue
+	static function make( $type = null, $args = null ): IVal
 	{
 		switch (strtolower($type)) {
 			case self::STRING:
-				$class = '\BlueFission\DevString';
+				$class = '\BlueFission\Str';
 				break;
 			case self::NUMBER:
-				$class = '\BlueFission\DevNumber';
+				$class = '\BlueFission\Num';
 				break;
 			case self::BOOLEAN:
-				$class = '\BlueFission\DevBoolean';
+				$class = '\BlueFission\Flag';
 				break;
 			case self::DATETIME:
-				$class = '\BlueFission\DevDateTime';
+				$class = '\BlueFission\Date';
 				break;
 			case self::ARRAY:
-				$class = '\BlueFission\DevArray';
+				$class = '\BlueFission\Arr';
 				break;
 			case self::OBJECT:
-				$class = '\BlueFission\DevObject';
+				$class = '\BlueFission\Obj';
 				break;
 			default:
 			case self::GENERIC:
-				$class = '\BlueFission\DevValue';
+				$class = '\BlueFission\Val';
 				break;
 		}
 

@@ -1,6 +1,7 @@
 <?php 
 namespace BlueFission\Data\Storage;
 
+use BlueFission\IObj;
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -34,9 +35,12 @@ class StorageDrive implements IConfigurable {
 	 * @param Storage $device
 	 * @param null $name
 	 */
-	public function add( Storage $device, $name = null ) {
+	public function add( Storage $device, $name = null ): IObj
+	{
 		$device->activate();
 		$this->_bays[$name] = $device;
+
+		return $this;
 	}
 
 	/**
@@ -44,8 +48,11 @@ class StorageDrive implements IConfigurable {
 	 *
 	 * @param $name
 	 */
-	public function eject( $name ) {
+	public function eject( $name ): IObj
+	{
 		unset($this->_bays[$name]);
+
+		return $this;
 	} 
 
 	/**
@@ -53,7 +60,8 @@ class StorageDrive implements IConfigurable {
 	 *
 	 * @return array
 	 */
-	public function all() {
+	public function all(): array
+	{
 		$devices = array();
 		foreach ( $this->_bays as $name=>$device ) {
 			$devices[$name] = get_class($device);
@@ -66,43 +74,61 @@ class StorageDrive implements IConfigurable {
 	 *
 	 * @param $bay
 	 */
-	public function use( $bay ) {
+	public function use( $bay ): IObj
+	{
 		$this->_active_bay = $bay;
+
+		return $this;
 	}
 
 	/**
 	 * Create a new data in the active storage device
 	 */
-	public function create() {
+	public function create(): IObj
+	{
 		$this->_bays[$this->_active_bay]->create();
+
+		return $this;
 	}
 
 	/**
 	 * Read data from the active storage device
 	 */
-	public function read() {
+	public function read(): IObj
+	{
 		$this->_bays[$this->_active_bay]->read();
+
+		return $this;
 	}
 
 	/**
 	 * Update data in the active storage device
 	 */
-	public function update() {
+	public function update(): IObj
+	{
 		$this->_bays[$this->_active_bay]->update();
+
+		return $this;
 	}
 
 	/**
 	 * Delete data from the active storage device
 	 */
-	public function delete() {
+	public function delete(): IObj
+	{
 		$this->_bays[$this->_active_bay]->delete();
+
+		return $this;
 	}
 
 	/**
 	 * Clear data from the active storage device
 	 */
-	public function clear() {
-		$this->_bays[$this->_active_bay]->clear();		
+	public function clear(): IObj
+	{
+		$this->_bays[$this->_active_bay]->clear();
+
+		return $this;
 	}
 
 	/**
@@ -110,10 +136,13 @@ class StorageDrive implements IConfigurable {
 	 *
 	 * @param $object
 	 */
-	public function bind($object) {
+	public function bind($object): IObj
+	{
 		if ( $object instanceof IDispatcher ) {
 			$object->behavior( Event::CHANGE, array($this ,'_onObjectUpdate') );
 		}
+
+		return $this;
 	}
 
 	/**
@@ -121,8 +150,8 @@ class StorageDrive implements IConfigurable {
 	 * 
 	 * @param $event - The event object
 	 */
-	public function _onObjectUpdate( $event ) {
+	public function _onObjectUpdate( $event )
+	{
 		$object = $event->_target;
-		// $this->assign($object->data())
 	}
 }

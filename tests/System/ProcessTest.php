@@ -11,7 +11,7 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         $process = new Process("ls");
         $process->start();
 
-        $this->assertTrue(is_resource($process->_process));
+        $this->assertTrue(is_resource($process->process));
     }
 
     public function testOutput()

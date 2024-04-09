@@ -6,6 +6,7 @@ use BlueFission\Collections\Hierarchical;
 class HierarchicalTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Hierarchical';
+ 	protected $object;
 
 	public function setUp(): void
 	{

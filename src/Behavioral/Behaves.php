@@ -1,8 +1,8 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevValue;
-use BlueFission\DevObject;
+use BlueFission\Val;
+use BlueFission\Obj;
 use BlueFission\Collections\Collection;
 use BlueFission\Exceptions\NotImplementedException;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -74,18 +74,21 @@ trait Behaves
         $args = func_get_args();
         $behavior = array_shift( $args );
 
-        if ( is_string($behavior) )
+        if ( is_string($behavior) ) {
             $behaviorName = $behavior;
-        elseif ( !($behavior instanceof Behavior) )
+        } elseif ( !($behavior instanceof Behavior) ) {
             throw new InvalidArgumentException("Invalid Behavior Type");
-        else
+        } else {
             $behaviorName = $behavior->name();
+        }
 
         if ( $this->can( $behaviorName ) )
         {
             $behavior = ($behavior instanceof Behavior) ? $behavior : $this->_behaviors->get($behaviorName);
 
-            if (!$behavior) return;
+            if (!$behavior) {
+            	return;
+            }
             
             if ($behavior->_target == null) {
                 $behavior->_target = $this;
@@ -99,8 +102,9 @@ trait Behaves
             $this->_history->add($behaviorName, $args ? $args : $behaviorName);
             if ( $this->_behaviors->has( $behaviorName ) && $this->_behaviors->get( $behaviorName )->is_persistent() )
             {
-                if ( !$this->_multistate )
+                if ( !$this->_multistate ) {
                     $this->_state->clear();
+                }
                 $this->_state->add($behaviorName, $args ? $args : $behaviorName);
             }
 		}

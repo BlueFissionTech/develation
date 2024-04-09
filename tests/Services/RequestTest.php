@@ -11,14 +11,15 @@ class RequestTest extends TestCase
     {
         $request = new Request();
 
-        $this->assertInternalType('array', $request->all());
+        //assertInternalType is not defined, so let's do this correctly
+        $this->assertIsArray($request->all());
     }
 
     public function testType()
     {
         $request = new Request();
 
-        $this->assertInternalType('string', $request->type());
+        $this->assertIsString($request->type());
     }
 
     public function testSet()

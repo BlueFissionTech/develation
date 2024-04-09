@@ -2,8 +2,8 @@
 
 namespace BlueFission\Services;
 
-use App;
-use BlueFission\DevObject;
+use BlueFission\Services\Application as App;
+use BlueFission\Obj;
 
 /**
  * Class Mapping

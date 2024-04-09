@@ -227,7 +227,7 @@ class System {
 	*
 	* @param string $cwd
 	*/
-	public function cwd($cwd)
+	public function cwd($cwd = null)
 	{
 		if ( $cwd ) {
 	    	$this->_cwd = $cwd;

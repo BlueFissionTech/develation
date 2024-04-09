@@ -2,6 +2,7 @@
 namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Authenticator;
+use BlueFission\Data\Storage\Storage;
 use PHPUnit\Framework\TestCase;
 
 class AuthenticatorTest extends TestCase {
@@ -9,9 +10,10 @@ class AuthenticatorTest extends TestCase {
 
     public function setUp(): void
     {
+        $session = $this->createMock(Storage::class);
         $datasource = $this->createMock(Storage::class);
         $config = null;
-        $this->authenticator = new Authenticator($datasource, $config);
+        $this->authenticator = new Authenticator($session, $datasource, $config);
     }
 
     public function testAuthenticateReturnsFalseForEmptyUsernameOrPassword()

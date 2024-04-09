@@ -1,8 +1,8 @@
 <?php
 namespace BlueFission\HTML;
 
-use BlueFission\DevValue;
-use BlueFission\DevString;
+use BlueFission\Val;
+use BlueFission\Str;
 use BlueFission\Utils\Util;
 
 /**
@@ -25,19 +25,22 @@ class HTML {
      * 
      * @return string           The generated URL
      */
-    static function href($href = null, $secure = false, $doc = true) 
+    static function href($href = null, $doc = true) 
     {
-        if (DevValue::isNotNull($href)) {
+        if (Val::isNull($href)) {
             $href = '';
             if ($doc === false) {
-                $href .= $_SERVER['DOCUMENT_ROOT'];
+                $href .= $_SERVER['DOCUMENT_ROOT'] ?? '';
             } else {
-                $protocol = $secure ? 'https' : 'http';
-                $href = $protocol.'://' . $_SERVER['SERVER_NAME'];
-                $href .= $_SERVER['REQUEST_URI'];
-                if (DevString::strrpos($href, self::PAGE_EXTENSION)) $href = substr($href, 0, DevString::strrpos($href, self::PAGE_EXTENSION) + strlen(self::PAGE_EXTENSION));
-                elseif (DevString::strrpos($href, '/')) $href = substr($href, 0, DevString::strrpos($href, '/') + strlen('/'));
+                $protocol = Val::is($_SERVER['HTTPS']) ? 'https' : 'http';
+                $href = $protocol . '://' . ($_SERVER['SERVER_NAME'] ? $_SERVER['SERVER_NAME'] : 'localhost');
+                $href .= $_SERVER['REQUEST_URI'] ?? '';
             }
+        } else {
+        	if (Str::pos($href, 'http') === false) {
+				$protocol = Val::is($_SERVER['HTTPS']) ? 'https' : 'http';
+				$href = $protocol . '://' . $href;
+			}
         }
         
         return $href;
@@ -52,57 +55,66 @@ class HTML {
      * @return string           The formatted HTML content
      */
 	static function format($content = null, $rich = false) {
-		$search = array('/^==========/mx',
-			'/^\b([\W\w\D\d\s]|[^\n]+)\n----------/mx',
-			'/^\b([\W\w\D\d\s]|[^\n]+)\n-------/mx',
-			'/^\~ ([\W\w\D\d^\n][^\n]+)\n/mx',
-			'/(^<li>.*<\/li>)+/mx',
-			'/<\/ol>([\s]*)<ol>/mx',
+	    // Step 1: Initial conversion of markdown to HTML
+	    $patterns = [
+	        '/^\-\-\-$/m',
+	        '/^# (.*?)$/m',
+	        '/^## (.*?)$/m',
+	        '/^### (.*?)$/m',
+	        '/^\* (.*?)$/m',    // Convert '* text' to '<li>text</li>'
+	        '/^\- (.*?)$/m',    // Convert '- text' to '<li>text</li>'
+	        '/\*\*(.*?)\*\*/',
+	        '/\*(.*?)\*/',
+	        '/_(.*?)_/',
+	    ];
+	    $replacements = [
+	        '<hr />',
+	        '<h1>$1</h1>',
+	        '<h2>$1</h2>',
+	        '<h3>$1</h3>',
+	        '<uli>$1</uli>',    // Intermediate replacement for '*' items
+	        '<oli>$1</oli>',    // Intermediate replacement for '-' items
+	        '<strong>$1</strong>',
+	        '<em>$1</em>',
+	        '<u>$1</u>',
+	    ];
 
-			'/^\~ ([\W\w\D\d^\n][^\n]+)\n(<ol>[.*?]<\/ol>){0,1}/mx',
-			'/(^<li>.*<\/li>)+/mx',
-			'/<\/ul>([\s]*)<ul>/mx',
+	    $content = preg_replace($patterns, $replacements, $content);
 
-			'/^\* ([\W\w\D\d^\n][^\n]+)\n(<ul>[.*?]<\/ul>){0,1}/mx',
-			'/(^<li>.*<\/li>)+/mx',
-			'/<\/ul>([\s]*)<ul>/mx',
-			
-			'/^\- ([\W\w\D\d^\n]|[^\n]+)\n/mx',
-			'/\[b\](.*?)\[\/b\]/mxi',
-			'/\[i\](.*?)\[\/i\]/mxi',
-			'/\[u\](.*?)\[\/u\]/mxi',
-			"/^([\s])$/m"
-		);
-		$replace = array('<hr class="hr">' . "\n",
-			'<h2 class="h2">$1</h2>',
-			'<h3 class="h3">$1</h3>',
-			'<li>$1</li>' . "\n",
-			'<ol>' . "\n" . '$1' . "\n" . '</ol>' . "\n",
-			'',
-
-			'<li>$1</li>' . "\n",
-			'<ul>' . "\n" . '$1' . "\n" . '</ul>' . "\n",
-			'',
-
-			'<li>$1</li>' . "\n",
-			'<ul>' . "\n" . '$1' . "\n" . '</ul>' . "\n",
-			'',
-			'<li>$1</li>' . "\n",
-			'<b>$1</b>',
-			'<i>$1</i>',
-			'<u>$1</u>',
-			'<br />'
-		);
+	    // Step 2: Post-process to group <li> items into <ul> or <ol>
+	    // Merge consecutive <li> items into a single <ul> or <ol>
+	    // This uses lookahead and lookbehind assertions to find sequences of <li>...</li> not preceded or followed by a list tag
+	    $content = preg_replace('/(?<=<\/uli>)(\s*)(?=<uli>)/', "", $content); // Remove whitespace between list items
+	    $content = preg_replace('/((<uli>.*<\/uli>\s*)+)/', "<ul>$1</ul>", $content); // Wrap sequences of <li> in <ul>
 		
-		$output = preg_replace($search, $replace, $content);
+		$content = preg_replace('/(?<=<\/oli>)(\s*)(?=<oli>)/', "", $content); // Remove whitespace between list items
+	    $content = preg_replace('/((<oli>.*<\/oli>\s*)+)/', "<ol>$1</ol>", $content); // Wrap sequences of <li> in <ul>
+
+	    $content = str_replace(['<uli>', '</uli>', '<oli>', '</oli>'], ['<li>', '</li>', '<li>', '</li>'], $content);
 
 		if ( $rich ) {
-			$pattern = array( '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d{4})\-(\d+)\-(\d+)/', '/(\d)/', '/\$/', '/(http\:\/\/[^\s]+)/', '/([\w\W\d\D\S]+@[\w\W\d\D\S]+.[\w\S]+)/');
-			$replacement = array( '&#39;', '$1', '$2/$3/$1', '$1', '&#36;', '<a href="$1" target="_blank">$1</a>', '<a href="MAILTO:$1">$1</a>');
-			$output = preg_replace($pattern, $replacement, stripslashes($output));
+			$pattern = [
+		        '/\'/',
+		        '/^([\w\W\d\D\s]+)$/',
+		        '/(\d{4})\-(\d+)\-(\d+)/',
+		        '/(\d)/',
+		        '/\$/',
+		        '/(https?:\/\/[^\s]+)/', // Updated to match both http and https
+		        '/([\w\W\d\D\S]+@[\w\W\d\D\S]+.[\w\S]+)/'
+		    ];
+		    $replacement = [
+		        '&#39;',
+		        '$1',
+		        '$2/$3/$1',
+		        '$1',
+		        '&#36;',
+		        '<a href="$1" target="_blank">$1</a>', // Applies to both http and https URLs
+		        '<a href="mailto:$1">$1</a>'
+		    ];
+		    $content = preg_replace($pattern, $replacement, stripslashes($content));
 		}
 		
-		return $output;
+		return $content;
 	}
 	
 	/**
@@ -175,76 +187,6 @@ class HTML {
 			return $file;
 		}
 	}
-
-	/**
-	 * Static function to format ASCII text into HTML
-	 * 
-	 * @param string $text The ASCII text to format
-	 * 
-	 * @return string HTML formatted text
-	 */
-	// static function formatAscii($text = '') {
-	// 	$search = array('/^==========/mx',
-	// 		'/^\b([\W\w\D\d\s]|[^\n]+)\n----------/mx',
-	// 		'/^\b([\W\w\D\d\s]|[^\n]+)\n-------/mx',
-	// 		'/^\~ ([\W\w\D\d^\n][^\n]+)\n/mx',
-	// 		'/(^<li>.*<\/li>)+/mx',
-	// 		'/<\/ol>([\s]*)<ol>/mx',
-
-	// 		'/^\~ ([\W\w\D\d^\n][^\n]+)\n(<ol>[.*?]<\/ol>){0,1}/mx',
-	// 		'/(^<li>.*<\/li>)+/mx',
-	// 		'/<\/ul>([\s]*)<ul>/mx',
-
-	// 		'/^\* ([\W\w\D\d^\n][^\n]+)\n(<ul>[.*?]<\/ul>){0,1}/mx',
-	// 		'/(^<li>.*<\/li>)+/mx',
-	// 		'/<\/ul>([\s]*)<ul>/mx',
-			
-	// 		'/^\- ([\W\w\D\d^\n]|[^\n]+)\n/mx',
-	// 		'/\[b\](.*?)\[\/b\]/mxi',
-	// 		'/\[i\](.*?)\[\/i\]/mxi',
-	// 		'/\[u\](.*?)\[\/u\]/mxi',
-	// 		"/^([\s])$/m"
-	// 	);
-	// 	$replace = array('<hr class="hr">' . "\n",
-	// 		'<h2 class="h2">$1</h2>',
-	// 		'<h3 class="h3">$1</h3>',
-	// 		'<li>$1</li>' . "\n",
-	// 		'<ol>' . "\n" . '$1' . "\n" . '</ol>' . "\n",
-	// 		'',
-
-	// 		'<li>$1</li>' . "\n",
-	// 		'<ul>' . "\n" . '$1' . "\n" . '</ul>' . "\n",
-	// 		'',
-
-	// 		'<li>$1</li>' . "\n",
-	// 		'<ul>' . "\n" . '$1' . "\n" . '</ul>' . "\n",
-	// 		'',
-	// 		'<li>$1</li>' . "\n",
-	// 		'<b>$1</b>',
-	// 		'<i>$1</i>',
-	// 		'<u>$1</u>',
-	// 		'<br />'
-	// 	);
-		
-	// 	$output = preg_replace($search, $replace, $text);
-		
-	// 	return $output;
-	// }
-
-	// static function format($data = '', $convert = false, $trunc = '') {
-	// 	$output = '';
-		
-	// 	$pattern = array( '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d{4})\-(\d+)\-(\d+)/', '/(\d)/', '/\$/', '/(http\:\/\/[\w\W\d\D\S]+)/', '/([\w\W\d\D\S]+@[\w\W\d\D\S]+.[\w\S]+)/');
-	// 	$replacement = array( '&#39;', '$1', '$2/$3/$1', '$1', '&#36;', '<a href="$1" target="_blank">$1</a>', '<a href="MAILTO:$1">$1</a>');
-	// 	$string = preg_replace($pattern, $replacement, stripslashes($data));
-		
-	// 	if ($convert) $string = dev_ascii_to_html($string);
-	// 	//else $string = htmlentities($string);
-	// 	if ($trunc != '' && $trunc > 0) $string = dev_trunc_str(strip_tags($string), (int)$trunc);
-	// 	elseif (!$convert) $string = nl2br($string);
-		
-	// 	return $string;
-	// }
 
 	/**
 	 * Generates pagination links for the list of results
@@ -361,15 +303,15 @@ class HTML {
 	 */
 	static function barGraph($data, $height = '', $width = '', $max = '', $is_percent = '') {
 		$output = '';
-		if (DevArray::isAssoc($data)) {
-			if ($max == '') $max = DevArray::max($data);
+		if (Arr::isAssoc($data)) {
+			if ($max == '') $max = Arr::max($data);
 			$output .= '<table width = "' . (($width > 0) ? $width : 200) . '" height = "' . (($height > 0) ? $height : 100) . '">';
 			$output .= "\n";
 			foreach ($data as $a=>$b) {
 				$output .= '<tr>';
 				$output .= "<td>$a</td>" . (($hori) ? '<tr>' : '<td>');
-				$output .= '<td width="80%" class="dev_bar"><table width="100%" cellpadding="0" cellspacing="0" border="1" bgcolor="#ffffff"><tr><td width="' . DevNumber::ratio($b, $max, false) . '%" height="5" bgcolor="#c0c0c0"></td><td></td></tr></table></td>';
-				$output .= "<td>" . (($is_percent) ? DevNumber::ratio($b, $max, $is_percent) : $b) . "</td>";
+				$output .= '<td width="80%" class="dev_bar"><table width="100%" cellpadding="0" cellspacing="0" border="1" bgcolor="#ffffff"><tr><td width="' . Num::ratio($b, $max, false) . '%" height="5" bgcolor="#c0c0c0"></td><td></td></tr></table></td>';
+				$output .= "<td>" . (($is_percent) ? Num::ratio($b, $max, $is_percent) : $b) . "</td>";
 				$output .= "</tr>";
 			}	
 			$output .= "\n";

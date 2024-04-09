@@ -1,17 +1,34 @@
 <?php
 
-class Async extends Programmable {
+namespace BlueFission\System;
+
+use BlueFission\Obj;
+use BlueFission\Behavioral\Programmable;
+use BlueFission\Data\Queues\IQueue;
+use BlueFission\Data\Queues\MemQueue;
+
+class Async extends Obj {
+
+	use Programmable {
+		Programmable::__construct as private __pConstruct;
+	}
 
 	/**
 	 * Configuration array
 	 *
 	 * @var array
 	 */
-	private $_config = array(
+	protected $_config = [
 		'location'=>'.',
 		'interpreter'=>'/usr/bin/php',
-		'memory'=>pow(1024,2),
-	);
+		'memory'=>1048576,
+		'queue'=>null,
+	];
+
+	public function __construct( $config = null) {
+		$this->__pConstruct();
+		$this->config($config);
+	}
 
 	/**
 	 * Post data to a URL
@@ -25,18 +42,25 @@ class Async extends Programmable {
 	{
 		$url = $this->config('location');
 		$params = $this->_data;
+		$post_params = [];
 
 	    foreach ($params as $key => &$val) {
-	      if (is_array($val)) $val = implode(',', $val);
-	        $post_params[] = $key.'='.urlencode($val);  
+	    	if (is_array($val)) {
+	    		$val = implode(',', $val);
+	    	}
+	    	$post_params[] = $key.'='.urlencode($val);  
 	    }
 	    $post_string = implode('&', $post_params);
 
-	    $parts=parse_url($url);
+	    $parts = parse_url($url);
 
-	    $fp = fsockopen($parts['host'],
-	        isset($parts['port'])?$parts['port']:80,
+	    $fp = fsockopen($parts['host'] ?? '',
+	        ($parts['port'] ?? 80),
 	        $errno, $errstr, 30);
+
+	    if (!$fp) {
+	    	return;
+	    }
 
 	    $out = "POST ".$parts['path']." HTTP/1.1\r\n";
 	    $out.= "Host: ".$parts['host']."\r\n";
@@ -66,7 +90,7 @@ class Async extends Programmable {
 	public function shell() {
 		set_time_limit(0);
 		$interpreter = $this->config('interpreter');
-		$file = $config('location');
+		$file = $this->config('location');
 		$cmd = 'nohup nice -n 10 '.$interpreter.' -f '.$location.' '.$args.' >> /path/to/log/file.log';
 		$pid = shell_exec($cmd);
 	}
@@ -89,9 +113,9 @@ class Async extends Programmable {
 			if (function_exists('cli_set_process_title')) {
 				cli_set_process_title($title);
 			} elseif (function_exists('setproctitle')) {
-				setproctitle( $title )
+				setproctitle( $title );
 			}
-			if (function_exists('setthreadtitle') {
+			if (function_exists('setthreadtitle')) {
 		    	setthreadtitle($title);
 			}
 		}

@@ -1,7 +1,8 @@
 <?php
 namespace BlueFission\Connections;
 
-use BlueFission\DevArray as Array;
+use BlueFission\Arr;
+use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
@@ -49,7 +50,7 @@ class Socket extends Connection implements IConfigurable
     public function __construct($config = '')
     {
         parent::__construct();
-        if (Array::is($config)) {
+        if (Arr::is($config)) {
             $this->config($config);
         }
     }
@@ -63,9 +64,9 @@ class Socket extends Connection implements IConfigurable
      *
      * The fsockopen() method is then used to open the socket connection.
      *
-     * @return void
+     * @return IObj
      */
-    public function open()
+    public function open(): IObj
     {
         if (HTTP::urlExists($this->config('target'))) {
             $target = parse_url($this->config('target'));
@@ -84,6 +85,8 @@ class Socket extends Connection implements IConfigurable
         }
 
         $this->status($status);
+
+        return $this;
     }
 
     /**
@@ -93,14 +96,16 @@ class Socket extends Connection implements IConfigurable
      * the connection, and then calls the parent::close() method
      * to clean up.
      *
-     * @return void
+     * @return IObj
      */
-    public function close()
+    public function close(): IObj
     {
         fclose($this->_connection);
 
         // clean up
         parent::close();
+
+        return $this;
     }
 	
 	/**
@@ -108,9 +113,9 @@ class Socket extends Connection implements IConfigurable
 	 *
 	 * @param string|null $query The query to be performed. If not provided, the query will use the method specified in the config.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function query( $query = null ) 
+	public function query( $query = null ): IObj
 	{
 		$socket = $this->_connection;
 		$status = '';
@@ -165,5 +170,7 @@ class Socket extends Connection implements IConfigurable
 			$status = self::STATUS_NOTCONNECTED;
 		}	
 		$this->status($status);
+
+		return $this;
 	}
 }

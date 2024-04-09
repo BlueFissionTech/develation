@@ -2,19 +2,35 @@
 namespace BlueFission\Tests\Behavioral;
 
 use BlueFission\Behavioral\Configurable;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Obj;
  
-class ConfigurableTest extends SchemeTest {
+class ConfigurableTest extends BehavioralTest {
  
  	static $classname = 'BlueFission\Behavioral\Configurable';
 
+ 	public function setUp(): void
+ 	{
+ 		$traitName = static::$classname;
+	    $this->object = eval("
+	        return new class extends BlueFission\Obj {
+	            use $traitName;
+
+	            protected \$_config = [];
+	        };
+	    ");
+ 	}
+
  	public function testAssocArrayAssignment()
  	{
- 		$array = array(
+ 		$array = [
  			'config1'=>'value1',
  			'config2'=>'value2',
  			'config3'=>'value3',
  			'config4'=>'value4',
- 		);
+ 		];
+
+ 		$this->object->perform(State::DRAFT);
 
  		$this->object->config($array);
 
@@ -23,14 +39,14 @@ class ConfigurableTest extends SchemeTest {
 
  	public function testFailedAssignmentForNonDraft()
  	{
- 		$array = array(
+ 		$array = [
  			'config1'=>'value1',
  			'config2'=>'value2',
  			'config3'=>'value3',
  			'config4'=>'value4',
- 		);
+ 		];
 
- 		$this->object->halt('IsDraft');
+ 		$this->object->halt(State::DRAFT);
 
  		$this->object->config($array);
 
@@ -46,12 +62,12 @@ class ConfigurableTest extends SchemeTest {
 
  	public function testConfigurationChange()
  	{
- 		$array = array(
+ 		$array = [
  			'config1'=>'value1',
  			'config2'=>'value2',
  			'config3'=>'value3',
  			'config4'=>'value4',
- 		);
+ 		];
 
  		$this->object->config($array);
 
@@ -64,18 +80,18 @@ class ConfigurableTest extends SchemeTest {
 
  	public function testFailedConfigurationSetOnReadOnly()
  	{
- 		$array = array(
+ 		$array = [
  			'config1'=>'value1',
  			'config2'=>'value2',
  			'config3'=>'value3',
  			'config4'=>'value4',
- 		);
+ 		];
 
  		$this->object->config($array);
 
  		$this->assertEquals('value3', $this->object->config('config3'));
 
- 		$this->object->perform('IsReadonly');
+ 		$this->object->perform(State::READONLY);
 
  		$this->object->config('config3', 'new value3');
 
@@ -84,12 +100,12 @@ class ConfigurableTest extends SchemeTest {
 
  	public function testDataAssignmentFromArray()
  	{
- 		$array = array(
+ 		$array = [
  			'var1'=>"I'm a variable",
  			'var2'=>"I'm a variable, too",
  			'var3'=>"I'm a variable as well",
  			'var4'=>"Guess what, I'm a variable",
- 		);
+ 		];
 
  		$this->object->assign($array);
 
@@ -98,18 +114,18 @@ class ConfigurableTest extends SchemeTest {
 
  	public function testDataAssignmentFromArrayFailsWhenReadOnly()
  	{
- 		$array = array(
+ 		$array = [
  			'var1'=>"I'm a variable",
  			'var2'=>"I'm a variable, too",
  			'var3'=>"I'm a variable as well",
  			'var4'=>"Guess what, I'm a variable",
- 		);
+ 		];
 
  		$this->object->assign($array);
 
  		$this->assertEquals("I'm a variable, too", $this->object->var2 );
 
- 		$this->object->perform('IsReadonly');
+ 		$this->object->perform(State::READONLY);
 
  		$this->object->var2 = "I won't get this new value";
 

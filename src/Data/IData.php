@@ -4,45 +4,45 @@
  */
 namespace BlueFission\Data;
 
-use BlueFission\IDevObject;
+use BlueFission\IObj;
 use BlueFission\Behavioral\IConfigurable;
 
-interface IData extends IDevObject, IConfigurable
+interface IData extends IObj, IConfigurable
 {
     /**
      * Reads data from source.
      *
-     * @return mixed
+     * @return IObj
      */
-	public function read();
+	public function read(): IObj;
 
     /**
      * Writes data to source.
      *
-     * @return mixed
+     * @return IObj
      */
-	public function write();
+	public function write(): IObj;
 
     /**
      * Deletes data from source.
      *
-     * @return mixed
+     * @return IObj
      */
-	public function delete();
+	public function delete(): IObj;
 
     /**
      * Returns data.
      *
      * @return mixed
      */
-	public function data();
+	public function data(): mixed;
 
     /**
      * Returns data contents.
      *
      * @return mixed
      */
-	public function contents();
+	public function contents(): mixed;
 
     /**
      * Returns the status message of an operation.
@@ -50,5 +50,5 @@ interface IData extends IDevObject, IConfigurable
      * @param string $message
      * @return mixed
      */
-	public function status( $message = null );
+	public function status( $message = null ): mixed;
 }

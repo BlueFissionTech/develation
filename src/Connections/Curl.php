@@ -2,9 +2,10 @@
 
 namespace BlueFission\Connections;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
-use BlueFission\DevString;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Str;
+use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
 
@@ -53,7 +54,7 @@ class Curl extends Connection implements IConfigurable
 	public function __construct( $config = null )
 	{
 		parent::__construct();
-		if (DevArray::is($config))
+		if (Arr::is($config))
 			$this->config($config);
 	}
 
@@ -61,21 +62,23 @@ class Curl extends Connection implements IConfigurable
 	 * Sets options for the cURL connection.
 	 *
 	 * @param string $option Option to set.
-	 * @param mixed $value DevValue of the option.
+	 * @param mixed $value Val of the option.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function option($option, $value)
+	public function option($option, $value): IObj
 	{
 		$this->_options[$option] = $value;
+
+		return $this;
 	}
 	
 	/**
 	 * Opens a cURL connection.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function open()
+	public function open(): IObj
 	{
 		$status = '';
 		$target = $this->config('target') ? $this->config('target') : HTTP::domain();
@@ -102,19 +105,23 @@ class Curl extends Connection implements IConfigurable
 			$status = self::STATUS_NOTCONNECTED;		
 		}
 		$this->status($status);
+
+		return $this;
 	}
 	
 	/**
 	 * Closes a cURL connection.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function close ()
+	public function close (): IObj
 	{
 		curl_close($this->_connection);
 		
 		// clean up
 		parent::close();
+
+		return $this;
 	}
 	
 	/**
@@ -122,18 +129,18 @@ class Curl extends Connection implements IConfigurable
 	 * 
 	 * @param array $query The query data to be sent to the target URL.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function query($query = null)
+	public function query($query = null): IObj
 	{ 
 		$curl = $this->_connection;
-		$method = DevString::lower($this->config('method'));
+		$method = Str::lower($this->config('method'));
 		
 		if ($curl)
 		{
-			if (DevValue::isNotNull($query))
+			if (Val::isNotNull($query))
 			{
-				if (DevArray::isAssoc($query))
+				if (Arr::isAssoc($query))
 				{
 					$this->assign($query);
 				}
@@ -160,6 +167,8 @@ class Curl extends Connection implements IConfigurable
 			$status = self::STATUS_NOTCONNECTED;
 		}	
 		$this->status($status);
+
+		return $this;
 	}
 
 }

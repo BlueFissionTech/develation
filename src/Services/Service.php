@@ -2,9 +2,9 @@
 namespace BlueFission\Services;
 
 use ReflectionClass;
-use BlueFission\DevValue;
-use BlueFission\DevObject;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Obj;
+use BlueFission\Arr;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -14,7 +14,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
  *
  * @package BlueFission\Services
  */
-class Service extends DevObject implements IDispatcher {
+class Service extends Obj implements IDispatcher {
 	use Dispatches;
 
 	/**
@@ -50,13 +50,13 @@ class Service extends DevObject implements IDispatcher {
 	/**
 	 * @var array $data
 	 */
-	protected $_data = array(
+	protected $_data = [
 		'name'=>'',
 		'arguments'=>'',
 		'instance'=>'',
 		'type'=>'',
 		'scope'=>'',
-	);
+	];
 
 	/**
 	 * Service constructor.
@@ -79,7 +79,7 @@ class Service extends DevObject implements IDispatcher {
 			$service = $this->instance;
 		} else {
 			$reflection_class = new ReflectionClass($this->type);
-			$args = DevArray::toArray( $this->arguments );
+			$args = Arr::toArray( $this->arguments );
     		$this->instance = $reflection_class->getConstructor() ? $reflection_class->newInstanceArgs( $args ) : $reflection_class->newInstanceWithoutConstructor();
 
 			foreach ($this->_registrations as $name=>$registrations) {
@@ -115,7 +115,7 @@ class Service extends DevObject implements IDispatcher {
 	 */
 	public function parent($object = null) 
 	{
-	    if (DevValue::isNotNull($object)) {
+	    if (Val::isNotNull($object)) {
 	        $this->_parent = $object;
 	    }
 
@@ -144,7 +144,7 @@ class Service extends DevObject implements IDispatcher {
 	public function boost($behavior) 
 	{
 	    $parent = $this->parent();
-	    if ($parent && $parent instanceof \BlueFission\Services\Application) {
+	    if ($parent && $parent instanceof Application) {
 	        $parent->boost($behavior);
 	    }
 	}
@@ -158,7 +158,7 @@ class Service extends DevObject implements IDispatcher {
 	public function message($behavior, $args = null) 
 	{
 	    $instance = $this->instance();
-	    if ($instance instanceof IDispatcher && is_callable(array($instance, 'behavior'))) {
+	    if ($instance instanceof IDispatcher && is_callable([$instance, 'behavior'])) {
 	        $instance->dispatch($behavior, $args);
 	    } else {
 	        $this->_response = $this->call($behavior, $args);
@@ -173,10 +173,11 @@ class Service extends DevObject implements IDispatcher {
 	 *
 	 * @return mixed  The return value of the function.
 	 */
-	public function call($call, $args)
+	public function call($call, $args = [])
 	{
-	    if (is_callable(array($this->instance, $call))) {
-	        $return = call_user_func_array(array($this->instance, $call), $args);
+	    if (is_callable([$this->instance, $call])) {
+	    	$args = new Arr($args);
+	        $return = call_user_func_array([$this->instance, $call], $args->val());
 	        return $return;
 	    }
 	}

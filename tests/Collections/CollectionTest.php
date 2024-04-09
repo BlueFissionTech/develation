@@ -6,6 +6,7 @@ use BlueFission\Collections\Collection;
 class CollectionTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Collection';
+ 	protected $object;
 
 	public function setUp(): void
 	{

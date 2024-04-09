@@ -8,9 +8,10 @@ use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Utils\Util;
 use BlueFission\Collections\Collection;
 use BlueFission\Services\Mapping;
-use BlueFission\DevValue;
-use BlueFission\DevArray;
-use BlueFission\DevObject;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\Obj;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Handler;
@@ -22,7 +23,7 @@ use Exception;
  * 
  * @package BlueFission\Services
  */
-class Application extends DevObject implements IConfigurable, IDispatcher, IBehavioral {
+class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral {
 	use Programmable {
         Programmable::__construct as private __tConstruct;
     }
@@ -220,7 +221,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
      */
     public function params($params) 
     {
-        $this->_parameters = DevArray::toArray($params);
+        $this->_parameters = Arr::toArray($params);
 	
         return $this;
     }
@@ -427,7 +428,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 		} elseif ($this->fileExists($uri->path) && $uri->path != "") {
 			print( $this->fileContents($uri->path) );
 		} else {
-			if (\is_string($behavior)) {
+			if (Str::is($behavior)) {
 				$behavior = new Behavior($behavior);
 			}
 
@@ -441,9 +442,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 			}
 			$args['behavior'] = $behavior;
 
-			// die(var_dump($args));
-
-			call_user_func_array(array($this, 'message'), $args);
+			call_user_func_array([$this, 'message'], $args);
 		}
 
 		return $this;
@@ -457,14 +456,14 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	 * @return void
 	 */
 	public function boost( $behavior, $args = null ) {
-		if (\is_string($behavior)) {
+		if (Str::is($behavior)) {
 			$behavior = new Behavior($behavior);
 		}
 
 		$behavior->_context = $args ?? $behavior->_context;
 		$behavior->_target = $behavior->_target ?? $this;
 
-		call_user_func_array(array($this, 'broadcast'), array($behavior));
+		call_user_func_array([$this, 'broadcast'], [$behavior]);
 	}
 
 	/**
@@ -489,7 +488,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	public function execute( $behavior, $args = null )
 	{
 		$this->_last_args = null;
-		if ( \is_string($behavior) )
+		if ( Str::is($behavior) )
 			$behavior = new Behavior( $behavior );
 
 		if ( $behavior instanceof Behavior ) {
@@ -562,6 +561,16 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	}
 
 	/**
+	 * Returns the mappings for the aplication
+	 * 
+	 * @return array The mappings for the application
+	 */
+	public function maps()
+	{
+		return $this->_mappings;
+	}
+
+	/**
 	 * Gets the name of a mapping for a given location and HTTP method.
 	 *
 	 * @param string $location The location to search for.
@@ -607,10 +616,13 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	public function component( $name, $data = null, $configuration = null )
 	{	
 		$object = null;
-		if ( DevValue::isNull($this->$name)) {
-			$object = new Programmable();
+		if ( Val::isNull($this->$name)) {
+			// Create anonymous class
+			$object = new class extends Obj {
+				use Programmable;
+			};
 			$object->config( $configuration );
-			if (DevValue::isNotNull($data)) {
+			if (Val::isNotNull($data)) {
 				$object->assign( $data );
 			}
 		}
@@ -638,7 +650,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 			$service->instance = $reference;
 			$service->type = \get_class($reference);
 			$service->scope = $reference;
-		} elseif (DevValue::isNotNull($reference) ) {
+		} elseif (Val::isNotNull($reference) ) {
 			$service->type = $reference;	
 			$service->scope = $this;
 			if ( is_subclass_of($reference, Service::class) && count($args) == 0 ) {
@@ -673,7 +685,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	 */
 	public function register( $serviceName, $behavior, $callable, $level = Service::LOCAL_LEVEL, $priority = 0 )
 	{
-		if (\is_string($behavior))
+		if (Str::is($behavior))
 			$behavior = new Behavior($behavior, $priority);
 
 		if ( $serviceName == $this->name() ) {
@@ -706,7 +718,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	 */
 	public function route( $senderName, $recipientName, $behavior, $callback = null )
 	{
-		if (\is_string($behavior))
+		if (Str::is($behavior))
 			$behavior = new Behavior($behavior);
 
 		$handlers = $this->_handlers->get($behavior->name());
@@ -781,22 +793,21 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 	 */
 	public function broadcast( $behavior, $args = null )
 	{
-		if (empty($this->_broadcast_chain)) $this->_broadcast_chain = array("Base");
+		if (empty($this->_broadcast_chain)) $this->_broadcast_chain = ["Base"];
 
 		if ( !($behavior instanceof Behavior) )
 		{
 			throw new Exception("Invalid Behavior");
 		}
 
-		$behavior->_context = $args ? $args : $behavior->_context;
+		$behavior->_context = $args ?? $behavior->_context;
 
 		// if ( $this->_depth == 0 ) {
-			$this->_last_args = $behavior->_context ? $behavior->_context : $this->_last_args;
+			$this->_last_args = $behavior->_context ?? $this->_last_args;
 		// }
 
 		// echo "\nrunning ".$behavior->name()." from ".$behavior->_target->name(). "\n";
-		// var_dump($this->_routes);
-
+		
 		$this->_depth++;
 		foreach ( $this->_routes as $behaviorName=>$senders )
 		{
@@ -813,7 +824,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 					foreach ( $recipients as $recipient )
 					{
 						$target_name = '';
-						if ($behavior->_target instanceof \BlueFission\Services\Service || $behavior->_target instanceof \BlueFission\Services\Application) {
+						if ($behavior->_target instanceof Service || $behavior->_target instanceof Application) {
 							$target_name = $behavior->_target->name();
 						} else {
 							foreach ( $this->_services as $service ) {
@@ -908,7 +919,7 @@ class Application extends DevObject implements IConfigurable, IDispatcher, IBeha
 			$recipient = $this->_services[$service];
 		}
 
-		if (DevValue::isNotNull($callback) && \is_string($callback)) {
+		if (Val::isNotNull($callback) && \is_string($callback)) {
 			$behavior = new Behavior($callback);
 		}
 

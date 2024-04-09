@@ -54,11 +54,11 @@ class Process {
 	 *
 	 * @var array
 	 */
-	private $spec = array(
-		0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
-		1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
-		2 => array("pipe", "a"), // stderr is a file to write to
-	);
+	private $_spec = [
+		0 => ["pipe", "r"],  // stdin is a pipe that the child will read from
+		1 => ["pipe", "w"],  // stdout is a pipe that the child will write to
+		2 => ["pipe", "a"], // stderr is a file to write to
+	];
 
     /**
      * The process resource created by proc_open
@@ -96,6 +96,15 @@ class Process {
         $this->_env = $env;
         $this->_descriptorspec = $descriptorspec ?? $this->_spec;
         $this->_options = $options;
+    }
+
+    public function __get($name)
+    {
+        if ('process' == $name) {
+            return $this->_process;
+        }
+
+        return null;
     }
 
     /**
@@ -136,7 +145,7 @@ class Process {
 			return $this->_status['running'];
 		}
 		else
-			return fread($this->_pipes[2]);
+            return fread($this->_pipes[2], 2096);
 	}
 
     /**

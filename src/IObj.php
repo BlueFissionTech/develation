@@ -1,7 +1,7 @@
 <?php
 namespace BlueFission;
 
-interface IDevObject
+interface IObj
 {
     /**
      * This method sets or gets the value of a field
@@ -15,7 +15,15 @@ interface IDevObject
     /**
      * This method should clear all fields
      * 
-     * @return void
+     * @return IObj
      */
-	public function clear();
+	public function clear(): IObj;
+
+    /**
+     * This method should assign data to the object
+     * 
+     * @param mixed $data
+     * @return IObj
+     */
+    public function assign( mixed $data ): IObj;
 }

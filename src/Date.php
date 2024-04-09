@@ -1,13 +1,13 @@
 <?php
 namespace BlueFission;
 
-use BlueFission\DevValue;
-use BlueFission\DevNumber;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Num;
+use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Event;
 use \DateTime;
 
-class DevDateTime extends DevValue implements IDevValue
+class Date extends Val implements IVal
 {
 	protected $_type = "";
 
@@ -27,18 +27,18 @@ class DevDateTime extends DevValue implements IDevValue
     protected $_datetime;
 
 	/**
-     * DevDateTime constructor.
+     * Date constructor.
      *
      * @param mixed|null $value The value to set, if any
      */
     public function __construct( $value = null, $timezone = null ) {
 
-        $this->_datetime = ($value instanceof DateTime) ? $value : new DateTime($value);
+        $this->_datetime = ($value instanceof DateTime) ? $value : new DateTime($value ?? 'now');
         $this->_timezone = $timezone ?? $this->_datetime->getTimezone()->getName();
 
 		parent::__construct($value);
 
-        $this->_data = new DevArray([
+        $this->_data = new Arr([
 	        'second'=>$this->_datetime->format('s'), 
 	        'minute'=>$this->_datetime->format('i'), 
 	        'hour'=>$this->_datetime->format('G'), 
@@ -49,7 +49,7 @@ class DevDateTime extends DevValue implements IDevValue
 	        'offset'=>$this->_datetime->format('Z')
 	    ]);
 
-		// Register date Array changes as changes to DevDateTime object
+		// Register date Array changes as changes to Date object
         $this->_data->behavior(new Event( Event::CHANGE ), function($behavior) {
         	$this->_datetime = new DateTime( $this->timestamp() );
         	$this->_timezone = $this->_datetime->getTimezone()->getName();
@@ -98,7 +98,7 @@ class DevDateTime extends DevValue implements IDevValue
 	{		
 	    if ( is_null($data) ) {
 	        $timestamp = mktime ((int)$this->_data['hour'], (int)$this->_data['minute'], (int)$this->_data['second'], (int)$this->_data['month'], (int)$this->_data['day'], (int)$this->_data['year']);
-	    } elseif ( DevNumber::is($data) ) {
+	    } elseif ( Num::is($data) ) {
 	        $timestamp = $this->isValidTimestamp($data) ? $data : null;
 	    } elseif ( $data instanceof DateTime ) {
 			$timestamp = $data->getTimestamp();
@@ -142,7 +142,7 @@ class DevDateTime extends DevValue implements IDevValue
 		break;
 		}
 
-		if ( DevValue::isNull($time) ) {
+		if ( Val::isNull($time) ) {
 			$time = date($this->_format, $timestamp);
 		}
 
@@ -153,16 +153,29 @@ class DevDateTime extends DevValue implements IDevValue
 	 * set the format for the date
 	 *
 	 * @param string|null $format The format to set
-	 * @return string The format
+	 * @return IVal | string The format
 	 */
-	public function format( string $format = null ): string
+	public function format( string $format = null ): IVal | string
 	{
-		if ( DevValue::isNull($format) ) {
+		if ( Val::isNull($format) ) {
 			return $this->_format;
 		}
 
 		$this->_format = $format;
-		return $this->_format;
+		
+		return $this;
+	}
+
+	/**
+	 * Get the change between the current value and the snapshot
+	 *
+	 * @return mixed
+	 */
+	public function delta()
+	{
+		return Date::difference($this->_snapshot, $this->_data);
+
+		return $this;
 	}
 
 	/**
@@ -204,7 +217,7 @@ class DevDateTime extends DevValue implements IDevValue
 		}
 		
 
-		if ( DevValue::isNull($date) ) {
+		if ( Val::isNull($date) ) {
 			$date = date($this->_format, $timestamp);
 		}
 		
@@ -220,9 +233,9 @@ class DevDateTime extends DevValue implements IDevValue
 	 *
 	 * @return float The difference between the two times
 	 */
-	public static function _difference($time2, $interval = null): float
+	public function _difference($time2, $interval = null): float
 	{
-		if (DevValue::isNull($interval)) $interval = 'seconds';
+		if (Val::isNull($interval)) $interval = 'seconds';
 		$a = $this->timestamp();
 		$b = $this->timestamp($time2);
 		$difference = (($a > $b) ? ($a - $b) : ($b - $a));
@@ -256,6 +269,6 @@ class DevDateTime extends DevValue implements IDevValue
 	 * @return string
 	 */
 	public function __toString(): string {
-		return $this->value();
+		return $this->val();
 	}
 }

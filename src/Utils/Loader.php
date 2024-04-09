@@ -14,7 +14,7 @@ class Loader
     private static $_instance;
 
     private $_paths;
-    private $_config = array('default_extension'=>'php','default_path'=>'', 'full_stop'=>'.');
+    private $_config = ['default_extension'=>'php','default_path'=>'', 'full_stop'=>'.'];
 
     /**
      * Constructor for the class
@@ -23,7 +23,7 @@ class Loader
      */
     private function __construct()
     {
-        $this->_paths = array();
+        $this->_paths = [];
         $this->_paths[] = realpath( dirname( __FILE__ ) );
     }
 

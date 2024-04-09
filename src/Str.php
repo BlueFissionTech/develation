@@ -1,7 +1,7 @@
 <?php
 namespace BlueFission;
 
-class DevString extends DevValue implements IDevValue {
+class Str extends Val implements IVal {
 	/**
 	 *
 	 * @var string $_type is used to store the data type of the object
@@ -23,9 +23,24 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @param mixed $value
 	 */
-	public function __construct( $value = null, $force = false ) {
-		$value = is_string( $value ) ? $value : ( ($force && $value != null) ? (string)$value : null );
+	public function __construct( $value = null, $snapshot = true, $convert = false ) {
+		$value = is_string( $value ) ? $value : ( ( ( $convert || $this->_forceType ) && $value != null) ? (string)$value : $value );
 		parent::__construct($value);
+	}
+
+
+	/**
+	 * Convert the value to the type of the var
+	 *
+	 * @return IVal
+	 */
+	public function convert(): IVal
+	{
+		if ( $this->_type ) {
+			$this->_data = (string)$this->_data;
+		}
+
+		return $this;
 	}
 
     /**
@@ -46,9 +61,9 @@ class DevString extends DevValue implements IDevValue {
 	 * @param int $length The length of the desired random string. Default is 8.
 	 * @param bool $symbols If set to true, special characters are included in the random string. Default is false.
 	 * 
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _random(int $length = 8, bool $symbols = false): DevString {
+	public function _random(int $length = 8, bool $symbols = false): IVal {
 		$alphanum = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		if ($symbols) $alphanum .= "~!@#\$%^&*()_+=";
 
@@ -69,9 +84,9 @@ class DevString extends DevValue implements IDevValue {
 	/**
      * Generates a version 4 UUID
      *
-     * @return DevString
+     * @return IVal
      */
-	public function _uuid4(): DevString
+	public function _uuid4(): IVal
 	{
 	    // Generate 16 bytes (128 bits) of random data or use the data passed into the function.
 	    if (!function_exists('random_bytes')) {
@@ -97,9 +112,9 @@ class DevString extends DevValue implements IDevValue {
 	 * Truncates a string to a given number of words using space as a word boundary.
 	 * 
 	 * @param int $limit The number of words to limit the string to. Default is 40.
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _truncate(int $limit = 40): DevString
+	public function _truncate(int $limit = 40): IVal
 	{
 		$string = trim( $this->_data );
 		$string_r = explode(' ', $string, ($limit+1));
@@ -128,9 +143,9 @@ class DevString extends DevValue implements IDevValue {
 	 * Encrypt a string
 	 *
 	 * @param string $mode The encryption mode to use. Can be 'md5' or 'sha1'. Default is 'md5'
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _encrypt(string $mode = null): DevString {
+	public function _encrypt(string $mode = null): IVal {
 		$string = $this->_data;
 		switch ($mode) {
 		default:
@@ -154,7 +169,7 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
 	 */
-	public function _strpos(string $needle): int {
+	public function _pos(string $needle): int {
 		return strpos($this->_data, $needle);
 	}
 
@@ -165,7 +180,7 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
 	 */
-	public function _stripos(string $needle): int {
+	public function _ipos(string $needle): int {
 		return stripos($this->_data, $needle);
 	}
 
@@ -177,7 +192,7 @@ class DevString extends DevValue implements IDevValue {
      *
      * @return int
      */
-	public function _strrpos(string $needle): int {
+	public function _rpos(string $needle): int {
 		$haystack = $this->_data;
 		$i = strlen($haystack);
 		while ( substr( $haystack, $i, strlen( $needle ) ) != $needle ) 
@@ -193,16 +208,19 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @return int The length of the string
 	 */
-	public function _length(): int {
+	public function _len(): int {
+		if ( !is_string($this->_data) ) {
+			return 0;
+		}
 		return strlen($this->_data);
 	}
 
 	/**
 	 * Converts all characters of the string to lowercase
 	 *
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _lower(): DevString {
+	public function _lower(): IVal {
 		$string = strtolower($this->_data);
 		$this->alter($string);
 
@@ -212,10 +230,10 @@ class DevString extends DevValue implements IDevValue {
 	/**
 	 * Converts all characters of the string to uppercase
 	 *
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _upper(): DevString {
-		$string =strtoupper($this->_data);
+	public function _upper(): IVal {
+		$string = strtoupper($this->_data);
 		$this->alter($string);
 
 		return $this;
@@ -224,9 +242,9 @@ class DevString extends DevValue implements IDevValue {
 	/**
 	 * Capitalizes the first letter of each word in the string
 	 *
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _capitalize(): DevString {
+	public function _capitalize(): IVal {
 		$string = ucwords($this->_data);
 		$this->alter($string);
 
@@ -238,9 +256,9 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @param int $times The number of times to repeat the string
 	 *
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _repeat(int $times): DevString {
+	public function _repeat(int $times): IVal {
 		$string = str_repeat($this->_data, $times);
 
 		$this->alter($string);
@@ -254,9 +272,9 @@ class DevString extends DevValue implements IDevValue {
 	 * @param string $search The value to search for
 	 * @param string $replace The value to replace the search value with
 	 *
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _replace(string $search, string $replace): DevString {
+	public function _replace(string $search, string $replace): IVal {
 		$string = str_replace($search, $replace, $this->_data);
 
 		$this->alter($string);
@@ -272,16 +290,16 @@ class DevString extends DevValue implements IDevValue {
 	 *
 	 * @return string The substring
 	 */
-	public function _substring(int $start, int $length = null): string {
+	public function _sub(int $start, int $length = null): string {
 		return substr($this->_data, $start, $length);
 	}
 
 	/**
 	 * Trims whitespace from the beginning and end of the string
 	 *
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _trim(): DevString {
+	public function _trim(): IVal {
 		$string = trim($this->_data);
 
 		$this->alter($string);
@@ -292,9 +310,9 @@ class DevString extends DevValue implements IDevValue {
 	/**
 	 * Converts a string to snake case
 	 * 
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _snake(): DevString {
+	public function _snake(): IVal {
 		$string = $this->_data;
 		$string = preg_replace('/\s+/', '_', $string);
 		$string = preg_replace('/[^a-zA-Z0-9_]/', '', $string);
@@ -308,9 +326,9 @@ class DevString extends DevValue implements IDevValue {
 	/**
 	 * Converts a string to camel case
 	 * 
-	 * @return DevString
+	 * @return IVal
 	 */
-	public function _camel(): DevString {
+	public function _camel(): IVal {
 		$string = $this->_data;
 		$string = preg_replace('/\s+/', '', $string);
 		$string = preg_replace('/[^a-zA-Z0-9_]/', '', $string);
@@ -332,6 +350,7 @@ class DevString extends DevValue implements IDevValue {
 	 */
 	public function _has(string $needle): bool {
 		$haystack = $this->_data;
+
 		return (\strpos($haystack, $needle) !== false);
 	}
 
@@ -376,6 +395,16 @@ class DevString extends DevValue implements IDevValue {
 	    }
 
 	    return round($similarity / $max, 2);
+	}
+
+	/**
+	 * Get the change between the current value and the snapshot
+	 *
+	 * @return float
+	 */
+	public function delta(): float
+	{
+		return Str::similarityTo($this->_snapshot, $this->_data);
 	}
 
 	/**

@@ -50,7 +50,7 @@ class Machine {
      * @return int The peak memory usage in bytes
      */
     public function getMemoryPeakUsage() {
-      return memory_get_peak_usage(true);
+        return memory_get_peak_usage(true);
     }
 
     /**
@@ -59,8 +59,8 @@ class Machine {
      * @return int The uptime in seconds
      */
     public function getUptime() {
-      $uptime = explode(" ", file_get_contents("/proc/uptime"));
-      return $uptime[0];
+        $uptime = explode(" ", file_get_contents("/proc/uptime"));
+        return $uptime[0];
     }
 
     /**
@@ -69,8 +69,14 @@ class Machine {
      * @return float The CPU usage as a decimal
      */
     public function getCPUUsage() {
-      $load = sys_getloadavg();
-      return $load[0];
+        if (\substr(\php_uname(), 0, 7) == "Windows") { 
+            // Windows command for getting CPU usage
+            $this->_system->run("WMIC CPU GET LoadPercentage");
+            return $this->_system->response();
+        } else {
+            $load = \sys_getloadavg();
+            return $load[0];
+        }
     }
 
     /**

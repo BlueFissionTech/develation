@@ -61,7 +61,7 @@ class FileQueue extends Queue implements IQueue {
 	 * @param string $queue 
 	 * @return boolean
 	 */
-	public static function is_empty($queue) {
+	public static function isEmpty($queue) {
 		$stack = self::instance();
 
 		$count = filesize($stack);

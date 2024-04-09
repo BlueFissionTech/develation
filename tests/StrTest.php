@@ -1,14 +1,15 @@
 <?php
 namespace BlueFission\Tests;
 
-use BlueFission\DevString;
+use BlueFission\Str;
  
-class DevStringTest extends \PHPUnit\Framework\TestCase {
+class StrTest extends \PHPUnit\Framework\TestCase {
  
- 	static $classname = 'BlueFission\DevString';
-	public function setUp(): test
+ 	static $classname = 'BlueFission\Str';
+ 	protected $object;
+	public function setUp(): void
 	{
-		$this->object = new DevString('My Name Is John');
+		$this->object = new Str('My Name Is John');
 	}
 
 	public function testRandomStringSeldomRepeats()

@@ -1,17 +1,17 @@
 <?php
 namespace BlueFission;
 
-interface IDevValue {
+interface IVal {
     /**
      * This method should return a value of some kind
      * 
      * @return mixed
      */
-	public function value(): mixed;
+	public function val(): mixed;
 
 	/**
 	 * Sets the var to null
-	 * @return void 
+	 * @return IVal 
 	 */
-	public function clear(): void;
+	public function clear(): IVal;
 }

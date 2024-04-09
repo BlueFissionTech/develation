@@ -2,6 +2,7 @@
 namespace BlueFission\Tests\Behavioral;
 
 use BlueFission\Behavioral\Programmable;
+use BlueFission\Obj;
  
 class ProgrammableTest extends ConfigurableTest {
  
@@ -58,9 +59,6 @@ class ProgrammableTest extends ConfigurableTest {
  		$this->assertEquals(3, $number);
  	}
 
- 	/** 
- 	 * @expectedException RuntimeException
- 	 */
  	public function testClassCanForgetMethods()
  	{
  		$this->expectOutputString('Yet another test');
@@ -75,6 +73,7 @@ class ProgrammableTest extends ConfigurableTest {
 
  		$this->object->forget('testMethod');
 
+ 		$this->expectException(\RuntimeException::class);
  		$this->object->testMethod();
  	}
 }

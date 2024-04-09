@@ -2,10 +2,10 @@
 namespace BlueFission;
 
 /**
-* DevBoolean class extends DevValue and implements IDevValue
+* Flag class extends Val and implements IVal
 * This class is used to handle boolean values
 */
-class DevBoolean extends DevValue implements IDevValue {
+class Flag extends Val implements IVal {
 	
 	/**
 	* @var string $_type The type of the value stored in the object, in this case "boolean"
@@ -13,25 +13,45 @@ class DevBoolean extends DevValue implements IDevValue {
 	protected $_type = "boolean";
 
 	/**
-	* Constructor for DevBoolean class
+	* Constructor for Flag class
 	*
 	* @param mixed $value The value that needs to be stored in the object
 	*
 	* @return void
 	*/
-	public function __construct( $value = null ) {
-		$value = $value ? true : false;
-		parent::__construct( $value );
+	public function __construct( $value = null, $snapshot = true, $convert = false ) {
+		if ( $this->_forceType || $convert ) {
+			$value = $value ? true : false;
+		}
+		parent::__construct( $value, $snapshot );
+	}
+
+    /**
+	 * Convert the value to the type of the var
+	 *
+	 * @return IVal
+	 */
+	public function convert(): IVal
+	{
+		if ( $this->_type ) {
+			$this->_data = (bool)$this->_data;
+		}
+
+		return $this;
 	}
 
 	/**
 	* _opposite function returns the opposite value of a boolean variable
 	*
-	* @return bool The opposite value of the boolean stored in the object
+	* @return IVal
 	*/
-	public function _opposite() {
+	public function _flip(): IVal
+	{
 		$bool = $this->_data;
-	    return (!($bool === true));
+	    $bool = !$bool;
+	    $this->_data = $bool;
+	    
+	    return $this;
 	}
 
 	/**
@@ -59,7 +79,7 @@ class DevBoolean extends DevValue implements IDevValue {
 	 *
 	 * @return bool The boolean representation of the given value
 	 */
-	public static function _toBoolean($value): bool {
+	public static function _toBool($value): bool {
 	    return (bool) $value;
 	}
 	/**

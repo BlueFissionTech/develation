@@ -72,9 +72,9 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		}
 		if ($this->has( $key )) {
 			return $this->_value[$key];
-		}
-		else 
+		} else {
 			return null;		
+		}
 	}
 
 	/**
@@ -114,11 +114,14 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 *
 	 * @throws InvalidArgumentException If the key is not scalar or null.
 	 */
-	public function add( $object, $key = null ) {
+	public function add( $object, $key = null ): ICollection
+	{
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
 		$this->_value[$key] = $object;
+
+		return $this;
 	}
 
 	/**
@@ -138,7 +141,8 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return mixed The last object in the collection.
 	 */
 	public function last() {
-		return end( $this->_value );
+		$value = $this->_value->getArrayCopy();
+		return end( $value );
 	}
 
 	/**
@@ -157,20 +161,26 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 *
 	 * @throws InvalidArgumentException If the key is not scalar or null.
 	 */
-	public function remove( $key ) {
+	public function remove( $key ): ICollection
+	{
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
 		if ( isset($this->_value[$key]) )
 			unset( $this->_value[$key]);
+
+		return $this;
 	}
 
 	/**
 	 * Clears the collection of all objects.
 	 */
-	public function clear() {
+	public function clear(): ICollection
+	{
 		unset( $this->_value );
 		$this->_value = new ArrayObject();
+
+		return $this;
 	}
 
 	/**
