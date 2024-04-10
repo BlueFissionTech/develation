@@ -44,7 +44,7 @@ class FlagTest extends \PHPUnit\Framework\TestCase {
 
 	public function testDefaultIsFalse()
 	{
-		$falseResult = $this->blankObject->convert()->val();
+		$falseResult = $this->blankObject->cast()->val();
 	
 		$this->assertFalse( $falseResult );
 	}

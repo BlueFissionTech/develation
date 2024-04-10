@@ -4,7 +4,7 @@ namespace BlueFission;
 class Str extends Val implements IVal {
 	/**
 	 *
-	 * @var string $_type is used to store the data type of the object
+	 * @var string $type is used to store the data type of the object
 	 */
 	protected $_type = "string";
 
@@ -23,8 +23,8 @@ class Str extends Val implements IVal {
 	 *
 	 * @param mixed $value
 	 */
-	public function __construct( $value = null, $snapshot = true, $convert = false ) {
-		$value = is_string( $value ) ? $value : ( ( ( $convert || $this->_forceType ) && $value != null) ? (string)$value : $value );
+	public function __construct( $value = null, $snapshot = true, $cast = false ) {
+		$value = is_string( $value ) ? $value : ( ( ( $cast || $this->_forceType ) && $value != null) ? (string)$value : $value );
 		parent::__construct($value);
 	}
 
@@ -34,7 +34,7 @@ class Str extends Val implements IVal {
 	 *
 	 * @return IVal
 	 */
-	public function convert(): IVal
+	public function cast(): IVal
 	{
 		if ( $this->_type ) {
 			$this->_data = (string)$this->_data;

@@ -44,7 +44,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 * @param mixed $value
 	 * @return mixed
 	 */
-	private function convert( $value ) {
+	private function cast( $value ) {
 		if ( $this->_type && !($value instanceof $this->_type) ) {
 			try {
 				$object = new $this->_type();
@@ -73,7 +73,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 */
 	public function get( $key ) {
 		$value = parent::get( $key );
-		return $this->convert( $value );
+		return $this->cast( $value );
 	}
 
 	/**
@@ -83,7 +83,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 */
 	public function first()	{
 		$value = parent::first();
-		return $this->convert( $value );
+		return $this->cast( $value );
 	}
 
 	/**
@@ -93,6 +93,6 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 */
 	public function last() {
 		$value = parent::last();
-		return $this->convert( $value );
+		return $this->cast( $value );
 	}
 }

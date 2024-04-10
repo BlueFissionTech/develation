@@ -3,6 +3,7 @@ namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Dispatches;
+use BlueFission\Collections\Collection;
 use Exception;
 
 /**
@@ -24,11 +25,6 @@ class Val implements IVal {
 	protected $_constraints = [];
 
 	/**
-	 * @var string $_type
-	 */
-	protected $_type = "";
-
-	/**
 	 * Capture the value of the var at a specific time
 	 * @var null
 	 */
@@ -39,6 +35,16 @@ class Val implements IVal {
 	 */
 	protected $_forceType = false;
 
+	/**
+	 * @var string $type
+	 */
+	protected $_type = "";
+
+	private static $_instances = null;
+
+	/**
+	 * @var string PRIVATE_PREFIX
+	 */
 	const PRIVATE_PREFIX = '_';
 
 	/**
@@ -46,7 +52,7 @@ class Val implements IVal {
 	 *
 	 * @param mixed $value
 	 */
-	public function __construct( $value = null, bool $takeSnapshot = true, bool $convert = false ) {
+	public function __construct( $value = null, bool $takeSnapshot = true, bool $cast = false ) {
 		$this->__tConstruct();
 
 		if ( $value instanceof IVal ) {
@@ -54,7 +60,7 @@ class Val implements IVal {
 		}
 
 		$this->_data = $value;
-		if ( $this->_type && $this->_forceType || $convert ) {
+		if ( $this->_type && $this->_forceType || $cast ) {
 			settype($this->_data, $this->_type);
 		}
 
@@ -70,7 +76,7 @@ class Val implements IVal {
 	 *
 	 * @return IVal
 	 */
-	public function convert(): IVal
+	public function cast(): IVal
 	{
 		if ( $this->_type ) {
 			settype($this->_data, $this->_type);
@@ -78,6 +84,94 @@ class Val implements IVal {
 
 		return $this;
 	}
+
+	/**
+	 * Get the datatype name of the object
+	 * @return string
+	 */
+	public function getType() {
+		return $this->_type;
+	}
+
+	/**
+	 * Make, create a new instance of this class
+	 * @param  mixed $value The value to set as the data member
+	 * @return IVal        a new instance of the class
+	 */
+	public static function make($value = null): IVal
+	{
+		$class = get_called_class();
+		$object = new $class();
+
+		$object = ValFactory::make($object->getType(), $value);
+
+		return $object;
+	}
+
+	/**
+	 * Tag the object with a group to be tracked by the object class
+	 * @param string $group The group to tag the object with
+	 * @return IVal
+	 */
+	public function tag($group = null)
+	{
+		$tag = $this->getType();
+		if ( $group ) {
+			$tag = $group . '.' . $tag;
+		}
+
+		if ( !self::$_instances ) {
+			self::$_instances = new Collection();
+		}
+
+		if ( !isset(self::$_instances[$tag]) ) {
+			self::$_instances[$tag] = new Collection();
+		}
+
+		self::$_instances[$tag]->addDistinct($this);
+
+		return $this;
+	}
+
+	public function untag($group = null)
+	{
+		$tag = $this->getType();
+		if ( $group ) {
+			$tag = $group . '.' . $tag;
+		}
+
+		if ( !self::$_instances ) {
+			self::$_instances = new Collection();
+		}
+
+		if ( isset(self::$_instances[$tag]) ) {
+			$key = self::$_instances[$tag]->search($this);
+			self::$_instances[$tag]->remove($key);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Get the group of objects tagged with the specified group
+	 * @param string $group The group to get the objects from=
+	 * @return Collection
+	 */
+	public function grp($group = null)
+	{
+		$tag = $this->getType();
+		if ( $group ) {
+			$tag = $group . '.' . $tag;
+		}
+
+		if ( !self::$_instances ) {
+			self::$_instances = new Collection();
+		}
+
+		return self::$_instances[$tag];
+	}
+
+
 
 	///
 	//Variable value functions
@@ -255,9 +349,9 @@ class Val implements IVal {
 	 * pass the value as a reference bound to $_data
 	 *
 	 * @param mixed $value
-	 * @return void
+	 * @return IVAl
 	 */
-	public function ref(&$value)
+	public function ref(&$value): IVal
 	{
 		$this->alter($value);
 		$this->_data = &$value;
@@ -268,9 +362,9 @@ class Val implements IVal {
 	/**
 	 * Snapshot the value of the var
 	 *
-	 * @return mixed
+	 * @return IVal
 	 */
-	public function snapshot()
+	public function snapshot(): IVal
 	{
 		$this->_snapshot = $this->_data;
 
@@ -281,7 +375,7 @@ class Val implements IVal {
 	 * Clear the value of the snapshot
 	 * 
 	 */
-	public function clearSnapshot()
+	public function clearSnapshot(): IVal
 	{
 		$this->_snapshot = null;
 
@@ -291,9 +385,9 @@ class Val implements IVal {
 	/**
 	 * Reset the value of the var to the snapshot
 	 *
-	 * @return mixed
+	 * @return IVal
 	 */
-	public function reset()
+	public function reset(): IVal
 	{
 		$this->_data = $this->_snapshot;
 
@@ -403,7 +497,7 @@ class Val implements IVal {
 
 		$clone = clone $this;
 		
-		return $clone->convert()->val();
+		return $clone->cast()->val();
     }
 
 	/**

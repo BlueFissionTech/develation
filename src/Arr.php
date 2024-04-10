@@ -26,10 +26,10 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
      * Arr constructor.
      * @param null|mixed $value
      */
-    public function __construct( $value = null, bool $snapshot = true, $convert = true ) {
-        parent::__construct( $value, $snapshot, $convert );
+    public function __construct( $value = null, bool $snapshot = true, $cast = true ) {
+        parent::__construct( $value, $snapshot, $cast );
 
-        if ($convert) {
+        if ($cast) {
     		$this->_data = $this->_toArray();
         }
     }
@@ -39,7 +39,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 *
 	 * @return IVal
 	 */
-	public function convert(): IVal
+	public function cast(): IVal
 	{
 		if ( $this->_type ) {
 			$this->_data = $this->toArray();

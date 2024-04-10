@@ -12,7 +12,7 @@ namespace BlueFission;
  */
 class Num extends Val implements IVal {
     /**
-     * @var string $_type The type of number, "integer" or "double"
+     * @var string $type The type of number, "integer" or "double"
      */
     protected $_type = "double";
 
@@ -41,10 +41,10 @@ class Num extends Val implements IVal {
      *
      * @param mixed|null $value The value to set, if any
      */
-    public function __construct( $value = null, bool $takeSnapshot = true, bool $convert = false  ) {
+    public function __construct( $value = null, bool $takeSnapshot = true, bool $cast = false  ) {
 
         $this->_data = $value;
-        if ( $this->_type && ($this->_forceType == true || $convert) ) {
+        if ( $this->_type && ($this->_forceType == true || $cast) ) {
             $clone = $this->_data;
             settype($clone, $this->_type);
             $remainder = $clone % 1;
@@ -60,7 +60,7 @@ class Num extends Val implements IVal {
 	 *
 	 * @return IVal
 	 */
-	public function convert(): IVal
+	public function cast(): IVal
 	{
 		if ( $this->_type ) {
             $clone = $this->_data;
@@ -249,6 +249,7 @@ class Num extends Val implements IVal {
     public function _percentage(float $part = 0, bool $percent = false): float
     {
         $whole = $this->_data;
+
         if (!Num::isValid($part)) $part = 0;
         if (!Num::isValid($whole)) $whole = 1;
 

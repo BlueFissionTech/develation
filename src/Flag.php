@@ -19,8 +19,8 @@ class Flag extends Val implements IVal {
 	*
 	* @return void
 	*/
-	public function __construct( $value = null, $snapshot = true, $convert = false ) {
-		if ( $this->_forceType || $convert ) {
+	public function __construct( $value = null, $snapshot = true, $cast = false ) {
+		if ( $this->_forceType || $cast ) {
 			$value = $value ? true : false;
 		}
 		parent::__construct( $value, $snapshot );
@@ -31,7 +31,7 @@ class Flag extends Val implements IVal {
 	 *
 	 * @return IVal
 	 */
-	public function convert(): IVal
+	public function cast(): IVal
 	{
 		if ( $this->_type ) {
 			$this->_data = (bool)$this->_data;

@@ -37,6 +37,14 @@ class ValFactory {
 				break;
 		}
 
-		return new $class($args);
+		if ( $args ) {
+			if ( !is_array($args) ) {
+				$args = [$args];
+			}
+		} else {
+			$args = [];
+		}
+
+		return new $class(...$args);
 	}
 }

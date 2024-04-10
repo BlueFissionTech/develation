@@ -9,7 +9,7 @@ use \DateTime;
 
 class Date extends Val implements IVal
 {
-	protected $_type = "";
+	protected $_type = "datetime";
 
     /**
 	 * @var string $_format The format of the date
