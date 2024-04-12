@@ -1,6 +1,8 @@
 <?php
 namespace BlueFission;
 
+use BlueFission\Behavioral\Behaviors\Event;
+
 /**
 * Flag class extends Val and implements IVal
 * This class is used to handle boolean values
@@ -10,7 +12,7 @@ class Flag extends Val implements IVal {
 	/**
 	* @var string $_type The type of the value stored in the object, in this case "boolean"
 	*/
-	protected $_type = "boolean";
+	protected $_type = DataTypes::BOOLEAN;
 
 	/**
 	* Constructor for Flag class
@@ -35,6 +37,7 @@ class Flag extends Val implements IVal {
 	{
 		if ( $this->_type ) {
 			$this->_data = (bool)$this->_data;
+			$this->trigger(Event::CHANGE);
 		}
 
 		return $this;

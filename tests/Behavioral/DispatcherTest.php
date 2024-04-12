@@ -2,6 +2,7 @@
 namespace BlueFission\Tests\Behavioral;
 
 use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\IDispatcher;
  
 class DispatcherTest extends \PHPUnit\Framework\TestCase {
  
@@ -12,7 +13,7 @@ class DispatcherTest extends \PHPUnit\Framework\TestCase {
 	{
 	    $traitName = static::$classname;
 	    $this->object = eval("
-	        return new class {
+	        return new class implements BlueFission\Behavioral\IDispatcher {
 	            use $traitName;
 	        };
 	    ");

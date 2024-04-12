@@ -18,7 +18,7 @@ use Traversable;
  * @implements ArrayAccess
  */
 class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate {
-    protected $_type = "array";
+    protected $_type = DataTypes::ARRAY;
 
     protected $_forceType = false;
 
@@ -30,7 +30,8 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
         parent::__construct( $value, $snapshot, $cast );
 
         if ($cast) {
-    		$this->_data = $this->_toArray();
+    		$this->_data = $this->toArray();
+    		$this->trigger(Event::CHANGE);
         }
     }
 
@@ -48,15 +49,15 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		return $this;
 	}
 
-    public function setValue($value) {
-    	if ( $value instanceof IVal ) {
-			$value = $value->val();
-		}
+    // public function setValue($value) {
+    // 	if ( $value instanceof IVal ) {
+	// 		$value = $value->val();
+	// 	}
 
-		$this->_data = $value;
+	// 	$this->_data = $value;
 
-    	$this->_data = $this->_toArray();
-    }
+    // 	$this->_data = $this->_toArray();
+    // }
 
     /**
      * Check if value is an array
@@ -81,6 +82,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return false;
 		}
+
 		return in_array($value, $this->_data);
 	}
 
@@ -95,6 +97,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return false;
 		}
+
 		return array_search($value, $this->_data);
 	}
 
@@ -109,7 +112,34 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return false;
 		}
+
 		return array_key_exists($key, $this->_data);
+	}
+
+	/**
+	 * Shifts the first element off of the data arra
+	 * @return mixed the first element
+	 */
+	public function _shift( ): mixed
+	{
+		if (!$this->is($this->_data)) {
+			return false;
+		}
+
+		return array_shift($this->_data);
+	}
+
+	/**
+	 * Pops the last element off of the data array
+	 * @return mixed the last element
+	 */
+	public function _pop( ): mixed
+	{
+		if (!$this->is($this->_data)) {
+			return false;
+		}
+
+		return array_pop($this->_data);
 	}
 	
     /**
@@ -121,6 +151,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 			return false;
 		}
         $var = $this->_data;
+
         return !(is_numeric( implode( array_keys( $var ))));
     }
 
@@ -141,6 +172,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 			return false;
 		}
         $var = $this->_data;
+
         return (is_numeric( implode( array_keys( $var ))));
     }
 
@@ -157,6 +189,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
         if ( !empty( $var ) && count($var) >= 1) {
             if ( count($var) == 1 && !$this->isAssoc($var) && empty( $var[0]) ) return false;
         }
+
         return true;
     }
 
@@ -178,6 +211,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 			return false;
 		}
 		$var = $this->_data;
+
 		return count( $var );
 	}
 
@@ -207,8 +241,9 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     	if (!$this->is($this->_data)) {
 			return false;
 		}
+
         $this->_data[$key] = $value;
-        $this->dispatch(new Event(Event::CHANGE));
+        $this->trigger( Event::CHANGE );
     }
 
     /**
@@ -223,6 +258,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (sort($array)) {
 			$max = (int)array_pop($array);
 		}
+
 		return $max;
 	}
 
@@ -238,6 +274,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (rsort($array)) {
 			$max = (int)array_pop($array);
 		}
+
 		return $max;
 	}
 
@@ -252,6 +289,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!is_string($value) || (!$value == '' || $allow_empty)) {
 			(is_array($value)) ? $value_r = $value : ((is_null($value)) ? $value_r : $value_r[] = $value);
 		}
+
 		return $value_r;
 	}
 
@@ -264,6 +302,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return false;
 		}
+
 		return $this->_data[array_rand($this->_data)];
 	}
 
@@ -276,6 +315,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return false;
 		}
+
 		return print_r(array_slice($this->_data, 0, 10), true);
 	}
 
@@ -356,6 +396,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 
 		$array = $this->_data;
 		array_push($array, $var);
+
 		$this->alter($array);
 
 		return $this;
@@ -372,6 +413,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return [];
 		}
+
 		return array_intersect($this->_data, $array);
 	}
 
@@ -385,6 +427,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return [];
 		}
+
 		return array_diff($this->_data, $array);
 	}
 
@@ -426,20 +469,15 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 * Remove duplicate values from an array as a reference
 	 * @return IVal
 	 */
-	public function _removeDuplicates(): IVal
+	public function _unique(): IVal
 	{
 		if (!$this->is($this->_data)) {
 			return $this;
 		}
 		$array = $this->_data;
-		$hold = [];
-		foreach ($array as $a=>$b) {
-			if (!in_array($b, $hold, true))	{ 
-				$hold[$a] = $b;
-			}
-		}
-		$array = $hold;
-		unset($hold);
+
+		$array = array_unique($array, SORT_STRING);
+
 		$this->alter($array);
 
 		return $this;
@@ -449,7 +487,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 * Case insensitive remove duplicate values from an array as a reference
 	 * @return IVal
 	 */
-	public function _iRemoveDuplicates(): IVal
+	public function _iUnique(): IVal
 	{
 		if (!$this->is($this->_data)) {
 			return $this;
@@ -463,7 +501,9 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 				$hold[$a] = strtolower($b); 
 			}
 		}
-		$array = $hold;
+
+		$array = array_intersect_key($array, $hold);
+
 		unset($hold);
 		$this->alter($array);
 
@@ -477,7 +517,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 */
 	public function delta()
 	{
-		return Arr::diff($this->_data, $this->_snapshot);
+		return $this->diff($this->_snapshot);
 	}
 
 	/**
@@ -489,6 +529,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return false;
 		}
+
 		return isset( $this->_data[$offset] );
 	}
 
@@ -501,6 +542,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return null;
 		}
+
 		return $this->get( $offset );
 	}
 
@@ -514,11 +556,13 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return;
 		}
+
 		if (is_null($offset)) {
 			while (array_key_exists($offset, $this->_data) || !$offset) {
 				$offset = count($this->_data);
 			}
 		}
+
 		$this->set($offset, $value);
 	}
 

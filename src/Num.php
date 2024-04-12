@@ -2,6 +2,8 @@
 
 namespace BlueFission;
 
+use BlueFission\Behavioral\Behaviors\Event;
+
 /**
  * Class Num
  *
@@ -14,7 +16,7 @@ class Num extends Val implements IVal {
     /**
      * @var string $type The type of number, "integer" or "double"
      */
-    protected $_type = "double";
+    protected $_type = DataTypes::DOUBLE;
 
     /**
 	 * @var string $_format The format of the number
@@ -46,10 +48,10 @@ class Num extends Val implements IVal {
         $this->_data = $value;
         if ( $this->_type && ($this->_forceType == true || $cast) ) {
             $clone = $this->_data;
-            settype($clone, $this->_type);
+            settype($clone, $this->_type->value);
             $remainder = $clone % 1;
-            $this->_type = $remainder ? $this->_type : "integer";
-            settype($this->_data, $this->_type);
+            $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
+            settype($this->_data, $this->_type->value);
         }
 
 		parent::__construct($value, $takeSnapshot);
@@ -64,10 +66,12 @@ class Num extends Val implements IVal {
 	{
 		if ( $this->_type ) {
             $clone = $this->_data;
-            settype($clone, $this->_type);
+            settype($clone, $this->_type->value);
             $remainder = $clone % 1;
-            $this->_type = $remainder ? $this->_type : "integer";
-            settype($this->_data, $this->_type);
+            $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
+            settype($this->_data, $this->_type->value);
+			$this->trigger(Event::CHANGE);
+
         }
 
 		return $this;

@@ -6,15 +6,27 @@ use BlueFission\Net\IP;
 
 class IPTest extends TestCase
 {
-    static $testdirectory = '/../../../testdirectory';
+    static $testdirectory = 'testdirectory';
     static $accessLog = 'access.log';
-    static $ipFile = 'ip.txt';
+    static $ipFile = 'ipblock.txt';
 
     public function setUp(): void
     {
         IP::accessLog(self::$testdirectory . DIRECTORY_SEPARATOR . self::$accessLog);
         IP::ipFile(self::$testdirectory . DIRECTORY_SEPARATOR . self::$ipFile);
     }
+
+    public function tearDown(): void
+    {
+        if (file_exists(self::$testdirectory . DIRECTORY_SEPARATOR . self::$accessLog)) {
+            unlink(self::$testdirectory . DIRECTORY_SEPARATOR . self::$accessLog);
+        }
+
+        if (file_exists(self::$testdirectory . DIRECTORY_SEPARATOR . self::$ipFile)) {
+            unlink(self::$testdirectory . DIRECTORY_SEPARATOR . self::$ipFile);
+        }
+    }
+
     /**
      * Test remote() method returns the remote IP address
      */
@@ -29,8 +41,9 @@ class IPTest extends TestCase
     public function testDeny()
     {
         $ipAddress = '127.0.0.1';
-        $expected = "Blocking IP address $ipAddress";
-        $this->assertEquals($expected, IP::deny($ipAddress));
+        $expected = "Blocked IP address $ipAddress";
+        $this->assertTrue(IP::deny($ipAddress));
+        $this->assertEquals($expected, IP::status());
     }
  
     /**
@@ -39,8 +52,9 @@ class IPTest extends TestCase
     public function testAllow()
     {
         $ipAddress = '127.0.0.1';
-        $expected = "IP Allow Failed";
-        $this->assertEquals($expected, IP::allow($ipAddress));
+        $expected = "IP address 127.0.0.1 already allowed";
+        $this->assertTrue(IP::allow($ipAddress));
+        $this->assertEquals($expected, IP::status());
     }
  
     /**
@@ -48,8 +62,19 @@ class IPTest extends TestCase
      */
     public function testHandle()
     {
-        $expected = '';
-        $this->assertEquals($expected, IP::handle());
+        $expected = "Your IP address has been restricted from viewing this content. Please contact the administrator.";
+        $ipAddress = '127.0.0.1';
+        $_SERVER['REMOTE_ADDR'] = $ipAddress;
+
+        $this->assertTrue(IP::handle());
+        $this->assertEquals("IP Allowed", IP::status());
+
+        IP::deny($ipAddress);
+
+        $this->assertFalse(IP::handle());
+        $this->assertEquals($expected, IP::status());
+
+        IP::allow($ipAddress);
     }
  
     /**
@@ -57,7 +82,8 @@ class IPTest extends TestCase
      */
     public function testLog()
     {
-        $expected = "IP logging failed";
-        $this->assertEquals($expected, IP::log());
+        $expected = "IP logging successful";
+        $this->assertTrue(IP::log());
+        $this->assertEquals($expected, IP::status());
     }
 }

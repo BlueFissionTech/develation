@@ -9,12 +9,13 @@ use BlueFission\ValFactory as Factory;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 
-use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\Behaves;
+use BlueFission\Behavioral\IBehavioral;
 
-class Obj implements IObj
+class Obj implements IObj, IBehavioral
 {
-    use Dispatches {
-        Dispatches::__construct as private __dispatchConstruct;
+    use Behaves {
+        Behaves::__construct as private __behavesConstruct;
     }
 
     /**
@@ -46,7 +47,7 @@ class Obj implements IObj
      * Obj constructor.
      */
     public function __construct() {
-        $this->__dispatchConstruct();
+        $this->__behavesConstruct();
 
         if ( !Val::is($this->_data) ) {
             $this->_data = new Arr();
@@ -56,18 +57,17 @@ class Obj implements IObj
 
         foreach ( $this->_types as $field=>$type ) {
             $item = Factory::make($type, $this->_data[$field] ?? null);
-            $item->behavior(new Event( Event::CHANGE ), function($behavior, $args) {
-                $this->_data->dispatch($behavior, $args);
-            });
-
+            
             $this->_data[$field] = $item;
+            $this->_data->echo($item, [Event::CHANGE]);
         }
         
         if ( !Val::is($this->_type) ) {
             $this->_type = get_class( $this );
         }
 
-        $this->_data->behavior(new Event( Event::CHANGE ), [$this, 'onDataChange']);
+        $this->echo($this->_data, [Event::CHANGE]);
+        $this->trigger(Event::LOAD);
     }
 
     /**
@@ -86,6 +86,7 @@ class Obj implements IObj
                 if ( $this->_data[$field]->isValid($value) ) {
                     $this->_data[$field]->val($value);
                 } else {
+                    $this->trigger(Event::EXCEPTION);
                     throw new \Exception("Invalid value for field $field");
                 }
             } elseif (isset( $this->_data[$field] )
@@ -146,6 +147,7 @@ class Obj implements IObj
             }
         };
 
+        $this->trigger(Event::CLEAR_DATA);
         return $this;
     }
 
@@ -159,28 +161,14 @@ class Obj implements IObj
     public function assign( $data ): IObj
     {
         if ( is_object( $data ) || Arr::isAssoc( $data ) ) {
-            $this->perform( State::BUSY );
+            $this->dispatch( State::BUSY );
             foreach ( $data as $a=>$b ) {
                 $this->field($a, $b);
             }
             $this->halt( State::BUSY );
-            $this->dispatch( Event::CHANGE );
         }
         else
             throw new \InvalidArgumentException( "Can't import from variable type " . gettype($data) );
-
-        return $this;
-    }
-
-    /**
-     * event handler for data changes
-     *
-     * @param  Event $behavior
-     * @return IObj
-     */
-    public function onDataChange($behavior): IObj
-    {
-        $this->dispatch($behavior);
 
         return $this;
     }
@@ -195,15 +183,20 @@ class Obj implements IObj
     public function __call( $method, $args )
     {
         if ( method_exists($this, $method) ) {
+            $this->trigger(Event::ACTION_PERFORMED);
+
             return call_user_func_array([$this, $method], $args);
         } elseif ( Arr::hasKey($this->_data, $method) ) {
             $output = call_user_func_array(function() use ( $method ) {
                 return $this->_data[$method];
             }, $args);
             
+            $this->trigger(Event::ACTION_PERFORMED);
+
             return $output;
         } else {
-            return false;
+            $this->trigger([Event::ACTION_FAILED, Event::EXCEPTION]);
+            throw new \Exception("Method $method does not exist");
         }
     }
     
@@ -245,22 +238,21 @@ class Obj implements IObj
         unset ( $this->_data[$field] );
     }
 
-    // public function __sleep()
-    // {
-    //  return array_keys( $this->_data );
-    // }
+    public function __sleep()
+    {
+        return ['_data', '_types', '_type', '_exposeValueObject', '_lockDataType'];
+    }
 
-    // public function __wakeup()
-    // {
-        
-    // }
+    public function __wakeup()
+    {
+        $this->__construct();
+    }
 
     /**
      * @return string
      */
     public function __toString(): string
     {
-        // return get_class( $this );
         return $this->_type;
     }  
 

@@ -178,9 +178,6 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		return $this;
 	}
 
-	}
-
-
 	/**
 	 * Gets the first object in the collection.
 	 *
@@ -268,14 +265,19 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	/**
 	 * iterate a method across all items in the collection
 	 * @param  callable $callback The callback to apply to each item
-	 * @return Collection
+	 * @return bool
 	 */
 	public function walk( callable $callback ) {
-		$list = [];
-		foreach ( $this as $key => $value ) {
-			$list[$key] = $callback( $value, $key );
-		}
-		
+		return array_walk( $this->_data, $callback );
+	}
+
+	/**
+	 * Map, apply a function to each item in the collection
+	 * @param  callable $callback The callback to apply to each item
+	 * @return Collection
+	 */
+	public function map( callable $callback ) {
+		$list = array_map( $callback, $this->contents() );
 		return new Collection( $list );
 	}
 
@@ -284,14 +286,20 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @param  callable $callback The callback to apply to each item
 	 * @return Collection
 	 */
-	public function sort( callable $callback ) {
+	public function sort( callable $callback = null ) {
+		if ( !$callback ) {
+			$callback = function($a, $b) {
+				return $a <=> $b;
+			};
+		}
+
 		$list = $this->contents();
 		usort( $list, $callback );
 		return new Collection( $list );
 	}
 
 	/**
-	 * Filter: apply a filter to the collection
+	 * Filter, apply a filter to the collection
 	 * @param  callable $callback The callback to apply to each item
 	 * @return Collection
 	 */

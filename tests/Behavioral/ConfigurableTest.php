@@ -13,7 +13,7 @@ class ConfigurableTest extends BehavioralTest {
  	{
  		$traitName = static::$classname;
 	    $this->object = eval("
-	        return new class extends BlueFission\Obj {
+	        return new class extends BlueFission\Obj implements BlueFission\Behavioral\IDispatcher {
 	            use $traitName;
 
 	            protected \$_config = [];

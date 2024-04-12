@@ -6,7 +6,7 @@ class Str extends Val implements IVal {
 	 *
 	 * @var string $type is used to store the data type of the object
 	 */
-	protected $_type = "string";
+	protected $_type = DataTypes::STRING;
 
 	/**
      * @var string MD5 hash algorithm
@@ -351,7 +351,7 @@ class Str extends Val implements IVal {
 	public function _has(string $needle): bool {
 		$haystack = $this->_data;
 
-		return (\strpos($haystack, $needle) !== false);
+		return (strpos($haystack, $needle) !== false);
 	}
 
 	/**
@@ -398,13 +398,28 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Compare the current string with another string
+	 * 
+	 * @param string $string The string to compare with
+	 * @return int Returns < 0 if the current string is less than the input string, > 0 if the current string is greater than the input string, and 0 if the two strings are equal
+	 */
+	public function _compare(string $string): int {
+		return strcmp($this->_data, $string);
+	}
+
+	/**
 	 * Get the change between the current value and the snapshot
 	 *
 	 * @return float
 	 */
 	public function delta(): float
-	{
-		return Str::similarityTo($this->_snapshot, $this->_data);
+	{	
+		if ( $this->_snapshot !== $this->_data ) {
+			// Get absolute value
+			return abs(Str::compare($this->_snapshot, $this->_data));
+		}
+
+		return 0;
 	}
 
 	/**

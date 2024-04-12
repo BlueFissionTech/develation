@@ -190,6 +190,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
             return self::$_instances[$calledClass];
         }
 
+        parent::__construct();
         $this->__tConstruct(); // Call trait constructor
         $this->_services = new Collection();
         $this->_broadcasted_events[$this->name()] = [];
@@ -362,7 +363,6 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function process() {
 		$args = array_slice($this->_arguments, 1);
-		// die(var_dump($this->_mappings));
 
 		$behavior = $args['behavior'];
 		// TODO replace with URI object
@@ -740,7 +740,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		{
 			throw new Exception("The service {$senderName} is not registered", 1);
 		} elseif ($callback) {
-			$this->register($senderName, $behavior, array($this, 'boost'));
+			$this->register($senderName, $behavior, [$this, 'boost']);
 		}
 
 		if ( !$this->_services->has( $recipientName ) && $this->name() != $recipientName )
@@ -748,7 +748,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			throw new Exception("The service {$recipientName} is not registered", 1);
 		}
 
-		$this->_routes[$behavior->name()][$senderName][] = array('recipient'=>$recipientName, 'callback'=>$callback);
+		$this->_routes[$behavior->name()][$senderName][] = ['recipient'=>$recipientName, 'callback'=>$callback];
 
 		return $this;
 	}

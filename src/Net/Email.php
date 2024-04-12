@@ -108,7 +108,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		$recipient = Arr::toArray($recipient);
 		$cc = Arr::toArray($cc);
 		$bcc = Arr::toArray($bcc);
-    	
+
         //Prepare addresses
         $this->recipients($recipient);
         $this->recipients($cc, null, self::CC);
@@ -143,6 +143,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		{
 			$value = (isset($this->_data[$field])) ? $this->_data[$field] : null;
 		}
+
 		return $value;
 	}
 
@@ -219,8 +220,8 @@ class Email extends Obj implements IConfigurable, IEmail
 	 */
 	public function recipients($value = null, $name = null, $type = null)
 	{
-		if ( !Arr::is($value) && Val::isNotNull($name) ) {
-			$value = [$value=>$name];
+		if (Val::isNull($value)) {
+			return $this->_recipients;
 		}
 
 		if ( !Arr::is($value) ) {
@@ -231,6 +232,10 @@ class Email extends Obj implements IConfigurable, IEmail
 
 		$value = self::filterAddresses($value);
 
+		if ( Val::isNotNull($name) ) {
+			$value = [$value[0]=>$name];
+		}
+
 		if ( !$value ) {
 			return $this;
 		}
@@ -239,10 +244,8 @@ class Email extends Obj implements IConfigurable, IEmail
 
 		$this->_recipients[$type] = ( Val::is($this->_recipients[$type]) && Arr::size( $this->_recipients[$type] ) > 0 ) 
 			? Arr::merge( $this->_recipients[$type], $value ) : $value;	
-		 
-		if (Val::isNull($value)) {
-			return $this->_recipients;
-		}
+
+		$this->_recipients[$type] = Arr::iUnique($this->_recipients[$type]);
 
 		return $this;
 	}
@@ -270,6 +273,9 @@ class Email extends Obj implements IConfigurable, IEmail
 	    		$recipients[$a] = "{$b} <{$a}>";
 	    	}
 	    }
+
+	    $recipients = Arr::iUnique($recipients);
+
 	    return $recipients;
 	}
 
@@ -287,7 +293,7 @@ class Email extends Obj implements IConfigurable, IEmail
 			return $this->field('from') ? $this->field('from') : $this->config('sender');
 		}
 
-	    if ( (Val::isNotNull($value)) && !self::validateAddress($value));
+	    if ( (Val::isNotNull($value)) && !self::validateAddress($value))
 	        return $this;
 
 		if (!Arr::is($value) && Val::isNotNull($name))

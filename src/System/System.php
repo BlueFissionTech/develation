@@ -2,6 +2,8 @@
 
 namespace BlueFission\System;
 
+use BlueFission\Val;
+
 /**
  * Class System
  * This class is used to run system commands.
@@ -71,7 +73,7 @@ class System {
 		// if(!$this->isValidCommand($command))
 		// 	throw( new \InvalidArgumentException("Invalid command!") );
 
-		if (!empty($options)) {
+		if (!Val::isEmpty($options)) {
 			foreach ($options as $opt) {
 				$command .= ' ' . escapeshellarg($opt);
 			}
@@ -85,7 +87,7 @@ class System {
 			2 => ["pipe", "w"]
 		];
 
-		if (isset($this->_output_file)) {
+		if (Val::is($this->_output_file)) {
 			$descriptorspec[1] = ["file", $this->_output_file, "a"];
 		}
 
@@ -110,7 +112,7 @@ class System {
         // if(!$this->isValidCommand($command))
         //     throw( new \InvalidArgumentException("Invalid command!") );
 
-        if (!empty($options)) {
+        if (!Val::isEmpty($options)) {
             foreach ($options as $opt) {
                 $command .= ' ' . escapeshellarg($opt);
             }

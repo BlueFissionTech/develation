@@ -6,9 +6,9 @@ use BlueFission\Val;
 use BlueFission\Date;
 use BlueFission\Flag;
 use BlueFission\Net\HTTP;
-use BlueFission\Data\File;
+use BlueFission\Data\FileSystem;
 use BlueFission\Data\IData;
-
+use BlueFission\Behavioral\Behaviors\Event;
 
 /**
  * Class IP
@@ -20,54 +20,100 @@ use BlueFission\Data\IData;
  */
 class IP {
 
-	private static $accessLog = 'access_log.txt';
-	private static $ipFile = 'blocked_ips.txt';
+	private static $_accessLog = 'access_log.txt';
+	private static $_ipFile = 'blocked_ips.txt';
+	private static $_storage = null;
+	private static $_status = "";
+
+	private static function setStatus($status)
+	{
+		self::$_status = $status;
+	}
+
+	public static function status()
+	{
+		return self::$_status;
+	}
+
+	public static function storage(IData $storage = null)
+	{
+		if (Val::isNull($storage)) {
+			return self::$_storage;
+		}
+
+		self::$_storage = $storage;
+	}
+
+	private static function getStorage( $type = null )
+	{
+		if (Val::isNull(self::$_storage)) {
+			$file = $type == 'ip' ? self::$_ipFile : self::$_accessLog;
+
+			return (new FileSystem($file))->config('mode', 'rw');
+		}
+
+		return self::$_storage;
+	}
 
 	public static function accessLog($file = null)
 	{
 		if (Val::isNull($file)) {
-			return self::$accessLog;
+			return self::$_accessLog;
 		}
 
-		self::$accessLog = $file;
+		self::$_accessLog = $file;
 	}
 
 	public static function ipFile($file = null)
 	{
 		if (Val::isNull($file)) {
-			return self::$ipFile;
+			return self::$_ipFile;
 		}
 
-		self::$ipFile = $file;
+		self::$_ipFile = $file;
 	}
 
 
-	private static function update($data)
+	private static function update(array $data)
 	{
-		$file = self::$accessLog;
+		$storage = self::getStorage('access');
+		$result = false;
 
-		if (!file_exists($file)) {
-			$handle = fopen($file, 'w');
-			if (!$handle) {
-				return "Failed to create file.";
+		// Write the data to the file upon successful conncection
+		$storage->when( new Event( Event::CONNECTED ), function() use ( $data, $storage ) {
+			if (Arr::is($data)) {
+				$delimiter = "\t";
+				array_walk($data, fn ($line, $key) => $line = implode($delimiter, $line));
+				
+				$storage->contents( implode("\n", $data) )->write();
 			}
-			fclose($handle);
-		}
+		})
 
-		if (Arr::is($data)) {
-			$delimiter = "\t";
-			array_walk($data, fn ($line, $key) => $line = implode($delimiter, $line));
-			$status = file_put_contents($file, implode("\n", $data), LOCK_EX) 
-				? "Data updated successfully." : "Failed to update data.";
-		} else {
-			$status = "Data not valid. Argument requires array.";
-		}
-		return $status;
+		// If the save is successful, set the status
+		->when( new Event( Event::SAVED ), function() use( &$result ) {
+			self::setStatus("IP logging successful");
+			$result = true;
+		})
+		
+		// If the save fails, set the status
+		->when( new Event( Event::FAILURE ), function() {
+			self::setStatus("IP logging failed");
+		})
+		
+		// If an error occurs, set the status
+		->when( new Event( Event::ERROR ), function() {
+			self::setStatus("IP logging failed");
+		})
+		
+		// Open the file
+		->open();
+
+		return $result;
 	}
 
 	private static function read()
 	{
-		$file = self::$accessLog;
+		$file = self::$_accessLog;
 
 		if (!file_exists($file)) {
 			return [];
@@ -96,48 +142,100 @@ class IP {
 	 * Block an IP address
 	 * 
 	 * @param string $ip         The IP address to be blocked
-	 * @param string $ipFile    (Optional) File to store the blocked IP addresses
+	 * @param string $_ipFile    (Optional) File to store the blocked IP addresses
 	 * 
 	 * @return string The status of the IP blocking process
 	 */
 	public static function deny($ip) {
-		$status = "Blocking IP address $ip.\n";
-		// Add IP address to block file
-		$ipList = file_get_contents(self::$ipFile);
-		$ips = explode("\n", $ipList);
-		if (!Arr::has($ips, $ip)) {
+		$storage = self::getStorage('ip');
+		$result = false;
+
+		// Write the data to the file upon successful conncection
+		$storage->when( Event::CONNECTED, function() use ( $storage ) {
+			$storage->read();
+		})
+
+		// Write the data to the file upon successful conncection
+		->when( Event::READ , function() use ( &$result, $storage, $ip ) {
+			$ipList = $storage->contents();
+			$ips = explode("\n", $ipList);
+
+			if (Arr::has($ips, $ip)) {
+				self::setStatus("IP address $ip already blocked");
+				$result = true;
+				return;
+			}
+
 			$ips[] = $ip;
 			$ipList = implode("\n", $ips);
-			$status = file_put_contents(self::$ipFile, $ipList, LOCK_EX);
-		} else {
-			$status = "IP is already blocked\n";
-		}
+			$storage->contents($ipList)->write();
+		})
 
-		return $status;
+		// If the save is successful, set the status
+		->when( Event::SAVED , function() use( &$result, $ip ) {
+			self::setStatus("Blocked IP address $ip");
+			$result = true;
+		})
+
+		// Errors		
+		->when( Event::FAILURE, fn() => self::setStatus("IP blocking failed for $ip") )
+		->when( Event::ERROR, fn() => self::setStatus("IP blocking error for $ip") )
+		
+		// Open the file
+		->open();
+
+		return $result;
 	}
 
 	/**
 	 * Allow an IP address that was previously blocked
 	 * 
 	 * @param string $ip         The IP address to be allowed
-	 * @param string $ipFile    (Optional) File to store the blocked IP addresses
+	 * @param string $_ipFile    (Optional) File to store the blocked IP addresses
 	 * 
 	 * @return string The status of the IP allowing process
 	 */
 	public static function allow($ip)
 	{
-		$status = "IP Allow Failed";
-		$ipList = file_get_contents(self::$ipFile);
-		$ips = explode("\n", $ipList);
-		$index = Arr::search($ip, $ips);
-		if ($index !== false) {
+		$storage = self::getStorage('ip');
+		$result = false;
+
+		// Write the data to the file upon successful conncection
+		$storage->when( Event::CONNECTED, function() use ( $storage ) {
+			$storage->read();
+		})
+
+		// Write the data to the file upon successful conncection
+		->when( Event::READ , function() use ( &$result, $storage, $ip ) {
+			$ipList = $storage->contents();
+			$ips = explode("\n", $ipList);
+			$index = Arr::search($ip, $ips);
+
+			if ($index === false) {
+				self::setStatus("IP address $ip already allowed");
+				$result = true;
+				return;
+			}
+
 			unset($ips[$index]);
 			$ipList = implode("\n", $ips);
-			$status = file_put_contents(self::$ipFile, $ipList, 'w');
-		} else {
-			$status = "IP is already not blocked";
-		}
-		return $status;
+			$storage->contents($ipList)->write();
+		})
+
+		// If the save is successful, set the status
+		->when( Event::SAVED , function() use( &$result, $ip ) {
+			self::setStatus("Blocked IP address $ip");
+			$result = true;
+		})
+
+		// Errors		
+		->when( Event::FAILURE, fn() => self::setStatus("IP allowing failed for $ip") )
+		->when( Event::ERROR, fn() => self::setStatus("IP allowing error for $ip") )
+		
+		// Open the file
+		->open();
+
+		return $result;
 	}
 
 	/**
@@ -154,20 +252,23 @@ class IP {
 	 */
 	public static function handle($ip = '', $redirect = '', $exit = false) {
 		$isBlocked = false;
-		$status = '';
+		$status = "IP Allowed";
+		self::setStatus($status);
 		
 		$ip = ($ip == '') ? self::remote() : $ip;
 		
-		$ipList = file_get_contents(self::$ipFile);
+		$ipList = file_get_contents(self::$_ipFile);
 		$ips = explode("\n", $ipList);
 		$isBlocked = Arr::has($ips, $ip);
 		if ($isBlocked) {
-			$status = "Your IP address has been restricted from viewing this content.\nPlease contact the administrator.\n";
+			$status = "Your IP address has been restricted from viewing this content. Please contact the administrator.";
 			if ($exit) exit($status);
 			if ($redirect != '') HTTP::redirect($redirect);
+			self::setStatus($status);
+			return false;
 		}
-		
-		return $status;
+
+		return true;
 	}
 
 	/**
@@ -192,23 +293,23 @@ class IP {
 			if (Arr::is($lines)) {
 				$isFound = false;
 				while (list($a, $b) = $lines || $isFound) {
-					if ($b[0] == $ip && $b[1] == $href) Flag::opposite($isFound);
+					if ($b[0] == $ip && $b[1] == $href) Flag::flip($isFound);
 				}
-				if ($isFound || Date::difference($b[2], $timestamp, 'minutes') > 5) {
+				if ($isFound || Date::diff($b[2], $timestamp, 'minutes') > 5) {
 					$lines[$a][3]++;
 				} else {
 					$lines[] = [$ip, $href, $timestamp, 1];
 				}
 
 
-				if (($b[3] >= $limit) && (Date::difference($b[2], $timestamp, 'minutes') <= $interval)) {
+				if (($b[3] >= $limit) && (Date::diff($b[2], $timestamp, 'minutes') <= $interval)) {
 					self::block($ip);
 				}
 
 				$status = self::update($lines);
 			}
 
-			return $status;
+			return true;
 		}
 
 	/**
@@ -232,7 +333,7 @@ class IP {
 			while (list($a, $b) = $lines || $isFound) {
 				if ($b[0] == $ip && $b[1] == $href) {
 					$response = [$b];
-					Flag::opposite($isFound);
+					Flag::flip($isFound);
 				}
 			}
 		} else {
@@ -245,8 +346,12 @@ class IP {
 	public static function block($ip)
 	{
 		$status = "Blocking IP address $ip";
-		file_put_contents(self::$ipFile, $ip . "\n", FILE_APPEND | LOCK_EX);
-		return $status;
+		$result = file_put_contents(self::$_ipFile, $ip . "\n", FILE_APPEND | LOCK_EX);
+		$status = ($result ? "IP Block Successful" : "IP Block Failed") . "for $ip";
+
+		self::setStatus($status);
+
+		return $result;
 	}
 
 	public static function isDenied($ip)
@@ -255,7 +360,7 @@ class IP {
 		
 		$ip = $ip ?? self::remote();
 		
-		$ips = file(self::$ipFile);
+		$ips = file(self::$_ipFile);
 		$isBlocked = in_array($ip, $ips);
 		
 		return $isBlocked;

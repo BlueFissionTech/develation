@@ -135,7 +135,7 @@ class Authenticator extends Service {
 		if ( Val::isNotEmpty( $data ) ) {
 			$this->assign($data);
 		}
-		
+
 		if($this->username != '' && $this->id != ''){
 			if (!defined("USER_ID")) {
 				define("USER_ID", $this->id);

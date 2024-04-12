@@ -2,14 +2,16 @@
 namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Collections\Collection;
 use Exception;
 
 /**
  * The Val class is meant to be inherited.
  */
-class Val implements IVal {
+class Val implements IVal, IDispatcher {
 	use Dispatches {
         Dispatches::__construct as private __tConstruct;
     }
@@ -38,9 +40,13 @@ class Val implements IVal {
 	/**
 	 * @var string $type
 	 */
-	protected $_type = "";
+	protected $_type = DataTypes::GENERIC;
 
 	private static $_instances = null;
+
+	private static $_last = null;
+
+	private static $_slots = [];
 
 	/**
 	 * @var string PRIVATE_PREFIX
@@ -61,14 +67,14 @@ class Val implements IVal {
 
 		$this->_data = $value;
 		if ( $this->_type && $this->_forceType || $cast ) {
-			settype($this->_data, $this->_type);
+			settype($this->_data, $this->_type->value);
 		}
 
 		if ( $takeSnapshot ) {
 			$this->snapshot();
 		}
 
-		$this->dispatch(new Event(Event::LOAD));
+		$this->trigger(Event::LOAD);
 	}
 
 	/**
@@ -78,8 +84,14 @@ class Val implements IVal {
 	 */
 	public function cast(): IVal
 	{
-		if ( $this->_type ) {
-			settype($this->_data, $this->_type);
+		try {
+			if ( $this->_type && DataTypes::GENERIC !== $this->_type ) {
+				settype($this->_data, $this->_type->value);
+				$this->trigger(Event::CHANGE);
+			}
+		} catch (Exception $e) {
+			$this->trigger(Event::ERROR);
+			error_log("Can't cast value to type '{$this->_type->value}'");
 		}
 
 		return $this;
@@ -89,8 +101,9 @@ class Val implements IVal {
 	 * Get the datatype name of the object
 	 * @return string
 	 */
-	public function getType() {
-		return $this->_type;
+	public function getType(): string
+	{
+		return $this->_type->value;
 	}
 
 	/**
@@ -109,11 +122,45 @@ class Val implements IVal {
 	}
 
 	/**
+	 * Create a new instance of the class
+	 * @param  mixed $value The value to set as the data member
+	 * @return IVal        a new instance of the class
+	 */
+	public static function grab(): mixed
+	{
+		$value = self::$_last;
+
+		return $value;
+	}
+
+	/**
+	 * Use the last instance of the class
+	 * @return IVal
+	 */
+	public static function use(): IVal
+	{
+		$value = self::grab();
+
+		return self::make($value);
+	}
+
+	/**
+	 * Slot a function and bind it into the object
+	 * @param string $name The name of the slot
+	 * @param callable $callable The function to be slotted
+	 * @return IVal returns the object
+	 */
+	public static function slot(string $name, callable $callable): IVal
+	{
+		$this->_slots[$name] = $callable->bindTo($this, $this);
+	}
+
+	/**
 	 * Tag the object with a group to be tracked by the object class
 	 * @param string $group The group to tag the object with
 	 * @return IVal
 	 */
-	public function tag($group = null)
+	public function tag($group = null): IVal
 	{
 		$tag = $this->getType();
 		if ( $group ) {
@@ -133,7 +180,12 @@ class Val implements IVal {
 		return $this;
 	}
 
-	public function untag($group = null)
+	/**
+	 * Untag the object from the group
+	 * @param string $group The group to untag the object from
+	 * @return IVal
+	 */
+	public function untag($group = null): IVal
 	{
 		$tag = $this->getType();
 		if ( $group ) {
@@ -157,9 +209,14 @@ class Val implements IVal {
 	 * @param string $group The group to get the objects from=
 	 * @return Collection
 	 */
-	public function grp($group = null)
+	public static function grp($group = null): Collection
 	{
-		$tag = $this->getType();
+		$class = get_called_class();
+		$object = new $class();
+
+		$tag = $object->getType() ?? 'generic';
+		unset($object);
+
 		if ( $group ) {
 			$tag = $group . '.' . $tag;
 		}
@@ -168,10 +225,12 @@ class Val implements IVal {
 			self::$_instances = new Collection();
 		}
 
+		if ( !isset(self::$_instances[$tag]) ) {
+			self::$_instances[$tag] = new Collection();
+		}
+
 		return self::$_instances[$tag];
 	}
-
-
 
 	///
 	//Variable value functions
@@ -197,40 +256,47 @@ class Val implements IVal {
 		$var = $value ?? $this->_data;
 		if ( $this->_type ) {
 			switch ($this->_type) {
-				case '': // redundant catch for no type set
+				case DataTypes::GENERIC: // redundant catch for no type set
 					return true;
 					break;
-				case 'string':
+				case DataTypes::STRING:
 					return is_string($var);
 					break;
-				case 'number':
-				case 'double':
+				case DataTypes::NUMBER:
+				case DataTypes::DOUBLE:
 					// validates that value is numeric including zero
 					return is_numeric($var);
 					break;
-				case 'integer':
+				case DataTypes::INTEGER:
 					return is_int($var);
 					break;
-				case 'float':
+				case DataTypes::FLOAT:
 					return is_float($var);
 					break;
+				case DataTypes::BOOLEAN:
 				case 'bool':
 					return is_bool($var);
 					break;
-				case 'array':
+				case DataTypes::ARRAY:
 					return is_array($var);
 					break;
-				case 'object':
+				case DataTypes::OBJECT:
 					return is_object($var);
 					break;
-				case 'resource':
+				case DataTypes::RESOURCE:
 					return is_resource($var);
 					break;
-				case 'null':
+				case DataTypes::NULL:
 					return is_null($var);
 					break;
-				case 'scalar':
+				case DataTypes::SCALAR:
 					return is_scalar($var);
+					break;
+				case DataTypes::CALLBACK:
+					return is_callback($var);
+					break;
+				case DataTypes::DATETIME:
+					return $var instanceof DateTime || strtotime($var) !== false;
 					break;
 				default:
 					return false;
@@ -326,8 +392,9 @@ class Val implements IVal {
 	{
 		// if ( Val::isNotNull($value) ) {
 		if ( !is_null($value) ) {
-    		if (Val::isValid($value)) {
-    			throw new \Exception("Value is not a valid type '{$this->_type}'", 1);
+    		if (!Val::isValid($value)) {
+    			$this->trigger(Event::EXCEPTION);
+    			throw new \Exception("Value is not a valid type '{$this->_type->value}'", 1);
     		}
     		$this->alter($value);
 
@@ -354,6 +421,9 @@ class Val implements IVal {
 	public function ref(&$value): IVal
 	{
 		$this->alter($value);
+
+		$value = $this->_data;
+
 		$this->_data = &$value;
 
 		return $this;
@@ -390,6 +460,7 @@ class Val implements IVal {
 	public function reset(): IVal
 	{
 		$this->_data = $this->_snapshot;
+		$this->trigger(Event::CHANGE);
 
 		return $this;
 	}
@@ -425,7 +496,7 @@ class Val implements IVal {
 	 */
 	public function __set( $name, $value ) {
 		if ( 'value' === $name ) {
-			$this->value($value);
+			$this->val($value);
 		}
 	}
 
@@ -437,6 +508,7 @@ class Val implements IVal {
 	public function clear(): IVal
 	{
 		$this->_data = null;
+		$this->trigger([Event::CLEAR_DATA, Event::CHANGE]);
 
 		return $this;
 	}
@@ -455,7 +527,7 @@ class Val implements IVal {
 			}
 		}
 		if ($this->_data != $value) {
-			$this->dispatch(new Event(Event::CHANGE));
+			$this->trigger(Event::CHANGE);
 		}
 		$this->_data = $value;
 	}
@@ -471,15 +543,22 @@ class Val implements IVal {
 	public function __call( $method, $args )
 	{
 		if ( method_exists($this, self::PRIVATE_PREFIX.$method) ) {
-			$output = call_user_func_array(array($this, self::PRIVATE_PREFIX.$method), $args);
-			// if ($output instanceof Val) {
-			// 	$output = $output->val();
-			// }
+			$output = call_user_func_array([$this, self::PRIVATE_PREFIX.$method], $args);
+
+			$this->trigger(Event::ACTION_PERFORMED);
+			
 			return $output;
 		} else {
+			if ( in_array($method, $this->_slots) ) {
+				$this->trigger(Event::ACTION_PERFORMED);
+				return call_user_func_array($this->_slots[$method], $args);
+			}
+
 			// throw new Exception("Method {$method} not defined", 1);
 			error_log("Method {$method} not defined in class " . get_class($this));
-			return false;
+			$this->trigger([Event::ACTION_FAILED, Event::ERROR]);
+
+			return null;
 		}
 	}
 
@@ -510,21 +589,25 @@ class Val implements IVal {
 	*/
 	public static function __callStatic( $method, $args )
 	{
-		if ( method_exists(get_called_class(), self::PRIVATE_PREFIX.$method) ) {
-			$class = get_called_class();
+		$class = get_called_class();
+		
+		if ( method_exists($class, self::PRIVATE_PREFIX.$method) ) {
 			$value = array_shift( $args );
+
+			self::$_last = $value;
+			
 			$object = new $class( $value, false, false );
-			$output = call_user_func_array(array($object, self::PRIVATE_PREFIX.$method), $args);
+			$output = call_user_func_array([$object, self::PRIVATE_PREFIX.$method], $args);
 			unset($object);
 			if ($output instanceof IVal) {
 				$output = $output->val();
 			}
 			return $output;
-		} else {
-			// throw new Exception("Method {$method} not defined", 1);
-			error_log("Method {$method} not defined in class " . get_called_class());
-			return false;
-		}
+		} 
+
+		// throw new Exception("Method {$method} not defined", 1);
+		error_log("Method {$method} not defined in class " . get_called_class());
+		return false;
 	}
 
 	public function __destroy()

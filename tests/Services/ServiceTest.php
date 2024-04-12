@@ -30,7 +30,8 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
         $service = new Service();
         $behavior = $this->createMock(Behavior::class);
         $service->broadcast($behavior);
-        $this->assertInstanceOf(Behavior::class, $behavior->_target);
+
+        $this->assertInstanceOf(Service::class, $behavior->_target);
     }
 
     public function testBoostMethod()
@@ -46,7 +47,8 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
         $parent->delegate('Service1', $service1);
         $parent->delegate('Service2', $service2);
 
-        $parent->route('Service1', 'Service1', 'Test Behavior', function($behavior) {
+        $parent->route('Service1', 'Service2', 'Test Behavior', function($behavior) {
+        	die('test');
         	echo $this->name;
         });
 

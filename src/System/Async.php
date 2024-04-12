@@ -45,7 +45,7 @@ class Async extends Obj {
 		$post_params = [];
 
 	    foreach ($params as $key => &$val) {
-	    	if (is_array($val)) {
+	    	if (Arr::is($val)) {
 	    		$val = implode(',', $val);
 	    	}
 	    	$post_params[] = $key.'='.urlencode($val);  
@@ -67,7 +67,7 @@ class Async extends Obj {
 	    $out.= "Content-Type: application/x-www-form-urlencoded\r\n";
 	    $out.= "Content-Length: ".strlen($post_string)."\r\n";
 	    $out.= "Connection: Close\r\n\r\n";
-	    if (isset($post_string)) $out.= $post_string;
+	    if (Val::is($post_string)) $out.= $post_string;
 
 	    fwrite($fp, $out);
 	    fclose($fp);

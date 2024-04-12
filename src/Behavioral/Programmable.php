@@ -5,6 +5,7 @@ use \RuntimeException;
 use BlueFission\IObj;
 use BlueFission\Val;
 use BlueFission\Str;
+use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -38,7 +39,8 @@ trait Programmable
 	public function __construct( )
 	{
 		$this->__configConstruct();
-		$this->_tasks = [];
+		$this->_tasks = new Arr();
+		$this->echo($this->_tasks, [Event::CHANGE]);
 	}
 
 	/**
@@ -57,18 +59,17 @@ trait Programmable
 	{
 		if (method_exists ( $this , $name ))
 		{
-			return call_user_func_array(array($this, $name), $args);
+			return call_user_func_array([$this, $name, $args]);
 		}
+
 		if (Val::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
 		{
 			$result = call_user_func_array($this->_tasks[$name], $args);
 			$this->perform('On'.$name);
 			return $result;
 		}
-		else 
-		{
-			throw new RuntimeException("Method {$name} does not exist");
-		}
+		
+		throw new RuntimeException("Method {$name} does not exist");
 	}
 
 	/**
@@ -79,7 +80,8 @@ trait Programmable
 	 * @param mixed $behavior The behavior to be added. Can be either a string or a `Behavior` object.
 	 * @param callable $callback A function to be executed when the behavior is triggered.
 	 */
-	public function behavior( $behavior, $callback = null ) {
+	public function behavior( $behavior, $callback = null ): IDispatcher
+	{
 		if ( Str::is($behavior) && Val::isNotEmpty($behavior) ) {
 			if ( Str::pos ( $behavior, 'Do') === 0 ) {
 				$behavior = new Action($behavior);
@@ -93,6 +95,8 @@ trait Programmable
 		}
 
 		$this->configBehavior($behavior, $callback);
+
+		return $this;
 	}
 
 	/**
@@ -104,11 +108,11 @@ trait Programmable
 	 * 
 	 * @return bool True if the task was learned successfully, False otherwise
 	 */
-	public function learn($task, $function, $behavior = null )
+	public function learn($task, $function, $behavior = null ): IDispatcher
 	{
 		if ( is_callable($function)
-			&& (!array_key_exists($task, $this->_tasks) 
-			&& $this->is( State::DRAFT )) )
+			&& !$this->_tasks->hasKey($task)
+			&& $this->is( State::DRAFT ) )
 		{
 			$this->_tasks[$task] = $function->bindTo($this, $this);
 
@@ -116,13 +120,12 @@ trait Programmable
 			{
 				$this->behavior($behavior, $this->_tasks[$task]);
 			}
+
 			$this->behavior( 'On'.$task );
 			$this->perform( Event::CHANGE );
-
-			return true;
 		}
-		else
-			return false;
+
+		return $this;
 	}
 
 	/**
@@ -130,12 +133,14 @@ trait Programmable
 	 * 
 	 * @param string $task The name of the task to forget
 	 */
-	public function forget($task)
+	public function forget($task): IDispatcher
 	{
 		if ( $this->is( State::DRAFT ) && Val::is( $this->_tasks[$task] ) ) {
 			unset( $this->_tasks[$task] );
 			$this->perform( Event::CHANGE );
 		}
+
+		return $this;
 	}
 
 	/**

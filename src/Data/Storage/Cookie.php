@@ -103,7 +103,7 @@ class Cookie extends Storage implements IData
 		{
 			$value = json_decode($value);
 			$this->contents($value);
-			$this->loadArray((array)$value);
+			$this->assign((array)$value);
 		}	
 
 		return $this;

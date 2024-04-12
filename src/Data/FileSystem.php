@@ -7,6 +7,9 @@ use BlueFission\Arr;
 use BlueFission\IObj;
 use BlueFission\HTML\HTML;
 use BlueFission\Net\HTTP;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Event;
 
 class FileSystem extends Data implements IData {
 	/**
@@ -35,25 +38,25 @@ class FileSystem extends Data implements IData {
 	 *
 	 * @var array $_config
 	 */
-	protected $_config = array( 
+	protected $_config = [
 		'mode'=>'r', 
 		'filter'=>['..','.htm','.html','.pl','.txt'], 
 		'root'=>'', 
 		'doNotConfirm'=>'false', 
 		'lock'=>false 
-	);
+	];
 
 	/**
 	 * The data stored for the file being processed
 	 *
 	 * @var array $_data
 	 */
-	protected $_data = array(
+	protected $_data = [
 		'filename'=>'',
 		'basename'=>'',
 		'extension'=>'',
 		'dirname'=>'',
-	);
+	];
 	
 	/**
 	 * Constructor for the FileSystem class
@@ -64,8 +67,6 @@ class FileSystem extends Data implements IData {
 		parent::__construct();
 		
 		// Set the root directory to the current working directory
-		$this->config('root', $this->config('root') ?? $this->getSystemRoot());
-		
 		if ( Val::isNotNull($config) ) {
 			if ( Arr::isAssoc($config) )
 			{
@@ -73,7 +74,14 @@ class FileSystem extends Data implements IData {
 			} elseif ( Str::is($config) ) {
 				$this->loadInfo($config);
 			}
-		} 
+		}
+
+		$this->behavior(new Action( Action::CONNECT ), function($behavior) {
+            $this->open();
+        });
+        $this->behavior(new Action( Action::DISCONNECT ), function($behavior) {
+            $this->close();
+        });
 	}
 
 	/**
@@ -94,6 +102,7 @@ class FileSystem extends Data implements IData {
 	 */
 	public function open( $file = null ): IObj
 	{
+		$this->perform( new State(State::CONNECTING) );
 		if ( $file ) {
 			$this->loadInfo( $file );
 		}
@@ -105,18 +114,25 @@ class FileSystem extends Data implements IData {
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
+			$this->trigger( Event::FAILURE );
+
 			return $this;
 		}
-
-		$this->close();
 
 		$filepath = $path.DIRECTORY_SEPARATOR.$file;
 
 		if ($file) {
-			if (!$this->exists($filepath)) $status = "File '$file' does not exist. Creating.";
+			if (!$this->exists($filepath) && Str::pos($this->config('mode'), 'w') !== false || Str::pos($this->config('mode'), 'a') !== false) {
+				$status = "File '$file' does not exist. Creating.";
+				$this->perform( State::CREATING );
+				touch($filepath);
+				$this->halt( State::CREATING );
+			}
 			
 			if (!$handle = @fopen($filepath, $this->config('mode'))) {
 				$status = "Cannot access file ($filepath)";
+				$this->halt( State::CONNECTING );
+				$this->perform( Event::FAILURE );
 			} else {
 				if ($this->config('lock') && flock($handle, LOCK_EX)) {
 					$this->_isLocked = true;
@@ -124,8 +140,8 @@ class FileSystem extends Data implements IData {
 					$this->_handle = $handle;
 				} elseif (!$this->config('lock')) {
 					$this->_handle = $handle;
-					$this->close();
 					$success = 'true';
+					$this->perform( Event::CONNECTED );
 				} else {
 					$this->_isLocked = false;
 					$status = "Couldn't acquire lock on file {$filepath}.";
@@ -136,6 +152,7 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
+		$this->close();
 		
 		return $this;
 	}
@@ -145,11 +162,14 @@ class FileSystem extends Data implements IData {
 	 */
 	public function close(): IObj
 	{
+		$this->perform( new State(State::DISCONNECTING) );
 		if ($this->_handle) {
 			fclose ( $this->_handle );
 		}
 		$this->_handle = null;
 		$this->_isLocked = false;
+
+		$this->trigger(Event::DISCONNECTED);
 
 		return $this;
 	}
@@ -179,7 +199,6 @@ class FileSystem extends Data implements IData {
 					}
 				}
 			}
-
 		}
 		return $root;
 	}
@@ -192,13 +211,16 @@ class FileSystem extends Data implements IData {
 	{
 		$info = pathinfo($path);
 
-		$this->config('root', $this->config('root') ?? $this->getSystemRoot());
+		$root = $this->config('root') ?? $this->getSystemRoot();
+		$root = ( $root && Str::pos($path, $root) === 0 ) ? $root : '';
 
+		$this->config('root', $root);
+		
 		if (Arr::is($info)) {
 			$dir = $info['dirname'] ?? '';
-			
+
 			if ($this->allowedDir($dir)) {
-				$info['dirname'] = substr($dir, Str::len($this->config('root')), Str::len($dir) );
+				$info['dirname'] = Str::sub($dir, Str::len($this->config('root')), Str::len($dir) );
 			}
 			
 			$this->assign($info);
@@ -228,10 +250,21 @@ class FileSystem extends Data implements IData {
 	 */
 	private function path(): string|null
 	{
-		$path = implode( DIRECTORY_SEPARATOR, [$this->config('root'), $this->dirname] ) ?? $this->getcwd();
+		$pathParts = [];
 
+		if ( $this->config('root') ) {
+			$pathParts[] = $this->config('root');
+		}
+
+		if ( $this->dirname ) {
+			$pathParts[] = $this->dirname;
+
+		}
+
+		$path = implode( DIRECTORY_SEPARATOR, $pathParts ) ?? getcwd();
 		$realpath = realpath($path);
-		return $realpath ? $realpath : $path;
+
+		return $realpath ?? $path;
 	}
 
 	/**
@@ -241,23 +274,30 @@ class FileSystem extends Data implements IData {
 	 */
 	public function read( $file = null ): IObj
 	{
+		parent::read();
 		$file = (Val::isNotNull($file)) ? $file : $this->file();
 		$path = $this->path();
 		$filepath = $path.DIRECTORY_SEPARATOR.$file;
 
 		if (!$file) {
 			$this->status("No file specified");
+			$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
 			return $this;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
+			$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
 			return $this;
 		}
 		
 		if ( $this->exists($filepath) && !$this->config('lock'))
 		{
 			$this->contents(file_get_contents($filepath));
+			
+			$this->status("File $file read successfully");
+
+			$this->trigger([Event::SUCCESS], [Action::READ, $this->status()]);
 			return $this;
 		}
 		elseif ( $this->_handle )
@@ -266,6 +306,7 @@ class FileSystem extends Data implements IData {
 			if ( $this->contents() === false )
 			{
 				$this->status( "File $file could not be read" );
+				$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
 				return $this;
 			}
 			else return $this;
@@ -273,6 +314,7 @@ class FileSystem extends Data implements IData {
 		else	
 		{
 			$this->status( "No such file. File does not exist" );
+			$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
 			return $this;
 		}
 	}
@@ -283,16 +325,19 @@ class FileSystem extends Data implements IData {
 	 */
 	public function write(): IObj
 	{
+		parent::write();
 		$path = $this->path();
 		$file = $this->file();
 
 		if (!$this->file()) {
 			$this->status("No file specified");
+			$this->trigger([Event::ACTION_FAILED, Event::FAILURE], [Action::SAVE, $status]);
 			return $this;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
+			$this->trigger([Event::ACTION_FAILED, Event::FAILURE], [Action::SAVE, $status]);
 			return $this;
 		}
 
@@ -305,18 +350,34 @@ class FileSystem extends Data implements IData {
 		$content = ( substr(finfo_file($finfo, $filepath), 0, 4) == 'text') ? stripslashes($content) : $content;
 
 		$status = '';
+		$isNewFile = false;
+
 		if ($file && !$this->config('lock')) {
 			if (is_writable($path)) {
 				if ( Val::isEmpty($content) ) {
-					if (!$this->exists($filepath) && touch($filepath) ) {
-						$status = "File '$file' has been created";
+					if (!$this->exists($filepath)) {
+						$this->perform( State::PERFORMING_ACTION, Action::CREATE );
+						$isNewFile = true;
+						if ( touch($filepath) ) {
+							$status = "File '$file' has been created";
+						}
 					} else {
 						$status = "File '$file' already exists";
+						$this->perform( State::PERFORMING_ACTION, Action::UPDATE );
 					}
 				} elseif ( !file_put_contents($filepath, $content) ) {
 					$status = "Cannot write to file ($file)";
 				} else {	
 					$status = "Successfully wrote to file '$file'";
+					$this->status($status);
+					if ( $isNewFile ) {
+						$this->trigger([Event::SUCCESS], [Action::CREATE, $status]);
+					} else {
+						$this->trigger([Event::SUCCESS], [Action::UPDATE, $status]);
+					}
+					$this->trigger([Event::SUCCESS], [Action::SAVE, $status]);
+
+					return $this;
 				}
 			} else {
 				$status = "The file '$file' is not writable";
@@ -325,6 +386,9 @@ class FileSystem extends Data implements IData {
 			if ( fwrite($this->_handle, $content) !== false) 
 			{
 				$status = "Successfully wrote to file '$file'";
+				$this->status($status);
+				$this->trigger([Event::SUCCESS], [Action::SAVE, $status]);
+				return $this;
 			}
 			else
 			{
@@ -335,6 +399,7 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
+		$this->trigger([Event::FAILURE], [Action::SAVE, $status]);
 
 		return $this;
 	}
@@ -372,6 +437,9 @@ class FileSystem extends Data implements IData {
 					//exit;
 				} else {	
 					$status = "Successfully emptied '$file'";
+					$this->status($status);
+					$this->trigger([Event::SUCCESS], [Action::UPDATE, $this->status()]);
+					return $this;
 				}
 			} else {
 				$status = "The file '$file' is not writable";
@@ -379,6 +447,9 @@ class FileSystem extends Data implements IData {
 		} elseif ($this->_handle) {
 			if ( ftruncate($this->_handle) !== false) {
 				$status = "Successfully emptied '$file'";
+				$this->status($status);
+				$this->trigger([Event::SUCCESS], [Action::UPDATE, $this->status()]);
+				return $this;
 			} else {
 				$status = "Failed to empty file '$file'";
 			}
@@ -386,7 +457,8 @@ class FileSystem extends Data implements IData {
 			$status = "No file specified for edit";
 		}
 		
-		$this->status($status);	
+		$this->status($status);
+		$this->trigger([Event::FAILURE], [Action::UPDATE, $this->status()]);
 
 		return $this;
 	}
@@ -400,17 +472,20 @@ class FileSystem extends Data implements IData {
 	 */
 	public function delete( $confirm = null ): IObj
 	{
+		parent::delete();
 		$status = false;
 		$path = $this->path();
 		$file = $this->file();
 
 		if (!$this->file()) {
 			$this->status("No file specified");
+			$this->trigger([Event::ACTION_FAILED, Event::FAILURE]);
 			return $this;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
+			$this->trigger([Event::FAILURE], [Action::DELETE, $this->status()]);
 			return $this;
 		}
 
@@ -426,7 +501,10 @@ class FileSystem extends Data implements IData {
 							$status = "Cannot delete file ($file)";
 						} else {
 							$status = "Successfully deleted file '$file'";
-						}	
+							$this->status($status);
+							$this->trigger([Event::SUCCESS], [Action::DELETE, $this->status()]);
+							return $this;
+						}
 					} else {
 						$status = "The file '$file' is not editable";
 					}
@@ -441,6 +519,7 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
+		$this->trigger([Event::FAILURE], [Action::DELETE, $this->status()]);
 
 		return $this;
 	}
@@ -494,6 +573,7 @@ class FileSystem extends Data implements IData {
 						if (!$this->exists( $location ) || $overwrite) {
 							if (move_uploaded_file( $document['tmp_name'], $location )) {
 								$status = 'Upload Completed Successfully';
+								$this->trigger([Event::SUCCESS], [Action::CREATE, $this->status()]);
 							} else {
 								$status = 'Transfer aborted for file ' . basename($document['name']) . '. Could not copy file';
 							}
@@ -512,6 +592,7 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
+		$this->trigger([Event::ACTION_FAILED, Event::FAILURE], [Action::CREATE, $this->status()]);
 
 		return $this;
 	}
@@ -630,7 +711,7 @@ class FileSystem extends Data implements IData {
 		
 		$this->_contents = $data;
 
-		return null;
+		return $this;
 	}
 
 	/**
@@ -670,11 +751,21 @@ class FileSystem extends Data implements IData {
 						//copy process here
 						if ($success) {
 							$status = "Successfully copied file";
+							$this->status($status);
+							if ( $overwrite && $this->exists( $dest ) ) {
+								$this->trigger([Event::SUCCESS], [Action::UPDATE, $this->status()]);
+							} else {
+								$this->trigger([Event::SUCCESS], [Action::CREATE, $this->status()]);
+							}
+
 							if ($remove_orig) {
 								$this->delete($file);
-								if (!$this->exists($this->file()))
+								if (!$this->exists($this->file())) {
 									$this->dirname = $dest;
+								}
 							}
+
+							return $this;
 						} else {
 							$status = "Copy failed: file could not be moved";
 						}
@@ -724,22 +815,6 @@ class FileSystem extends Data implements IData {
 	 */
 	private function allowedDir( $path )
 	{
-		// TODO: Check against basedir restrictions
-		// $basedir = ini_get('open_basedir');
-		// if ( $basedir ) {
-		// 	$directories = exploode(PATH_SEPARATOR, $basedir);
-		// 	if (is_array($directories)) {
-		// 		foreach ($directories as $directory) {
-		// 			if ( $root == $directory ){
-
-		// 			} else {
-		// 				$directory = realpath($directory);
-		// 				$position = strpos ( $dir, $root );
-		// 			}
-		// 		}
-		// 	}
-		// }
-
 		$root = @realpath ( $this->config('root') );
 		$dir = @realpath($path);
 
@@ -787,11 +862,16 @@ class FileSystem extends Data implements IData {
 
 	    if (!$this->allowedDir($dir)) {
 	        $this->status( "Location is outside of allowed path.");
+			$this->trigger([Event::FAILURE], [Action::CREATE, $this->status()]);
 	        return $this;
 	    }
 
 	    if (!$this->exists($dir)) {
 	        mkdir($dir);
+	        $this->status("Directory created successfully");
+			$this->trigger([Event::SUCCESS], [Action::CREATE, $this->status()]);
+	    } else {
+	    	$this->status("Directory already exists");
 	    }
 
 	    return $this;

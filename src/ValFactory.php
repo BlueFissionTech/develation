@@ -2,47 +2,37 @@
 namespace BlueFission;
 
 class ValFactory {
-	static const GENERIC = 'generic';
-	static const STRING = 'string';
-	static const NUMBER = 'number';
-	static const BOOLEAN = 'boolean';
-	static const DATETIME = 'datetime';
-	static const ARRAY = 'array';
-	static const OBJECT = 'object';
-
-	static function make( $type = null, $args = null ): IVal
+	static function make( $type = null ): IVal
 	{
+		$args = func_get_args();
+		array_shift($args);
+
 		switch (strtolower($type)) {
-			case self::STRING:
+			case DataTypes::STRING->value:
 				$class = '\BlueFission\Str';
 				break;
-			case self::NUMBER:
+			case DataTypes::NUMBER->value:
+			case DataTypes::DOUBLE->value:
+			case DataTypes::FLOAT->value:
+			case DataTypes::INTEGER->value:
 				$class = '\BlueFission\Num';
 				break;
-			case self::BOOLEAN:
+			case DataTypes::BOOLEAN->value:
 				$class = '\BlueFission\Flag';
 				break;
-			case self::DATETIME:
+			case DataTypes::DATETIME->value:
 				$class = '\BlueFission\Date';
 				break;
-			case self::ARRAY:
+			case DataTypes::ARRAY->value:
 				$class = '\BlueFission\Arr';
 				break;
-			case self::OBJECT:
+			case DataTypes::OBJECT->value:
 				$class = '\BlueFission\Obj';
 				break;
 			default:
-			case self::GENERIC:
+			case DataTypes::GENERIC->value:
 				$class = '\BlueFission\Val';
 				break;
-		}
-
-		if ( $args ) {
-			if ( !is_array($args) ) {
-				$args = [$args];
-			}
-		} else {
-			$args = [];
 		}
 
 		return new $class(...$args);

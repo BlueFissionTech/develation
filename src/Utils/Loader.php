@@ -1,6 +1,10 @@
 <?php
 namespace BlueFission\Utils;
 
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+
 /**
  * Class to import all class files.
  * 
@@ -34,9 +38,9 @@ class Loader
      */
     static function instance( )
     {
-        if (!isset(self::$_instance)) {
-            $c = __CLASS__;
-            self::$_instance = new $c;
+        if (!Val::is(self::$_instance)) {
+            $class = __CLASS__;
+            self::$_instance = new $class;
         }
 
         return self::$_instance;
@@ -52,16 +56,16 @@ class Loader
      */
     public function config( $config = null, $value = null )
     {
-        if (!isset ($config))
+        if (!Val::is ($config))
             return $this->_config;
-        elseif (is_string($config))
+        elseif (Str::is($config))
         {
-            if (!isset ($value))
-                return isset($this->_config[$config]) ? $this->_config[$config] : null;
-            if (array_key_exists($config, $this->_config))
+            if (!Val::is ($value))
+                return Val::is($this->_config[$config]) ? $this->_config[$config] : null;
+            if (Arr::hasKey($this->_config, $config))
                 $this->_config[$config] = $value; 
         }
-        elseif (is_array($config))
+        elseif (Arr::is($config))
         {
             foreach ($this->config as $a=>$b)
                 $this->_config[$a] = $config[$a];
@@ -96,7 +100,7 @@ class Loader
             return false;
         }
 
-        if( is_array( $classPath ) )
+        if( Arr::is( $classPath ) )
         {
             foreach( $classPath as $path )
             {
@@ -119,7 +123,7 @@ class Loader
 	private function getClassDirectoryPath( $fullyQualifiedClass )
 	{
 	    $pathParts = explode( ".", $fullyQualifiedClass );
-	    $numberOfPathParts = count( $pathParts );
+	    $numberOfPathParts = Arr::size( $pathParts );
 	    $filePath = "";
 	    $isWildcardMatch = $pathParts[ $numberOfPathParts - 1 ] == "*";
 
@@ -136,7 +140,7 @@ class Loader
 	    // Check if wildcard match
 	    if( $isWildcardMatch )
 	    {
-	        $wildcardMatches = array();
+	        $wildcardMatches = [];
 	        foreach( $this->_paths as $path )
 	        {
 	            $testPath = $path . DIRECTORY_SEPARATOR . $filePath;
@@ -146,7 +150,7 @@ class Loader
 	                while(false !== ( $entry = $directory->read() ) )
 	                {
 	                    if( $entry != "." && $entry != ".." && 
-	                        strrpos( $entry, ".".$this->_config['default_extension'] ) !== false )
+	                        Str::rpos( $entry, ".".$this->_config['default_extension'] ) !== false )
 	                    {
 	                        $wildcardMatches[] = $testPath . $entry;
 	                    }

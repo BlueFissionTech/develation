@@ -34,13 +34,12 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('Test Output');
 
-		$this->object->register('service1', 'OnEventOne', function() {
-			return 'Test Output';
+		$this->object->register('service1', 'OnEventOne', function($behavior, $args) {
+			echo 'Test ';
 		});
 
-		$this->object->register('service2', 'DoEventTwo', function($data) {
-			// echo 'Test Output';
-			echo $data->_context;
+		$this->object->register('service2', 'DoEventTwo', function($data, $args) {
+			echo 'Output';
 		});
 
 		$this->object->route('service1', 'service2', 'OnEventOne', 'DoEventTwo');

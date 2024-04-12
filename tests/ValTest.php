@@ -2,10 +2,12 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Val;
+use BlueFission\DataTypes;
  
 class ValTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = '\BlueFission\Val';
+ 	protected $value;
  	protected $object;
  	protected $blankObject;
  	protected $nullObject;
@@ -15,7 +17,8 @@ class ValTest extends \PHPUnit\Framework\TestCase {
 
 	public function setUp(): void
 	{
-		$this->blankObject = new static::$classname;
+		$this->value = 1;
+		$this->blankObject = new static::$classname();
 		$this->nullObject = new static::$classname(null);
 		$this->emptyObject = new static::$classname("");
 		$this->zeroObject = new static::$classname(0);
@@ -192,7 +195,7 @@ class ValTest extends \PHPUnit\Framework\TestCase {
 	{
 		$trueResult = static::$classname::isEmpty();
 		$falseResult = static::$classname::isNotEmpty();
-	
+
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
 	}
@@ -219,7 +222,7 @@ class ValTest extends \PHPUnit\Framework\TestCase {
 	{
 		$trueResult = static::$classname::isNotEmpty(0);
 		$falseResult = static::$classname::isEmpty(0);
-	
+
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
 	}
@@ -235,23 +238,74 @@ class ValTest extends \PHPUnit\Framework\TestCase {
 		}
 	}
 
- 
- 	// public function testIsSingleton()
- 	// {
- 	// 	$this->assertClassHasStaticAttribute('_instance', static::$classname);
- 	// }
+	public function testCastsAsType()
+	{
+		$object = new static::$classname();
+		$value = $object->cast()->val();
+		if ($object->getType() && DataTypes::GENERIC->value !== $object->getType() ) {
+			$this->assertTrue(static::$classname::isValid($value));
+		} else {
+			$this->assertTrue(static::$classname::isValid($value));
+		}
 
- 	// /** 
- 	//  * @expectedException InvalidArgumentException
- 	//  */
- 	// public function testThrowsException()
- 	// {
- 	// 	$this->object->dispatch('InvalidBehavior');
- 	// }
 
- 	/*
- 	assertArrayHasKey
- 	assertFileExists
- 	expectOutputString
- 	*/
+		$object = new static::$classname(true);
+		if ( $object->getType() && DataTypes::GENERIC->value !== $object->getType() ) {
+			$value = $object->cast()->val();
+			$this->assertEquals($object->getType(), gettype($value));
+			$this->assertTrue(static::$classname::isValid($value));
+		}
+
+		$object = new static::$classname(1);
+		if ( $object->getType() && DataTypes::GENERIC->value !== $object->getType() ) {
+			$value = $object->cast()->val();
+			$this->assertEquals($object->getType(), gettype($value));
+			$this->assertTrue(static::$classname::isValid($value));
+		}
+
+		$object = new static::$classname('Hello, World');
+		if ( $object->getType() && DataTypes::GENERIC->value !== $object->getType() ) {
+			$value = $object->cast()->val();
+			$this->assertEquals($object->getType(), gettype($value));
+			$this->assertTrue(static::$classname::isValid($value));
+		}
+
+		$object = new static::$classname(1.1);
+		if ( $object->getType() && DataTypes::GENERIC->value !== $object->getType() ) {
+			$value = $object->cast()->val();
+			$this->assertEquals($object->getType(), gettype($value));
+			$this->assertTrue(static::$classname::isValid($value));
+		}
+
+		$object = new static::$classname(['foobar']);
+		if ( $object->getType() && DataTypes::GENERIC->value !== $object->getType() ) {
+			$value = $object->cast()->val();
+			$this->assertEquals($object->getType(), gettype($value));
+			$this->assertTrue(static::$classname::isValid($value));
+		}
+	}
+
+	public function testsGrab()
+	{
+		$var1 = $this->value;
+		$var2 = null;
+
+		if ( static::$classname::is($var1) ) {
+			$var2 = static::$classname::grab();
+		}
+
+		$this->assertEquals($var1, $var2);
+	}
+
+	public function testsUse()
+	{
+		$var1 = $this->value;
+		$var2 = null;
+
+		if ( static::$classname::is($var1) ) {
+			$var2 = static::$classname::use();
+		}
+
+		$this->assertEquals($var1, $var2->val());
+	}
 }

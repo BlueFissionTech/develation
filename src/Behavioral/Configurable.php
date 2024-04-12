@@ -78,6 +78,7 @@ trait Configurable {
 				return $this->_config[$config] ?? null;
 			}
 						
+			$this->perform( State::CONFIGURING );
 			if ( !$this->is(State::READONLY) ) {
 				if ( $this->is(State::DRAFT) ) {
 					$this->_config[$config] = $value;
@@ -86,6 +87,7 @@ trait Configurable {
 				}
 			}
 		} elseif (Arr::is($config) && !$this->is(State::READONLY)) {
+			$this->perform( State::CONFIGURING );
 			$this->perform( State::BUSY );
 			if ( $this->is(State::DRAFT) ) {
 				foreach ( $config as $a=>$b ) {
@@ -99,6 +101,7 @@ trait Configurable {
 			$this->halt( State::BUSY );
 		}
 
+		$this->perform( Event::CONFIGURED );
 		return $this;
 	}
 	

@@ -46,7 +46,7 @@ class HTTPTest extends TestCase {
         $_SERVER['HTTP_HOST'] = 'www.bluefission.com';
         $_SERVER['REQUEST_URI'] = '/test';
         $_SERVER['HTTPS'] = '';
-        $expected = 'https://www.bluefission.com/test';
+        $expected = 'http://www.bluefission.com/test';
         $actual = HTTP::url();
         $this->assertEquals($expected, $actual);
     }

@@ -4,6 +4,9 @@ namespace BlueFission\Data;
 use BlueFission\IObj;
 use BlueFission\Obj;
 use BlueFission\Behavioral\Configurable;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\State;
 
 /**
  * Class Data
@@ -23,6 +26,79 @@ class Data extends Obj implements IData
     {
         $this->__configConstruct($config);
         parent::__construct();
+
+        $this->behavior(new Action( Action::CREATE ), function($behavior) {
+            $this->write();
+        });
+        $this->behavior(new Action( Action::UPDATE ), function($behavior) {
+            $this->write();
+        });
+        $this->behavior(new Action( Action::SAVE ), function($behavior) {
+            $this->write();
+        });
+        $this->behavior(new Action( Action::READ ), function($behavior) {
+            $this->read();
+        });
+        $this->behavior(new Action( Action::DELETE ), function($behavior) {
+            $this->delete();
+        });
+
+        $this->behavior(new Event( Event::SUCCESS ), function($behavior, $args) {
+            $args = $args ?? $behavior->_context;
+            if ($args) {
+                $action = $args[0];
+            }
+
+            if ( Action::READ == $action && $this->is(State::READING) ) {
+                $this->perform(Event::READ);
+            }
+            if ( Action::CREATE == $action && $this->is(State::CREATING) ) {
+                $this->perform(Event::CREATED);
+            }
+            if ( Action::UPDATE == $action && $this->is(State::UPDATING) ) {
+                $this->perform(Event::UPDATED);
+            }
+            if ( Action::DELETE == $action && $this->is(State::DELETING) ) {
+                $this->perform(Event::DELETED);
+            }
+            if ( Action::SAVE == $action && $this->is(State::SAVING) ) {
+                $this->perform(Event::SAVED);
+            }
+
+            if ( $action ) {
+                $this->halt($action);
+                $this->trigger( Event::ACTION_PERFORMED, $action );
+            }
+        });
+
+        $this->behavior(new Event( Event::FAILURE ), function($behavior, $args) {
+            $args = $args ?? $behavior->_context;
+            if ($args) {
+                $action = $args[0];
+            }
+
+            if ( Action::READ == $action && $this->is(State::READING) ) {
+                $this->halt(State::READING);
+            }
+            if ( Action::CREATE == $action && $this->is(State::CREATING) ) {
+                $this->halt(State::CREATING);
+            }
+            if ( Action::UPDATE == $action && $this->is(State::UPDATING) ) {
+                $this->halt(State::SAVING);
+                $this->halt(State::UPDATING);
+            }
+            if ( Action::DELETE == $action && $this->is(State::DELETING) ) {
+                $this->halt(State::SAVING);
+                $this->halt(State::DELETING);
+            }
+            if ( Action::SAVE == $action && $this->is(State::SAVING) ) {
+                $this->halt(State::SAVING);
+            }
+
+            if ( $action ) {
+                $this->trigger( Event::ACTION_FAILED, $action );
+            }
+        });
     }
     
     /**
@@ -33,6 +109,10 @@ class Data extends Obj implements IData
     public function read(): IObj 
     {
         // method implementation
+        $this->perform( State::PERFORMING_ACTION, Action::READ );
+        $this->perform(State::READING);
+
+        return $this;
     }
     
     /**
@@ -43,6 +123,10 @@ class Data extends Obj implements IData
     public function write(): IObj 
     {
         // method implementation
+        $this->perform( State::PERFORMING_ACTION, Action::SAVE );
+        $this->perform(State::SAVING);
+
+        return $this;
     }
     
     /**
@@ -53,6 +137,10 @@ class Data extends Obj implements IData
     public function delete(): IObj 
     {
         // method implementation
+        $this->perform( State::PERFORMING_ACTION, Action::DELETE) ;
+        $this->perform(State::DELETING);
+
+        return $this;
     }
     
     /**
@@ -63,6 +151,7 @@ class Data extends Obj implements IData
     public function contents($data = null): mixed
     {
         // method implementation
+        return null;
     }
 
     /**
@@ -112,5 +201,5 @@ class Data extends Obj implements IData
         $this->assign($vars);
 
         return $this;
-    }
+    }    
 }

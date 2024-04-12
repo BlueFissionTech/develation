@@ -1,6 +1,9 @@
 <?php
 namespace BlueFission\System;
 
+use BlueFission\Val;
+use BlueFission\Str;
+
 /**
  * Class Machine
  *
@@ -69,7 +72,7 @@ class Machine {
      * @return float The CPU usage as a decimal
      */
     public function getCPUUsage() {
-        if (\substr(\php_uname(), 0, 7) == "Windows") { 
+        if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting CPU usage
             $this->_system->run("WMIC CPU GET LoadPercentage");
             return $this->_system->response();
@@ -86,7 +89,7 @@ class Machine {
      */
     public function getTemperature() {
         $temperature = "";
-        if (\substr(\php_uname(), 0, 7) == "Windows") { 
+        if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting temperature
             $this->_system->run("WMIC /Namespace:\\\\root\\WMI PATH MSAcpi_ThermalZoneTemperature GET CurrentTemperature");
             $temperature = $this->_system->response();
@@ -103,7 +106,7 @@ class Machine {
 
             foreach ($possiblePaths as $path) {
                 $matches = glob($path);
-                if (!empty($matches)) {
+                if (!Val::isEmpty($matches)) {
                     $this->_system->run("cat {$matches[0]}");
                     $temperature = $this->_system->response();
                     break;
@@ -120,7 +123,7 @@ class Machine {
      */
     public function getFanSpeed() {
         $fanSpeed = "";
-        if (\substr(\php_uname(), 0, 7) == "Windows") { 
+        if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting fan speed
             $this->_system->run("WMIC /Node:localhost PATH Win32_Fan GET Descriptions, VariableSpeed");
             $fanSpeed = $this->_system->response();
@@ -137,7 +140,7 @@ class Machine {
 
             foreach ($possiblePaths as $path) {
                 $matches = glob($path);
-                if (!empty($matches)) {
+                if (!Val::isEmpty($matches)) {
                     $this->_system->run("cat {$matches[0]}");
                     $fanSpeed = $this->_system->response();
                     break;
@@ -160,7 +163,7 @@ class Machine {
      */
     public function getPowerConsumption() {
         $powerConsumption = "";
-        if (\substr(\php_uname(), 0, 7) == "Windows") {
+        if (Str::sub(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting power consumption
             $this->_system->run("WMIC /Node:localhost PATH Win32_PerfFormattedData_PerfOS_System GET ProcessorQueueLength");
             $powerConsumption = $this->_system->response();
@@ -175,7 +178,7 @@ class Machine {
 
             foreach ($potentialPaths as $path) {
                 $matches = glob($path);
-                if (!empty($matches)) {
+                if (!Val::isEmpty($matches)) {
                     $this->_system->run("cat {$matches[0]}");
                     $powerConsumption = $this->_system->response();
                     break;

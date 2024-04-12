@@ -58,7 +58,7 @@ class Request extends Obj {
 	 */
 	public function type()
 	{
-		return $_SERVER['REQUEST_METHOD'];
+		return $_SERVER['REQUEST_METHOD'] ?? '_';
 	}
 
 	/**

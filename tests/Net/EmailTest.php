@@ -8,12 +8,12 @@ class EmailTest extends TestCase
 {
     public function testConstructor()
     {
-        $email = new Email('test@example.com', 'test@example.com', 'Test Subject', 'Test Message', 'cc@example.com', 'bcc@example.com', true, 'Test Headers', 'Test Additional');
+        $email = new Email('test@example.com', 'test@example.com', 'Test Subject', 'Test Message', 'cc@example.com', 'bcc@example.com', true, ['Test Headers'], 'Test Additional');
 
         $this->assertInstanceOf(Email::class, $email);
-        $this->assertSame(['test@example.com'=>'test@example.com'], $email->getRecipients(Email::TO));
-        $this->assertSame(['cc@example.com'=>'cc@example.com'], $email->getRecipients(Email::CC));
-        $this->assertSame(['bcc@example.com'=>'bcc@example.com'], $email->getRecipients(Email::BCC));
+        $this->assertSame(['test@example.com'], $email->getRecipients(Email::TO));
+        $this->assertSame(['cc@example.com'], $email->getRecipients(Email::CC));
+        $this->assertSame(['bcc@example.com'], $email->getRecipients(Email::BCC));
         $this->assertSame('test@example.com', $email->from());
         $this->assertSame('Test Subject', $email->subject());
         $this->assertSame('Test Message', $email->body());
@@ -34,7 +34,7 @@ class EmailTest extends TestCase
         $email = new Email();
 
         $this->assertSame([], $email->headers());
-        $this->assertNull($email->headers('invalid_header'));
+        $this->assertFalse($email->headers('invalid_header'));
         $this->assertSame('Test Header', $email->headers('test_header', 'Test Header')->headers('test_header'));
         $this->assertSame('Test Header', $email->headers('test_header'));
     }
