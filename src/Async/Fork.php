@@ -18,16 +18,22 @@ class Fork extends Async {
      * @param int $priority The priority of the task; higher values are processed earlier.
      * @return Fork The instance of the Fork class.
      */
-    public static function executeFork($task, $priority = 10) {
+    public static function do($task, $priority = 10) {
+
+        if (!function_exists('pcntl_fork')) {
+            throw new \Exception("The pcntl extension is required to fork processes.");
+        }
+
+
         $function = function() use ($task) {
-            $pid = pcntl_fork();
+            $pid = \pcntl_fork();
 
             if ($pid == -1) {
                 // Handle error: failed to fork
                 throw new \Exception("Could not fork the process.");
             } elseif ($pid) {
                 // Parent process will reach this branch
-                pcntl_wait($status); // Optional: Wait for child to exit
+                \pcntl_wait($status); // Optional: Wait for child to exit
                 yield "Child process completed";
             } else {
                 // Child process will execute the task

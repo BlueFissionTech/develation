@@ -10,9 +10,10 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 
 use BlueFission\Behavioral\Behaves;
+use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\IBehavioral;
 
-class Obj implements IObj, IBehavioral
+class Obj implements IObj, IDispatcher, IBehavioral
 {
     use Behaves {
         Behaves::__construct as private __behavesConstruct;

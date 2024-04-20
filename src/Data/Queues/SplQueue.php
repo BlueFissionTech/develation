@@ -2,27 +2,37 @@
 
 namespace BlueFission\Data\Queues;
 
-use SplQueue;
+use SplQueue as BaseSplQueue;
 
-class SplQueue implements IQueue {
-    private $queue;
+class SplQueue extends Queue implements IQueue {
+    private static $_queues = [];
 
-    public function __construct() {
-        $this->queue = new SplQueue();
+    private function __construct() { }
+
+    private static function instance( $queue)
+    {
+        if (!isset(self::$_queues[$channel])) {
+            self::$_queues[$channel] = new BaseSplQueue();
+        }
+
+        return self::$_queues[$channel];
     }
 
     public static function isEmpty($queue) {
-        return $queue->isEmpty();
+        $queues = self::instance($queue);
+        return $queues->isEmpty();
     }
 
     public static function dequeue($queue, $after = false, $until = false) {
-        if (!$queue->isEmpty()) {
-            return $queue->dequeue();
+        $queues = self::instance($queue);
+        if (!$queues->isEmpty()) {
+            return $queues->dequeue();
         }
         return null;
     }
 
-    public static function enqueue($queue, $item) {
-        $queue->enqueue($item);
+    public static function enqueue($item, $queue) {
+        $queues = self::instance($queue);
+        $queues->enqueue($item);
     }
 }

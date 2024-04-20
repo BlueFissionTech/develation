@@ -25,6 +25,8 @@ class State extends Behavior
     const REJECTED = 'IsRejected';
     const FULFILLED = 'IsFulfilled';
     const ARCHIVED = 'IsArchived';
+    const RUNNING = 'IsRunning';
+    const CHANGING = 'IsChanging';
 
     // State changes
     const STATE_CHANGING = 'IsChangingState';
@@ -74,6 +76,7 @@ class State extends Behavior
     const INITIALIZING = 'IsInitializing';
     const FINALIZING = 'IsFinalizing';
     const PROCESSING = 'IsProcessing';
+    const STOPPED = 'IsStopped';
     const WAITING_FOR_INPUT = 'IsWaitingForInput';
     const PERFORMING_ACTION = 'IsPerformingAction';
     const ACTION_COMPLETED = 'IsActionCompleted';

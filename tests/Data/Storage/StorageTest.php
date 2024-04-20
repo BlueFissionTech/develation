@@ -22,10 +22,9 @@ class StorageTest extends \PHPUnit\Framework\TestCase {
 	public function testStorageCanActivate()
 	{
 		$value = false;
-		$this->object->behavior(Event::ACTIVATED, function($b, $args) use (&$value) {
+		$this->object->when(Event::ACTIVATED, function($b, $args) use (&$value) {
 			$value = true;
-		});
-		$this->object->activate();
+		})->activate();
 
 		$this->assertTrue($value);
 	}

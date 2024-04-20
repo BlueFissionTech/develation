@@ -13,7 +13,8 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": "*"
+        "php": "*",
+        "cboden/ratchet": "dev-master"
     },
     "git": {
         "platform-check": true

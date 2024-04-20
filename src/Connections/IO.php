@@ -2,6 +2,9 @@
 
 namespace BlueFission\Connections;
 
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Async\Promise;
 
 class IO {
@@ -10,104 +13,68 @@ class IO {
     protected static $_messages = [];
     protected static $_listener = null;
 
-    public static function in() {
-        $stdio = new Stdio();
+    public static function std($input = null, $config = []) {
+        $stdio = new Stdio(array_merge(['target' => $input], $config));
         $stdio
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::message("Connected to stdin", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::message("Read complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) use( $listener ) { IO::message("Read failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) use( $listener ) { IO::message("Read error", $b); })
-        ->open('input');
-
-        return new Promise(function($resolve, $reject) use ($stdio) {
-            $data = $stdio->read();
-            if ($data !== false) {
-                $data = static::applyFilters($data);
-                $resolve($data);
-            } else {
-                $reject('No data');
-            }
-            $stdio->close();
-        });
-    }
-
-    public static function out($data) {
-        $data = static::applyFilters($data);
-        $stdio = new Stdio();
-        $stdio
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::message("Connected to stdin", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::message("Write complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) use( $listener ) { IO::message("Write failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) use( $listener ) { IO::message("Write error", $b); })
-        $stdio->open('output');
-        $stdio->write($data);
-        $stdio->close();
-    }
-
-    public static function fetch($url) {
-        $curl = new Curl(['target' => $url]);
-        $curl
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::message("Connected to remote", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::message("Read complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) use( $listener ) { IO::message("Read failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) use( $listener ) { IO::message("Read error", $b); })
+        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to stdio", $b); })
+        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Communication complete", $b); })
+        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Communication failed", $b); })
+        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Communication error", $b); })
         ->open();
 
-        return new Promise(function($resolve, $reject) use ($curl) {
-            $result = $curl->query();
-            $curl->close();
+        $result = $stdio->query()->result();
+        $stdio->close();
+        $data = static::applyFilters($result);
 
-            if ($result) {
-                $data = static::applyFilters($result);
-                $resolve($data);
-            } else {
-                $reject('Failed to fetch data');
-            }
-        });
+        return $data;
     }
 
-    public static function stream($url) {
-        $stream = new Stream(['target' => $url]);
-        $stream
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::message("Connected to stream", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::message("Read complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) use( $listener ) { IO::message("Read failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) use( $listener ) { IO::message("Read error", $b); })
+    public static function fetch($url, $config = []) {
+        $curl = new Curl(array_merge(['target' => $url], $config));
+        $curl
+        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to remote", $b); })
+        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Read complete", $b); })
+        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Read failed", $b); })
+        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Read error", $b); })
         ->open();
         
-        return new Promise(function($resolve, $reject) use ($stream) {
-            $result = $stream->query();
-            $stream->close();
+        $result = $curl->query()->result();
+        $curl->close();
+        $data = static::applyFilters($result);
 
-            if ($result) {
-                $data = static::applyFilters($result);
-                $resolve($data);
-            } else {
-                $reject('Failed to read stream');
-            }
-        });
+        return $data;
     }
 
-    public static function sock($url) {
-        $socket = new Socket(['target' => $url]);
-        $socket            
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::message("Connected to socket", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::message("Read complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) use( $listener ) { IO::message("Read failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) use( $listener ) { IO::message("Read error", $b); })
+    public static function stream($url, $config = []) {
+        $stream = new Stream(array_merge(['target' => $url], $config));
+        $stream
+        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to stream", $b); })
+        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Read complete", $b); })
+        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Read failed", $b); })
+        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Read error", $b); })
         ->open();
+        
+        $result = $stream->query()->result();
+        $stream->close();
+        $data = static::applyFilters($result);
 
-        return new Promise(function($resolve, $reject) use ($socket) {
-            $result = $socket->query();
-            $socket->close();
+        return $data;
+    }
 
-            if ($result) {
-                $data = static::applyFilters($result);
-                $resolve($data);
-            } else {
-                $reject('Failed to open socket');
-            }
-        });
+    public static function sock($url, $config = []) {
+        $socket = new Socket(array_merge(['target' => $url], $config));
+        $socket            
+        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to socket", $b); })
+        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Read complete", $b); })
+        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Read failed", $b); })
+        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Read error", $b); })
+        ->open();
+        
+        $result = $socket->query()->result();
+        $socket->close();
+        $data = static::applyFilters($result);
+
+        return $data;
     }
 
     public static function setDefault($key, $value) {
@@ -127,15 +94,28 @@ class IO {
 
     public static function messages( $input = null, $event = null )
     {
-        static::$_messages = $input;
+        if ( static::$_messages === null ) {
+            static::$_messages = (new Arr())->constraint(function(&$val) {
+                if (Arr::size($val) > 100) {
+                    array_shift($val);
+                }
+            });
+        }
+
+        if ( $input === null ) {
+            return static::$_messages->toArray();
+        }
+
+        static::$_messages[] = $input;
+
         $listener = static::$_listener;
-        if ( $listener ) {
-            $listener->trigger( $event ?? Event::MESSAGE, $input);
+        if ( $listener && $listener instanceof IDispatcher ) {
+            $listener->trigger( $event ?? Event::MESSAGE, new Meta(info: $input));
         }
     }
 
     public static function listener( $listener )
     {
-        static::$_listener = $listener
+        static::$_listener = $listener;
     }
 }

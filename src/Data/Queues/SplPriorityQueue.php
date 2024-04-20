@@ -2,33 +2,81 @@
 
 namespace BlueFission\Data\Queues;
 
-use SplPriorityQueue;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Collections\Collection;
 
-class SplPriorityQueue implements IQueue {
-    private $queue;
+use SplPriorityQueue as BaseSplPriorityQueue;
 
-    public function __construct() {
-        $this->queue = new SplPriorityQueue();
-        $this->queue->setExtractFlags(SplPriorityQueue::EXTR_DATA);
+class SplPriorityQueue extends Queue implements IQueue {
+    private static $_queues = [];
+    private static $_counter = 0; // Global counter to maintain insertion order
+
+    private function __construct() {}
+
+    private static function instance($channel = 'default')
+    {
+        if (!Arr::hasKey(self::$_queues, $channel)) {
+            self::$_queues[$channel] = new BaseSplPriorityQueue();
+            self::$_queues[$channel]->setExtractFlags(BaseSplPriorityQueue::EXTR_DATA);
+        }
+        return self::$_queues[$channel];
     }
 
+    public static function setMode($mode)
+    {
+        self::$_mode = $mode;
+    }
+    
     public static function isEmpty($queue) {
-        return $queue->count() == 0;
+        $queues = self::instance($queue);
+        return $queues->count() == 0;
     }
 
     public static function dequeue($queue, $after = false, $until = false) {
-        if (!$queue->isEmpty()) {
-            return $queue->extract();
+        $queues = self::instance($queue);
+        if (!$queues->count()) {
+            return null;
         }
-        return null;
+
+        if ($after === false && $until === false) {
+            return $queues->extract()['data'];
+        }
+
+        $items = [];
+        $limit = $until !== false ? $until : $queues->count();
+        $current = 0;
+
+        $tempQueue = new BaseSplPriorityQueue();
+        $tempQueue->setExtractFlags(BaseSplPriorityQueue::EXTR_BOTH);
+
+        while ($queues->valid() && $current <= $limit) {
+            $item = $queues->extract();
+            if ($current > $after) {
+                $items[] = $item['data'];
+            } else {
+                $tempQueue->insert($item['data'], $item['priority']);
+            }
+            $current++;
+        }
+
+        // Restore items not extracted
+        while ($tempQueue->valid()) {
+            $item = $tempQueue->extract();
+            $queues->insert($item['data'], $item['priority']);
+        }
+
+        return new Collection($items);
     }
 
-    public static function enqueue($queue, $item) {
-        // Assuming $item is an array ['data' => $data, 'priority' => $priority]
-        if (is_array($item) && isset($item['priority'])) {
-        	$queue->insert($item['data'], $item['priority']);
-        } else {
-        	$queue->insert($item, 0);
+    public static function enqueue($item, $queue) {
+        $queues = self::instance($queue);
+        $priority = self::$_counter++;
+        if (Arr::is($item) && Val::is($item['priority'])) {
+            $priority = $item['priority'];
         }
+        $priority = self::$_mode == self::FILO ? -$priority : $priority; // Invert priority for FILO
+
+        $queues->insert($item, $priority);
     }
 }

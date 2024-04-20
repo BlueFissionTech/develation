@@ -3,6 +3,7 @@ namespace BlueFission\Connections\Database;
 
 use BlueFission\Connections\Connection;
 use BlueFission\Val;
+use BlueFission\Str;
 use BlueFission\Arr;
 use BlueFission\IObj;
 use MongoDB\BSON\Javascript;
@@ -101,9 +102,9 @@ class MongoLink extends Connection
 	/**
 	 * Opens a connection to the MongoDB database
 	 * 
-	 * @return IObj
+	 * @return void
 	 */
-	public function open(): IObj
+	protected function _open(): void
 	{
 		$host = ( $this->config('target') ) ? $this->config('target') : 'localhost';
 		$username = $this->config('username');
@@ -112,7 +113,9 @@ class MongoLink extends Connection
 		
 		$connection_id = count(self::$_database);
 
-		if ( !class_exists('MongoDB\Client') ) return $this;
+		if ( !class_exists('MongoDB\Client') ) {
+			throw new \Exception("MongoDB\Client not found");
+		}
 
 		try {
 			$mongo = new Client("mongodb://{$username}:{$password}@{$host}:27017");
@@ -120,23 +123,24 @@ class MongoLink extends Connection
 			$this->_connection = ($this->config('database') ? $mongo->{$this->config('database')} : null);
 			$this->_current = $mongo;
 		} catch (Exception $e) {
-			$this->status( $e->getMessage() ? $e->getMessage() : $this->error() );
+			$error = ($e->getMessage() ?? $this->error()) ?? self::STATUS_FAILED;
+
 		}
 
-		$this->status( $this->error() ? $this->error() : self::STATUS_CONNECTED );
+        $status = $this->_connection ? self::STATUS_CONNECTED : ($error ?? self::STATUS_NOTCONNECTED);
 
-		return $this;
+        $this->perform( $this->_connection 
+			? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+
+		$this->status( $status );
 	}
 		
 	/**
 	 * Close the connection to the MongoDB server.
 	 */
-	public function close(): IObj
+	protected function _close(): void
 	{
-		$this->_connection = null;
-		$this->status(self::STATUS_DISCONNECTED);
-
-		return $this;
+		$this->perform(State::DISCONNECTED);
 	}
 
 	/**
@@ -148,6 +152,8 @@ class MongoLink extends Connection
 	 */
 	public function query( $query = null): IObj
 	{
+		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
+
 		$db = $this->_connection;
 
 		if ( $db )
@@ -161,12 +167,12 @@ class MongoLink extends Connection
 					$this->_dataset = null;
 					$this->_data = $query;
 				}
-				else if ( is_array($query) && !Arr::isAssoc($query) )
+				else if ( Arr::is($query) && !Arr::isAssoc($query) )
 				{
 					$this->_dataset = $query;
 					$this->_data = $query[0];
 				}
-				else if (is_string($query))
+				else if (Str::is($query))
 				{
 					$this->_result = $db->command(json_decode($query));
 					$this->status( $this->error() ? $this->error() : self::STATUS_SUCCESS );
@@ -195,7 +201,8 @@ class MongoLink extends Connection
 				$this->post($collection, $data, $filter, $type);	
 			} catch( Exception $e ) {
 				$error = $e->getMessage();
-				$this->status($error);
+				$this->_result = false;
+				$this->status( $error ?? self::STATUS_FAILED );
 			}
 		}
 		else
@@ -487,7 +494,7 @@ class MongoLink extends Connection
 	 */
 	public function error() {
 		if ($this->_connection instanceof \MongoDB\Collection) {
-	    	return $this->_connection->command(array('getlasterror' => 1));
+	    	return $this->_connection->command(['getlasterror' => 1]);
 		} else {
 	    	return $this->status();
 		}

@@ -8,6 +8,10 @@ use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Connections\Connection;
 use BlueFission\Behavioral\IConfigurable;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Class MysqlLink
@@ -64,41 +68,52 @@ class MysqlLink extends Connection implements IConfigurable
      * This method uses the configuration properties to establish a connection to a MySQL database.
      * If a connection is successfully established, it sets the connection property and the status property.
      *
-     * @return IObj 
+     * @return void 
      */
-    public function open(): IObj
+    protected function _open(): void
     {
+		if ( $this->_connection ) {
+			$this->close();
+		}
+
         $host = ( $this->config('target') ) ? $this->config('target') : 'localhost';
         $username = $this->config('username');
         $password = $this->config('password');
         $database = $this->config('database');
         $port = $this->config('port');
         
-        $connection_id = count(self::$_database);
+        $connection_id = Arr::size(self::$_database);
         
-        if ( !class_exists('mysqli') ) return $this;
+        if ( !class_exists('mysqli') ) {
+        	throw new \Exception("mysqli not found");
+    	}
+
         $db = $connection_id > 0 ? end(self::$_database) : new \mysqli($host, $username, $password, $database, $port);
         
         if (!$db->connect_error) {
             self::$_database[$connection_id] = $this->_connection = $db;
-        }
-        
-        $this->status( $db->connect_error ? $db->connect_error : self::STATUS_CONNECTED );
 
-        return $this;
+            $status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
+
+			$this->perform( $this->_connection 
+				? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+        } else {    
+	        $status = $db->connect_error ?? self::STATUS_FAILED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+		}
+
+		$this->status($status);
     }
     
 	/**
 	 * Close the database connection
 	 */
-	public function close(): IObj
+	protected function _close(): void
 	{
-		$this->_connection->close();
-		
-		// Clean up
-		parent::close();
-
-		return $this;
+		if ($this->_connection) {
+			$this->_connection->close();
+		}
+		$this->perform(State::DISCONNECTED);
 	}
 
 	/**
@@ -119,6 +134,8 @@ class MysqlLink extends Connection implements IConfigurable
 	 */
 	public function query ( $query = null ): IObj
 	{
+		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
+
 		$db = $this->_connection;
 	
 		if ( $db )
@@ -162,14 +179,23 @@ class MysqlLink extends Connection implements IConfigurable
 			}
 			$data = $this->_data;
 			$type = ($update) ? ($this->config('ignore_null') ? self::UPDATE_SPECIFIED : self::UPDATE) : self::INSERT;
-			$this->post($table, $data, $where, $type);	
+			$this->post($table, $data, $where, $type);
 		}
 		else
 		{
-			$this->status( self::STATUS_NOTCONNECTED );
+			$status = self::STATUS_NOTCONNECTED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
+			$this->status( $status );
 		}
 
 		return $this;
+	}
+
+	private function _read(): void
+	{
+		$table = $this->config('table');
+		$data = $this->_data->val();
+		$this->find($table, $data);
 	}
 
 	/**
@@ -177,9 +203,9 @@ class MysqlLink extends Connection implements IConfigurable
 	 *
 	 * @param string $table  The name of the table to search in
 	 * @param array $data  The criteria to match
-	 * @return IOBj
+	 * @return void
 	 */
-	private function find($table, $data): IObj
+	private function find($table, $data): void
 	{
 		$db = $this->_connection;
 		$success = false;
@@ -207,23 +233,32 @@ class MysqlLink extends Connection implements IConfigurable
 			
 			$this->_query = $query;
 
-			// $query_str = $query;
-			 
-			$success = ( $db->query($query) ) ? true : false;
-			// $this->_result = $success;
+			$this->perform([State::SENDING, State::RECEIVING, State::PROCESSING, State::BUSY]);
+			$result = $db->query($query);
+			$success = ( $result ) ? true : false;
+			$status = ( $success ) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
+			$this->assign( $result->fetch_object() );
+			$this->halt([State::BUSY, State::SENDING, State::RECEIVING, State::PROCESSING]);
+
+			$this->perform([Action::RECEIVE]);
+			$this->perform(Event::RECEIVED, new Meta(data: $this->_result));
 			
-			$status = ($success) ? $db->error : self::STATUS_SUCCESS;
+			$status = ( $success ) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
+
+			$this->perform( 
+				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+				new Meta(when: Action::PROCESS, info: $status ) 
+			);
 		}
 		else
 		{
-			$this->status( self::STATUS_NOTCONNECTED );
-			
-			return $this;
+			$status = self::STATUS_NOTCONNECTED;
+			$this->status( $status );
 		}
 		
 		$this->status($status);
 		
-		return $this;
+		return;
 	}
 	
 	/**
@@ -232,10 +267,12 @@ class MysqlLink extends Connection implements IConfigurable
 	 * @param string $table The name of the database table
 	 * @param array $data An associative array of fields and values to be inserted
 	 * 
-	 * @return IObj
+	 * @return void
 	 */
-	private function insert($table, $data): IObj
+	private function insert($table, $data): void
 	{
+		$this->perform(State::CREATING, new Meta(when: Action::PROCESS));
+
 		$status = self::STATUS_NOTCONNECTED;
 		
 		$db = $this->_connection;
@@ -259,7 +296,6 @@ class MysqlLink extends Connection implements IConfigurable
 			foreach (Arr::keys($data) as $a) 
 			{
 				if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
-					// array_push($insert, $temp_values[$count]);
 					$insert[$a] = $temp_values[$count];
 				}
 				
@@ -273,27 +309,40 @@ class MysqlLink extends Connection implements IConfigurable
 
 			$this->_query = $query;
 
+			$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $insert));
+			$this->perform([State::PROCESSING, State::BUSY]);
 			try {
-				$success = ( $db->query($query) ) ? true : false;
-				$status = ($success) ? $db->error : self::STATUS_SUCCESS;
+				$result = $db->query($query);
+				$success = ( $result ) ? true : false;
+				$status = ( $success ) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
+				$this->assign( $result->fetch_object() );
 			} catch ( \Exception | \MySQLiQueryException $e ) {
+				error_log($e->getMessage());
+				$status = self::STATUS_FAILED;
+			    $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
 				$success = false;
 				$this->status( $e->getMessage() );
 			}
-			
 			$this->_result = $success;
+			$this->halt([State::BUSY, State::SENDING, State::PROCESSING]);
+
+			$this->perform(Event::SENT, new Meta(data: $data));
+			$this->perform([Action::RECEIVE]);
+			$this->perform(Event::RECEIVED, new Meta(data: $this->_result));
 		}
 		else
 		{
-			$this->status( self::STATUS_NOTCONNECTED );
-		
-			return $this;
+			$status = self::STATUS_NOTCONNECTED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
+			$this->halt(State::CREATING);
+			return;
 		}
 		
+		$this->halt(State::CREATING);
 		$status = ($success) ? $db->error : self::STATUS_SUCCESS;
 		$this->status($status);
 		
-		return $this;
+		return;
 	}
 
 	/**
@@ -305,10 +354,12 @@ class MysqlLink extends Connection implements IConfigurable
 	 * @param boolean $ignore_null Takes either a `1` or `0` (`true` or `false`) and determines if the entry 
 	 *   will be replaced with a null value or kept the same when `NULL` is passed
 	 * 
-	 * @return IObj
+	 * @return void
 	 */
-	private function update($table, $data, $where, $ignore_null = false): IObj
+	private function update($table, $data, $where, $ignore_null = false): void
 	{
+		$this->perform(State::UPDATING, new Meta(when: Action::PROCESS));
+	
 		$db = $this->_connection;
 		$success = false;
 		$status = self::STATUS_NOTCONNECTED;
@@ -343,29 +394,44 @@ class MysqlLink extends Connection implements IConfigurable
 			$query = "UPDATE `".$table."` SET ".$update_string." WHERE ".$where;
 
 			$this->_query = $query;
-			// $query_str = $query;
+			
+			$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $updates));
+			$this->perform([State::PROCESSING, State::BUSY]);
 			 
 			try {
-				$success = ( $db->query($query) ) ? true : false;
-				$status = ($success) ? $db->error : self::STATUS_SUCCESS;
+				$result = $db->query($query);
+				$success = ( $result ) ? true : false;
+				$status = ( $success ) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
+				$this->assign( $result->fetch_object() );
 			} catch ( \Exception | \MySQLiQueryException $e ) {
+				error_log($e->getMessage());
+				$status = self::STATUS_FAILED;
+			    $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
 				$success = false;
 				$this->status( $e->getMessage() );
 			}
 			
 			$this->_result = $success;
+
+			$this->halt([State::BUSY, State::SENDING, State::PROCESSING]);
+
+			$this->perform(Event::SENT, new Meta(data: $data));
+			$this->perform([Action::RECEIVE]);
+			$this->perform(Event::RECEIVED, new Meta(data: $this->_result));
 		}
 		else
 		{
-			$this->status( self::STATUS_NOTCONNECTED );
-			
-			return $this;
+			$status = self::STATUS_NOTCONNECTED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
+			$this->halt(State::CREATING);
+			return;
 		}
 		
+		$this->halt(State::CREATING);
 		$status = ($success) ? $db->error : self::STATUS_SUCCESS;
 		$this->status($status);
 		
-		return $this;
+		return;
 	}
 
 	//Posts data into the database using specified method
@@ -377,9 +443,9 @@ class MysqlLink extends Connection implements IConfigurable
 	 * @param string $where A MySQL WHERE clause (optional)
 	 * @param int $type Determines the type of query used. 1 for INSERT, 2 for UPDATE, 3 for UPDATE ignoring nulls (optional)
 	 * 
-	 * @return IObj
+	 * @return void
 	 */
-	private function post($table, $data, $where = null, $type = null): IObj
+	private function post($table, $data, $where = null, $type = null): void
 	{
 		$db = $this->_connection;
 		$status = '';
@@ -455,11 +521,14 @@ class MysqlLink extends Connection implements IConfigurable
 			$status = "No Target Table Specified";
 		}
 		
-		$this->status($status);
+		$this->perform( 
+			$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+			new Meta(when: Action::PROCESS, info: $status ) 
+		);
 		
 		$this->_last_row = $last_row ? $last_row : $this->_last_row;
 
-		return $this;
+		return;
 	}
 	
 	/**
@@ -474,8 +543,10 @@ class MysqlLink extends Connection implements IConfigurable
 			return $this->config('database');
 
 		$this->config('database', $database);
-		$db = $this->_connection;
-		$db->select_db( $this->config('database') );
+		
+		if ($this->_connection) {
+			$this->_connection->select_db( $this->config('database') );
+		}
 
 		return $this;
 	}
@@ -524,14 +595,6 @@ class MysqlLink extends Connection implements IConfigurable
 	public static function sanitize($string, $datetime = false) 
 	{
 		$db = end ( self::$_database );
-		//Create regular expression patterns
-		// $pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
-		// $replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', 'NULL' ];
-		
-		// if ($datetime === true) {
-		// 	$replacement = [ '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', 'NULL' ];
-		// }
-
 		$pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
 		$replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', '' ];
 		
@@ -555,7 +618,10 @@ class MysqlLink extends Connection implements IConfigurable
 
 		$string->constraint(function(&$value) use ($db, $pattern, $replacement) {
 			if (Val::isNotNull($value)) {
-				$value = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($value)));
+				if ($db) {
+					$value = $db->real_escape_string(stripslashes($value));
+				}
+				$value = preg_replace($pattern, $replacement, $value);
 			}
 		});
 
@@ -571,18 +637,6 @@ class MysqlLink extends Connection implements IConfigurable
 			}
 		});
 		
-		// if ( Val::isNotNull($string) ) {
-		// 	$string = preg_replace($pattern, $replacement, $db->real_escape_string(stripslashes($string)));
-		// }
-		
-		// if ( Val::isNull($string) || Str::length($string) <= 0) {
-		// 	$string = 'NULL';
-		// }
-
-		// if ($string == '\'NOW()\'') {
-		// 	$string = 'NOW()';
-		// }
-		
 		return $string();
 	}
 
@@ -596,6 +650,10 @@ class MysqlLink extends Connection implements IConfigurable
 	static function tableExists($table)
 	{
 	    $db = end( self::$_database );
+	    if (!$db) {
+	    	return false;
+	    }
+	    
 	    $table = self::sanitize($table);
 	    $result = $db->query("SHOW TABLES LIKE {$table}");
 

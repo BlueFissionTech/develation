@@ -9,6 +9,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Trait Configurable
@@ -24,7 +25,6 @@ use BlueFission\Behavioral\Behaviors\Action;
 trait Configurable {
 	use Behaves {
         Behaves::__construct as private __behavesConstruct;
-        Behaves::init as private behavesInit;
     }
 
 	/**
@@ -120,7 +120,7 @@ trait Configurable {
 		}
 		$this->_status[] = $message;
 
-		$this->perform( Event::MESSAGE );
+		$this->perform( Event::MESSAGE, new Meta(info: $message) );
 
 		return null;
 	}
@@ -180,28 +180,14 @@ trait Configurable {
         }
 
 		if ( is_object( $data ) || Arr::isAssoc( $data ) ) {
-			$this->perform( State::BUSY );
+			$this->perform( State::CHANGING );
 			foreach ( $data as $a=>$b ) {
 				$this->field($a, $b);
 			}
-			$this->halt( State::BUSY );
-			$this->dispatch( Event::CHANGE );
+			$this->halt( State::CHANGING );
 		} else {
 			throw new \InvalidArgumentException( "Can't import from variable type " . gettype($data) );
 		}
-
-		return $this;
-	}
-
-	/**
-	 * Initialize the object.
-	 *
-	 * @return IObj
-	 */
-	protected function init(): IObj
-	{
-		$this->behavesInit();
-		$this->behavior( new Event( Event::MESSAGE ) );
 
 		return $this;
 	}

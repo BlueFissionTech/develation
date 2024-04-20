@@ -35,6 +35,7 @@ class Action extends Behavior
     const INPUT = 'DoInput';
 
     // System and Application
+    const RUN = 'DoRun';
     const START = 'DoStart';
     const STOP = 'DoStop';
     const RESTART = 'DoRestart';

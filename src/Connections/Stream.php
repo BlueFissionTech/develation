@@ -7,6 +7,10 @@ use BlueFission\Arr;
 use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Class Stream
@@ -27,6 +31,12 @@ class Stream extends Connection implements IConfigurable
 		'method' => 'GET',  // HTTP method for the stream connection
 		'header' => "Content-type: application/x-www-form-urlencoded\r\n", // header for the stream connection
 	];
+
+	/**
+	 * The Resource handle
+	 * @var null
+	 */
+	private $_handle = null;
 	
 	/**
 	 * Stream constructor.
@@ -41,10 +51,14 @@ class Stream extends Connection implements IConfigurable
 	/**
 	 * Opens a stream connection.
 	 *
-	 * @return IObj
+	 * @return void
 	 */
-	public function open(): IObj
+	protected function _open(): void
 	{
+		if ($this->_connection) {
+			$this->close();
+		}
+
 		$target = $this->config('target') ?? HTTP::domain();
 		$method = $this->config('method');
 		$header = $this->config('header'); 
@@ -64,15 +78,26 @@ class Stream extends Connection implements IConfigurable
 			$this->_connection = stream_context_create($options);
 			// Set the connection status
 			$status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
+
+			$this->perform( $this->_connection ? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
 		}
 		else
 		{
-			$status = self::STATUS_NOTCONNECTED;
+			$status = self::STATUS_FAILED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
 		}
-		$this->status($status);
 
-		return $this;
+		$this->status($status);
 	}
+
+	protected function _close(): void
+	{
+		if ($this->_handle) {
+			fclose($this->_handle);
+		}
+		$this->perform(State::DISCONNECTED);
+	}
+
 	
 	/**
 	 * Sends a query to the target URL and retrieves the result.
@@ -82,41 +107,66 @@ class Stream extends Connection implements IConfigurable
 	 */
 	public function query ( $query = null ): IObj
 	{ 
+		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
+
 		// Set the connection status as not connected
 		$status = self::STATUS_NOTCONNECTED;
 		$context = $this->_connection;
 		$wrapper = $this->config('wrapper');
 		$target = $this->config('target');
+
+		$this->_result = false;
 		
 		// If the stream context exists
-		if ($context)
-		{
+		if ($context) {
 			// If a query is not null
-			if (Val::isNotNull($query))
-			{
-				if (Arr::isAssoc($query))
-				{
+			if (Val::isNotNull($query)) {
+				if (Arr::isAssoc($query)) {
 					$this->assign($query); 
 				} elseif (Str::is($query)) {
-					$data = urlencode($query);	
-					stream_context_set_option ( $context, $wrapper, 'content', $data );			
-					$this->_result = file_get_contents($target, false, $context);
-
-					$this->status( $this->_result !== false ? self::STATUS_SUCCESS : self::STATUS_FAILED );
-					return $this;
+					$data = urlencode($query);
 				}
 			}
-			$data = HTTP::query( $this->_data );
-	
-			stream_context_set_option ( $context, $wrapper, 'content', $data );			
-	
-			$this->_result = file_get_contents($target, false, $context);
 			
-			if ($this->_result !== false) {
-				$status = self::STATUS_SUCCESS;
+			$data = $data ?? HTTP::query( $this->_data );
+
+			if (!Val::isEmpty($data) || Arr::size($data) > 0) {
+				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
 			}
 			
+			stream_context_set_option ( $context, $wrapper, 'content', $data );
+			if ( !$this->_handle ) {
+				$this->_handle = fopen($target, 'r', false, $context);
+				$this->halt(State::SENDING);
+				$this->perform(Event::SENT, new Meta(data: $data));
+			}
+
+			if ($this->_handle) {
+				$this->perform([Action::RECEIVE, State::RECEIVING, State::PROCESSING, State::BUSY]);
+			    while (!feof($this->_handle)) {
+			    	$chunk = fread($this->_handle, 8192);
+					$this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
+
+					$this->_result .= $chunk;
+			    }
+				$this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
+			} else {
+				$this->perform(Event::ERROR, new Meta(when: Action::RECEIVE, info: "Failed to open stream") );
+			}
+
+			$this->status( $this->_result !== false ? self::STATUS_SUCCESS : self::STATUS_FAILED );
+
+			$this->perform( 
+				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+				new Meta(when: Action::PROCESS, info: $status ) 
+			);
+
+		} else {
+			$status = self::STATUS_NOTCONNECTED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
 		}
+
+		$this->halt(State::PERFORMING_ACTION);
 		$this->status($status);
 
 		return $this;

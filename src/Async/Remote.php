@@ -4,7 +4,9 @@ namespace BlueFission\Async;
 
 use BlueFission\Connections\Curl;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Class Remote to perform asynchronous HTTP requests using the Curl class.
@@ -20,7 +22,9 @@ class Remote extends Async {
      * @return Remote The instance of the Remote class.
      */
     public static function do($url, array $options = [], $priority = 10) {
-        $function = function() use ($url, $options) {
+        $function = function($resolve, $reject) use ($url, $options) {
+            $result = null;
+
             $curl = new Curl([
                 'target' => $url,
                 'method' => $options['method'] ?? 'get',
@@ -30,19 +34,36 @@ class Remote extends Async {
             ]);
 
             if (!empty($options['data'])) {
-                $curl->data($options['data']);
+                $curl->assign($options['data']);
             }
 
-            $curl->open();
-            $curl->query();
-            $result = $curl->result();
-            $curl->close();
+            $curl
+            ->when(Event::CONNECTED, function($behavior, $args) use ($curl) {
+                $curl->query();
+            })
+            ->when(Event::PROCESSED, function($behavior, $args) use ($resolve, $curl, &$result) {
+                $result = $curl->result();
+                $curl->close();
+                $resolve($result);
+            })
+            ->when(Event::FAILURE, (function($behavior, $args) use ($reject) {
+                $reject($args->info);
+                $httpStatusCode = ($this->_connection ? curl_getinfo($this->_connection, CURLINFO_HTTP_CODE) : 'No Connection');
+
+                throw new \Exception("HTTP request failed: ({$httpStatusCode}) " . $args->info);
+            })->bindTo($curl, $curl))
+            
+            ->when(Event::ERROR, (function($behavior, $args) use ($reject) {
+                $reject($args->info);
+                $httpStatusCode = curl_getinfo($this->_connection, CURLINFO_HTTP_CODE);
+
+                throw new \Exception("HTTP request error: ({$httpStatusCode}) " . $args->info);
+            })->bindTo($curl, $curl))
+            ->open();
 
             if (!$result) {
-                throw new \Exception("HTTP request failed: " . $curl->status());
+                throw new \Exception("HTTP response empty: " . $curl->status());
             }
-
-            return $result;
         };
 
         return static::exec($function, $priority);
@@ -75,7 +96,17 @@ class Remote extends Async {
      */
     protected function shouldRetry(\Exception $e) {
         // Implement retry logic based on HTTP status codes or specific error messages
-        return false;
+        $retry = false;
+        
+        if (strpos($e->getMessage(), 'timed out') !== false) {
+            $retry = true;
+        }
+
+        if (strpos($e->getMessage(), '(500)') !== false) {
+            $retry = true;
+        }
+
+        return $retry;
     }
 
     protected function logError(\Exception $e) {

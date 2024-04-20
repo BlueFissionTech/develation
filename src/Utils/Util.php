@@ -40,7 +40,7 @@ class Util {
             $status = "Loop exceeded max count! Killing Process.\n";
             if ($alert) Util::emailAdmin($status);
             if ($log) {
-                $logger = Log::instance(array('storage'=>'log'));
+                $logger = Log::instance(['storage'=>'log']);
                 $logger->push($status);
                 $logger->write();
             }

@@ -3,12 +3,18 @@
 namespace BlueFission\System;
 
 use BlueFission\Val;
+use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
 
 /**
  * Class System
  * This class is used to run system commands.
  */
-class System {
+class System implements IDispatcher {
+	use Dispatches;
 	
 	/**
 	 * @var string $_response The output of the command
@@ -42,17 +48,13 @@ class System {
 	protected $_read_streams;
 
 	/**
-	 * Initialize the class
-	 */
-	public function __construct() {}
-
-	/**
 	 * Check if the command is valid before running it
 	 *
 	 * @param string $command
 	 * @return boolean
 	 */
 	public function isValidCommand($command) {
+		// Figure out a way to check if a command is valid without executing it, since double or accidental executions can be dangrous!
 	    $returnVal = exec($command . ' 2>&1', $output, $returnVal);
 	    return !$returnVal;
 	}
@@ -66,9 +68,13 @@ class System {
 	*
 	* @throws \InvalidArgumentException when $command is empty or not a string
 	*/
-	public function run( $command, $background = false, $options = array() ) {
-		if (!$command)
-			throw( new \InvalidArgumentException("Command cannot be empty!") );
+	public function run( $command, $background = false, $options = [] ) {
+		$this->trigger(Action::RUN);
+		if (!$command) {
+			$message = "Command cannot be empty!";
+			$this->trigger(Event::EXCEPTION, new Meta( when: Action::RUN, info: $message));
+			throw( new \InvalidArgumentException($message) );
+		}
 
 		// if(!$this->isValidCommand($command))
 		// 	throw( new \InvalidArgumentException("Invalid command!") );
@@ -97,8 +103,17 @@ class System {
 		];
 
 		$process = new Process($command, $this->_cwd, null, $descriptorspec, $options);
+        $this->echo($process, [Event::STARTED, Event::STOPPED, Event::ERROR]);
+
+        // Listen to process completion to handle cleanup or additional tasks
+        $process->when(Event::COMPLETE, function($event, $args) {
+            $this->_status = "Process completed with output: " . $args['output'];
+        });
+
 		$this->_process[] = $process;
 		end($this->_process)->start();
+
+		
 
 		$this->_response = end($this->_process)->output();
 
@@ -106,8 +121,13 @@ class System {
 	}
 
 	public function start( $command, $options = []) {
-        if (!$command)
-            throw( new \InvalidArgumentException("Command cannot be empty!") );
+		$this->tigger(Action::START);
+
+        if (!$command) {
+        	$message = "Command cannot be empty!";
+        	$this->trigger(Event::EXCEPTION, new Meta(when: Action::START, info: $message));
+            throw( new \InvalidArgumentException($message) );
+        }
 
         // if(!$this->isValidCommand($command))
         //     throw( new \InvalidArgumentException("Invalid command!") );
@@ -136,6 +156,15 @@ class System {
         ];
 
         $process = new Process($command, $this->_cwd, null, $descriptorspec, $options);
+
+        // Echo process events
+        $this->echo($process, [Event::STARTED, Event::STOPPED, Event::ERROR]);
+
+        // Setup listening to completion
+        $process->when(Event::COMPLETE, function($event, $args) {
+            $this->_status = "Process completed with output: " . $args['output'];
+        });
+
         $processId = uniqid('process_');
     	$this->_processes[$processId] = $process;
         end($this->_processes)->start();
@@ -156,6 +185,7 @@ class System {
     public function stop($processId) {
     	if (isset($this->_processes[$processId])) {
     		$this->_processes[$processId]->stop();
+    		$this->trigger(Event::STOPPED);
     	}
     }
 

@@ -3,6 +3,7 @@ namespace BlueFission\Behavioral;
 
 use BlueFission\Val;
 use BlueFission\Str;
+use BlueFission\Arr;
 use BlueFission\Obj;
 use BlueFission\Collections\Collection;
 use BlueFission\Exceptions\NotImplementedException;
@@ -10,6 +11,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Meta;
 use InvalidArgumentException;
 
 /**
@@ -54,10 +56,10 @@ trait Behaves
      */
     public function __construct()
     {
+        $this->__dispatchesConstruct();
+
         $this->_history = new Collection();
         $this->_state = new Collection();
-
-        $this->__dispatchesConstruct();
 
         $this->init();
 
@@ -65,18 +67,41 @@ trait Behaves
     }
 
     /**
-     * Performs a behavior on the object.
+     * Performs behaviors on the object.
+     *
+     * @param string|Behavior $behavior The behavior to perform.
+     */
+    public function perform( ): IDispatcher
+    {
+        $args = func_get_args();
+        $behaviors = array_shift( $args );
+
+        if ( !Arr::is($behaviors) ) {
+			$behaviors = [$behaviors];
+		}
+
+		foreach ($behaviors as $behavior) {
+        	$this->_execute($behavior, $args );
+        }
+
+		return $this;
+	}
+
+	/**
+     * Executes a behavior on the object.
      *
      * @param string|Behavior $behavior The behavior to perform.
      * @throws InvalidArgumentException If an invalid behavior type is passed.
      * @throws NotImplementedException If the behavior is not implemented.
      */
-    public function perform( ): IDispatcher
-    {
-        $args = func_get_args();
-        $behavior = array_shift( $args );
+	private function _execute($behavior, $args = [] ) {
+        if ($this->is(State::BUSY) ) {
+        	$this->dispatch([Event::BLOCKED, Event::MESSAGE], new Meta(info: "Object is busy"));
+			
+        	return;
+        }
 
-        if ( Str::is($behavior) ) {
+		if ( Str::is($behavior) ) {
             $behaviorName = Str::grab();
         } elseif ( !($behavior instanceof Behavior) ) {
         	$this->trigger(Event::EXCEPTION);
@@ -111,6 +136,11 @@ trait Behaves
                     $this->_state->clear();
                 }
                 $this->_state->add($behaviorName, $behaviorName);
+                $this->dispatch( Event::STATE_CHANGED );
+            }
+
+            if (count($args) == 1 && $args[0] instanceof Meta ) {
+            	$args = $args[0];
             }
 
             // Perform the behavior
@@ -129,11 +159,30 @@ trait Behaves
 		else
 		{
 			$this->trigger([Event::EXCEPTION]);
-			throw new NotImplementedException("Behavior '{$behaviorName}' is not implemented");
+			throw new NotImplementedException("Behavior '{$behaviorName}' is not implemented in ". get_class($this) .".");
 		}
-
-		return $this;
 	}
+
+	/**
+	 * Repeats another Dispatcher's selected behaviors
+	 *
+	 * @param IDispatcher $otherObject The other object to repeat the behaviors from
+	 * @param mixed $behaviors The behaviors to repeat
+	 */
+	public function echo( IDispatcher $otherObject, $behaviors ): IDispatcher
+	{
+        if (!is_array($behaviors)) {
+            $behaviors = [$behaviors];
+        }
+
+        foreach ($behaviors as $behavior) {
+            $otherObject->when($behavior, function() use ($behavior) {
+                $this->perform($behavior);
+            });
+        }
+
+        return $this;
+    }
 
 	/**
 	 * Check if the behavior can be performed.
@@ -173,7 +222,13 @@ trait Behaves
 	 */
 	public function halt( $behaviorName ): IDispatcher
 	{
-		$this->_state->remove( $behaviorName );
+		if ( !is_array($behaviorName) ) {
+			$behaviorName = [$behaviorName];
+		}
+
+		foreach ($behaviorName as $behavior) {
+			$this->_state->remove( $behavior );
+		}
 
 		return $this;
 	}
@@ -188,10 +243,12 @@ trait Behaves
 		$this->behavior( new Event( Event::UNLOAD ) );
 		$this->behavior( new Event( Event::ACTIVATED ) );
 		$this->behavior( new Event( Event::CHANGE ) );
+		$this->behavior( new Event( Event::STARTED ) );
 		$this->behavior( new Event( Event::COMPLETE ) );
 		$this->behavior( new Event( Event::SUCCESS ) );
 		$this->behavior( new Event( Event::FAILURE ) );
 		$this->behavior( new Event( Event::MESSAGE ) );
+		$this->behavior( new Event( Event::BLOCKED ) );
 	    $this->behavior( new Event( Event::CLEAR_DATA ) );
 	    $this->behavior( new Event( Event::CONNECTED ), function($behavior) {
             $this->halt( State::CONNECTING );
@@ -265,6 +322,9 @@ trait Behaves
 	    });
 
 	    // Custom application logic
+	    $this->behavior( new Event (Event::STOPPED ), function($behavior) {
+	    	$this->halt( State::RUNNING );
+	    });
 	    $this->behavior( new Event( Event::PROCESSED ), function($behavior) {
 	    	$this->halt( State::PROCESSING );
 	    });
@@ -291,6 +351,8 @@ trait Behaves
 	    $this->behavior( new State( State::REJECTED ) );
 	    $this->behavior( new State( State::ARCHIVED ) );
 	    $this->behavior( new State( State::FULFILLED ) );
+	    $this->behavior( new State( State::RUNNING ) );
+	    $this->behavior( new State( State::CHANGING ) );
 
 	    // State changes
 	    $this->behavior( new State( State::STATE_CHANGING ) );
@@ -348,6 +410,7 @@ trait Behaves
 	    $this->behavior( new State( State::INITIALIZING ) );
 	    $this->behavior( new State( State::FINALIZING ) );
 	    $this->behavior( new State( State::PROCESSING ) );
+	    $this->behavior( new State( State::STOPPED ) );
 	    $this->behavior( new State( State::WAITING_FOR_INPUT ) );
 	    $this->behavior( new State( State::PERFORMING_ACTION ) );
 	    $this->behavior( new State( State::ACTION_COMPLETED ) );
@@ -370,6 +433,7 @@ trait Behaves
 	    $this->behavior( new Action( Action::INPUT ) );
 
 	    // System and Application
+	    $this->behavior( new Action( Action::RUN ) );
 	    $this->behavior( new Action( Action::START ) );
 	    $this->behavior( new Action( Action::STOP ) );
 	    $this->behavior( new Action( Action::RESTART ) );

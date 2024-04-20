@@ -8,6 +8,10 @@ use BlueFission\Str;
 use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Class Curl
@@ -44,6 +48,8 @@ class Curl extends Connection implements IConfigurable
 		'headers'=>[],
 		'refresh'=>false,
 		'validate_host'=>false,
+		'verify_ssl' => true,
+		'verbose' => false,
 	];
 	
 	/**
@@ -76,52 +82,62 @@ class Curl extends Connection implements IConfigurable
 	/**
 	 * Opens a cURL connection.
 	 *
-	 * @return IObj
+	 * @return void
 	 */
-	public function open(): IObj
+	protected function _open(): void
 	{
 		$status = '';
-		$target = $this->config('target') ? $this->config('target') : HTTP::domain();
+		$target = $this->config('target') ?? HTTP::domain();
 		$refresh = (bool)$this->config('refresh');
+
+		if ( $this->_connection ) {
+			$this->close();
+		}
 		
 		if ( !$this->config('validate_host') || HTTP::urlExists($target) )
 		{
 			$data = $this->_data;
-			
+
 			//open connection
 			$this->_connection = curl_init();
 			
 			curl_setopt($this->_connection, CURLOPT_URL, $target);
 			curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
-			curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $this->config('headers'));
+			if (!empty($this->config('headers'))) {
+				curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $this->config('headers'));
+			}
+
+			if ( $this->config('verbose') ) {
+				curl_setopt($this->_connection, CURLOPT_VERBOSE, true);
+			}
 
 			if ( $this->config('username') && $this->config('password') )
     			curl_setopt($this->_connection, CURLOPT_USERPWD, $this->config('username') . ':' . $this->config('password'));
 			
 			$status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
-		}
-		else
-		{
-			$status = self::STATUS_NOTCONNECTED;		
-		}
-		$this->status($status);
 
-		return $this;
+			$this->perform( $this->_connection 
+				? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+
+		} else {
+			$status = self::STATUS_FAILED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+		}
+
+		$this->status($status);
 	}
 	
 	/**
 	 * Closes a cURL connection.
 	 *
-	 * @return IObj
+	 * @return void
 	 */
-	public function close (): IObj
+	protected function _close (): void
 	{
-		curl_close($this->_connection);
-		
-		// clean up
-		parent::close();
-
-		return $this;
+    	if ( $this->_connection) {
+			curl_close($this->_connection);
+		}
+		$this->perform(State::DISCONNECTED);
 	}
 	
 	/**
@@ -132,7 +148,9 @@ class Curl extends Connection implements IConfigurable
 	 * @return IObj
 	 */
 	public function query($query = null): IObj
-	{ 
+	{
+		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
+
 		$curl = $this->_connection;
 		$method = Str::lower($this->config('method'));
 		
@@ -140,16 +158,30 @@ class Curl extends Connection implements IConfigurable
 		{
 			if (Val::isNotNull($query))
 			{
+
 				if (Arr::isAssoc($query))
 				{
 					$this->assign($query);
 				}
 			}
-			$data = $this->_data;
+			$data = $this->_data->val();
+
+			if (Arr::size($data) > 0) {
+				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
+			}
 			//set the url, number of POST vars, POST data
 			if ( $method == 'post' ) {
-				curl_setopt($curl,CURLOPT_POST, count($data));
-				curl_setopt($curl,CURLOPT_POSTFIELDS, HTTP::jsonEncode($data));
+				if ( Arr::size($data) > 0 ) {
+					curl_setopt($curl,CURLOPT_POST, count($data));
+					curl_setopt($curl,CURLOPT_POSTFIELDS, HTTP::jsonEncode($data));
+					$headers =  array_merge($this->config('headers'), ['Content-Type: application/json']);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+				}
+
+				if ( !$this->config('verify_ssl') || $this->config('verify_ssl') === 'false' ) {
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+				}
+
 			} elseif ( $method == 'get') {
 				curl_setopt($curl, CURLOPT_URL, $this->config('target').'/'.HTTP::query($data));
 			}
@@ -159,14 +191,35 @@ class Curl extends Connection implements IConfigurable
 			}
 			
 			//execute post
+			$this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
 			$this->_result = curl_exec($curl);
-			$status = ( $this->_result ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+			if ($this->_result === false) {
+			    $error = curl_error($curl);
+			    error_log('CURL Error: ' . $error);
+			    $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $error));
+			}
+
+			$this->halt([State::BUSY, State::SENDING, State::RECEIVING, State::PROCESSING]);
+
+			$this->perform(Event::SENT, new Meta(data: $data));
+			$this->perform([Action::RECEIVE]);
+			$this->perform(Event::RECEIVED, new Meta(data: $this->_result));
+
+			$status = ( $this->_result ) ? self::STATUS_SUCCESS : ($error ?? self::STATUS_FAILED);
+
+			$this->perform( 
+				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+				new Meta(when: Action::PROCESS, info: $status ) 
+			);
 		}
 		else
 		{
 			$status = self::STATUS_NOTCONNECTED;
-		}	
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
+		}
 		$this->status($status);
+
+		$this->halt(State::PERFORMING_ACTION);
 
 		return $this;
 	}

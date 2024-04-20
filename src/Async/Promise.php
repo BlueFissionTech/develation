@@ -2,7 +2,9 @@
 
 namespace BlueFission\Async;
 
+use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 class Promise {
     protected $action;
@@ -12,13 +14,13 @@ class Promise {
     protected $state = State::PENDING;
     protected $asyncInstance;
 
-    public function __construct(callable $action, $asyncInstance) {
+    public function __construct(callable $action, $asyncInstance = null) {
         $this->action = $action;
         $this->asyncInstance = $asyncInstance;
-        $this->start();
+        // $this->start();
     }
 
-    protected function start() {
+    public function try() {
         try {
             ($this->action)($this->resolve(), $this->reject());
         } catch (\Exception $e) {
@@ -46,7 +48,9 @@ class Promise {
                 if ($this->onFulfill) {
                     call_user_func($this->onFulfill, $this->result);
                 }
-                $this->asyncInstance->perform(Event::SUCCESS);
+                if ($this->asyncInstance && is_a(IAsync::class, $this->asyncInstance)) {
+                    $this->asyncInstance->perform(Event::SUCCESS, new Meta(data: $this));
+                }
             }
         };
     }
@@ -59,7 +63,9 @@ class Promise {
                 if ($this->onReject) {
                     call_user_func($this->onReject, $this->result);
                 }
-                $this->asyncInstance->perform(Event::FAILURE);
+                if ($this->asyncInstance && is_a(IAsync::class, $this->asyncInstance)) {
+                    $this->asyncInstance->perform(Event::FAILURE, new Meta(data: $this));
+                }
             }
         };
     }

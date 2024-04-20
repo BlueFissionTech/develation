@@ -7,7 +7,9 @@ use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Data\Data;
 use BlueFission\Data\IData;
+use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Data\Storage\Behaviors\StorageAction;
 
 /**
@@ -98,7 +100,7 @@ class Storage extends Data implements IData
 	{
 		// If this class is an instance of Storage, not a child class, then instantiate source
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
-			$this->_source = '';
+			$this->_source = null;
 		}
 		if ( Val::isNotNull($this->_source) ) {
 			$this->perform( Event::ACTIVATED );
@@ -110,29 +112,27 @@ class Storage extends Data implements IData
 	/**
 	 * Method for reading data from the storage
 	 */
-	public function read(): IObj
+	protected function _read(): void
 	{
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
 			$this->_contents = $this->_source;
+			$this->perform( Event::SUCCESS, new Meta(when: Action::READ));
 		}
 		
 		$this->perform( Event::COMPLETE );
-
-		return $this;
 	}
 	
 	/**
 	 * Method for writing data to the storage
 	 */
-	public function write(): IObj
+	protected function _write(): void
 	{
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
 			$this->_source = $this->_contents ?? HTTP::jsonEncode($this->_data);
+			$this->perform( Event::SUCCESS, new Meta(when: Action::SAVE));
 		}
 
 		$this->perform( Event::COMPLETE ); 
-
-		return $this;
 	}
 	
 	/**
@@ -145,15 +145,14 @@ class Storage extends Data implements IData
 	 * 
 	 * @return IObj
 	 */
-	public function delete(): IObj
+	protected function _delete(): void
 	{
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
 			$this->_source = '';
+			$this->perform( Event::SUCCESS, new Meta(when: Action::DELETE));
 		}
 		
-		$this->perform( Event::COMPLETE ); 
-
-		return $this;
+		$this->perform( Event::COMPLETE );
 	}
 	
 	/**

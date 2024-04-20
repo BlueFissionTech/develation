@@ -3,6 +3,6 @@
 namespace BlueFission\Async;
 
 interface IAsync {
-    public function exec($function, $args = []);
-    public function run();
+    public static function exec($function, $args = []);
+    public static function run();
 }

@@ -73,7 +73,7 @@ class HandlerCollection extends Collection
 		if (is_string($behavior))
 			$behavior = new Behavior($behavior);
 
-		$behavior->_target = $behavior->_target ? $behavior->_target : $sender;
+		$behavior->_target = $behavior->_target ?? $sender;
 
 		foreach ($this->_value as $c)
 		{

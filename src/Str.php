@@ -1,6 +1,8 @@
 <?php
 namespace BlueFission;
 
+use BlueFission\Behavioral\Behaviors\Event;
+
 class Str extends Val implements IVal {
 	/**
 	 *
@@ -38,6 +40,7 @@ class Str extends Val implements IVal {
 	{
 		if ( $this->_type ) {
 			$this->_data = (string)$this->_data;
+			$this->trigger(Event::CHANGE);
 		}
 
 		return $this;

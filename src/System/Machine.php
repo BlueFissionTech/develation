@@ -35,7 +35,7 @@ class Machine {
      * @return string The operating system name
      */
     public function getOS() {
-      return PHP_OS;
+        return PHP_OS_FAMILY;  // More standardized way of getting OS type
     }
 
     /**
@@ -62,8 +62,17 @@ class Machine {
      * @return int The uptime in seconds
      */
     public function getUptime() {
-        $uptime = explode(" ", file_get_contents("/proc/uptime"));
-        return $uptime[0];
+        if ($this->getOS() == 'Windows') {
+            // Windows does not have a built-in, easy way to fetch uptime from CLI
+            // Fallback to systeminfo command, parse output for uptime
+            $this->_system->run('systeminfo | find "System Boot Time:"');
+            $uptime = $this->_system->response();
+            // Parsing the uptime from systeminfo output would be done here
+            return $uptime;
+        } else {
+            $uptime = explode(" ", file_get_contents("/proc/uptime"));
+            return (int)$uptime[0];
+        }
     }
 
     /**
@@ -113,7 +122,7 @@ class Machine {
                 }
             }
         }
-        return $temperature;
+        return $temperature . "°C";
     }
 
     /**
@@ -147,7 +156,7 @@ class Machine {
                 }
             }
         }
-        return $fanSpeed;
+        return $fanSpeed . " RPM";
     }
 
     /**
@@ -185,8 +194,6 @@ class Machine {
                 }
             }
         }
-        return $powerConsumption;
+        return $powerConsumption . " W";
     }
-
-
 }

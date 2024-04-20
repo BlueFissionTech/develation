@@ -35,6 +35,8 @@ class DiskTest extends StorageTest {
 				@unlink(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file);
 			}
 		}
+		
+		unset($this->object);
 	}
 
 	public function testStorageCanActivate()
@@ -48,9 +50,11 @@ class DiskTest extends StorageTest {
 	{
 		parent::testStorageCanWriteFields();
 
-		$this->assertEquals('{"var1":"checking","var2":"confirming"}', file_get_contents(static::$testdirectory.DIRECTORY_SEPARATOR.'storage.tmp'));
+		if (!file_exists(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp')) {
+			$this->fail('File '.realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp not found.');
+		}
 
-		unset($this->object);
+		$this->assertEquals('{"var1":"checking","var2":"confirming"}', file_get_contents(static::$testdirectory.DIRECTORY_SEPARATOR.'storage.tmp'));
 	}
 
 	public function testStorageCanWriteContentOverFields()
@@ -62,7 +66,5 @@ class DiskTest extends StorageTest {
 		}
 
 		$this->assertEquals('Testing.', file_get_contents(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp'));
-
-		unset($this->object);
 	}
 }

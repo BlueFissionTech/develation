@@ -10,6 +10,7 @@ use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 class FileSystem extends Data implements IData {
 	/**
@@ -102,6 +103,8 @@ class FileSystem extends Data implements IData {
 	 */
 	public function open( $file = null ): IObj
 	{
+		$this->close();
+
 		$this->perform( new State(State::CONNECTING) );
 		if ( $file ) {
 			$this->loadInfo( $file );
@@ -113,8 +116,9 @@ class FileSystem extends Data implements IData {
 		$status = "File opened successfully";
 
 		if (!$this->allowedDir($path)) {
-			$this->status( "Location is outside of allowed path.");
-			$this->trigger( Event::FAILURE );
+			$status = "Location is outside of allowed path.";
+			$this->status( $status );
+			$this->trigger( Event::FAILURE, new Meta(info: $status) );
 
 			return $this;
 		}
@@ -122,7 +126,14 @@ class FileSystem extends Data implements IData {
 		$filepath = $path.DIRECTORY_SEPARATOR.$file;
 
 		if ($file) {
-			if (!$this->exists($filepath) && Str::pos($this->config('mode'), 'w') !== false || Str::pos($this->config('mode'), 'a') !== false) {
+			if (
+				!$this->exists($filepath) 
+				&& Str::pos($this->config('mode'), 'x') === false 
+				&& (
+					Str::pos($this->config('mode'), 'w') !== false 
+					|| Str::pos($this->config('mode'), 'a') !== false
+				)
+			) {
 				$status = "File '$file' does not exist. Creating.";
 				$this->perform( State::CREATING );
 				touch($filepath);
@@ -132,27 +143,28 @@ class FileSystem extends Data implements IData {
 			if (!$handle = @fopen($filepath, $this->config('mode'))) {
 				$status = "Cannot access file ($filepath)";
 				$this->halt( State::CONNECTING );
-				$this->perform( Event::FAILURE );
+				$this->perform( Event::FAILURE, new Meta(info: $status) );
 			} else {
 				if ($this->config('lock') && flock($handle, LOCK_EX)) {
 					$this->_isLocked = true;
-					$success = 'true';
 					$this->_handle = $handle;
+					$this->perform( Event::CONNECTED );
 				} elseif (!$this->config('lock')) {
 					$this->_handle = $handle;
-					$success = 'true';
 					$this->perform( Event::CONNECTED );
 				} else {
 					$this->_isLocked = false;
 					$status = "Couldn't acquire lock on file {$filepath}.";
+					$this->perform( Event::CONNECTED );
+					$this->perform(Event::ERROR, new Meta(when: Action::OPEN, info: $status));
 				}
 			}
 		} else {
 			$status = "No file specified for opening";
+			$this->perform( Event::FAILURE, new Meta(info: $status) );
 		}
 		
 		$this->status($status);
-		$this->close();
 		
 		return $this;
 	}
@@ -264,31 +276,29 @@ class FileSystem extends Data implements IData {
 		$path = implode( DIRECTORY_SEPARATOR, $pathParts ) ?? getcwd();
 		$realpath = realpath($path);
 
-		return $realpath ?? $path;
+		return $realpath ? $realpath : $path;
 	}
 
 	/**
 	 * Read a file
-	 * @param string $file
-	 * @return IObj
+	 * @return void
 	 */
-	public function read( $file = null ): IObj
+	protected function _read(): void
 	{
-		parent::read();
-		$file = (Val::isNotNull($file)) ? $file : $this->file();
+		$file = $this->file();
 		$path = $this->path();
 		$filepath = $path.DIRECTORY_SEPARATOR.$file;
 
 		if (!$file) {
 			$this->status("No file specified");
-			$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
-			return $this;
+			$this->trigger([Event::FAILURE], new Meta(when: Action::READ, info: $this->status()));
+			return;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
-			$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
-			return $this;
+			$this->trigger([Event::FAILURE], new Meta(when: Action::READ, info: $this->status()));
+			return;
 		}
 		
 		if ( $this->exists($filepath) && !$this->config('lock'))
@@ -297,8 +307,8 @@ class FileSystem extends Data implements IData {
 			
 			$this->status("File $file read successfully");
 
-			$this->trigger([Event::SUCCESS], [Action::READ, $this->status()]);
-			return $this;
+			$this->trigger([Event::SUCCESS, Event::READ], new Meta(when: Action::READ, info: $this->status()));
+			return;
 		}
 		elseif ( $this->_handle )
 		{
@@ -306,39 +316,40 @@ class FileSystem extends Data implements IData {
 			if ( $this->contents() === false )
 			{
 				$this->status( "File $file could not be read" );
-				$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
-				return $this;
+				$this->trigger([Event::FAILURE], new Meta(when: Action::READ, info: $this->status()));
 			}
-			else return $this;
+			
+			return;
 		}
 		else	
 		{
 			$this->status( "No such file. File does not exist" );
-			$this->trigger([Event::FAILURE], [Action::READ, $this->status()]);
-			return $this;
+			$this->trigger([Event::FAILURE], new Meta(when: Action::READ, info: $this->status()));
+			return;
 		}
 	}
 
 	/**
 	 * Write contents to file
-	 * @return IObj
+	 * @return void
 	 */
-	public function write(): IObj
+	protected function _write(): void
 	{
-		parent::write();
 		$path = $this->path();
 		$file = $this->file();
 
-		if (!$this->file()) {
-			$this->status("No file specified");
-			$this->trigger([Event::ACTION_FAILED, Event::FAILURE], [Action::SAVE, $status]);
-			return $this;
+		if (!$file) {
+			$status = "No file specified";
+			$this->status($status);
+			$this->trigger([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::SAVE, info: $status));
+			return;
 		}
 
 		if (!$this->allowedDir($path)) {
-			$this->status( "Location is outside of allowed path.");
-			$this->trigger([Event::ACTION_FAILED, Event::FAILURE], [Action::SAVE, $status]);
-			return $this;
+			$status = "Location is outside of allowed path.";
+			$this->status($status);
+			$this->trigger([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::SAVE, info: $status));
+			return;
 		}
 
 		$finfo = finfo_open(FILEINFO_MIME);
@@ -356,28 +367,28 @@ class FileSystem extends Data implements IData {
 			if (is_writable($path)) {
 				if ( Val::isEmpty($content) ) {
 					if (!$this->exists($filepath)) {
-						$this->perform( State::PERFORMING_ACTION, Action::CREATE );
+						$this->perform( State::PERFORMING_ACTION, new Meta(when: Action::CREATE) );
 						$isNewFile = true;
 						if ( touch($filepath) ) {
 							$status = "File '$file' has been created";
 						}
 					} else {
 						$status = "File '$file' already exists";
-						$this->perform( State::PERFORMING_ACTION, Action::UPDATE );
+						$this->perform( State::PERFORMING_ACTION, new Meta(when: Action::UPDATE) );
 					}
 				} elseif ( !file_put_contents($filepath, $content) ) {
 					$status = "Cannot write to file ($file)";
 				} else {	
 					$status = "Successfully wrote to file '$file'";
 					$this->status($status);
-					if ( $isNewFile ) {
-						$this->trigger([Event::SUCCESS], [Action::CREATE, $status]);
-					} else {
-						$this->trigger([Event::SUCCESS], [Action::UPDATE, $status]);
-					}
-					$this->trigger([Event::SUCCESS], [Action::SAVE, $status]);
 
-					return $this;
+					if ( $isNewFile ) {
+						$this->trigger([Event::SUCCESS, Event::SAVED, Event::CREATED], new Meta(when: Action::CREATE, info: $status));
+					} else {
+						$this->trigger([Event::SUCCESS, Event::SAVED, Event::UPDATED], new Meta(when: Action::UPDATE, info: $status));
+					}
+
+					return;
 				}
 			} else {
 				$status = "The file '$file' is not writable";
@@ -387,8 +398,9 @@ class FileSystem extends Data implements IData {
 			{
 				$status = "Successfully wrote to file '$file'";
 				$this->status($status);
-				$this->trigger([Event::SUCCESS], [Action::SAVE, $status]);
-				return $this;
+				$this->trigger([Event::SUCCESS, Event::SAVED], new Meta(when: Action::SAVE, info: $status));
+
+				return;
 			}
 			else
 			{
@@ -399,9 +411,7 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
-		$this->trigger([Event::FAILURE], [Action::SAVE, $status]);
-
-		return $this;
+		$this->trigger([Event::FAILURE], new Meta(when: Action::SAVE, info: $status));
 	}
 	
 	/**
@@ -438,7 +448,7 @@ class FileSystem extends Data implements IData {
 				} else {	
 					$status = "Successfully emptied '$file'";
 					$this->status($status);
-					$this->trigger([Event::SUCCESS], [Action::UPDATE, $this->status()]);
+					$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
 					return $this;
 				}
 			} else {
@@ -448,7 +458,7 @@ class FileSystem extends Data implements IData {
 			if ( ftruncate($this->_handle) !== false) {
 				$status = "Successfully emptied '$file'";
 				$this->status($status);
-				$this->trigger([Event::SUCCESS], [Action::UPDATE, $this->status()]);
+				$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
 				return $this;
 			} else {
 				$status = "Failed to empty file '$file'";
@@ -458,7 +468,7 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
-		$this->trigger([Event::FAILURE], [Action::UPDATE, $this->status()]);
+		$this->trigger([Event::FAILURE], new Meta(when: Action::UPDATE, info: $this->status()));
 
 		return $this;
 	}
@@ -468,60 +478,53 @@ class FileSystem extends Data implements IData {
 	 * 
 	 * @param boolean $confirm Confirm deletion
 	 * 
-	 * @return IObj
+	 * @return void
 	 */
-	public function delete( $confirm = null ): IObj
+	protected function _delete(): void
 	{
-		parent::delete();
 		$status = false;
 		$path = $this->path();
 		$file = $this->file();
 
 		if (!$this->file()) {
 			$this->status("No file specified");
-			$this->trigger([Event::ACTION_FAILED, Event::FAILURE]);
-			return $this;
+			$this->trigger([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::DELETE, info: $this->status()));
+			return;
 		}
 
 		if (!$this->allowedDir($path)) {
 			$this->status( "Location is outside of allowed path.");
-			$this->trigger([Event::FAILURE], [Action::DELETE, $this->status()]);
-			return $this;
+			$this->trigger([Event::FAILURE], new Meta(when: Action::DELETE, info: $this->status()));
+			return;
 		}
 
 		$filepath = $path.DIRECTORY_SEPARATOR.$file;
 
-		$confirm = Val::isNotNull($confirm) ? $confirm : $this->config('doNotConfirm');
-		
 		if ($filepath) {
-			if ($confirm === true) {
-				if ($this->exists($filepath)) {
-					if (is_writable($filepath)) {
-						if (unlink($filepath) === false) {
-							$status = "Cannot delete file ($file)";
-						} else {
-							$status = "Successfully deleted file '$file'";
-							$this->status($status);
-							$this->trigger([Event::SUCCESS], [Action::DELETE, $this->status()]);
-							return $this;
-						}
+			if ($this->exists($filepath)) {
+				if (is_writable($filepath)) {
+					if (unlink($filepath) === false) {
+						$status = "Cannot delete file ($file)";
 					} else {
-						$status = "The file '$file' is not editable";
+						$status = "Successfully deleted file '$file'";
+						$this->status($status);
+						$this->trigger([Event::SUCCESS, Event::DELETED], new Meta(when: Action::DELETE, info: $this->status()));
+						return;
 					}
 				} else {
-					$status = "File '$file' does not exist";
+					$status = "The file '$file' is not editable";
 				}
 			} else {
-				$status = "Must confirm action before file deletion";		
+				$status = "File '$file' does not exist";
 			}
 		} else {
 			$status = "No file specified for deletion";
 		}
 		
 		$this->status($status);
-		$this->trigger([Event::FAILURE], [Action::DELETE, $this->status()]);
+		$this->trigger([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::DELETE, info: $this->status()));
 
-		return $this;
+		return;
 	}
 	/**
 	 * Check if the file exists at the given path
@@ -531,14 +534,14 @@ class FileSystem extends Data implements IData {
 	 */
 	public function exists($path = null): bool
 	{
+		$path = $path ?? null;
 		$file = Val::isNotNull($path) ? basename($path) : $this->file();
-		$directory = dirname($path) ? realpath( dirname($path) ) : $this->path();
+		$directory = Val::isNotNull($path) ? realpath( dirname($path) ) : $this->path();
+		
+		$path = realpath( join(DIRECTORY_SEPARATOR, [$directory, $file] ) );
 
-		
-		$path = realpath( join(DIRECTORY_SEPARATOR, array($directory, $file) ) );
-		
 		if (!$this->allowedDir($path)) {
-			$this->status( "Location is outside of allowed path.");
+			$this->status("Location is outside of allowed path.");
 			return false;
 		}
 
@@ -573,7 +576,7 @@ class FileSystem extends Data implements IData {
 						if (!$this->exists( $location ) || $overwrite) {
 							if (move_uploaded_file( $document['tmp_name'], $location )) {
 								$status = 'Upload Completed Successfully';
-								$this->trigger([Event::SUCCESS], [Action::CREATE, $this->status()]);
+								$this->trigger([Event::SUCCESS], new Meta(when: Action::CREATE, info: $this->status()));
 							} else {
 								$status = 'Transfer aborted for file ' . basename($document['name']) . '. Could not copy file';
 							}
@@ -592,7 +595,7 @@ class FileSystem extends Data implements IData {
 		}
 		
 		$this->status($status);
-		$this->trigger([Event::ACTION_FAILED, Event::FAILURE], [Action::CREATE, $this->status()]);
+		$this->trigger([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CREATE, info: $this->status()));
 
 		return $this;
 	}
@@ -753,9 +756,9 @@ class FileSystem extends Data implements IData {
 							$status = "Successfully copied file";
 							$this->status($status);
 							if ( $overwrite && $this->exists( $dest ) ) {
-								$this->trigger([Event::SUCCESS], [Action::UPDATE, $this->status()]);
+								$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
 							} else {
-								$this->trigger([Event::SUCCESS], [Action::CREATE, $this->status()]);
+								$this->trigger([Event::SUCCESS], new Meta(when: Action::CREATE, info: $this->status()));
 							}
 
 							if ($remove_orig) {
@@ -862,14 +865,14 @@ class FileSystem extends Data implements IData {
 
 	    if (!$this->allowedDir($dir)) {
 	        $this->status( "Location is outside of allowed path.");
-			$this->trigger([Event::FAILURE], [Action::CREATE, $this->status()]);
+			$this->trigger([Event::FAILURE], new Meta(when: Action::CREATE, info: $this->status(), data: $dir));
 	        return $this;
 	    }
 
 	    if (!$this->exists($dir)) {
 	        mkdir($dir);
 	        $this->status("Directory created successfully");
-			$this->trigger([Event::SUCCESS], [Action::CREATE, $this->status()]);
+			$this->trigger([Event::SUCCESS], new Meta(when: Action::CREATE, info: $this->status()));
 	    } else {
 	    	$this->status("Directory already exists");
 	    }

@@ -2,6 +2,8 @@
 
 namespace BlueFission\Data\Queues;
 
+use BlueFission\Collections\Collection;
+
 /**
  * Class Queue implements IQueue and manages the queue data structure.
  */
@@ -89,7 +91,7 @@ class Queue implements IQueue {
 		} elseif ($after_id !== false && $till_id === false) {
 			$till_id = count($stack[$queue])-1;
 		}
-		$items = array_slice ( $stack[$queue], $after_id, $till_id, true );
+		$items = new Collection(array_slice ( $stack[$queue], $after_id, $till_id, true ));
 		return $items;
 	}
 	

@@ -51,13 +51,13 @@ class Mysql extends Storage implements IData
 	protected $_result;
 		
 	//declare query parts
-	private $_tables = []
-	private $_fields = []
-	private $_relations = []
-	private $_conditions = []
-	private $_order = []
-	private $_aggregate = []
-	private $_distinctions = []
+	private $_tables = [];
+	private $_fields = [];
+	private $_relations = [];
+	private $_conditions = [];
+	private $_order = [];
+	private $_aggregate = [];
+	private $_distinctions = [];
 	private $_query;
 
 	protected $_row_start = 0;
@@ -122,7 +122,11 @@ class Mysql extends Storage implements IData
 				}
 			}
 		}
-		return $this->field($keys[$table], $id);
+		if ( ( isset($keys[$table]) && $keys[$table] ) || $id ) {
+			return $this->field($keys[$table], $id);
+		}
+
+		return null;
 	}
 
 	/**
@@ -134,7 +138,7 @@ class Mysql extends Storage implements IData
 	{
 		$db = $this->_source;
 		$status = self::STATUS_FAILED;
-		$keys = []
+		$keys = [];
 		$success = true;
 
 		if (!$this->tables() || !$this->fields()) {
@@ -241,19 +245,19 @@ class Mysql extends Storage implements IData
 			return $this;
 		}
 		$table = $tables[0];
-		$fields = []
+		$fields = [];
 		$data = $this->data();
-		$active_fields = $this->config('fields') != '' ? Arr::toArray( $this->config('fields') ) : []
+		$active_fields = $this->config('fields') != '' ? Arr::toArray( $this->config('fields') ) : [];
 		$field_info = $this->fields();
 		
 		$relations = $this->_relations;
-		$using = []
-		$join = []
-		$on = []
+		$using = [];
+		$join = [];
+		$on = [];
 		
-		$distinct = []
+		$distinct = [];
 		$where = array('1');
-		$sort = []
+		$sort = [];
 		
 		foreach ($data as $a=>$b) 
 		{
@@ -348,7 +352,7 @@ class Mysql extends Storage implements IData
 		if ( count ( $this->tables() ) > 1 )
 			$left_join .= "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
 		
-		$select = []
+		$select = [];
 		foreach($active_fields as $a) 
 		{
 			if ($this->exists($a)){
@@ -429,19 +433,19 @@ class Mysql extends Storage implements IData
 		
 		$tables = $this->tables();
 		$table = $tables[0];
-		$fields = []
+		$fields = [];
 		$data = $this->data();
 		$active_fields = Arr::toArray( $this->config('fields') );
 		$field_info = $this->fields();
 		
 		$relations = $this->_relations;
-		$using = []
-		$join = []
-		$on = []
+		$using = [];
+		$join = [];
+		$on = [];
 		
-		$distinct = []
+		$distinct = [];
 		$where = array('1');
-		$sort = []
+		$sort = [];
 		
 		foreach ($data as $a=>$b) 
 		{
@@ -566,7 +570,7 @@ class Mysql extends Storage implements IData
 		if ( MysqlLink::tableExists( current( $this->config(self::NAME_FIELD) ) ) )
 			return $this;
 		
-		$types = []
+		$types = [];
 		$key = '';
 		foreach ($this->_data as $a=>$b)
 		{
@@ -694,13 +698,13 @@ class Mysql extends Storage implements IData
 		
 		$tableDiff = Arr::merge(Arr::diff($this->tables(), Arr::toArray($this->config('name'))), Arr::diff(Arr::toArray($this->config('name')), $this->tables()));
 		if ( count($tableDiff) > 0 ) {
-			$this->_fields = [];
+			$this->_fields = [];;
 		}
 		
 		// TODO make sure this works as expected and it actually compares the arrays
 		if ( !$this->_fields )
 		{
-			$data = []
+			$data = [];
 			//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
 			$tables = $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : ( $this->tables() ? $this->tables() : get_class($this) );
 
@@ -737,7 +741,7 @@ class Mysql extends Storage implements IData
 			$this->halt( State::DRAFT );
 			$this->perform( Event::CHANGE );
 		}
-		$fields = []
+		$fields = [];
 
 		reset($this->_fields);
 		// while ($table = each($this->_fields))
@@ -760,7 +764,7 @@ class Mysql extends Storage implements IData
 	 */
 	private function tables()
 	{
-		$tables = []
+		$tables = [];
 		foreach ( $this->_fields as $table=>$fields)
 		{
 			$tables[] = $table;
@@ -777,7 +781,7 @@ class Mysql extends Storage implements IData
 	 */
 	private function table( $name )
 	{
-		$table = isset( $this->_fields[$name] ) ? $this->_fields[$name] : []
+		$table = isset( $this->_fields[$name] ) ? $this->_fields[$name] : [];
 		return $table;
 	}
 	
@@ -1010,7 +1014,7 @@ class Mysql extends Storage implements IData
 		
 		$this->_relations[$field] = $member;
 
-		return $this
+		return $this;
 	}
 	
 	/**
@@ -1059,7 +1063,7 @@ class Mysql extends Storage implements IData
 		$tables = $this->tables();
 		$table = ( Val::isNull( $table ) ) ? $tables[0] : $table;
 		$where = '';
-		$where_r = []
+		$where_r = [];
 
 		$fields = $this->table($table);
 	
@@ -1291,7 +1295,7 @@ class Mysql extends Storage implements IData
 	 */
 	private function arrayKeyIntersect($arr1, $arr2) 
 	{
-		$array = []
+		$array = [];
 		if (Val::isNotNull($arr2)) {
 			foreach ($arr1 as $a=>$b) if (array_key_exists ( $a, $arr2)) $array[$a] = $b;
 		}
@@ -1307,12 +1311,12 @@ class Mysql extends Storage implements IData
 	 */
 	public function reset(): IObj
 	{
-		$this->_conditions = []
-		$this->_distinctions = []
-		$this->_aggregate = []
+		$this->_conditions = [];
+		$this->_distinctions = [];
+		$this->_aggregate = [];
 		$this->_row_start = 0;
 		$this->_row_end = 1;
-		$this->_order = []
+		$this->_order = [];
 		$this->_query = null;
 
 		return $this;

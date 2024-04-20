@@ -7,6 +7,7 @@ use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Class Data
@@ -45,8 +46,10 @@ class Data extends Obj implements IData
 
         $this->behavior(new Event( Event::SUCCESS ), function($behavior, $args) {
             $args = $args ?? $behavior->_context;
-            if ($args) {
-                $action = $args[0];
+            $action = '';
+
+            if ($args && $args instanceof Meta ) {
+                $action = $args?->when?->name();
             }
 
             if ( Action::READ == $action && $this->is(State::READING) ) {
@@ -66,15 +69,16 @@ class Data extends Obj implements IData
             }
 
             if ( $action ) {
-                $this->halt($action);
                 $this->trigger( Event::ACTION_PERFORMED, $action );
             }
         });
 
         $this->behavior(new Event( Event::FAILURE ), function($behavior, $args) {
             $args = $args ?? $behavior->_context;
-            if ($args) {
-                $action = $args[0];
+            $action = '';
+            
+            if ($args && $args instanceof Meta ) {
+                $action = $args?->when?->name();
             }
 
             if ( Action::READ == $action && $this->is(State::READING) ) {
@@ -109,8 +113,14 @@ class Data extends Obj implements IData
     public function read(): IObj 
     {
         // method implementation
-        $this->perform( State::PERFORMING_ACTION, Action::READ );
-        $this->perform(State::READING);
+        $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::READ) );
+        $this->perform( State::READING );
+
+        if ( method_exists($this, '_read') ) {
+            $this->_read();
+        }
+
+        $this->halt( State::READING );
 
         return $this;
     }
@@ -123,8 +133,14 @@ class Data extends Obj implements IData
     public function write(): IObj 
     {
         // method implementation
-        $this->perform( State::PERFORMING_ACTION, Action::SAVE );
-        $this->perform(State::SAVING);
+        $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::SAVE)  );
+        $this->perform( State::SAVING );
+
+        if ( method_exists($this, '_write') ) {
+            $this->_write();
+        }
+
+        $this->halt( State::SAVING );
 
         return $this;
     }
@@ -137,8 +153,14 @@ class Data extends Obj implements IData
     public function delete(): IObj 
     {
         // method implementation
-        $this->perform( State::PERFORMING_ACTION, Action::DELETE) ;
-        $this->perform(State::DELETING);
+        $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::DELETE)  ) ;
+        $this->perform( State::DELETING );
+
+        if ( method_exists($this, '_delete') ) {
+            $this->_delete();
+        }
+
+        $this->halt( State::DELETING );
 
         return $this;
     }
@@ -151,7 +173,11 @@ class Data extends Obj implements IData
     public function contents($data = null): mixed
     {
         // method implementation
-        return null;
+        if ( method_exists($this, '_contents') ) {
+            $data = $this->_contents($data);
+        }
+        
+        return $data;
     }
 
     /**

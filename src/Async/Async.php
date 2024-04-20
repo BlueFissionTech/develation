@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Async;
 
+use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -35,12 +36,14 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     /**
      * Configuration settings
      */
-    protected static $_config;
+    protected static $_config = [];
 
     /**
      * Queue implementation used for storing tasks.
      */
     protected static $_queue;
+
+    protected static $_queueName = 'async_queue';
 
 
     protected static $_time;
@@ -68,7 +71,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
      * 
      * @param IQueue $queueClass Instance of a queue class implementing the IQueue interface.
      */
-    public static function setQueue(IQueue $queueClass) {
+    public static function setQueue(string $queueClass) {
         self::$_queue = $queueClass;
     }
 
@@ -82,9 +85,9 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     /**
      * Returns the queue instance, initializing it if necessary.
      */
-    protected static function getQueue(): IQueue {
+    protected static function getQueue(): string {
         if (!self::$_queue) {
-            self::$_queue = new SplQueue(); // Default to SplQueue if no custom queue provided
+            self::$_queue = SplPriorityQueue::class; // Default to SplPriorityQueue if no custom queue provided
         }
         return self::$_queue;
     }
@@ -101,13 +104,14 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
             'default_timeout' => 30,
             'retry_strategy' => 'simple',
             'timeout' => 300,
+            'notifyURL' => 'http://localhost:8080',
         ]);
     }
 
     /**
      * Provides access to the singleton instance of the Async class.
      */
-    private static function instance() {
+    protected static function instance() {
         if (self::$_instance === null) {
             self::$_instance = new static();
             self::$_instance->perform(Event::INITIALIZED);
@@ -125,11 +129,20 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         $instance = self::instance();
         $instance->perform(State::PROCESSING);
         $promise = new Promise($function, $instance);
-        $instance->tasks()->enqueue([
-            'data'=>$instance->wrapFunction($function), 
-            'priority'=>$priority
-        ]);
+
+        self::keep($promise, $priority);
+
         return $promise;
+    }
+
+    public static function keep( $promise, $priority = 10 )
+    {
+        $instance = self::instance();
+
+        $instance->tasks()::enqueue([
+            'data'=>$instance->wrapPromise($promise), 
+            'priority'=>$priority
+        ], self::$_queueName);
     }
 
     /**
@@ -138,9 +151,9 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
      * @param callable $function The function to wrap.
      * @return callable A generator function.
      */
-    protected function wrapFunction($function) {
-        return function() use ($function) {
-            $result = $this->executeFunction($function);
+    protected function wrapPromise($promise) {
+        return function() use ($promise) {
+            $result = $this->executePromise($promise);
             foreach ($result as $value) {
                 yield $value;
             }
@@ -153,9 +166,9 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
      * @param callable $function The function to execute.
      * @return \Generator Yields the function's result, handles success or failure internally.
      */
-    protected function executeFunction($function) {
+    protected function executePromise($promise) {
         try {
-            $result = $function();
+            $result = $promise->try();
             if (!($result instanceof \Generator)) {
                 yield $result;
             } else {
@@ -163,9 +176,13 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
             }
             $this->perform(Event::SUCCESS);
         } catch (TransientException $e) {
-            $this->retry($function);
+            error_log('Transient exception: ' . $e->getMessage());
+            $this->perform(Event::ERROR, $e->getMessage());
+            $this->status($e->getMessage());
+
+            $this->retry($promise->try());
         } catch (\Exception $e) {
-            yield $this->handleError($e);
+            yield $this->handleError('Unhandled exception: ' . $e);
         }
     }
 
@@ -175,8 +192,9 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     }
 
     protected function handleError(\Exception $e) {
-        $this->perform(Event::FAILURE, ['message' => $e->getMessage()]);
         $this->logError($e); // Log the error or perform other error reporting.
+        $this->perform([Event::Error, Event::FAILURE], new Meta(info: $e->getMessage()));
+
         return null;
     }
 
@@ -197,7 +215,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
 
     protected function checkTimeout($task) {
         // Implement timeout check
-        if (time() - $task['start_time'] > $this->_config['task_timeout']) {
+        if (time() - $task['start_time'] > self::getConfig()['task_timeout']) {
             throw new TimeoutException("Task timed out");
         }
     }
@@ -211,7 +229,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
             ]
         ]);
 
-        file_get_contents("http://localhost:8080", false, $context);
+        file_get_contents(self::getConfig()['notifyURL'], false, $context);
     }
 
     /**
@@ -219,11 +237,18 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
      */
     public static function run() {
         $instance = self::instance();
+
+        if ($instance->is(State::RUNNING))
+            return;
+
+        $instance->perform(Event::STARTED);
         $instance->perform(State::RUNNING);
 
-        while (!$instance->tasks()->isEmpty()) {
-            $task = $instance->tasks()->dequeue();
-            $this->monitorStart($task);
+        while (!$instance->tasks()::isEmpty(self::$_queueName)) {
+
+            $task = $instance->tasks()::dequeue(self::$_queueName);
+
+            $instance->monitorStart($task);
             $generator = $task();
             while ($generator->valid()) {
                 if ($generator->current() === null) {
@@ -232,13 +257,14 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
                 }
                 $generator->next();
             }
-            $this->monitorEnd($task);
-            $instance->notifyCompletion(['message' => Event::COMPLETE, 'result' => $result]);
+            $instance->monitorEnd($task);
+            // $instance->notifyCompletion(['message' => Event::COMPLETE, 'result' => $result]);
             $instance->perform(Event::PROCESSED);
         }
 
         $instance->halt(State::RUNNING);
         $instance->perform(Event::COMPLETE);
+        $instance->perform(Event::STOPPED);
         $instance->halt(State::PROCESSING);
     }
 
@@ -251,7 +277,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
             self::run();
             $this->perform(Event::FINALIZED);
         } catch (\Exception $e) {
-            $this->perform(Event::ERROR, ['message' => $e->getMessage()]);
+            $this->perform(Event::ERROR, new Meta(info: $e->getMessage()));
             $this->perform(State::ERROR_STATE);
         }
         $this->perform(Event::UNLOAD);

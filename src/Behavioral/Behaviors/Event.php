@@ -13,10 +13,12 @@ class Event extends Behavior
 	const ACTIVATED = 'OnActivated';
 	const CHANGE = 'OnChange';
 	const COMPLETE = 'OnComplete';
+	const STARTED = 'OnStarted';
 	const SUCCESS = 'OnSuccess';
 	const FAILURE = 'OnFailure';
 	const MESSAGE = 'OnMessageUpdate';
     const CONNECTED = 'OnConnected';
+    const BLOCKED = 'OnBlocked';
     const DISCONNECTED = 'OnDisconnected';
     const CLEAR_DATA = 'OnClearData';
 
@@ -51,6 +53,7 @@ class Event extends Behavior
 
     // Custom application logic
     const PROCESSED = 'OnProcessed';
+    const STOPPED = 'OnStopped';
     const ACTION_PERFORMED = 'OnActionPerformed';
     const ACTION_FAILED = 'OnActionFailed';
 

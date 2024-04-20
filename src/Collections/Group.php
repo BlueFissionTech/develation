@@ -4,6 +4,7 @@ namespace BlueFission\Collections;
 use ArrayAccess;
 use ArrayObject;
 use BlueFission\Val;
+use BlueFission\Arr;
 use BlueFission\Obj;
 use BlueFission\Behavioral\Behaviors\Configurable;
 
@@ -53,7 +54,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 			}
 			
 			if (
-				is_array($value) && 
+				Arr::is($value) && 
 				( is_a($object, Obj::class) || is_subclass_of($object, Obj::class) ) 
 			) {
 				$object->assign($value);

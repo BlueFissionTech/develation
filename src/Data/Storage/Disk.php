@@ -5,9 +5,11 @@ use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
 use BlueFission\IObj;
+use BlueFission\Net\HTTP;
 use BlueFission\Data\IData;
 use BlueFission\Data\FileSystem;
-use BlueFission\Net\HTTP;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
 
 class Disk extends Storage implements IData
 {
@@ -48,61 +50,69 @@ class Disk extends Storage implements IData
 		$filesystem = new FileSystem( [
 			'mode'=>'c+',
 			'filter'=>'file',
-			'root'=>realpath($path),
+			'root'=>realpath($path)
 		] );
 
-		if ( $filesystem->open($name) ) {
+		$filesystem->basename = $name;
+		$filesystem
+		->when(Event::CONNECTED, (function ($b, $m) use ($filesystem) {
 			$this->_source = $filesystem;
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
-		} else {
-			$this->status( self::STATUS_FAILED_INIT );
-		}
+		})->bindTo($this, $this))
+		->when(Event::FAILURE, (function ($b, $m) {
+			if ( $m->when == Action::CONNECT ) {
+				$this->status( self::STATUS_FAILED_INIT );
+				return;
+			}
+			error_log('Failed: ' . $m->info);
+		})->bindTo($this, $this))
+		->when(Event::ERROR, (function ($b, $m) {
+			if ( $m->when == Action::CONNECT ) {
+				$this->status( self::STATUS_FAILED_INIT );
+				return;
+			}
+			error_log('Error: ' . $m->info);
+		})->bindTo($this, $this))
+		->open();
 
-		parent::activate();
-
-		return $this;
+		return parent::activate();
 	}
 	
 	/**
 	 * Writes data to disk storage object.
 	 * 
-	 * @return IObj
+	 * @return void
 	 */
-	public function write(): IObj
+	protected function _write(): void
 	{
 		$source = $this->_source;
 		$status = self::STATUS_FAILED;
 		if (!$source) {
 			$this->status( $status );
-
-			return $this;
+			return;
 		}
 
 		$data = Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents;
-		
-		$source->flush();
-		$source->contents( $data );
-		$source->write();				
+
+		$source->flush()->contents( $data )->write();
 		
 		$status = self::STATUS_SUCCESS;
 		
 		$this->status( $status );
-
-		return $this;
 	}
 	
 	/**
 	 * Reads data from disk storage object.
 	 * 
-	 * @return IObj 
+	 * @return void 
 	 */
-	public function read(): IObj
+	protected function _read(): void
 	{	
 		$source = $this->_source;
 		if (!$source) {
 			$this->status( $status );
 
-			return $this;
+			return;
 		}
 		$source->read();
 
@@ -113,26 +123,22 @@ class Disk extends Storage implements IData
 			$this->contents($value);
 			$this->assign((array)$value);
 		}
-
-		return $this;
 	}
 	
 	/**
 	 * Delete the stored data in the underlying source
 	 *
-	 * @return IObj
+	 * @return void
 	 */
-	public function delete(): IObj
+	protected function _delete(): void
 	{
 		$source = $this->_source;
 		if (!$source) {
 			$this->status( $status );
-			return $this;
+			return;
 		}
 
 		$source->delete();
-
-		return $this;
 	}
 
 	/**

@@ -30,6 +30,8 @@ class Mem {
                 unset(self::$audit[$id]);
             }
         }
+
+        gc_collect_cycles();
     }
 
     public static function audit() {

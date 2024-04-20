@@ -10,7 +10,7 @@ enum DataTypes: string
 	case DOUBLE = 'double';
 	case FLOAT = 'float';
 	case INTEGER = 'integer';
-	case BOOLEAN = 'bool';
+	case BOOLEAN = 'boolean';
 	case DATETIME = 'datetime';
 	case ARRAY = 'array';
 	case OBJECT = 'object';

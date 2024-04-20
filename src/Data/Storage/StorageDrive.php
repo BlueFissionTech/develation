@@ -5,7 +5,6 @@ use BlueFission\IObj;
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
-use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\IConfigurable;
 
@@ -21,7 +20,7 @@ class StorageDrive implements IConfigurable {
 	 *
 	 * @var array
 	 */
-	protected $_bays = array();
+	protected $_bays = [];
 	/**
 	 * The active bay in the drive
 	 *
@@ -62,8 +61,8 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function all(): array
 	{
-		$devices = array();
-		foreach ( $this->_bays as $name=>$device ) {
+		$devices = [];
+		foreach ( $this->_bays as $name => $device ) {
 			$devices[$name] = get_class($device);
 		}
 		return $devices;

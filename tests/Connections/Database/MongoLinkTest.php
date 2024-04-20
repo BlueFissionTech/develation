@@ -1,6 +1,7 @@
 <?php
-namespace BlueFission\Tests\Connections;
+namespace BlueFission\Tests\Connections\Database;
 
+use BlueFission\Tests\Connections\ConnectionTest;
 use BlueFission\Connections\Database\MongoLink;
  
 class MongoLinkTest extends ConnectionTest {

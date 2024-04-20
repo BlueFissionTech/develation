@@ -2,6 +2,7 @@
 namespace BlueFission\Data\Queues;
 
 use Memcached;
+use BlueFission\Collections\Collection;
 
 /**
  * Class MemQueue
@@ -136,7 +137,7 @@ class MemQueue extends Queue implements IQueue
 			$item_keys[] = $queue."_".$i;
 		$null = NULL;
 		
-		return $stack->getMulti($item_keys, $null, Memcached::GET_PRESERVE_ORDER); 
+		return new Collection( $stack->getMulti($item_keys, $null, Memcached::GET_PRESERVE_ORDER) ); 
 	}
 	
 	/**

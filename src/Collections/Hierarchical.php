@@ -84,7 +84,7 @@ class Hierarchical extends Collection implements ICollection
 	 * @return array
 	 */
 	public function path() {
-		$path = $this->_parent ? $this->_parent->path() : array();
+		$path = $this->_parent ? $this->_parent->path() : [];
 
 		$path[] = $this->label(); 
 		

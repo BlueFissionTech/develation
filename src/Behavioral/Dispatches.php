@@ -8,6 +8,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\Behaviors\Handler;
 use BlueFission\Behavioral\Behaviors\HandlerCollection;
 use BlueFission\Behavioral\Behaviors\BehaviorCollection;
@@ -148,7 +149,7 @@ trait Dispatches {
 		if (is_string($behavior))
 			$behavior = new Behavior($behavior);
 
-			if (!is_array($args)) {
+			if (!is_array($args) && !($args instanceof Meta)) {
 				$args = [$args];
 			}
 
