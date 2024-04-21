@@ -15,8 +15,11 @@ class DiskTest extends StorageTest {
 	public function setUp(): void
 	{
 		chdir(__DIR__);
+
+		if (!file_exists(realpath(static::$testdirectory))) {
+			mkdir(static::$testdirectory);
+		}
 		// touch(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp');
-		mkdir(static::$testdirectory);
 
 		$this->object = new static::$classname(static::$configuration);
 	}

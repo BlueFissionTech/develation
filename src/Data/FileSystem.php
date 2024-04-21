@@ -437,14 +437,23 @@ class FileSystem extends Data implements IData {
 
 		$content = (!empty($this->contents()) && Str::is($this->contents()) ) ? stripslashes($this->contents()) : $this->contents();
 		$status = '';
-		if ($file != '') {
+
+		if ($this->_handle) {
+			if ( ftruncate($this->_handle, 0) !== false) {
+				$status = "Successfully emptied '$file'";
+				$this->status($status);
+				$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
+				return $this;
+			} else {
+				$status = "Failed to empty file '$file'";
+			}
+		} elseif ($file != '') {
 			if (!$this->exists($filepath)) {
 				$status = "File '$file' does not exist.";
 			}
 			elseif (is_writable($filepath) && !$this->config('lock')) {
 				if (!file_put_contents($filepath, "") ) {
 					$status = "Cannot empty file ($file)";
-					//exit;
 				} else {	
 					$status = "Successfully emptied '$file'";
 					$this->status($status);
@@ -453,15 +462,6 @@ class FileSystem extends Data implements IData {
 				}
 			} else {
 				$status = "The file '$file' is not writable";
-			}
-		} elseif ($this->_handle) {
-			if ( ftruncate($this->_handle) !== false) {
-				$status = "Successfully emptied '$file'";
-				$this->status($status);
-				$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
-				return $this;
-			} else {
-				$status = "Failed to empty file '$file'";
 			}
 		} else {
 			$status = "No file specified for edit";

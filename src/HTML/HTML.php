@@ -32,13 +32,13 @@ class HTML {
             if ($doc === false) {
                 $href .= $_SERVER['DOCUMENT_ROOT'] ?? '';
             } else {
-                $protocol = Val::is($_SERVER['HTTPS']) ? 'https' : 'http';
-                $href = $protocol . '://' . ($_SERVER['SERVER_NAME'] ? $_SERVER['SERVER_NAME'] : 'localhost');
+                $protocol = isset($_SERVER['HTTPS']) ? 'https' : 'http';
+                $href = $protocol . '://' . (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost');
                 $href .= $_SERVER['REQUEST_URI'] ?? '';
             }
         } else {
         	if (Str::pos($href, 'http') === false) {
-				$protocol = Val::is($_SERVER['HTTPS']) ? 'https' : 'http';
+				$protocol = isset($_SERVER['HTTPS']) ? 'https' : 'http';
 				$href = $protocol . '://' . $href;
 			}
         }

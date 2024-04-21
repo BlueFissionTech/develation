@@ -11,11 +11,11 @@ class SplQueue extends Queue implements IQueue {
 
     private static function instance( $queue)
     {
-        if (!isset(self::$_queues[$channel])) {
-            self::$_queues[$channel] = new BaseSplQueue();
+        if (!isset(self::$_queues[$queue])) {
+            self::$_queues[$queue] = new BaseSplQueue();
         }
 
-        return self::$_queues[$channel];
+        return self::$_queues[$queue];
     }
 
     public static function isEmpty($queue) {

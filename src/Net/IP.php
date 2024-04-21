@@ -135,7 +135,7 @@ class IP {
 	 * @return string The remote IP address
 	 */
 	public static function remote() {
-		return $_SERVER['REMOTE_ADDR'];
+		return $_SERVER['REMOTE_ADDR'] ?? null;
 	}
 
 	/**

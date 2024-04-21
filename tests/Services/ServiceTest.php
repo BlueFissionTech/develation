@@ -109,9 +109,9 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 
 		$this->object->test_var = "bar";
 
-		$handler = new Handler($behavior, function( $data ) {
+		$handler = new Handler($behavior, (function( $data ) {
 			echo $this->test_var;			
-		});
+		})->bindTo($this->object, $this->object));
 
 		$this->object->register('testService', $handler);
 

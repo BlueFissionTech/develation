@@ -133,7 +133,7 @@ class Socket extends Connection implements IConfigurable
 		
 		if ($socket) 
 		{
-			$method = $method ? $method : $this->config('method');
+			$method = $this->config('method');
 			
 			$data = HTTP::query($this->_data);
 

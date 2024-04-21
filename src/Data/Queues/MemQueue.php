@@ -23,7 +23,7 @@ class MemQueue extends Queue implements IQueue
 	/**
 	 * The default pool to be used for Memcached
 	 */
-	const MEMQ_POOL = 'localhost:11211';
+	private static $_memq_pool = 'localhost:11211';
 
 	/**
 	 * The default time-to-live value for items in the queue
@@ -50,8 +50,13 @@ class MemQueue extends Queue implements IQueue
 		return self::$_stack;
 	}
 
+	/**
+	 * Sets the Memory pool address
+	 * 
+	 * @param string $pool The address of the Memcached pool
+	 */
 	public function setPool($pool) {
-		self::MEMQ_POOL = $pool;
+		self::$_memq_pool = $pool;
 	}
 	
 	/**
@@ -61,7 +66,7 @@ class MemQueue extends Queue implements IQueue
 	 */
 	private static function init() {
 		$_stack = new Memcached;
-		$servers = explode(",", static::MEMQ_POOL);
+		$servers = explode(",", static::$_memq_pool);
 		foreach($servers as $server) {
 			list($host, $port) = explode(":", $server);
 			$_stack->addServer($host, $port);

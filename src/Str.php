@@ -39,7 +39,14 @@ class Str extends Val implements IVal {
 	public function cast(): IVal
 	{
 		if ( $this->_type ) {
-			$this->_data = (string)$this->_data;
+			if (is_array($this->_data)) {
+				$maybeString = implode('', $this->_data);
+				if (Str::is($maybeString)) {
+					$this->_data = $maybeString;
+				}
+			} else {
+				$this->_data = (string)$this->_data;
+			}
 			$this->trigger(Event::CHANGE);
 		}
 
