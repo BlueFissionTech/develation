@@ -49,6 +49,10 @@ class MemQueue extends Queue implements IQueue
 		if(!self::$_stack) self::init();
 		return self::$_stack;
 	}
+
+	public setPool($pool) {
+		self::MEMQ_POOL = $pool;
+	}
 	
 	/**
 	 * Initializes the Memcached instance
@@ -57,7 +61,7 @@ class MemQueue extends Queue implements IQueue
 	 */
 	private static function init() {
 		$_stack = new Memcached;
-		$servers = explode(",", env('MEMQ_POOL', static::MEMQ_POOL));
+		$servers = explode(",", static::MEMQ_POOL);
 		foreach($servers as $server) {
 			list($host, $port) = explode(":", $server);
 			$_stack->addServer($host, $port);

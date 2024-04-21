@@ -55,7 +55,7 @@ class IOTest extends TestCase {
     }
 
     public function testSock() {
-        $url = 'ws://example.com/socket';
+        $url = 'ws://bluefission.com/socket';
         $mockSocket = $this->createMock(\BlueFission\Connections\Socket::class);
         $mockSocket->method('open')->willReturnSelf();
         $mockSocket->method('result')->willReturn("Socket data");
@@ -64,6 +64,6 @@ class IOTest extends TestCase {
         
         $data = IO::sock($url);
 
-        $this->assertTrue($data !== null);
+        $this->assertTrue($data !== null, "Socket data shuuld not be null");
     }
 }
