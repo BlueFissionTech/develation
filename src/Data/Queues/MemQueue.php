@@ -50,7 +50,7 @@ class MemQueue extends Queue implements IQueue
 		return self::$_stack;
 	}
 
-	public setPool($pool) {
+	public function setPool($pool) {
 		self::MEMQ_POOL = $pool;
 	}
 	

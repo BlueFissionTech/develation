@@ -64,6 +64,6 @@ class IOTest extends TestCase {
         
         $data = IO::sock($url);
 
-        $this->assertTrue($data !== null, "Socket data shuuld not be null");
+        $this->assertTrue($data !== null, "Socket data should not be null");
     }
 }

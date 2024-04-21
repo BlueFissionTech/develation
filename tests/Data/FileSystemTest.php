@@ -22,6 +22,8 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 	public function setUp(): void
 	{
 		chdir(__DIR__);
+		mkdir(static::$testdirectory);
+
 		$this->object = new static::$classname(static::$configuration);
 	}
 
