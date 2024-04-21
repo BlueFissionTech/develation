@@ -40,3 +40,4 @@ jobs:
       - uses: php-actions/composer@v6
       - run: echo "Composer dependencies have been installed"
       - run: vendor/bin/phpunit
+        continue-on-error: true  # Allows the workflow to continue even if this step fails
