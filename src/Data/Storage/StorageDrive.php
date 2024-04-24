@@ -151,6 +151,6 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function _onObjectUpdate( $event )
 	{
-		$object = $event->_target;
+		$object = $event->target;
 	}
 }

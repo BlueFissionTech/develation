@@ -130,7 +130,7 @@ class Service extends Obj implements IDispatcher {
 	public function broadcast($behavior) 
 	{
 	    if ($behavior instanceof Behavior) {
-	        $behavior->_target = $this;
+	        $behavior->target = $this;
 	    }
 
 	    $this->dispatch($behavior);
@@ -144,8 +144,15 @@ class Service extends Obj implements IDispatcher {
 	public function boost($behavior) 
 	{
 	    $parent = $this->parent();
-	    if ($parent && $parent instanceof Application) {
+
+	    if (!$parent) {
+	    	$this->broadcast($behavior);
+	    } elseif ($parent instanceof Application) {
 	        $parent->boost($behavior);
+	    } elseif ($parent instanceof Service) {
+	        $parent->boost($behavior);
+	    } elseif ($parent instanceof IDispatcher) {
+	        $parent->dispatch($behavior);
 	    }
 	}
 
@@ -155,13 +162,20 @@ class Service extends Obj implements IDispatcher {
 	 * @param string $behavior  The behavior name.
 	 * @param mixed  $args      The arguments to pass to the behavior.
 	 */
-	public function message($behavior, $args = null) 
+	public function message($behavior, $args = null, $callback = null) 
 	{
 	    $instance = $this->instance();
 	    if ($instance instanceof IDispatcher && is_callable([$instance, 'behavior'])) {
 	        $instance->dispatch($behavior, $args);
+	        if ($callback) {
+	        	if ($instance instanceof Service) {
+	        		$this->_response = $instance->call($callback, $args);
+	        	} else {
+	        		$this->_response = $this->call($callback, $args);
+	        	}
+	        }
 	    } else {
-	        $this->_response = $this->call($behavior, $args);
+	        $this->_response = $this->call($callback ?? $behavior, $args);
 	    }
 	}
 
@@ -177,7 +191,7 @@ class Service extends Obj implements IDispatcher {
 	{
 	    if (is_callable([$this->instance, $call])) {
 	    	$args = new Arr($args);
-	        $return = call_user_func_array([$this->instance, $call], $args->val());
+	        $return = call_user_func_array([$this->instance, $call], $args());
 	        return $return;
 	    }
 	}
@@ -263,8 +277,8 @@ class Service extends Obj implements IDispatcher {
 	}
 	// public function dispatch( $behavior, $args = null ) {
 	// 	// echo "{$behavior}\n";
-	// 	if ( $behavior instanceof Behavior && $behavior->_target == $this->instance ) {
-	// 		$behavior->_target = $this;
+	// 	if ( $behavior instanceof Behavior && $behavior->target == $this->instance ) {
+	// 		$behavior->target = $this;
 	// 	}
 	// 	parent::dispatch($behavior, $args);
 	// }

@@ -118,12 +118,12 @@ trait Behaves
             	return $this;
             }
             
-            if ($behavior->_target == null) {
-                $behavior->_target = $this;
+            if ($behavior->target == null) {
+                $behavior->target = $this;
             }
 
-            if ($behavior->_context == null) {
-                $behavior->_context = $args;
+            if ($behavior->context == null) {
+                $behavior->context = $args;
             }
 
             $this->_history->add($behaviorName, $behaviorName);

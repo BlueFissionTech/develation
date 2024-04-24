@@ -13,7 +13,7 @@ use BlueFission\Collections\Group;
  * 
  * @package BlueFission\Data\Storage
  */
-class MysqlBulk extends Mysql implements IData
+class MySQLBulk extends Mysql implements IData
 {
     /**
      * The stored data as an array of rows.

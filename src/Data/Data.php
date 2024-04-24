@@ -45,7 +45,7 @@ class Data extends Obj implements IData
         });
 
         $this->behavior(new Event( Event::SUCCESS ), function($behavior, $args) {
-            $args = $args ?? $behavior->_context;
+            $args = $args ?? $behavior->context;
             $action = '';
 
             if ($args && $args instanceof Meta ) {
@@ -74,7 +74,7 @@ class Data extends Obj implements IData
         });
 
         $this->behavior(new Event( Event::FAILURE ), function($behavior, $args) {
-            $args = $args ?? $behavior->_context;
+            $args = $args ?? $behavior->context;
             $action = '';
             
             if ($args && $args instanceof Meta ) {

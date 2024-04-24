@@ -33,7 +33,7 @@ use BlueFission\Data\Storage\Behaviors\StorageAction;
  * @property int $_row_end The ending row for the database query result.
  * 
  */
-class Mysql extends Storage implements IData
+class MySQL extends Storage implements IData
 {
 	protected $_config = [
 		'location'=>null,

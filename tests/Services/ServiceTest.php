@@ -31,7 +31,7 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
         $behavior = $this->createMock(Behavior::class);
         $service->broadcast($behavior);
 
-        $this->assertInstanceOf(Service::class, $behavior->_target);
+        $this->assertInstanceOf(Service::class, $behavior->target);
     }
 
     public function testBoostMethod()
@@ -39,20 +39,21 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
     	$this->expectOutputString('Test');
         $service1 = new Service();
         $service2 = new Service();
-        $service1->name = 'Service1';
-        $service2->name = 'Service2';
+        $service1->name = 'Service1A';
+        $service2->name = 'Service2A';
         // $parent = $this->createMock(Application::class);
         $parent = Application::instance();
         $parent->name("Test");
-        $parent->delegate('Service1', $service1);
-        $parent->delegate('Service2', $service2);
+        $parent->delegate('Service1B', $service1);
+        $parent->delegate('Service2B', $service2);
 
-        $parent->route('Service1', 'Service2', 'Test Behavior', function($behavior) {
-        	die('test');
-        	echo $this->name;
+        $parent->route('Service1B', 'Service2B', 'Test Behavior', function($behavior) {
+        	die(get_class($this));
         });
 
-        $parent->service('Service1')->boost('Test Behavior');
+        // die($parent->service('Service1B')->name());
+
+        $parent->service('Service1B')->boost('Test Behavior');
     }
 
 	public function testServicesCanDispatchLocalizedEvents()
@@ -110,7 +111,7 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 		$this->object->test_var = "bar";
 
 		$handler = new Handler($behavior, (function( $data ) {
-			echo $this->test_var;			
+			echo $this->test_var;
 		})->bindTo($this->object, $this->object));
 
 		$this->object->register('testService', $handler);
@@ -132,9 +133,9 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 
 		$this->object->test_var = "bar";
 
-		$handler = new Handler($behavior, function( $data ) {
+		$handler = new Handler($behavior, (function( $data ) use ($test_var){
 			echo $test_var;
-		});
+		})->bindTo($this->object, $this->object));
 
 		$this->object->register('testService', $handler);
 
@@ -152,7 +153,7 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 		
 		$this->object->register('testService', new Handler(new Behavior('DoFirst'), function() { $this->dispatch('DoSecond'); }), Service::LOCAL_LEVEL);;
 
-		$this->object->register('testService', new Handler(new Behavior('DoSecond'), function($data) { echo get_class($data->_target); }), Service::LOCAL_LEVEL);
+		$this->object->register('testService', new Handler(new Behavior('DoSecond'), function($behavior) { echo get_class($behavior->target); }), Service::LOCAL_LEVEL);
 
 		$this->object->message('DoFirst');
 	}
@@ -168,7 +169,7 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 
 		$this->object->register('testService', new Handler(new Behavior('DoFirst'), function() { $this->dispatch('DoSecond'); }), Service::SCOPE_LEVEL);
 
-		$this->object->register('testService', new Handler(new Behavior('DoSecond'), function($data) { echo get_class($data->_target); }), Service::SCOPE_LEVEL);
+		$this->object->register('testService', new Handler(new Behavior('DoSecond'), function($behavior) { echo get_class($behavior->target); }), Service::SCOPE_LEVEL);
 
 		$this->object->message('DoFirst');
 	}

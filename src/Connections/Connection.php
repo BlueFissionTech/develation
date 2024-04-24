@@ -89,7 +89,7 @@ abstract class Connection extends Obj implements IConfigurable
         $this->behavior(new Event( Event::SUCCESS ), function($behavior, $args) {
             $this->status(self::STATUS_SUCCESS);
 
-            $args = $args ?? $behavior->_context;
+            $args = $args ?? $behavior->context;
             $action = '';
 
             if ($args && $args instanceof Meta ) {
@@ -114,7 +114,7 @@ abstract class Connection extends Obj implements IConfigurable
         });
 
         $this->behavior(new Event( Event::FAILURE ), function($behavior, $args) {
-            $args = $args ?? $behavior->_context;
+            $args = $args ?? $behavior->context;
             $action = '';
 
             if ($args && $args instanceof Meta ) {

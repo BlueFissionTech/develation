@@ -19,7 +19,7 @@ use BlueFission\Behavioral\Behaviors\Meta;
  * This class extends the Connection class and implements the IConfigurable interface.
  * It is used for establishing a connection to a MySQL database and performing queries.
  */
-class MysqlLink extends Connection implements IConfigurable
+class MySQLLink extends Connection implements IConfigurable
 {
     // Constants for different types of queries
     const INSERT = 1;
