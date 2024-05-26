@@ -125,4 +125,13 @@ class NumTest extends ValTest {
 
 		$this->assertEquals(30, $amount);
 	}
+
+	public function testRomanNumerals()
+	{
+		$roman = Num::rom(2012);
+		$this->assertEquals('MMXII', $roman);
+
+		$roman = Num::rom(756);
+		$this->assertEquals('DCCLVI', $roman);
+	}
 }

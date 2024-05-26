@@ -41,13 +41,14 @@ class Str extends Val implements IVal {
 		if ( $this->_type ) {
 			if (is_array($this->_data)) {
 				$maybeString = implode('', $this->_data);
-				if (Str::is($maybeString)) {
+				if (is_string($maybeString)) {
 					$this->_data = $maybeString;
 				}
+				$this->trigger(Event::CHANGE);
 			} else {
 				$this->_data = (string)$this->_data;
+				$this->trigger(Event::CHANGE);
 			}
-			$this->trigger(Event::CHANGE);
 		}
 
 		return $this;
@@ -361,7 +362,7 @@ class Str extends Val implements IVal {
 	public function _has(string $needle): bool {
 		$haystack = $this->_data;
 
-		return (strpos($haystack, $needle) !== false);
+		return str_contains($haystack, $needle);
 	}
 
 	/**

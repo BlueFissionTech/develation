@@ -88,7 +88,7 @@ class Mapping {
 		self::add($root.'/'.$package."/$".$idField, [$controller, 'find'], $name.'.get', 'get')->gateway($gateway);
 		self::add($root.'/'.$package, [$controller, 'save'], $name.'.save', 'post')->gateway($gateway);
 		self::add($root.'/'.$package."/$".$idField, [$controller, 'update'], $name.'.update', 'post')->gateway($gateway);
-		// self::add($root.$package."/$".$idField, [$controller, 'delete'], $name.'.delete', 'get')->gateway($gateway);
+		self::add($root.'/'.$package."/$".$idField, [$controller, 'delete'], $name.'.delete', 'delete')->gateway($gateway);
 	}
 
 	/**

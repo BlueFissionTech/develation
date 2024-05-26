@@ -105,7 +105,6 @@ class Storage extends Data implements IData
 		if ( Val::isNotNull($this->_source) ) {
 			$this->perform( Event::ACTIVATED );
 		}
-
 		return $this;
 	}
 	

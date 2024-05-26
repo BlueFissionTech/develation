@@ -3,7 +3,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   backupGlobals="false" bootstrap="vendor/autoload.php"
   colors="true"
-  processIsolation="false"
+  processIsolation="true"
   stopOnFailure="false"
   xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.1/phpunit.xsd"
   cacheDirectory=".phpunit.cache"

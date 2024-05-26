@@ -838,6 +838,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 							$this->_broadcastChain[$this->_depth] = $senderName;
 							
 							$this->_broadcastedEvents[$senderName][] = $name;
+
 							$this->message( $recipient['recipient'], $behavior, $this->_last_args, $recipient['callback'] );
 						}
 					}

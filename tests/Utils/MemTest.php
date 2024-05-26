@@ -25,6 +25,7 @@ class MemTest extends TestCase
     public function testFlushRemovesUnusedObjects() {
         $object = new \stdClass();
         $id = spl_object_hash($object);
+        Mem::threshold(1); // Set threshold to 1 second
         Mem::register($object, $id);
 
         // Simulate passage of time and not using the object
@@ -48,16 +49,29 @@ class MemTest extends TestCase
     }
 
     public function testWakeupAndSleep() {
+        chdir(__DIR__); // Change to current directory (since Mem uses relative paths to save audit 
+
         $object = new \stdClass();
         $id = spl_object_hash($object);
+        $storage = new \BlueFission\Data\Storage\Disk([
+            'location' => '../../testdirectory',
+            'name' => 'mempool.txt'
+        ]);
+        $storage->activate();
+        Mem::setStorage($storage);
+        Mem::threshold(300); // Set threshold to 300 seconds
         Mem::register($object, $id);
 
         Mem::sleep($id);
         $audit = Mem::audit();
         $this->assertFalse($audit[$id]['used'], "The object should be marked as not used after sleep.");
 
+        $object = Mem::get($id);
+        $this->assertTrue(empty($object), "The object should not be available before wakeup.");
+
         Mem::wakeup($id);
-        $audit = Mem::audit();
-        $this->assertTrue($audit[$id]['used'], "The object should be marked as used after wakeup.");
+        $object = Mem::get($id);
+        $this->assertFalse(empty($object), "The object should be available after wakeup.");
+
     }
 }

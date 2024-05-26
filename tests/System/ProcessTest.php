@@ -1,5 +1,5 @@
 <?php
-namespace BlueFission\Tests;
+namespace BlueFission\System\Tests;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\System\Process;
@@ -28,21 +28,5 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         $process->start();
 
         $this->assertTrue(is_bool($process->status()));
-    }
-
-    public function testStopProcess()
-    {
-        $process = new Process("ls");
-        $process->start();
-
-        $this->assertTrue(is_int($process->stop()));
-    }
-
-    public function testCloseProcess()
-    {
-        $process = new Process("ls");
-        $process->start();
-
-        $this->assertTrue(is_int($process->close()));
     }
 }

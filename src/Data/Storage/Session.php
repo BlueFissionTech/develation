@@ -3,6 +3,7 @@ namespace BlueFission\Data\Storage;
 
 use BlueFission\Str;
 use BlueFission\Num;
+use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
 
@@ -45,7 +46,7 @@ class Session extends Storage implements IData
 	/**
 	 * Activates the session.
 	 */
-	public function activate( ): Obj
+	public function activate( ): IObj
 	{
 		$path = $this->config('location');
 		$name = $this->config('name') ? (string)$this->config('name') : Str::random();

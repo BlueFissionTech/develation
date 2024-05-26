@@ -13,6 +13,7 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 
  	static $classname = 'BlueFission\Services\Service';
  	protected $object;
+ 	public $test_var;
 
 	public function setUp(): void
 	{
@@ -48,7 +49,7 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
         $parent->delegate('Service2B', $service2);
 
         $parent->route('Service1B', 'Service2B', 'Test Behavior', function($behavior) {
-        	die(get_class($this));
+        	echo 'Test';
         });
 
         // die($parent->service('Service1B')->name());
@@ -106,13 +107,13 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 
 		$this->object->scope = $this;
 
-		$test_var = "foo";
+		$this->test_var = "foo";
 
 		$this->object->test_var = "bar";
 
-		$handler = new Handler($behavior, (function( $data ) {
+		$handler = new Handler($behavior, function( $data ) {
 			echo $this->test_var;
-		})->bindTo($this->object, $this->object));
+		});
 
 		$this->object->register('testService', $handler);
 
@@ -129,13 +130,13 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 
 		$behavior = new Behavior('Test behavior');
 
-		$test_var = "foo";
+		$this->test_var = "foo";
 
 		$this->object->test_var = "bar";
 
-		$handler = new Handler($behavior, (function( $data ) use ($test_var){
-			echo $test_var;
-		})->bindTo($this->object, $this->object));
+		$handler = new Handler($behavior, function( $data ) {
+			echo $this->test_var;
+		});
 
 		$this->object->register('testService', $handler);
 
@@ -146,12 +147,13 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 	{
 		$this->expectOutputString('BlueFission\Services\Service');
 
-		$this->object->type = new class extends Obj {
-			use Configurable;
-		};
-		// $this->object->scope = $this->object->type;
+		$this->object->type = 'BlueFission\Services\Service';
+		// $this->object->type = new class extends Obj {
+		// 	use Configurable;
+		// };
+		$this->object->scope = $this->object;
 		
-		$this->object->register('testService', new Handler(new Behavior('DoFirst'), function() { $this->dispatch('DoSecond'); }), Service::LOCAL_LEVEL);;
+		$this->object->register('testService', new Handler(new Behavior('DoFirst'), function() { $this->message('DoSecond'); }), Service::LOCAL_LEVEL);;
 
 		$this->object->register('testService', new Handler(new Behavior('DoSecond'), function($behavior) { echo get_class($behavior->target); }), Service::LOCAL_LEVEL);
 
@@ -160,11 +162,10 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 
 	public function testServicesUseScopedTargetOnDispatch()
 	{
-		$this->expectOutputString('Bluefission\Behavioral\Configurable');
+		$this->expectOutputString('BlueFission\Obj');
 
-		$this->object->type = new class extends Obj {
-			use Configurable;
-		};
+		$this->object->type = Obj::class;
+
 		$this->object->scope = $this->object->type;
 
 		$this->object->register('testService', new Handler(new Behavior('DoFirst'), function() { $this->dispatch('DoSecond'); }), Service::SCOPE_LEVEL);
@@ -182,8 +183,9 @@ class ServiceTest extends \PHPUnit\Framework\TestCase {
 			use Configurable;
 		};
 
-		$this->object->call('field', array('test', 'foobar'));
-		echo $this->object->call('field', array('test'));
+		$this->object->instance();
 
+		$this->object->call('field', ['test', 'foobar']);
+		echo $this->object->call('field', ['test']);
 	}
 }

@@ -3,6 +3,7 @@ namespace BlueFission\Services;
 
 use ReflectionClass;
 use BlueFission\Val;
+use BlueFission\Str;
 use BlueFission\Obj;
 use BlueFission\Arr;
 use BlueFission\Behavioral\IDispatcher;
@@ -168,10 +169,8 @@ class Service extends Obj implements IDispatcher {
 	    if ($instance instanceof IDispatcher && is_callable([$instance, 'behavior'])) {
 	        $instance->dispatch($behavior, $args);
 	        if ($callback) {
-	        	if ($instance instanceof Service) {
-	        		$this->_response = $instance->call($callback, $args);
-	        	} else {
-	        		$this->_response = $this->call($callback, $args);
+	        	if (is_callable($callback)) {
+	        		$this->_response = call_user_func_array($callback, $args);
 	        	}
 	        }
 	    } else {
@@ -206,7 +205,7 @@ class Service extends Obj implements IDispatcher {
 	 */
 	public function register($name, $handler, $level = self::LOCAL_LEVEL, $priority = 0)
 	{
-	    $registration = array('handler' => $handler, 'level' => $level, 'priority' => $priority);
+	    $registration = ['handler' => $handler, 'level' => $level, 'priority' => $priority];
 	    $this->_registrations[$name][] = $registration;
 	    
 	    if (isset($this->instance) && $this->instance instanceof $this->type) {
@@ -222,16 +221,16 @@ class Service extends Obj implements IDispatcher {
 	 * @return mixed The prepared callback
 	 */
 	private function prepareCallback( $callback ) {
-		if ( \is_object($callback) ) {
+		if ( is_object($callback) ) {
 			$callback = $callback->bindTo($this->scope, $this->instance);
-		} elseif (\is_string($callback) && (\strpos($callback, '::') !== false)) {
-			$function = \explode('::', $callback);
-			$callback = array($callback[0], $function[1]);
-		} elseif (\is_string($callback)) {
-			$callback = array($this->instance, $callback);
+		} elseif (Str::is($callback) && (Str::pos($callback, '::') !== false)) {
+			$function = explode('::', $callback);
+			$callback = [$callback[0], $function[1]];
+		} elseif (Str::is($callback)) {
+			$callback = [$this->instance, $callback];
 		}
 
-		if (\is_array($callback) && count( $callback ) == 2) {
+		if (Arr::is($callback) && Arr::size( $callback ) == 2) {
 			if ( $this->instance instanceof $callback[0] ) {
 				$callback[0] = $this->instance;
 			}
@@ -249,27 +248,27 @@ class Service extends Obj implements IDispatcher {
 		$level = $registration['level'];
 		$handler = $registration['handler'];
 		$callback = $handler->callback();
-		$this->scope = (\is_object($this->scope)) ? $this->scope : $this->instance;
+		$this->scope = (is_object($this->scope)) ? $this->scope : $this->instance;
 
 		$callback = $this->prepareCallback($callback);
 
-		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof IDispatcher && is_callable( array( $this->scope, 'behavior')) )
+		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof IDispatcher && is_callable( [ $this->scope, 'behavior' ] ) )
 		{
 			if ( $this->instance instanceof IDispatcher && is_callable( array( $this->instance, 'behavior')) ) {	
 				$this->instance->behavior($handler->name(), $callback);
+				$this->echo($this->instance, $handler->name());
 			} else {
 				$this->scope->behavior($handler->name(), $callback);
 			}
+
 			$this->scope->behavior($handler->name(), $this->message);
-		}
-		elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof IDispatcher && is_callable( array( $this->instance, 'behavior')) )
-		{
+		} elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof IDispatcher && is_callable( [ $this->instance, 'behavior' ] ) ) {
 			$this->instance->behavior($handler->name(), $callback);
 			$this->instance->behavior($handler->name(), $this->message);
 			$this->instance->behavior($handler->name(), $this->broadcast);
 		} else {
 			$this->behavior($handler->name(), $callback);
-		}		
+		}
 	}
 
 	public function response(): ?string {

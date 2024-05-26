@@ -81,13 +81,20 @@ class Func extends Val implements IVal {
 		}
 	}
 
-	public function __invoke( $value = null )
+	public function call()
 	{
 		$args = func_get_args();
+		
 		if ( !is_callable($this->_data) ) {
 			$this->trigger(Event::EXCEPTION);
 			throw new \Exception("The value is not callable");
 		}
 		return call_user_func_array($this->_data, $args);
+	}
+
+	public function __invoke( $value = null )
+	{
+		$args = func_get_args();
+		return $this->call(...$args);
 	}
 }

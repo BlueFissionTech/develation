@@ -408,7 +408,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		{
 			// get email from User Name <email@address> format
 			preg_match($filter, $address[$i] ?? '', $matches);
-			$email = $matches[0];
+			$email = $matches[0] ?? null;
 
 			$email = $email ?? '';
 			$match = preg_match($pattern, $email);

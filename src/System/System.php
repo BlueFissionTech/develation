@@ -3,6 +3,7 @@
 namespace BlueFission\System;
 
 use BlueFission\Val;
+use BlueFission\System\Machine;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Behaviors\Meta;
@@ -54,30 +55,46 @@ class System implements IDispatcher {
 	 * @return boolean
 	 */
 	public function isValidCommand($command) {
-		// Figure out a way to check if a command is valid without executing it, since double or accidental executions can be dangrous!
-	    $returnVal = exec($command . ' 2>&1', $output, $returnVal);
-	    return !$returnVal;
+		// check is the command is a system registered command
+		$valid = true;
+
+		if (empty($command)) {
+			return false;
+		}
+
+		// Get first word of command
+		$command = explode(' ', $command)[0];
+
+		$command = escapeshellcmd($command);
+		if ( (new Machine())->getOS() == 'Windows' ) {
+			$valid = shell_exec("help $command");
+			// Parse the output to see if we got a help output or an error ("This command is not supported by the help utility")
+			$valid = strpos($valid, 'is not supported') === false;
+		} else {
+			$valid = shell_exec("which $command");
+			// Parse the output to see if we got a help output or an error
+			$valid = strpos($valid, 'not found') === false;
+		}
+
+
+		return $valid;
 	}
 
 	/**
 	* Execute a command
 	*
 	* @param string $command  The command to execute
-	* @param boolean $background  Execute command in background
 	* @param array $options Additional options for the command
 	*
 	* @throws \InvalidArgumentException when $command is empty or not a string
 	*/
-	public function run( $command, $background = false, $options = [] ) {
+	public function run( $command, $options = [] ) {
 		$this->trigger(Action::RUN);
 		if (!$command) {
 			$message = "Command cannot be empty!";
 			$this->trigger(Event::EXCEPTION, new Meta( when: Action::RUN, info: $message));
 			throw( new \InvalidArgumentException($message) );
 		}
-
-		// if(!$this->isValidCommand($command))
-		// 	throw( new \InvalidArgumentException("Invalid command!") );
 
 		if (!Val::isEmpty($options)) {
 			foreach ($options as $opt) {
@@ -110,12 +127,10 @@ class System implements IDispatcher {
             $this->_status = "Process completed with output: " . $args['output'];
         });
 
-		$this->_process[] = $process;
-		end($this->_process)->start();
+		$this->_processes[] = $process;
+		end($this->_processes)->start();
 
-		
-
-		$this->_response = end($this->_process)->output();
+		$this->_response = end($this->_processes)->output();
 
 		return $process;
 	}
@@ -128,9 +143,6 @@ class System implements IDispatcher {
         	$this->trigger(Event::EXCEPTION, new Meta(when: Action::START, info: $message));
             throw( new \InvalidArgumentException($message) );
         }
-
-        // if(!$this->isValidCommand($command))
-        //     throw( new \InvalidArgumentException("Invalid command!") );
 
         if (!Val::isEmpty($options)) {
             foreach ($options as $opt) {
@@ -225,7 +237,7 @@ class System implements IDispatcher {
 
 	public function isOutputAvailable(int $processId): bool
 	{
-	    $process = $this->processes[$processId] ?? null;
+	    $process = $this->_processes[$processId] ?? null;
 
 	    if (!$process) {
 	        return false;

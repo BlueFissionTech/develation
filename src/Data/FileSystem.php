@@ -612,24 +612,24 @@ class FileSystem extends Data implements IData {
 			return $this->config('filter');
 		}
 		
-		if ( is_array($type) ) {
+		if ( Arr::is($type) ) {
 			$array = $type;
 			$type = 'custom';
 		}
 		
 		switch ($type) {
 		case 'image':
-			$extensions = array('.gif','.jpeg','.tiff','.jpg','.tif','.png','.bmp');
+			$extensions = ['.gif','.jpeg','.tiff','.jpg','.tif','.png','.bmp'];
 		  	break;
 		case 'document':
-			$extensions = array('.pdf','.doc','.docx','.txt');
+			$extensions = ['.pdf','.doc','.docx','.txt'];
 		  	break;
 		default:
 		case 'file':
-			$extensions = array();
+			$extensions = [];
 			break;
 		case 'web':
-			$extensions = array('.htm','.html','.pl','.txt');
+			$extensions = ['.htm','.html','.pl','.txt'];
 			break;
 		case 'custom':
 			$extensions = $array;

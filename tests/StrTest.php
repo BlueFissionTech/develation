@@ -21,9 +21,9 @@ class StrTest extends ValTest {
 
 	public function testRandomStringSeldomRepeats()
 	{
-		$strings = array();
+		$strings = [];
 		for ($i = 0; $i < 100; $i++ ) {
-			$string = $this->object->random();
+			$string = $this->object->clear()->random()->val();
 			$this->assertFalse(in_array($string, $strings));
 			$strings[] = $string;
 		}

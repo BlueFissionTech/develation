@@ -10,7 +10,7 @@ class StorageTest extends \PHPUnit\Framework\TestCase {
 
  	static $classname = 'BlueFission\Data\Storage\Storage';
 
- 	static $configuration = array( );
+ 	static $configuration = [];
 
  	protected $object;
 	

@@ -234,6 +234,11 @@ class Date extends Val implements IVal
 		return $time;
 	}
 
+	public static function now()
+	{
+		return new Date();
+	}
+
 	/**
 	 * set the format for the date
 	 *

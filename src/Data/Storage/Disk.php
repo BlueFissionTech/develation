@@ -50,13 +50,14 @@ class Disk extends Storage implements IData
 		$filesystem = new FileSystem( [
 			'mode'=>'c+',
 			'filter'=>'file',
-			'root'=>realpath($path)
+			'root'=>$path
 		] );
 
-		$filesystem->basename = $name;
+		$filesystem->filename = $name;
 		$filesystem
 		->when(Event::CONNECTED, (function ($b, $m) use ($filesystem) {
 			$this->_source = $filesystem;
+
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
 		})->bindTo($this, $this))
 		->when(Event::FAILURE, (function ($b, $m) {
@@ -110,6 +111,7 @@ class Disk extends Storage implements IData
 	{	
 		$source = $this->_source;
 		if (!$source) {
+			$status = self::STATUS_FAILED;
 			$this->status( $status );
 
 			return;
@@ -134,6 +136,7 @@ class Disk extends Storage implements IData
 	{
 		$source = $this->_source;
 		if (!$source) {
+			$status = self::STATUS_FAILED;
 			$this->status( $status );
 			return;
 		}

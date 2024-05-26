@@ -3,6 +3,7 @@ namespace BlueFission\System;
 
 use BlueFission\Val;
 use BlueFission\Str;
+use BlueFission\Date;
 
 /**
  * Class Machine
@@ -66,8 +67,14 @@ class Machine {
             // Windows does not have a built-in, easy way to fetch uptime from CLI
             // Fallback to systeminfo command, parse output for uptime
             $this->_system->run('systeminfo | find "System Boot Time:"');
-            $uptime = $this->_system->response();
-            // Parsing the uptime from systeminfo output would be done here
+            $boottime = $this->_system->response();
+            
+            // extract the date from the line
+            $boottimeParts = explode(":", $boottime);
+            $boottime = Str::trim($boottimeParts[1] . ":" . $boottimeParts[2] . ":" . $boottimeParts[3]);
+
+            $uptime = Date::diff($boottime, Date::now()->val(), 'seconds');
+
             return $uptime;
         } else {
             $uptime = explode(" ", file_get_contents("/proc/uptime"));
@@ -84,7 +91,12 @@ class Machine {
         if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting CPU usage
             $this->_system->run("WMIC CPU GET LoadPercentage");
-            return $this->_system->response();
+            $response = $this->_system->response();
+
+            //extract the numerical value from the response
+            $cpuUsage = preg_replace("/[^0-9]/", "", $response);
+
+            return $cpuUsage;
         } else {
             $load = \sys_getloadavg();
             return $load[0];

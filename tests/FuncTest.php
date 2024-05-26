@@ -75,13 +75,6 @@ class FuncTest extends ValTest
 		$this->assertEquals('test', $func());
 	}
 
-	public function testConstructCallableClosureWithArgs()
-	{
-		$func = new Func(function($arg) { return $arg; });
-		$this->assertInstanceOf(Func::class, $func);
-		$this->assertEquals('test', $func('test'));
-	}
-
 	public function testConstructCallableClosureWithArgsAndReturn()
 	{
 		$func = new Func(function($arg) { return $arg; });

@@ -126,6 +126,7 @@ class DevElation {
         if ($name) {
             return $name;
         }
+        
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         $caller = $backtrace[1] ?? null;
 
@@ -133,6 +134,9 @@ class DevElation {
             $class = str_replace(__NAMESPACE__ . '\\', '', $caller['class']);
             $function = $caller['function'];
             return strtolower($class . '.' . $function);
+        } else { // if this is a function rather than a method with a class
+            $function = $caller['function'];
+            return strtolower($function);
         }
 
         return 'global.hook';
