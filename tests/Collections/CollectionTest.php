@@ -29,12 +29,12 @@ class CollectionTest extends \PHPUnit\Framework\TestCase {
 
  	public function testRetrievalOfValues()
  	{
- 		$array = array(
+ 		$array = [
  			'var1'=>"I'm a variable",
  			'var2'=>"I'm a variable, too",
  			'var3'=>"I'm a variable as well",
  			'var4'=>"Guess what, I'm a variable",
- 		);
+ 		];
 
  		$object = new Collection($array);
 
@@ -53,12 +53,12 @@ class CollectionTest extends \PHPUnit\Framework\TestCase {
 
  	public function testIsArrayTraversable()
  	{
- 		$array = array(
+ 		$array = [
  			'var1'=>"I'm a variable",
  			'var2'=>"I'm a variable, too",
  			'var3'=>"I'm a variable as well",
  			'var4'=>"Guess what, I'm a variable",
- 		);
+ 		];
 
  		$object = new Collection($array);
 

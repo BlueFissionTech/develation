@@ -98,7 +98,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 *
 	 * @var mixed
 	 */
-	private $context;
+	private $_context;
 
 	/**
 	 * The connection for this application
@@ -954,8 +954,10 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		$constructor = new \ReflectionMethod($class, '__construct');
 
 		$dependencies = [];
-		
-		$dependencies = $this->handleDependencies($constructor);
+
+		$arguments = $this->boundArguments($class);
+
+		$dependencies = $this->handleDependencies($constructor, $arguments);
 
 		$values = array_values($dependencies);
 
@@ -1073,6 +1075,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	{
 		$parameters = $functionOrMethod->getParameters();
 		$dependencies = [];
++		
+		$varTypes = ['string', 'int', 'float', 'bool', 'array', 'object', 'callable', 'iterable', 'void', 'null'];
+
 		foreach ($parameters as $parameter) {
 			$callingClass = $functionOrMethod->class ?? '';
 
@@ -1098,7 +1103,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			}
 
 			// If the dependency class exists, get its dependencies and create an instance of it
-			if ( $dependencyClass ) {
+			if ( in_array($dependencyClass, $varTypes) ) {
++				$dependencies[$dependencyName] = $arguments[$dependencyName] ?? ( $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null );
++			} elseif ( $dependencyClass ) {
 				$values = array_values($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
 				$dependencies[$dependencyName] = 
 					$arguments[$dependencyName] ?? 

@@ -130,6 +130,20 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	}
 
 	/**
+	 * Unshifts the first element onto the data array
+	 */
+	public function _unshift( mixed $value ): IVal
+	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+
+		array_unshift($this->_data, $value);
+
+		return $this;
+	}
+
+	/**
 	 * Pops the last element off of the data array
 	 * @return mixed the last element
 	 */
