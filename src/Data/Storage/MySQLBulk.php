@@ -13,7 +13,7 @@ use BlueFission\Collections\Group;
  * 
  * @package BlueFission\Data\Storage
  */
-class MySQLBulk extends Mysql implements IData
+class MySQLBulk extends MySQL implements IData
 {
     /**
      * The stored data as an array of rows.
@@ -110,9 +110,8 @@ class MySQLBulk extends Mysql implements IData
 	 * @param mixed $data (optional) The data to be set as the contents.
 	 * @return mixed The current contents of the result.
 	 */
-	public function contents($data = null)
+	public function contents($data = null): mixed
 	{
 		return $this->_rows->current();
 	}
-
 }
