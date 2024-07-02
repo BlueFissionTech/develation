@@ -1075,7 +1075,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	{
 		$parameters = $functionOrMethod->getParameters();
 		$dependencies = [];
-+		
+		
 		$varTypes = ['string', 'int', 'float', 'bool', 'array', 'object', 'callable', 'iterable', 'void', 'null'];
 
 		foreach ($parameters as $parameter) {
