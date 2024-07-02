@@ -14,7 +14,7 @@ use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
- * Class MysqlLink
+ * Class MySQLLink
  *
  * This class extends the Connection class and implements the IConfigurable interface.
  * It is used for establishing a connection to a MySQL database and performing queries.

@@ -7,7 +7,7 @@ use BlueFission\Str;
 use BlueFission\Date;
 use BlueFission\IObj;
 use BlueFission\Data\IData;
-use BlueFission\Connections\Database\MysqlLink;
+use BlueFission\Connections\Database\MySQLLink;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\Storage\Behaviors\StorageAction;
@@ -80,7 +80,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function activate(): IObj
 	{
-		$this->_source = new MysqlLink( );
+		$this->_source = new MySQLLink( );
 		$this->_source->database( $this->config('location') );
 		// load object fields and related data
 		$this->fields();
@@ -567,7 +567,7 @@ class MySQL extends Storage implements IData
 		$tables = Arr::toArray( $this->config(self::NAME_FIELD) );
 		$this->config(self::NAME_FIELD, $tables);
 
-		if ( MysqlLink::tableExists( current( $this->config(self::NAME_FIELD) ) ) )
+		if ( MySQLLink::tableExists( current( $this->config(self::NAME_FIELD) ) ) )
 			return $this;
 		
 		$types = [];
@@ -632,7 +632,7 @@ class MySQL extends Storage implements IData
 			
 			if ($this->config('set_defaults') && is_scalar($b))
 			{
-				$type .= " DEFAULT ".MysqlLink::sanitize($b);
+				$type .= " DEFAULT ".MySQLLink::sanitize($b);
 			}
 			
 			if ( Str::lower(Str::sub( $a, -2)) == 'id' && $type == "INT" && $key == '')
@@ -709,7 +709,7 @@ class MySQL extends Storage implements IData
 			$tables = $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : ( $this->tables() ? $this->tables() : get_class($this) );
 
 			$tables = Arr::toArray( $tables );
-			//if ( MysqlLink::tableExists( current( $tables ) ) )
+			//if ( MySQLLink::tableExists( current( $tables ) ) )
 				//return []
 			
 			$this->perform( State::DRAFT );
@@ -1097,14 +1097,14 @@ class MySQL extends Storage implements IData
 					{
 						if ( Val::isNotNull( $a ) ) 
 						{
-							$where_r[] = "MATCH($match_str) AGAINST (" . MysqlLink::sanitize($a) . ")";
+							$where_r[] = "MATCH($match_str) AGAINST (" . MySQLLink::sanitize($a) . ")";
 						}
 					}
 					$where = implode(' OR ', $where_r);
 				} 
 				else 
 				{
-					$where = "MATCH($match_str) AGAINST (" . MysqlLink::sanitize($value) . ")";
+					$where = "MATCH($match_str) AGAINST (" . MySQLLink::sanitize($value) . ")";
 				}
 			} 
 			elseif ( strtoupper( $condition_str ) == 'IN' ) 
@@ -1182,7 +1182,7 @@ class MySQL extends Storage implements IData
 							}
 							
 							$temp_where = $table . ".$member " . $condition_str;
-							$temp_where .= MysqlLink::sanitize( $a );	
+							$temp_where .= MySQLLink::sanitize( $a );	
 							$where_r[] = $temp_where;
 							$count++;
 						}
@@ -1209,7 +1209,7 @@ class MySQL extends Storage implements IData
 					{
 						$value = "%$value%";
 					}
-					$where .= MysqlLink::sanitize( $value );	
+					$where .= MySQLLink::sanitize( $value );	
 				}
 			}
 			if ( Val::isNotNull( $where ) ) $where = "($where) ";
@@ -1393,7 +1393,7 @@ class MySQL extends Storage implements IData
 	 * @return bool True if the value is in the database, false otherwise
 	 */
 	public static function inDB( $field, $value, $table ) {
-		$db = new MysqlLink( [ 'table'=>$table ] );
+		$db = new MySQLLink( [ 'table'=>$table ] );
 		if ( Val::isNotNull ($value) )
 		{ 
 			//$db->field($field, $value);
