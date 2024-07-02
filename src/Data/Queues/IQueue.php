@@ -14,7 +14,7 @@ interface IQueue {
 	 *
 	 * @return bool Returns true if the queue is empty, otherwise false.
 	 */
-	public static function is_empty($queue);
+	public static function isEmpty($queue);
 
 	/**
 	 * Remove an item from the front of the queue.

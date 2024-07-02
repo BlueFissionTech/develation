@@ -3,11 +3,12 @@ namespace BlueFission\Tests\Collections;
 
 use BlueFission\Collections\Collection;
  
-class CollectionTest extends \PHPUnit_Framework_TestCase {
+class CollectionTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Collection';
+ 	protected $object;
 
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname();
 	}
@@ -28,12 +29,12 @@ class CollectionTest extends \PHPUnit_Framework_TestCase {
 
  	public function testRetrievalOfValues()
  	{
- 		$array = array(
+ 		$array = [
  			'var1'=>"I'm a variable",
  			'var2'=>"I'm a variable, too",
  			'var3'=>"I'm a variable as well",
  			'var4'=>"Guess what, I'm a variable",
- 		);
+ 		];
 
  		$object = new Collection($array);
 
@@ -52,12 +53,12 @@ class CollectionTest extends \PHPUnit_Framework_TestCase {
 
  	public function testIsArrayTraversable()
  	{
- 		$array = array(
+ 		$array = [
  			'var1'=>"I'm a variable",
  			'var2'=>"I'm a variable, too",
  			'var3'=>"I'm a variable as well",
  			'var4'=>"Guess what, I'm a variable",
- 		);
+ 		];
 
  		$object = new Collection($array);
 

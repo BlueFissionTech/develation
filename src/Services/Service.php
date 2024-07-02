@@ -2,9 +2,10 @@
 namespace BlueFission\Services;
 
 use ReflectionClass;
-use BlueFission\DevValue;
-use BlueFission\DevObject;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Obj;
+use BlueFission\Arr;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -14,7 +15,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
  *
  * @package BlueFission\Services
  */
-class Service extends DevObject implements IDispatcher {
+class Service extends Obj implements IDispatcher {
 	use Dispatches;
 
 	/**
@@ -50,13 +51,13 @@ class Service extends DevObject implements IDispatcher {
 	/**
 	 * @var array $data
 	 */
-	protected $_data = array(
+	protected $_data = [
 		'name'=>'',
 		'arguments'=>'',
 		'instance'=>'',
 		'type'=>'',
 		'scope'=>'',
-	);
+	];
 
 	/**
 	 * Service constructor.
@@ -79,7 +80,7 @@ class Service extends DevObject implements IDispatcher {
 			$service = $this->instance;
 		} else {
 			$reflection_class = new ReflectionClass($this->type);
-			$args = DevArray::toArray( $this->arguments );
+			$args = Arr::toArray( $this->arguments );
     		$this->instance = $reflection_class->getConstructor() ? $reflection_class->newInstanceArgs( $args ) : $reflection_class->newInstanceWithoutConstructor();
 
 			foreach ($this->_registrations as $name=>$registrations) {
@@ -115,7 +116,7 @@ class Service extends DevObject implements IDispatcher {
 	 */
 	public function parent($object = null) 
 	{
-	    if (DevValue::isNotNull($object)) {
+	    if (Val::isNotNull($object)) {
 	        $this->_parent = $object;
 	    }
 
@@ -130,7 +131,7 @@ class Service extends DevObject implements IDispatcher {
 	public function broadcast($behavior) 
 	{
 	    if ($behavior instanceof Behavior) {
-	        $behavior->_target = $this;
+	        $behavior->target = $this;
 	    }
 
 	    $this->dispatch($behavior);
@@ -144,8 +145,15 @@ class Service extends DevObject implements IDispatcher {
 	public function boost($behavior) 
 	{
 	    $parent = $this->parent();
-	    if ($parent && $parent instanceof \BlueFission\Services\Application) {
+
+	    if (!$parent) {
+	    	$this->broadcast($behavior);
+	    } elseif ($parent instanceof Application) {
 	        $parent->boost($behavior);
+	    } elseif ($parent instanceof Service) {
+	        $parent->boost($behavior);
+	    } elseif ($parent instanceof IDispatcher) {
+	        $parent->dispatch($behavior);
 	    }
 	}
 
@@ -155,13 +163,18 @@ class Service extends DevObject implements IDispatcher {
 	 * @param string $behavior  The behavior name.
 	 * @param mixed  $args      The arguments to pass to the behavior.
 	 */
-	public function message($behavior, $args = null) 
+	public function message($behavior, $args = null, $callback = null) 
 	{
 	    $instance = $this->instance();
-	    if ($instance instanceof IDispatcher && is_callable(array($instance, 'behavior'))) {
+	    if ($instance instanceof IDispatcher && is_callable([$instance, 'behavior'])) {
 	        $instance->dispatch($behavior, $args);
+	        if ($callback) {
+	        	if (is_callable($callback)) {
+	        		$this->_response = call_user_func_array($callback, $args);
+	        	}
+	        }
 	    } else {
-	        $this->_response = $this->call($behavior, $args);
+	        $this->_response = $this->call($callback ?? $behavior, $args);
 	    }
 	}
 
@@ -173,10 +186,11 @@ class Service extends DevObject implements IDispatcher {
 	 *
 	 * @return mixed  The return value of the function.
 	 */
-	public function call($call, $args)
+	public function call($call, $args = [])
 	{
-	    if (is_callable(array($this->instance, $call))) {
-	        $return = call_user_func_array(array($this->instance, $call), $args);
+	    if (is_callable([$this->instance, $call])) {
+	    	$args = new Arr($args);
+	        $return = call_user_func_array([$this->instance, $call], $args());
 	        return $return;
 	    }
 	}
@@ -191,7 +205,7 @@ class Service extends DevObject implements IDispatcher {
 	 */
 	public function register($name, $handler, $level = self::LOCAL_LEVEL, $priority = 0)
 	{
-	    $registration = array('handler' => $handler, 'level' => $level, 'priority' => $priority);
+	    $registration = ['handler' => $handler, 'level' => $level, 'priority' => $priority];
 	    $this->_registrations[$name][] = $registration;
 	    
 	    if (isset($this->instance) && $this->instance instanceof $this->type) {
@@ -207,16 +221,16 @@ class Service extends DevObject implements IDispatcher {
 	 * @return mixed The prepared callback
 	 */
 	private function prepareCallback( $callback ) {
-		if ( \is_object($callback) ) {
+		if ( is_object($callback) ) {
 			$callback = $callback->bindTo($this->scope, $this->instance);
-		} elseif (\is_string($callback) && (\strpos($callback, '::') !== false)) {
-			$function = \explode('::', $callback);
-			$callback = array($callback[0], $function[1]);
-		} elseif (\is_string($callback)) {
-			$callback = array($this->instance, $callback);
+		} elseif (Str::is($callback) && (Str::pos($callback, '::') !== false)) {
+			$function = explode('::', $callback);
+			$callback = [$callback[0], $function[1]];
+		} elseif (Str::is($callback)) {
+			$callback = [$this->instance, $callback];
 		}
 
-		if (\is_array($callback) && count( $callback ) == 2) {
+		if (Arr::is($callback) && Arr::size( $callback ) == 2) {
 			if ( $this->instance instanceof $callback[0] ) {
 				$callback[0] = $this->instance;
 			}
@@ -234,27 +248,27 @@ class Service extends DevObject implements IDispatcher {
 		$level = $registration['level'];
 		$handler = $registration['handler'];
 		$callback = $handler->callback();
-		$this->scope = (\is_object($this->scope)) ? $this->scope : $this->instance;
+		$this->scope = (is_object($this->scope)) ? $this->scope : $this->instance;
 
 		$callback = $this->prepareCallback($callback);
 
-		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof IDispatcher && is_callable( array( $this->scope, 'behavior')) )
+		if ( $level == self::SCOPE_LEVEL && $this->scope instanceof IDispatcher && is_callable( [ $this->scope, 'behavior' ] ) )
 		{
 			if ( $this->instance instanceof IDispatcher && is_callable( array( $this->instance, 'behavior')) ) {	
 				$this->instance->behavior($handler->name(), $callback);
+				$this->echo($this->instance, $handler->name());
 			} else {
 				$this->scope->behavior($handler->name(), $callback);
 			}
+
 			$this->scope->behavior($handler->name(), $this->message);
-		}
-		elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof IDispatcher && is_callable( array( $this->instance, 'behavior')) )
-		{
+		} elseif ( $level == self::LOCAL_LEVEL && $this->instance instanceof IDispatcher && is_callable( [ $this->instance, 'behavior' ] ) ) {
 			$this->instance->behavior($handler->name(), $callback);
 			$this->instance->behavior($handler->name(), $this->message);
 			$this->instance->behavior($handler->name(), $this->broadcast);
 		} else {
 			$this->behavior($handler->name(), $callback);
-		}		
+		}
 	}
 
 	public function response(): ?string {
@@ -262,8 +276,8 @@ class Service extends DevObject implements IDispatcher {
 	}
 	// public function dispatch( $behavior, $args = null ) {
 	// 	// echo "{$behavior}\n";
-	// 	if ( $behavior instanceof Behavior && $behavior->_target == $this->instance ) {
-	// 		$behavior->_target = $this;
+	// 	if ( $behavior instanceof Behavior && $behavior->target == $this->instance ) {
+	// 		$behavior->target = $this;
 	// 	}
 	// 	parent::dispatch($behavior, $args);
 	// }

@@ -2,35 +2,38 @@
 namespace BlueFission\Tests\Data\Storage;
 
 use BlueFission\Data\Storage\Storage;
+use BlueFission\Behavioral\Behaviors\Event;
  
-abstract class StorageTest extends \PHPUnit_Framework_TestCase {
+class StorageTest extends \PHPUnit\Framework\TestCase {
  
 	static $testdirectory = '../../testdirectory';
 
  	static $classname = 'BlueFission\Data\Storage\Storage';
 
- 	static $configuration = array( );
+ 	static $configuration = [];
+
+ 	protected $object;
 	
-	public function setup()
+	public function setUp(): void
 	{
 		$this->object = new static::$classname(static::$configuration);
 	}
 
 	public function testStorageCanActivate()
 	{
-		$this->object->activate();
+		$value = false;
+		$this->object->when(Event::ACTIVATED, function($b, $args) use (&$value) {
+			$value = true;
+		})->activate();
 
-		$this->assertEquals(Storage::STATUS_SUCCESSFUL_INIT, $this->object->status());
+		$this->assertTrue($value);
 	}
 
-	public function testStorageCanWriteContentOverFields()
+	public function testStorageCanRead()
 	{
 		$this->object->activate();
 
-		$this->object->var1 = 'checking';
-		$this->object->var2 = 'confirming';
-		$this->object->contents("Testing.");
-		$this->object->write();
+		$this->object->read();
 	}
 
 	public function testStorageCanWriteFields()
@@ -39,6 +42,15 @@ abstract class StorageTest extends \PHPUnit_Framework_TestCase {
 
 		$this->object->var1 = 'checking';
 		$this->object->var2 = 'confirming';
+		$this->object->write();
+	}
+
+	public function testStorageCanWriteContentOverFields()
+	{
+		$this->object->activate();
+		$this->object->var1 = 'checking';
+		$this->object->var2 = 'confirming';
+		$this->object->contents("Testing.");
 		$this->object->write();
 	}
 }

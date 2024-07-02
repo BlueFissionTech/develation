@@ -13,9 +13,49 @@ class Event extends Behavior
 	const ACTIVATED = 'OnActivated';
 	const CHANGE = 'OnChange';
 	const COMPLETE = 'OnComplete';
+	const STARTED = 'OnStarted';
 	const SUCCESS = 'OnSuccess';
 	const FAILURE = 'OnFailure';
 	const MESSAGE = 'OnMessageUpdate';
+    const CONNECTED = 'OnConnected';
+    const BLOCKED = 'OnBlocked';
+    const DISCONNECTED = 'OnDisconnected';
+    const CLEAR_DATA = 'OnClearData';
+
+    // CRUD operations
+    const CREATED = 'OnCreated';
+    const READ = 'OnRead';
+    const UPDATED = 'OnUpdated';
+    const SAVED = 'OnSaved';
+    const DELETED = 'OnDeleted';
+
+    // Data transmission
+    const SENT = 'OnSent';
+    const RECEIVED = 'OnReceived';
+
+    // State changes
+    const STATE_CHANGED = 'OnStateChanged';
+
+    // More granular system events
+    const AUTHENTICATED = 'OnAuthenticated';
+    const AUTHENTICATION_FAILED = 'OnAuthenticationFailed';
+    const SESSION_STARTED = 'OnSessionStarted';
+    const SESSION_ENDED = 'OnSessionEnded';
+
+    // Error and Exception Handling
+    const ERROR = 'OnError';
+    const EXCEPTION = 'OnException';
+
+    // More specific application events
+    const CONFIGURED = 'OnConfigured';
+    const INITIALIZED = 'OnInitialized';
+    const FINALIZED = 'OnFinalized';
+
+    // Custom application logic
+    const PROCESSED = 'OnProcessed';
+    const STOPPED = 'OnStopped';
+    const ACTION_PERFORMED = 'OnActionPerformed';
+    const ACTION_FAILED = 'OnActionFailed';
 
 	/**
 	 * Constructor for the Event class

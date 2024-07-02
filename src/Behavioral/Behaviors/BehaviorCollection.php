@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Behavioral\Behaviors;
 
+use BlueFission\Collections\ICollection;
 use BlueFission\Collections\Collection;
 
 /**
@@ -16,10 +17,12 @@ class BehaviorCollection extends Collection {
      * @param Behavior $behavior The behavior to add.
      * @param string|null $label An optional label for the behavior.
      */
-    public function add( $behavior, $label = null )
+    public function add( $behavior, $label = null ): ICollection
     {
         if (!$this->has($behavior->name()))
             parent::add( $behavior );
+
+        return $this;
     }
 
     /**

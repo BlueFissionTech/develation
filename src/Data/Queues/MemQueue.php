@@ -2,6 +2,7 @@
 namespace BlueFission\Data\Queues;
 
 use Memcached;
+use BlueFission\Collections\Collection;
 
 /**
  * Class MemQueue
@@ -22,7 +23,7 @@ class MemQueue extends Queue implements IQueue
 	/**
 	 * The default pool to be used for Memcached
 	 */
-	const MEMQ_POOL = 'localhost:11211';
+	private static $_memq_pool = 'localhost:11211';
 
 	/**
 	 * The default time-to-live value for items in the queue
@@ -48,6 +49,15 @@ class MemQueue extends Queue implements IQueue
 		if(!self::$_stack) self::init();
 		return self::$_stack;
 	}
+
+	/**
+	 * Sets the Memory pool address
+	 * 
+	 * @param string $pool The address of the Memcached pool
+	 */
+	public function setPool($pool) {
+		self::$_memq_pool = $pool;
+	}
 	
 	/**
 	 * Initializes the Memcached instance
@@ -56,7 +66,7 @@ class MemQueue extends Queue implements IQueue
 	 */
 	private static function init() {
 		$_stack = new Memcached;
-		$servers = explode(",", env('MEMQ_POOL', static::MEMQ_POOL));
+		$servers = explode(",", static::$_memq_pool);
 		foreach($servers as $server) {
 			list($host, $port) = explode(":", $server);
 			$_stack->addServer($host, $port);
@@ -70,7 +80,7 @@ class MemQueue extends Queue implements IQueue
 	 * @param string $queue
 	 * @return bool
 	 */
-	public static function is_empty($queue) {
+	public static function isEmpty($queue) {
 		$stack = self::instance();
 		$head = $stack->get($queue."_head");
 		$tail = $stack->get($queue."_tail");
@@ -136,7 +146,7 @@ class MemQueue extends Queue implements IQueue
 			$item_keys[] = $queue."_".$i;
 		$null = NULL;
 		
-		return $stack->getMulti($item_keys, $null, Memcached::GET_PRESERVE_ORDER); 
+		return new Collection( $stack->getMulti($item_keys, $null, Memcached::GET_PRESERVE_ORDER) ); 
 	}
 	
 	/**

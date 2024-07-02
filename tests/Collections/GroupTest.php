@@ -2,48 +2,54 @@
 namespace BlueFission\Tests\Collections;
 
 use BlueFission\Collections\Group;
+use BlueFission\Collections\Collection;
  
-class GroupTest extends \PHPUnit_Framework_TestCase {
+class GroupTest extends \PHPUnit\Framework\TestCase {
  
  	static $classname = 'BlueFission\Collections\Group';
+ 	protected $object;
 
-	public function setup()
+	public function setUp(): void
 	{
-		$this->object = new static::$classname();
+		$array = [
+			'entry1'=>[
+				'item1'=>1,
+				'item2'=>2,
+				'item3'=>3,
+			],
+			'entry2'=>[
+				'item1'=>1,
+				'item2'=>2,
+				'item3'=>3,
+			],
+			'entry3'=>[
+				'item1'=>1,
+				'item2'=>2,
+				'item3'=>3,
+			],
+			'entry4'=>[
+				'item1'=>1,
+				'item2'=>2,
+				'item3'=>3,
+			],
+		];
+
+		$this->object = new static::$classname($array);
 	}
 
 	public function testConversionOfAddedItems()
 	{
-		$array = array(
-			'entry1'=>array(
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			),
-			'entry2'=>array(
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			),
-			'entry3'=>array(
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			),
-			'entry4'=>array(
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			),
-		);
+		$group = $this->object;
 
-		$group = new Group( $array );
+		if (!($group instanceof Collection)) {
+			$this->fail("Group is not an instance of Collection");
+		}
 
-		$group->type('\BlueFission\Behavioral\Programmable');
+		$group->type('BlueFission\Obj');
 
 		$object = $group->get('entry2');
 
-		$this->assertEquals('BlueFission\Behavioral\Programmable', get_class($object));
+		$this->assertEquals('BlueFission\Obj', get_class($object));
 
 		$this->assertEquals(2, $object->item2);
 	}

@@ -1,9 +1,15 @@
 <?php
 namespace BlueFission\Connections;
 
-use BlueFission\DevArray as Array;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Class Socket
@@ -27,7 +33,7 @@ class Socket extends Connection implements IConfigurable
      */
     protected $_config = [
         'target' => '',
-        'port' => '80',
+        'port' => '8080',
         'method' => 'GET',
     ];
     /**
@@ -49,7 +55,7 @@ class Socket extends Connection implements IConfigurable
     public function __construct($config = '')
     {
         parent::__construct();
-        if (Array::is($config)) {
+        if (Arr::is($config)) {
             $this->config($config);
         }
     }
@@ -65,22 +71,28 @@ class Socket extends Connection implements IConfigurable
      *
      * @return void
      */
-    public function open()
+    protected function _open(): void
     {
         if (HTTP::urlExists($this->config('target'))) {
             $target = parse_url($this->config('target'));
 
             $status = '';
 
-            $this->_host = $target['host'] ? $target['host'] : HTTP::domain();
-            $this->_url = $target['path'];
-            $port = $target['port'] ? $target['port'] : $this->config('port');
+            $this->_host = $target['host'] ?? HTTP::domain();
+            $this->_url = $target['path'] ?? '';
+            $port = $target['port'] ?? $this->config('port');
 
             $this->_connection = fsockopen($this->_host, $port, $error_number, $error_string, 30);
 
-            $status = ($this->_connection) ? self::STATUS_CONNECTED : $error_string . ': ' . $error_number;
+            $status = ($this->_connection) 
+            ? self::STATUS_CONNECTED : (($error_string) ? ($error_string . ': ' . $error_number) : self::STATUS_NOTCONNECTED);
+
+            $this->perform( $this->_connection 
+            	? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+
         } else {
-            $status = self::STATUS_NOTCONNECTED;
+            $status = self::STATUS_FAILED;
+            $this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
         }
 
         $this->status($status);
@@ -95,12 +107,12 @@ class Socket extends Connection implements IConfigurable
      *
      * @return void
      */
-    public function close()
+    protected function _close(): void
     {
-        fclose($this->_connection);
-
-        // clean up
-        parent::close();
+    	if ( $this->_connection) {
+        	fclose($this->_connection);
+    	}
+		$this->perform(State::DISCONNECTED);
     }
 	
 	/**
@@ -108,18 +120,27 @@ class Socket extends Connection implements IConfigurable
 	 *
 	 * @param string|null $query The query to be performed. If not provided, the query will use the method specified in the config.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function query( $query = null ) 
+	public function query( $query = null ): IObj
 	{
+
+		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
+
+
 		$socket = $this->_connection;
 		$status = '';
 		
 		if ($socket) 
 		{
-			$method = $method ? $method : $this->config('method');
+			$method = $this->config('method');
 			
 			$data = HTTP::query($this->_data);
+
+			if (Val::is($data)) {
+				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
+			}
+
 			$method = strtoupper($method);
 			$request = '';
 			
@@ -134,12 +155,12 @@ class Socket extends Connection implements IConfigurable
 				$request .= "Content-Length: 0\r\n";
 				
 				$cmd = "GET $request HTTP/1.0\r\nHost: ".$this->_host."\r\n\r\n";
-			} elseif ($method == 'POSTS') {
+			} elseif ($method == 'POST') {
 				
 				$request .= '/' . $this->_url;
 				$request .= "\r\n";
 				$request .= "User-Agent: Dev-Elation\r\n"; 
-				$request .= "Content-Type: application/x-www-form-urlencoded\r\n" .
+				$request .= "Content-Type: application/x-www-form-urlencoded\r\n";
 				$request .= "Content-Length: ".strlen($data)."\r\n";
 				$request .= $data;
 			} else {
@@ -150,20 +171,34 @@ class Socket extends Connection implements IConfigurable
 			
 			$cmd = "$method $request HTTP/1.1\r\nHost: ".$this->_host."\r\n";
 			
-			fputs($sock, $cmd);
+			$this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
+			fputs($socket, $cmd);
 			
-			while (!feof($sock)) 
+			while (!feof($socket)) 
 			{
-				$data .= fgets($sock, 1024);
+				$chunk = fgets($socket, 1024);
+				$this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
+
+				$this->_result .= $chunk;
 			}
-			
-			$this->_result = $data;
+			$this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
+
 			$status = $this->_result ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+
+			$this->perform( 
+				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+				new Meta(when: Action::PROCESS, info: $status ) 
+			);
 		}
 		else
 		{
 			$status = self::STATUS_NOTCONNECTED;
+			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
 		}	
+		
+		$this->halt(State::PERFORMING_ACTION);
 		$this->status($status);
+
+		return $this;
 	}
 }

@@ -2,7 +2,11 @@
 
 namespace BlueFission\Data\Queues;
 
+use BlueFission\Arr;
 use BlueFission\Data\FileSystem;
+use BlueFission\Collections\Collection;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
 
 /**
  * Class DiskQueue
@@ -34,6 +38,8 @@ class DiskQueue extends Queue implements IQueue {
 	 */
 	private static $_array;
 
+	private static $initialized = false;
+
 	/**
 	 * Get the instance of the disk-based queue
 	 * @return string
@@ -48,21 +54,25 @@ class DiskQueue extends Queue implements IQueue {
 	 * @return void
 	 */
 	private static function init() {
-		$tempfile = sys_get_temp_dir();
-		
-		$stack = $tempfile.DIRECTORY_SEPARATOR.self::DIRNAME;
+		if (!self::$initialized) {
+			$tempfile = sys_get_temp_dir();
+			
+			$stack = $tempfile.DIRECTORY_SEPARATOR.self::DIRNAME;
 
-		$fs = new FileSystem(array('root'=>$tempfile, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true));
-	    
-	    if (file_exists($stack) && !is_dir($stack)) { 
-	    	unlink($stack); 
-	    }
+			$fs = new FileSystem(array('root'=>$tempfile, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true));
+		    
+		    if (file_exists($stack) && !is_dir($stack)) { 
+		    	unlink($stack); 
+		    }
 
-	    if (!is_dir($stack)) {
-	    	$fs->mkdir(self::DIRNAME);
-	    }
-	    
-	    self::$_stack = $stack; 
+		    if (!is_dir($stack)) {
+		    	$fs->mkdir(self::DIRNAME);
+		    }
+		    
+		    self::$_stack = $stack;
+
+            self::$initialized = true;
+        }
 	}
 	
 	/**
@@ -70,7 +80,7 @@ class DiskQueue extends Queue implements IQueue {
 	 * @param  string  $queue
 	 * @return boolean
 	 */
-	public static function is_empty($queue) {
+	public static function isEmpty($queue) {
 		$stack = self::instance();
 
 		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'r', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));
@@ -78,7 +88,7 @@ class DiskQueue extends Queue implements IQueue {
 
 		$array = $fs->listDir();
 
-		if (!is_array($array)) return true;
+		if (!Arr::is($array)) return true;
 
 		return count( $array ) ? false : true;
 	}
@@ -107,39 +117,41 @@ class DiskQueue extends Queue implements IQueue {
 
 		if($after === false && $until === false) {
 			foreach ( $array as $file ) {
-				// $fp = fopen("/tmp/lock.txt", "r");
-
-				// $fs->filename = $file;
-				$fs->open($file);
+				$fs->basename = $file;
+				$fs->open();
 
 				if ( $fs->isLocked() ) {
 					$fs->read();
 					$message = $fs->contents();
 					$fs->delete();
 					$fs->close();
+					
+					return $message ? unserialize($message) : null;
 				}
-				return unserialize($message);
 			}
 		} elseif($after !== false && $until === false) {
 			$until = self::tail($array);
 		}
 
-		$items = array();
+		$items = [];
 		for($i=$after+1; $i<=$until; $i++)  {
-			$file = self::FILENAME . $i;
+			$file = self::FILENAME . str_pad( $i, 11, '0', STR_PAD_LEFT);
 			$fs->filename = $file;
-			$fs->open();
+
+			if ($fs->exists()) {
+				$fs->open();
+			}
 
 			if ( $fs->isLocked() ) {
 				$fs->read();
 				$message = $fs->contents();
-				$fs->delete();
-				$fs->close();
-				$items[] = unserialize($message);
+				$fs->delete()->close();
+
+				$items[] = $message ? unserialize($message) : null;
 				$message = null;
 			}
 		}
-		return $items;
+		return new Collection($items);
 	}
 	
 	/**
@@ -153,24 +165,38 @@ class DiskQueue extends Queue implements IQueue {
 	public static function enqueue($queue, $item) {
 		$stack = self::instance();
 
-		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'x', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));
+		$fs = new FileSystem(['root'=>$stack, 'mode'=>'c', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true]);
+
+		$fs->when(Event::CONNECTED, function () use ($fs) {
+			$fs->write();
+		})
+		->when(Event::SUCCESS, function ($behavior, $meta) use ($fs) {
+			if ( $meta->when == Action::SAVE ) {
+				$fs->close();
+			}
+		})
+		->when(Event::FAILURE, function ($b, $m) use ($fs) {
+			$fs->close();
+		})
+		->when(Event::ERROR, function ($b, $m) use ($fs) {
+			$fs->close();
+		});
 
 		$fs->dirname = $queue;
-	    $fs->mkdir();
-
-		$message = serialize($item);
+    	$fs->mkdir();
 
 		$tail = self::tail($queue);
-		$fs->contents($message);
-		while (!$fs->isLocked()) {
+		do {
 			$fs->basename = self::FILENAME . str_pad( $tail, 11, '0', STR_PAD_LEFT);
-			$fs->open();
+
 			$tail++;
 			if ($tail > 99999999999 ) $tail = 0;
-		}
+			if (!$fs->exists()) break;
+		} while($fs->exists());
 
-		$fs->write();
-		$fs->close();
+		$tail--;
+
+		$fs->contents(serialize($item))->open();
 	}
 
 	/**
@@ -191,7 +217,7 @@ class DiskQueue extends Queue implements IQueue {
 		// rsort($array);
 		$last = end($array);
 
-		$tail = str_replace(array($stack, self::FILENAME, $queue,DIRECTORY_SEPARATOR), array('','','',''), $last);
+		$tail = str_replace([$stack, self::FILENAME, $queue,DIRECTORY_SEPARATOR], ['','','',''], $last);
 
 		return (int)$tail;
 	}

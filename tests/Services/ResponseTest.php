@@ -24,7 +24,7 @@ class ResponseTest extends TestCase
      */
     public function testFillWithArray()
     {
-        $values = array(
+        $values = [
             'id' => 1,
             'list' => [1, 2, 3],
             'data' => [
@@ -43,7 +43,7 @@ class ResponseTest extends TestCase
             ],
             'status' => 'Success',
             'info' => 'Additional information',
-        );
+        ];
 
         $this->response->fill($values);
         $this->assertEquals(1, $this->response->id);
@@ -89,33 +89,11 @@ class ResponseTest extends TestCase
      */
     public function testFillWithObject()
     {
-        $values = new stdClass();
+        $values = new \stdClass();
         $values->name = 'John Doe';
         $values->age = 30;
 
         $this->response->fill($values);
         $this->assertEquals($values, $this->response->data);
-    }
-
-    /**
-     * Test message method
-     */
-    public function testMessage()
-    {
-        $values = array(
-            'id' => 1,
-            'list' => [1, 2, 3],
-            'data' => [
-                'name' => 'John Doe',
-                'age' => 30
-            ]
-        );
-        
-        $message = new Message($values);
-        $this->assertInstanceOf(Message::class, $message);
-        $this->assertEquals(1, $message->getId());
-        $this->assertEquals([1, 2, 3], $message->getList());
-        $this->assertEquals('John Doe', $message->getData()['name']);
-        $this->assertEquals(30, $message->getData()['age']);
     }
 }

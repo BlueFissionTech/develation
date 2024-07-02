@@ -1,8 +1,8 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevArray as Array;
-use BlueFission\DevValue as Value;
+use BlueFission\Arr;
+use BlueFission\Val;
 use BlueFission\Behavioral\Programmable;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\State;
@@ -44,7 +44,7 @@ trait StateMachine {
 	 */
 	private function behaviorIsDenied( $behaviorName ) {
 		foreach ( $this->_state as $state => $args ) {
-			if ( ( Value::is($this->_deniedBehaviors[$state]) && Array::count($this->_deniedBehaviors[$state] > 0) ) &&
+			if ( ( Val::is($this->_deniedBehaviors[$state]) && Arr::count($this->_deniedBehaviors[$state] > 0) ) &&
 				in_array($behaviorName, $this->_deniedBehaviors[$state]) ) {
 				return true;
 			}
@@ -61,7 +61,7 @@ trait StateMachine {
 	 */
 	private function behaviorIsAllowed( $behaviorName ) {
 		foreach ( $this->_state as $state => $args ) {
-			if ( (Value::is($this->_allowedBehaviors[$state]) && Array::count($this->_allowedBehaviors[$state] > 0) ) &&
+			if ( (Val::is($this->_allowedBehaviors[$state]) && Arr::count($this->_allowedBehaviors[$state] > 0) ) &&
 				!in_array($behaviorName, $this->_allowedBehaviors[$state]) ) {
 				return false;
 			}
@@ -92,7 +92,7 @@ trait StateMachine {
 	 */
 	public function denies( $behavior, $behavioral_implication ) {
 		$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-		$behavioral_implication = Array::toArray($behavioral_implication);
+		$behavioral_implication = Arr::toArray($behavioral_implication);
 			
 		if ( $this->can($behaviorName) ) {
 			$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);
@@ -113,7 +113,7 @@ trait StateMachine {
 	 */
 	public function allows( $behavior, $behavioral_implication ) {
 		$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-		$behavioral_implication = Array::toArray($behavioral_implication);
+		$behavioral_implication = Arr::toArray($behavioral_implication);
 			
 		if ( $this->can($behaviorName) ) {
 			$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);
@@ -134,7 +134,7 @@ trait StateMachine {
 	 */
 	public function implies( $behavior, $behavioral_implication ) {
 	$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-	$behavioral_implication = Array::toArray($behavioral_implication);
+	$behavioral_implication = Arr::toArray($behavioral_implication);
 		
 	if ( $this->can($behaviorName) ) {
 		$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);
@@ -161,7 +161,7 @@ trait StateMachine {
 	public function supresses( $behavior, $behavioral_implication ) {
 		// Get the behavior name string
 		$behaviorName = ( $behavior instanceof Behavior ) ? $behavior->name() : $behavior;
-		$behavioral_implication = Array::toArray($behavioral_implication);
+		$behavioral_implication = Arr::toArray($behavioral_implication);
 			
 		if ( $this->can($behaviorName) ) {
 			$behavior = ( $behavior instanceof Behavior) ? $behavior : new Behavior($behaviorName);

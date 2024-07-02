@@ -21,9 +21,9 @@ interface ICollection {
 	 * @param mixed $object
 	 * @param mixed $label
 	 * 
-	 * @return void
+	 * @return ICollection
 	 */
-	public function add( $object, $label = null );
+	public function add( $object, $label = null ): ICollection;
 
 	/**
 	 * Checks if an object with the given label exists in the collection
@@ -48,7 +48,7 @@ interface ICollection {
 	 * 
 	 * @param mixed $label
 	 * 
-	 * @return void
+	 * @return ICollection
 	 */
-	public function remove( $label );
+	public function remove( $label ): ICollection;
 }

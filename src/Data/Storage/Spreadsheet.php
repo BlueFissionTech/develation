@@ -2,6 +2,8 @@
 
 namespace BlueFission\Data\Storage;
 
+use BlueFission\IObj;
+
 /**
  * Class Spreadsheet
  * 
@@ -21,20 +23,21 @@ class Spreadsheet extends Storage implements IData {
 	 * @property string 'location' The location of the spreadsheet.
 	 * @property string 'name' The name of the spreadsheet.
 	 */
-	protected $_config = array( 
+	protected $_config = [
 		'location'=>'', 
 		'name'=>'' 
-	);
+	];
 
 	/**
 	 * Activates the spreadsheet, reading its data into memory.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function activate() {
+	public function activate(): IObj
+	{
 		$path = $this->config('location') ? $this->config('location') : sys_get_temp_dir();
 		
-		$name = $this->config('name') ? (string)$this->config('name') : DevString::random();
+		$name = $this->config('name') ? (string)$this->config('name') : Str::random();
 			
 		if (!$this->config('name'))	{
 			$file = tempnam($path, $name);		
@@ -43,7 +46,7 @@ class Spreadsheet extends Storage implements IData {
 		$data = file( $file );
 
 		if ( $data ) {
-			$spreadsheet = array();
+			$spreadsheet = [];
 			foreach ( $data as $row ) {
 				$spreadsheet[] = str_getcsv( $row );
 			}
@@ -55,17 +58,20 @@ class Spreadsheet extends Storage implements IData {
 			$this->status( self::STATUS_FAILED_INIT );
 		else
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
+
+		return $this;
 	}
 
 	/**
 	 * Writes the data of the spreadsheet.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function write() {
+	public function write(): IObj
+	{
 		$source = $this->_source;
 		$status = self::STATUS_FAILED;
-		$data = DevValue::isNull($this->_contents) ? HTTP::jsonEncode($this->_fields) : $this->_contents; 
+		$data = Val::isNull($this->_contents) ? HTTP::jsonEncode($this->_fields) : $this->_contents; 
 		
 		$source->empty();
 		$source->contents( $data );
@@ -73,30 +79,36 @@ class Spreadsheet extends Storage implements IData {
 		
 		$status = self::STATUS_SUCCESS;
 		
-		$this->status( $status );	
+		$this->status( $status );
+
+		return $this;
 	}
 	
 	/**
 	 * Reads the current data of the spreadsheet.
 	 *
-	 * @return mixed
+	 * @return IObj
 	 */
-	public function read() {	
+	public function read(): IObj
+	{	
 		if ( $this->_index ) {
 			$row = $this->_source[ $this->_index ];
 			$this->loadArray( $row );
-
-			return $value;
 		}
+
+		return $this;
 	}
 	
 /**
 	 * Removes the current element at the index in the source array
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function delete() {
+	public function delete(): IObj
+	{
 		unset ( $this->_source[ $this->_index] );
+
+		return $this;
 	}
 
 	/**
@@ -106,10 +118,12 @@ class Spreadsheet extends Storage implements IData {
 	 * 
 	 * @return int The current index
 	 */
-	public function index( $index = null ) {
+	public function index( $index = null )
+	{
 		if ( $index && $this->inbounds() ) {
 			$this->_index = $index;
 		}
+		
 		return $this->_index;
 	}
 

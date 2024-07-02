@@ -1,13 +1,15 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
-use BlueFission\DevString;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Str;
+use BlueFission\IObj;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Trait Configurable
@@ -23,7 +25,6 @@ use BlueFission\Behavioral\Behaviors\Action;
 trait Configurable {
 	use Behaves {
         Behaves::__construct as private __behavesConstruct;
-        Behaves::init as private behavesInit;
     }
 
 	/**
@@ -41,16 +42,18 @@ trait Configurable {
 	 * the _config and _status properties to arrays if they are not already set. 
 	 * Dispatches the State::NORMAL event.
 	 */
-	public function __construct( )
+	public function __construct( $config = null )
 	{
 		$this->__behavesConstruct( );
-		if (!isset($this->_config)) {
+		if (!Val::is($this->_config)) {
 			$this->_config = [];
 		}
 		
-		if (!isset($this->_status)) {
+		if (!Val::is($this->_status)) {
 			$this->_status = [];
 		}
+
+		$this->config($config);
 
 		$this->dispatch( State::NORMAL );
 	}
@@ -62,53 +65,64 @@ trait Configurable {
 	 * or an array of key-value pairs to set the configuration.
 	 * @param mixed|null $value The value to be set for the configuration item.
 	 * 
-	 * @return array|mixed|null Returns the configuration array if $config is not provided,
+	 * @return mixed Returns the configuration array if $config is not provided,
 	 * returns the value of the specified configuration item if $config is a string, 
 	 * and returns null if the specified configuration item does not exist.
 	 */
-	public function config( $config = null, $value = null )
+	public function config( $config = null, $value = null ): mixed
 	{
-		if (DevValue::isEmpty($config)) {
+		if (Val::isNull($config)) {
 			return $this->_config;
-		} elseif (DevString::is($config)) {
-			if (DevValue::isEmpty ($value)) {
-				return isset($this->_config[$config]) ? $this->_config[$config] : null;
+		} elseif (Str::is($config)) {
+			if (Val::isNull ($value)) {
+				return $this->_config[$config] ?? null;
 			}
 						
-			if ( ( array_key_exists($config, $this->_config) || $this->is(State::DRAFT) ) && !$this->is(State::READONLY)) {
-				$this->_config[$config] = $value; 
+			$this->perform( State::CONFIGURING );
+			if ( !$this->is(State::READONLY) ) {
+				if ( $this->is(State::DRAFT) ) {
+					$this->_config[$config] = $value;
+				} elseif (Arr::hasKey($this->_config, $config)) {
+					$this->_config[$config] = $value; 
+				}
 			}
-		} elseif (DevArray::is($config) && !$this->is(State::READONLY)) {
+		} elseif (Arr::is($config) && !$this->is(State::READONLY)) {
+			$this->perform( State::CONFIGURING );
 			$this->perform( State::BUSY );
 			if ( $this->is(State::DRAFT) ) {
 				foreach ( $config as $a=>$b ) {
-					$this->_config[$a] = $config[$a];
+					$this->_config[$a] = $b;
 				}
 			} else {
 				foreach ( $this->_config as $a=>$b ) {
-					if ( isset($config[$a] )) $this->_config[$a] = $config[$a];
+					if ( Val::is($config[$a] )) $this->_config[$a] = $config[$a];
 				}
 			}
 			$this->halt( State::BUSY );
 		}
+
+		$this->perform( Event::CONFIGURED );
+		return $this;
 	}
 	
 	/**
 	 * Add a status message or retrieve the current status message.
 	 *
 	 * @param  string|null  $message  The status message to add. If not provided, the current status message is returned.
-	 * @return string|null  The status message, or `null` if no message was provided.
+	 * @return mixed  The status message, or `null` if no message was provided.
 	 */
-	public function status($message = null)
+	public function status($message = null): mixed
 	{
-		if (DevValue::isNull($message))
+		if (Val::isNull($message))
 		{
 			$message = end($this->_status);
 			return $message;
 		}
 		$this->_status[] = $message;
 
-		$this->perform( Event::MESSAGE );
+		$this->perform( Event::MESSAGE, new Meta(info: $message) );
+
+		return null;
 	}
 
 	/**
@@ -120,45 +134,61 @@ trait Configurable {
 	 */
 	public function field( string $field, $value = null ): mixed
 	{
-		if ( DevArray::hasKey($this->_data, $field) || $this->is( State::DRAFT ) )
+		if (!$this instanceof IObj) {
+            throw new \LogicException(
+            	sprintf(
+                    '%s must implement %s to use %s',
+                    get_class($this),
+                    IObj::class,
+                    __TRAIT__
+                )
+            );
+        }
+
+
+        if ( $value && !$this->is( State::READONLY ) )
 		{	
-			$value = parent::field($field, $value);
-			return $value;
+			if ( $this->is( State::DRAFT ) ) {
+				parent::field($field, $value);
+			} elseif ( Arr::hasKey($this->_data, $field) ) {
+				parent::field($field, $value);
+			}
+			return $this;
 		}
-		else
-		{
-			return false;
-		}
+		
+		return parent::field($field);
 	}
 
 	/**
 	 * Assign values to fields in this object.
 	 *
 	 * @param  object|array  $data  The data to import into this object.
+	 * @return IObj
 	 * @throws InvalidArgumentException  If the data is not an object or associative array.
 	 */
-	public function assign( $data )
+	public function assign( $data ): IObj
 	{
-		if ( is_object( $data ) || DevArray::isAssoc( $data ) ) {
-			$this->perform( State::BUSY );
+		if (!$this instanceof IObj) {
+            throw new \LogicException(
+            	sprintf(
+                    '%s must implement %s to use %s',
+                    get_class($this),
+                    IObj::class,
+                    __TRAIT__
+                )
+            );
+        }
+
+		if ( is_object( $data ) || Arr::isAssoc( $data ) ) {
+			$this->perform( State::CHANGING );
 			foreach ( $data as $a=>$b ) {
 				$this->field($a, $b);
 			}
-			$this->halt( State::BUSY );
-			$this->dispatch( Event::CHANGE );
-		}
-		else
+			$this->halt( State::CHANGING );
+		} else {
 			throw new \InvalidArgumentException( "Can't import from variable type " . gettype($data) );
-	}
+		}
 
-	/**
-	 * Initialize the object.
-	 *
-	 * @return void
-	 */
-	protected function init()
-	{
-		$this->behavesInit();
-		$this->behavior( new Event( Event::MESSAGE ) );
+		return $this;
 	}
 }

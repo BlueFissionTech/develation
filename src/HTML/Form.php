@@ -1,9 +1,9 @@
 <?php
 namespace BlueFission\HTML;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
-use BlueFission\DevBoolean;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Flag;
 
 /**
  * Class Form
@@ -28,18 +28,18 @@ class Form {
 		$field_name = '';
 		$get_name = true;
 		$content = '';
-		$query_r = DevArray::toArray($query_r);
+		$query_r = Arr::toArray($query_r);
 		$output = '';
 		$select_r = array();
 		$select_r['-------'] = '';
 		foreach ($content_r as $row) {
-			$row = DevArray::toArray($row);
+			$row = Arr::toArray($row);
 			$value_r = array();
 			$i = 0;
 			foreach ($row as $a=>$b) {
 				if ($get_name) {
 					$field_name = $a;
-					$get_name = DevBoolean::opposite($get_name);
+					$get_name = Flag::opposite($get_name);
 				}
 				if ($i > $fields) break;
 				// if ($i > 0) $value_r[] = HTML::format($b, '', $trunc);
@@ -76,7 +76,7 @@ class Form {
 	     $label_text = '';
 	     
 	     $varname = $name;
-	     $properties = DevArray::toArray($properties);
+	     $properties = Arr::toArray($properties);
 	     if (!isset($properties['class'])) $properties['class'] = $type ? $type : 'formdata';
 	     foreach ($properties as $a=>$b) $attribs[] = "$a=\"$b\"";
 	     $attrib = implode(' ', $attribs);
@@ -93,7 +93,7 @@ class Form {
 
 
 		
-	     $value = DevArray::toArray($value, true);
+	     $value = Arr::toArray($value, true);
 	     
 	     switch ($type) {
 	     default:
@@ -120,7 +120,7 @@ class Form {
 	     case 'select':
 	          $output .= $label_text . ' <br />' . "\n";
 			$output .= '<select name="' . $name . '" ' . $disabled . ' ' . $id . ' '.$attrib.'>' . "\n";
-	          $value = DevArray::toArray($value);
+	          $value = Arr::toArray($value);
 	          global $$varname; 
 	          
 	          foreach ($value as $a=>$b) {
@@ -147,7 +147,7 @@ class Form {
 		case 'multiple':
 	          $output .= $label_text . ' <br />' . "\n";
 	          $output .= '<select name="' . $name . '" ' . $disabled . ' ' . $id . ' '.$attrib.' size="6" multiple="multiple">' . "\n";
-	          $value = DevArray::toArray($value);
+	          $value = Arr::toArray($value);
 	          global $$varname; 
 	          foreach ($value as $a=>$b) {
 	          	if (is_array($b)) {
@@ -178,7 +178,7 @@ class Form {
 		     }
 	          break;
 	     case 'checkbox':
-			if (DevArray::isAssoc($value)) {
+			if (Arr::isAssoc($value)) {
 		     	$output .= (($required) ? '*' : '' ) . $label.'<br />';
 				$i = 1;
 		     	foreach ($value as $a=>$b) {
@@ -200,7 +200,7 @@ class Form {
 		  	}		
 	          break;
 	     case 'radio':
-			if (DevArray::isAssoc($value)) {
+			if (Arr::isAssoc($value)) {
 		     	$output .= (($required) ? '*' : '' ) . $label.'<br />';
 				$i = 1;
 		     	foreach ($value as $a=>$b) {
@@ -475,7 +475,7 @@ class Form {
 	static function open($action = '', $name = '', $method = '', $validate = true, $properties = '', $image_path = 'images/', $css_path = 'css/rte.css') {
 		$output = '';
 		$action = HTML::href($action);
-		if (DevValue::isNull($method)) $method = 'post';
+		if (Val::isNull($method)) $method = 'post';
 		$output .= '<form enctype="multipart/form-data" method="' . $method . '" ' . (($name != '') ? 'name="' . $name .'"' : '') . ' ' . (($action != '') ? 'action="' . $action .'"' : '') . ' ' . $properties . '>';
 		$output .= "\r";
 		/*
@@ -532,9 +532,9 @@ class Form {
 		$output = '';
 		$required = '';
 		$id = '';
-		$active_field_r = DevArray::toArray($active_field_r);
-		$field_type_r = DevArray::toArray($field_type_r);
-		$property_r = DevArray::toArray($property_r);
+		$active_field_r = Arr::toArray($active_field_r);
+		$field_type_r = Arr::toArray($field_type_r);
+		$property_r = Arr::toArray($property_r);
 		$readonly = false;
 		if (count($active_field_r) <= 0) $active_field_r = $this->getActiveFields();
 		$output .= '<table>';
@@ -542,7 +542,7 @@ class Form {
 			// if ($this->memberExists($a))	 {
 				$type = (array_key_exists($a, $field_type_r)) ? $field_type_r[$a] : '';
 				$properties = (array_key_exists($a, $property_r)) ? $property_r[$a] : '';
-				$label_r = (DevArray::isAssoc($active_field_r) && in_array($a, $active_field_r)) ? array_keys($active_field_r, $a) : '';
+				$label_r = (Arr::isAssoc($active_field_r) && in_array($a, $active_field_r)) ? array_keys($active_field_r, $a) : '';
 				$label = (is_array($label_r)) ? $label_r[0] : '';
 				$output .= Form::field($a, $b, $label, $type, $required, $readonly, $id, $properties);
 			// }

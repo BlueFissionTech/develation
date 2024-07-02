@@ -3,7 +3,9 @@ namespace BlueFission\Collections;
 
 use ArrayAccess;
 use ArrayObject;
-use BlueFission\DevValue;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Obj;
 use BlueFission\Behavioral\Behaviors\Configurable;
 
 /**
@@ -31,7 +33,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 * @return null|string
 	 */
 	public function type( $type = null ) {
-		if ( DevValue::isNull($type) ) {
+		if ( Val::isNull($type) ) {
 			return $this->_type;
 		}
 		$this->_type = $type;
@@ -43,16 +45,22 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 * @param mixed $value
 	 * @return mixed
 	 */
-	private function convert( $value ) {
-		if ( $this->_type && ! $value instanceof $this->_type ) {
-			if ( is_array($value) && is_subclass_of($this->_type, '\BlueFission\Behavioral\Configurable') ) {
+	private function cast( $value ) {
+		if ( $this->_type && !($value instanceof $this->_type) ) {
+			try {
 				$object = new $this->_type();
+			} catch ( Exception $e ) {
+				$object = null;
+			}
+			
+			if (
+				Arr::is($value) && 
+				( is_a($object, Obj::class) || is_subclass_of($object, Obj::class) ) 
+			) {
 				$object->assign($value);
 				$value = $object;
-			} elseif ( is_subclass_of($this->_type, '\BlueFission\DevValue') ) {
+			} elseif ( is_a($object, Val::class || is_subclass_of($object, Val::class) ) ) {
 				$value = new $this->_type($value);
-			} else {
-				// $value = settype($value, $this->_type);
 			}
 		}
 		return $value;
@@ -66,7 +74,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 */
 	public function get( $key ) {
 		$value = parent::get( $key );
-		return $this->convert( $value );
+		return $this->cast( $value );
 	}
 
 	/**
@@ -76,7 +84,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 */
 	public function first()	{
 		$value = parent::first();
-		return $this->convert( $value );
+		return $this->cast( $value );
 	}
 
 	/**
@@ -86,6 +94,6 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 */
 	public function last() {
 		$value = parent::last();
-		return $this->convert( $value );
+		return $this->cast( $value );
 	}
 }

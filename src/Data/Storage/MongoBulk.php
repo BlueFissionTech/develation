@@ -4,8 +4,9 @@ namespace BlueFission\Data\Storage;
 
 use BlueFission\Data\IData;
 use BlueFission\Collections\Group;
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\IObj;
 use BlueFission\Behavioral\Behaviors\Event;
 
 /**
@@ -40,11 +41,12 @@ class MongoBulk extends Mongo implements IData {
 	/**
 	 * Reads data from the MongoDB database.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function read() {
+	public function read(): IObj
+	{
 		parent::read();
-		$res = array();
+		$res = [];
 		if (method_exists('mysqli_result', 'fetch_all')) # Compatibility layer with PHP < 5.3
 			$res = $this->_result->fetch_all( MYSQLI_ASSOC );
 		else {
@@ -55,14 +57,17 @@ class MongoBulk extends Mongo implements IData {
 
 		$this->_rows = new Group( $res );
 		$this->_rows->type('\BlueFission\Data\Storage\Mongo');
+
+		return $this;
 	}
 
 	/**
 	 * Writes data to the MongoDB database.
 	 * 
-	 * @return bool Returns true on success, false otherwise.
+	 * @return IObj
 	 */
-	public function write() {
+	public function write(): IObj
+	{
 		$db = $this->_source;
 
 		if ($db) {
@@ -79,9 +84,9 @@ class MongoBulk extends Mongo implements IData {
 
 			$status = $success ? self::STATUS_SUCCESS : ( $db->status() ? $db->status() : self::STATUS_FAILED );
 			$this->status( $status );
-			if (!$success)
-				return false;
 		}
+
+		return $this;
 	}
 
 	/**
@@ -108,12 +113,14 @@ class MongoBulk extends Mongo implements IData {
 	 *
 	 * @param int $start
 	 * @param int $end
-	 * @return void
+	 * @return IObj
 	 */
-	public function limit($start = 0, $end = '') 
+	public function limit($start = 0, $end = ''): IObj
 	{
 	    $this->_row_start = $start;
 	    $this->_row_end = $end;
+
+	    return $this;
 	}
 
 	/**
@@ -122,13 +129,13 @@ class MongoBulk extends Mongo implements IData {
 	 * @param array|null $data
 	 * @return mixed
 	 */
-	public function contents($data = null)
+	public function contents($data = null): mixed
 	{
-	    if ( DevValue::isNull($data)) {
+	    if ( Val::isNull($data)) {
 	        return $this->_rows->current() ? $this->_rows->current() : parent::contents();
-	    } elseif (is_array($data) && !DevArray::isAssoc($data)) {
+	    } elseif (is_array($data) && !Arr::isAssoc($data)) {
 	        $this->_rows = new Group( $data );
-	    } elseif ( DevArray::isAssoc($data) ) {
+	    } elseif ( Arr::isAssoc($data) ) {
 	        parent::contents($data);
 	    }
 

@@ -72,9 +72,22 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		}
 		if ($this->has( $key )) {
 			return $this->_value[$key];
-		}
-		else 
+		} else {
 			return null;		
+		}
+	}
+
+	/**
+	 * Finds the index of the object in the collection.
+	 *
+	 * @param mixed $object The object to find.
+	 *
+	 * @return mixed The index of the object in the collection.
+	 */
+	public function search( $object ): mixed
+	{
+		$found = array_search( $object, $this->_value->getArrayCopy() );
+		return $found;
 	}
 
 	/**
@@ -114,11 +127,55 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 *
 	 * @throws InvalidArgumentException If the key is not scalar or null.
 	 */
-	public function add( $object, $key = null ) {
+	public function add( $object, $key = null ): ICollection
+	{
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
 		$this->_value[$key] = $object;
+
+		return $this;
+	}
+
+	/**
+	 * Adds an object to the collection if it's key is not already present.
+	 *
+	 * @param mixed $object The object to add to the collection.
+	 * @param mixed|null $key The key to associate with the object.
+	 *
+	 * @throws InvalidArgumentException If the key is not scalar or null.
+	 */
+
+	public function addUnique( $object, $key ): ICollection
+	{
+		if (!is_scalar($key)) {
+			throw new InvalidArgumentException('Label must be scalar');
+		}
+		if ( !$this->has( $key ) ) {
+			$this->_value[$key] = $object;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Adds an object to the collection if it is not already present.
+	 *
+	 * @param mixed $object The object to add to the collection.
+	 * @param mixed|null $key The key to associate with the object.
+	 *
+	 * @throws InvalidArgumentException If the key is not scalar or null.
+	 */
+	public function addDistinct( $object, $key = null): ICollection
+	{
+		if (!is_scalar($key) && !is_null($key)) {
+			throw new InvalidArgumentException('Label must be scalar');
+		}
+		if ( !$this->contains( $object ) ) {
+			$this->_value[$key] = $object;
+		}
+
+		return $this;
 	}
 
 	/**
@@ -138,7 +195,8 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return mixed The last object in the collection.
 	 */
 	public function last() {
-		return end( $this->_value );
+		$value = $this->_value->getArrayCopy();
+		return end( $value );
 	}
 
 	/**
@@ -157,20 +215,26 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 *
 	 * @throws InvalidArgumentException If the key is not scalar or null.
 	 */
-	public function remove( $key ) {
+	public function remove( $key ): ICollection
+	{
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
 		if ( isset($this->_value[$key]) )
 			unset( $this->_value[$key]);
+
+		return $this;
 	}
 
 	/**
 	 * Clears the collection of all objects.
 	 */
-	public function clear() {
+	public function clear(): ICollection
+	{
 		unset( $this->_value );
 		$this->_value = new ArrayObject();
+
+		return $this;
 	}
 
 	/**
@@ -196,6 +260,52 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 			$this->rewind();
 			return false;
 		}
+	}
+
+	/**
+	 * iterate a method across all items in the collection
+	 * @param  callable $callback The callback to apply to each item
+	 * @return bool
+	 */
+	public function walk( callable $callback ) {
+		return array_walk( $this->_data, $callback );
+	}
+
+	/**
+	 * Map, apply a function to each item in the collection
+	 * @param  callable $callback The callback to apply to each item
+	 * @return Collection
+	 */
+	public function map( callable $callback ) {
+		$list = array_map( $callback, $this->contents() );
+		return new Collection( $list );
+	}
+
+	/**
+	 * Sort, apply a sorting fucntion to the collection
+	 * @param  callable $callback The callback to apply to each item
+	 * @return Collection
+	 */
+	public function sort( callable $callback = null ) {
+		if ( !$callback ) {
+			$callback = function($a, $b) {
+				return $a <=> $b;
+			};
+		}
+
+		$list = $this->contents();
+		usort( $list, $callback );
+		return new Collection( $list );
+	}
+
+	/**
+	 * Filter, apply a filter to the collection
+	 * @param  callable $callback The callback to apply to each item
+	 * @return Collection
+	 */
+	public function filter( callable $callback ) {
+		$list = array_filter( $this->contents(), $callback );
+		return new Collection( $list );
 	}
 
 	/**

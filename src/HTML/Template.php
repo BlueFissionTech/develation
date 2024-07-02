@@ -1,9 +1,12 @@
 <?php
 namespace BlueFission\HTML;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
-use BlueFission\DevObject;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\Obj;
+use BlueFission\Flag;
+use BlueFission\IObj;
 use BlueFission\HTML\HTML;
 use BlueFission\Utils\Util;
 use BlueFission\Behavioral\Configurable;
@@ -17,7 +20,7 @@ use \InvalidArgumentException;
  *
  * This class provides functionality for handling templates. It extends the Configurable class to handle configuration.
  */
-class Template extends DevObject {
+class Template extends Obj {
 	use Configurable {
 		Configurable::__construct as private __configConstruct;
 	}
@@ -49,6 +52,7 @@ class Template extends DevObject {
      */
     protected $_config = array(
         'file'=>'',
+        'template_directory'=>'',
         'cache'=>true,
         'cache_expire'=>60,
         'cache_directory'=>'cache',
@@ -70,12 +74,13 @@ class Template extends DevObject {
     {
     	$this->__configConstruct();
         parent::__construct( $config );
-        if ( DevValue::isNotNull( $config ) ) {
-            if (DevArray::isAssoc($config)) {
+        if ( Val::isNotNull( $config ) ) {
+            if (Arr::isAssoc($config)) {
                 $this->config($config);
                 $this->load($this->config('file'));
-            } else {
-                $this->load($config);
+            } elseif (Str::is($config)) {
+                $this->config('file', $config);
+                $this->load();
             }
         }
         $this->_cached = false;
@@ -88,16 +93,25 @@ class Template extends DevObject {
      *
      * @param null|string $file The file to load
      */
-    public function load ( $file = null ) 
+    public function load ( $file = null ): IObj
     {
-        if ( DevValue::isNotNull($file)) {
-            $this->_file = new FileSystem($file);
-            // $this->_file->open();
+    	$file = $file ?? $this->config('file');
+    	$info = pathinfo($file);
+
+    	$file = $info['basename'];
+
+    	$path_r = [];
+    	$path_r[] = $this->config('template_directory');
+    	$path_r[] = $info['dirname'];
+    	$path = implode(DIRECTORY_SEPARATOR, $path_r);
+
+        if ( Val::isNotNull($file)) {
+            $this->_file = (new FileSystem(['root'=>$path]))->open($file);
+
+            $this->_template = $this->_file->read()->contents();
         }
-        if ( $this->_file ) {
-            $this->_file->read($file);
-            $this->_template = $this->_file->contents();
-        }
+
+        return $this;
     }
 
     /**
@@ -108,7 +122,7 @@ class Template extends DevObject {
      */
 	public function contents($data = null)
 	{
-		if (DevValue::isNull($data)) return $this->_template;
+		if (Val::isNull($data)) return $this->_template;
 		
 		$this->_template = $data;
 	}
@@ -117,19 +131,23 @@ class Template extends DevObject {
 	 * public function clear()
 	 * This method clears the content of the template and resets it.
 	 */
-	public function clear (): void
+	public function clear(): IObj
 	{
 		parent::clear();
 		$this->reset();
+
+		return $this;
 	}
 
 	/**
 	 * public function reset()
 	 * This method resets the template to its original state.
 	 */
-	public function reset()
+	public function reset(): IObj
 	{
 		$this->load();
+
+		return $this;
 	}
 
 	/**
@@ -201,30 +219,30 @@ class Template extends DevObject {
 	 * @param  mixed  $formatted  specifies if the content should be formatted as HTML or not
 	 * @param  mixed  $repetitions  specifies the number of repetitions for the content
 	 */
-	public function set( $var, $content = null, $formatted = null, $repetitions = null  ) 
+	public function set( $var, $content = null, $formatted = null, $repetitions = null  ): IObj
 	{
 		if ($formatted)
 			$content = HTML::format($content);
 
-		if (is_string($var)) {
-			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) ) {
+		if (Str::is($var)) {
+			if ( Val::isNotNull($formatted) && !Flag::is($formatted) ) {
 				throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
-			if ( is_string($content) ) {
-				$this->_template = str_replace ( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
-			} elseif ( is_object( $content ) || DevArray::isAssoc( $content ) )	{
+			if ( Str::is($content) ) {
+				$this->_template = str_replace( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
+			} elseif ( is_object( $content ) || Arr::isAssoc( $content ) )	{
 				foreach ($content as $a=>$b) 
 				{
 					$this->set($var.'.'.$a, $b, $formatted, $repetitions);
 				}
 				$this->field($var, $content);
 			}
-			elseif ( is_array($content) )
+			elseif ( Arr::is($content) )
 			{
 				$this->field($var, $content);
 			}
-		} elseif ( is_object( $var ) || DevArray::isAssoc( $var ) ) {
+		} elseif ( is_object( $var ) || Arr::isAssoc( $var ) ) {
 
 			if ( $formatted == null ) {
 				$formatted = $content;
@@ -237,6 +255,8 @@ class Template extends DevObject {
 		} else {
 			throw new InvalidArgumentException( 'Invalid property' );
 		}
+
+		return $this;
 	}
 
 	/**
@@ -255,21 +275,21 @@ class Template extends DevObject {
 			$content = HTML::format($content);
 		}
 
-		if (is_string($var))
+		if (Str::is($var))
 		{
 			if ( !$content )
 			{
 				throw new InvalidArgumentException( 'Cannot assign empty value.');
 			}
 
-			if ( DevValue::isNotNull($formatted) && !is_bool($formatted) )
+			if ( Val::isNotNull($formatted) && !Flag::is($formatted) )
 			{
 				throw new InvalidArgumentException( 'Formatted argument expects boolean');
 			}
 
 			return parent::field($var, $content );
 		}
-		elseif ( is_object( $var ) || DevArray::isAssoc( $var ) )
+		elseif ( is_object( $var ) || Arr::isAssoc( $var ) )
 		{
 
 			if ( !$formatted )
@@ -294,11 +314,13 @@ class Template extends DevObject {
 	 * @param mixed $data The content of the fields. Expects an associative array of field names and contents
 	 * @param mixed $formatted Whether to format the content as HTML. Expects a boolean value
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function assign( $data, $formatted = null )
+	public function assign( $data, $formatted = null ): IObj
 	{
 		$this->field($data, $formatted);
+
+		return $this;
 	}
 
 	/**
@@ -306,9 +328,9 @@ class Template extends DevObject {
 	 *
 	 * @param int $minutes The number of minutes to cache the template
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function cache ( $minutes = null ) 
+	public function cache ( $minutes = null ): IObj
 	{
 		$file = $this->config('cache_directory').DIRECTORY_SEPARATOR.$_SERVER['REQUEST_URI'];
 		if (file_exists($file) && filectime($file) <= strtotime("-{$time} minutes")) {
@@ -332,7 +354,7 @@ class Template extends DevObject {
 	 */
 	private function cached ( $value ) 
 	{
-		if (DevValue::isNull($value))
+		if (Val::isNull($value))
 			return $this->_cached;
 		$this->_cached = ($value == true);
 	}
@@ -364,7 +386,7 @@ class Template extends DevObject {
         // Process variables, conditions, and loops directly within the run method
         foreach($this->_data as $var => $value) {
             // Handle array variables
-            if (is_array($value)) {
+            if (Arr::is($value)) {
                 $value = implode(", ", $value);
             }
 
@@ -486,9 +508,11 @@ class Template extends DevObject {
 	 *
 	 * @param mixed $formatted The formatting to apply to the data, if any
 	 */
-	public function commit( $formatted = null )
+	public function commit( $formatted = null ): IObj
 	{
-		$this->set( $this->_data->value(), $formatted );
+		$this->set( $this->_data->val(), $formatted );
+
+		return $this;
 	}
 
 	/**
@@ -503,7 +527,7 @@ class Template extends DevObject {
 	{
 		$output = '';
 		$count = 0;
-		if (DevValue::isNull($formatted)) {
+		if (Val::isNull($formatted)) {
 			$formatted = true;
 		}
 		foreach ($recordSet as $a) {
@@ -544,7 +568,7 @@ class Template extends DevObject {
 	/**
 	 * Private method to execute any modules found in the template
 	 */
-	private function executeModules()
+	private function executeModules(): IObj
 	{
 		$pattern = "/@".$this->config('module_token')."\('(.*)'\)/";
 
@@ -555,10 +579,12 @@ class Template extends DevObject {
 			$file = $matches[1][$i];
 			$template = new Template();
 			$template->load( $this->config('module_directory').DIRECTORY_SEPARATOR.$file);
-			$template->set( $this->_data->value() );
+			$template->set( $this->_data->val() );
 			$content = $template->render();
 			$this->_template = str_replace($match, $content, $this->_template);
 		}
+
+		return $this;
 
 	}
 

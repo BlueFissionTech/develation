@@ -2,8 +2,10 @@
 
 namespace BlueFission\HTML;
 
-use BlueFission\DevValue;
-use BlueFission\DevArray;
+use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Obj;
+use BlueFission\IObj;
 use BlueFission\Data\File;
 use BlueFission\Behavioral\Configurable;
 
@@ -27,12 +29,21 @@ use BlueFission\Behavioral\Configurable;
  * @method void endHandler($parser, $name = null) The handler function that is called when an XML end tag is encountered.
  * @method string buildXML($data = null, $indent = 0) Builds an XML structure from the data obtained from parsing the XML file.
  */
-class XML extends Configurable
-{
+class XML extends Obj {
+	use Configurable {
+		Configurable::__construct as private __configConstruct;
+	}
+
 	private $_filename;
 	private $_parser;
 	protected $_data;
 	protected $_status;
+	protected $_config = [];
+
+	const STATUS_SUCCESS = 'Success';
+	const STATUS_FAILED = 'Failed';
+	const STATUS_ERROR = 'Error';
+	const STATUS_OPEN_FAILED = 'Failed to open xml path';
 
 	/**
 	 * The XML class constructor.
@@ -43,13 +54,13 @@ class XML extends Configurable
 	 */
 	public function __construct($file = null) 
 	{
-		parent::__construct();
+		$this->__configConstruct();
 		$this->_parser = \xml_parser_create();
 		\xml_parser_set_option($this->_parser, XML_OPTION_CASE_FOLDING, true);
 		\xml_set_object($this->_parser, $this);
 		\xml_set_element_handler($this->_parser, array($this, 'startHandler'), array($this, 'endHandler'));
 		\xml_set_character_data_handler($this->_parser, array($this, 'dataHandler'));
-		if (DevValue::isNotNull($file)) {
+		if (Val::isNotNull($file)) {
 			$this->file($file);
 			$this->parseXML($file);
 		}
@@ -64,7 +75,7 @@ class XML extends Configurable
 	 */
 	public function file($file = null) 
 	{
-		if (DevValue::isNull($file))
+		if (Val::isNull($file))
 			return $this->_filename;		
 		
 		$this->_filename = $file;
@@ -77,28 +88,33 @@ class XML extends Configurable
 	 *
 	 * @param string|null $file Path to the XML file
 	 *
-	 * @return bool Returns true on success, false otherwise
+	 * @return IObj
 	 */
-	public function parseXML($file = null) 
+	public function parseXML($file = null): IObj
 	{
-		if (DevValue::isNull($file)) {
+		if ( Val::isNull($file) ) {
 			$file = $this->file();
 		}
 
-		$status = 'Failed to open xml path';
-		// if ($stream = dev_stream_file($file, $status)) {
-		if ( $stream = @fopen($file, 'r' )) {
-			while ($data = fread($stream, 4096)) {
-				if (!xml_parse($this->_parser, $data, feof($stream))) {
+		$status = self::STATUS_OPEN_FAILED;
+
+		if ( $stream = @fopen($file, 'r') ) {
+			while ( $data = fread($stream, 4096) ) {
+				if ( !xml_parse($this->_parser, $data, feof($stream)) ) {
 					$this->status(sprintf("XML error: %s at line %d", xml_error_string(xml_get_error_code($this->_parser)), xml_get_current_line_number($this->_parser)));
-					return false;
+					
+					return $this;
 				}
 			}
 		} else {
 			$this->status($status);
-			return false;
+			
+			return $this;
 		}
-		return true;
+
+		$this->status(self::STATUS_SUCCESS);
+
+		return $this;
 	}
 
 	/**
@@ -165,14 +181,14 @@ class XML extends Configurable
 		$xml = '';
 		$tabs = "";
 		for ($i=0; $i<$indent; $i++) $tabs .= "\t";
-		//if (!is_array($data)) $data = DevArray::toArray($data);
+		//if (!is_array($data)) $data = Arr::toArray($data);
 		if (is_array($data)) {
 			foreach($data as $b=>$a) {
-				if (!DevArray::isAssoc($a)) {
+				if (!Arr::isAssoc($a)) {
 					$xml .= $this->buildXML($a, $indent);
 				} else {
 					$attribs = '';
-					if (DevArray::isAssoc($a['attributes'])) foreach($a['attributes'] as $c=>$d) $attribs .= " $c=\"$d\"";
+					if (Arr::isAssoc($a['attributes'])) foreach($a['attributes'] as $c=>$d) $attribs .= " $c=\"$d\"";
 					$xml .= "$tabs<" . $a['name'] . "" . $attribs . ">" . ((count($a['child']) > 0) ? "\n" . $this->buildXML($a['child'], ++$indent) . "\n$tabs" : $a['content']) . "</" . $a['name'] . ">\n";
 				}
 			}
@@ -188,7 +204,7 @@ class XML extends Configurable
 	 */
 	public function status($status = null) 
 	{
-		if (DevValue::isNull($status))
+		if (Val::isNull($status))
 			return $this->_status;
 		$this->_status = $status;
 	}
@@ -212,7 +228,7 @@ class XML extends Configurable
 	{
 		header("Content-Type: XML");
 		$xml = 'No XML';
-		if (DevValue::isNull($data == '')) $data = $this->_data;
+		if (Val::isNull($data == '')) $data = $this->_data;
 		$xml = $this->buildXML($data);
 		echo $xml;
 	}

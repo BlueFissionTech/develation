@@ -1,19 +1,19 @@
 <?php
 namespace BlueFission\Services;
 
-use BlueFission\DevNumber;
-use BlueFission\DevString;
-use BlueFission\DevArray;
-use BlueFission\DevObject;
+use BlueFission\Num;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\Obj;
 use BlueFission\Behavioral\Behaviors\Event;
 
 /**
  * Class Response
  *
  * The Response class is used to handle the HTTP response for a web request.
- * It extends the DevObject class to include the ability to dispatch events.
+ * It extends the Obj class to include the ability to dispatch events.
  */
-class Response extends DevObject
+class Response extends Obj
 {
 	/**
 	 * Max depth for filling values into the Response object
@@ -66,7 +66,7 @@ class Response extends DevObject
 					break;
 				}
 
-				if ( $depth == 0 && DevArray::hasKey($this->_data, $key) && $this->$key == null ) {
+				if ( $depth == 0 && Arr::hasKey($this->_data, $key) && $this->$key == null ) {
 					$mapped = true;
 					$this->$key = $value;
 				} else {
@@ -76,24 +76,24 @@ class Response extends DevObject
 				$iterations++;
 			}
 
-			if ( $depth == 0 && DevArray::isAssoc($values) && $this->data == null && $values != $this->list ) {
+			if ( $depth == 0 && Arr::isAssoc($values) && $this->data == null && $values != $this->list ) {
 				$this->data = $values;
 			}
 
-			if ( $depth == 0 && DevArray::isIndexed($values) && $mapped == false && $this->list == null ) {
+			if ( $depth == 0 && Arr::isIndexed($values) && $mapped == false && $this->list == null ) {
 				$this->list = $values;
 			}
 
-			if ( $depth == 1 && DevArray::isIndexed($values) && $this->children == null && $values != $this->list ) {
+			if ( $depth == 1 && Arr::isIndexed($values) && $this->children == null && $values != $this->list ) {
 				$this->children = $values;
 			} 
 		}
 
-		if ( $depth < 2 && DevNumber::is($values) && $this->id == null  ) {
+		if ( $depth < 2 && Num::is($values) && $this->id == null  ) {
 			$this->id = $values;
 		}
 
-		if ( $depth < 2 && DevString::is($values) && $this->status == null  ) {
+		if ( $depth < 2 && Str::is($values) && $this->status == null  ) {
 			$this->status = $values;
 		}
 
@@ -122,7 +122,8 @@ class Response extends DevObject
 	 */
 	public function deliver() 
 	{
-		die($this->_message);
+		echo $this->_message ?? '{}';
+		exit;
 	}
 
 	/**

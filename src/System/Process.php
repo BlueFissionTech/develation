@@ -2,11 +2,22 @@
 
 namespace BlueFission\System;
 
+use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Meta;
+
 /**
  * Class Process is a wrapper class for the PHP proc_open function 
  * and is used to start, manage and stop a system process.
  */
-class Process {
+class Process implements IDispatcher {
+    use Dispatches {
+        Dispatches::__construct as private __dConstruct;
+    }
+
     /**
      * The command to be executed
      *
@@ -54,11 +65,11 @@ class Process {
 	 *
 	 * @var array
 	 */
-	private $spec = array(
-		0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
-		1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
-		2 => array("pipe", "a"), // stderr is a file to write to
-	);
+	private $_spec = [
+		0 => ["pipe", "r"],  // stdin is a pipe that the child will read from
+		1 => ["pipe", "w"],  // stdout is a pipe that the child will write to
+		2 => ["pipe", "a"], // stderr is a file to write to
+	];
 
     /**
      * The process resource created by proc_open
@@ -91,11 +102,23 @@ class Process {
      * @param array $options The options for the command to be executed with
      */
     public function __construct($command, $cwd = null, $env = null, $descriptorspec = null, $options = []) {
+        $this->__dConstruct();
         $this->_command = $command;
         $this->_cwd = $cwd ?? getcwd();
         $this->_env = $env;
         $this->_descriptorspec = $descriptorspec ?? $this->_spec;
         $this->_options = $options;
+
+        $this->trigger(Event::LOAD);
+    }
+
+    public function __get($name)
+    {
+        if ('process' == $name) {
+            return $this->_process;
+        }
+
+        return null;
     }
 
     /**
@@ -103,10 +126,21 @@ class Process {
      */
     public function start() {
         $this->_process = proc_open($this->_command, $this->_descriptorspec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
+        $this->trigger(Action::CONNECT);
+        
+        if (is_resource($this->_process)) {
+            $this->trigger(Event::STARTED);
+            // Make the streams non-blocking
+            stream_set_blocking($this->_pipes[1], false);
+            stream_set_blocking($this->_pipes[2], false);
+            $this->trigger(Event::CONNECTED);
+        } else {
+            $message = "Error starting process: " . $this->_command;
+            error_log($message);
+            $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: $message));
+        }
 
-        // Make the streams non-blocking
-        stream_set_blocking($this->_pipes[1], false);
-        stream_set_blocking($this->_pipes[2], false);
+        return $this;
     }
 
     public function pipes($index = 1) {
@@ -119,7 +153,11 @@ class Process {
      * @return string The output of the process
      */
     public function output() {
+        $this->trigger(Action::READ);
+        $this->trigger(State::READING);
         $this->_output = stream_get_contents($this->_pipes[1]);
+        $this->trigger(Event::READ);
+
         return $this->_output;
     }
 
@@ -131,12 +169,12 @@ class Process {
 	public function status()
 	{
 		$this->_status = proc_get_status($this->_process);
-		if ( $status )
+		if ( $this->_status )
 		{
 			return $this->_status['running'];
 		}
 		else
-			return fread($this->_pipes[2]);
+            return fread($this->_pipes[2], 2096);
 	}
 
     /**
@@ -144,13 +182,19 @@ class Process {
      * @return int Returns the termination status of the process that was run.
      */
     public function stop() {
-        foreach ($this->_pipes as $pipe)
-		{
-			if ($pipe) {
-				fclose($pipe);
-			}
-		}
-		return proc_close( $this->_process );
+        $this->trigger(Action::STOP);
+
+        foreach ($this->_pipes as $pipe) {
+            if (is_resource($pipe)) {
+                fclose($pipe);
+                $this->trigger(Event::DISCONNECTED);
+            }
+        }
+        proc_close($this->_process);
+        $this->trigger(Event::STOPPED);
+        // return $status;
+
+        return $this;
     }
 
     /**
@@ -158,8 +202,10 @@ class Process {
      * @return int Returns the exit code of the process that was run.
      */
     public function close() {
-        return proc_close($this->_process);
+        $this->trigger(Action::DISCONNECT);
+        $status = proc_close($this->_process);
+        $this->trigger(Event::DISCONNECTED);
+
+        return $this;
     }
-
 }
-

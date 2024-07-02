@@ -1,9 +1,10 @@
 <?php
 namespace BlueFission\Net;
 
-use BlueFission\DevValue;
-use BlueFission\DevString;
-use BlueFission\DevNumber;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\Num;
 
 /**
  * Class HTTP
@@ -20,9 +21,9 @@ class HTTP {
 	 * 
 	 * @return string A URL-encoded string representation of the query array
 	 */
-	static function query( $formdata, $numeric_prefix = null, $key = null ) 
+	static function query( $formdata, $numeric_prefix = '', $key = null ) 
 	{
-		if (function_exists('http_build_query') && DevValue::isNull( $key ))
+		if (function_exists('http_build_query') && Val::isNull( $key ))
 		{
 			return http_build_query($formdata, $numeric_prefix);
 		}
@@ -55,8 +56,10 @@ class HTTP {
 	 */
 	static function urlExists(string $url): bool
 	{
+
 	    $scheme = parse_url($url, PHP_URL_SCHEME);
-	    if ($scheme === false || $scheme !== "http") {
+	    
+	    if ($scheme === false || Arr::has(['http', 'https'], $scheme) === false) {
 	        return false;
 	    }
 	    
@@ -84,9 +87,9 @@ class HTTP {
 		$domain = (isset($_SERVER['HTTP_HOST'])) ? $_SERVER['HTTP_HOST'] : '';
 		if ($domain != '') 
 		{
-			$domain = (strtolower(DevString::substring($domain, 0, 4)) == 'www.' && !$wholedomain ) ? DevString::substring($domain, 3) : $domain;
-			$port = DevString::strpos($domain, ':');
-			$domain = ($port) ? DevString::substring($domain, 0, $port) : $domain;
+			$domain = (strtolower(Str::sub($domain, 0, 4)) == 'www.' && !$wholedomain ) ? Str::sub($domain, 3) : $domain;
+			$port = Str::pos($domain, ':');
+			$domain = ($port) ? Str::sub($domain, 0, $port) : $domain;
 		}
 		return $domain; 
 	}
@@ -119,17 +122,22 @@ class HTTP {
 	{
 	    if (empty($href)) {
 	        if (!defined('PAGE_EXTENSION')) define('PAGE_EXTENSION', '.php');
-	        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+	        $protocol = (
+	        	!empty($_SERVER['HTTPS']) 
+	        	&& $_SERVER['HTTPS'] !== 'off' 
+	        	|| (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+	       	)
+	       		? "https://" : "http://";
 	        $host = $_SERVER['HTTP_HOST'];
 	        $request_uri = $_SERVER['REQUEST_URI'];
 	        if ($doc === false) {
 	            $href = $_SERVER['DOCUMENT_ROOT'];
 	        } else {
 	            $href = $protocol . $host . $request_uri;
-	            if (strrpos($href, PAGE_EXTENSION)) {
-	                $href = substr($href, 0, strrpos($href, PAGE_EXTENSION) + strlen(PAGE_EXTENSION));
-	            } elseif (strrpos($href, '/')) {
-	                $href = substr($href, 0, strrpos($href, '/') + strlen('/'));
+	            if (Str::rpos($href, PAGE_EXTENSION)) {
+	                $href = Str::sub($href, 0, Str::rpos($href, PAGE_EXTENSION) + strlen(PAGE_EXTENSION));
+	            } elseif (Str::rpos($href, '/')) {
+	                $href = Str::sub($href, 0, Str::rpos($href, '/') + strlen('/'));
 	            }
 	        }
 	    }
@@ -152,12 +160,12 @@ class HTTP {
 	 */
 	static function cookie($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
-		if (DevValue::isNull($value))
+		if (Val::isNull($value))
 			return $_COOKIE[$var] ?? null;
 		
-		$domain = ($path) ? DevString::substring($path, 0, DevString::strpos($path, '/')) : HTTP::domain();
-		$dir = ($path) ? DevString::substring($path, DevString::strpos($path, '/'), strlen($path)) : '/';
-		$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
+		$domain = ($path) ? Str::sub($path, 0, Str::pos($path, '/')) : HTTP::domain();
+		$dir = ($path) ? Str::sub($path, Str::pos($path, '/'), strlen($path)) : '/';
+		$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 		$cookiesecure = (bool)$secure;
 			
 		return setcookie ($var, $value, $cookiedie, $dir, $domain, $cookiesecure);
@@ -177,14 +185,14 @@ class HTTP {
 	 */
 	static function session($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
-		if (DevValue::isNull($value) )
+		if (Val::isNull($value) )
 			return isset( $_SESSION[$var] ) ? $_SESSION[$var] : null;
 			
 		if (session_id() == '') 
 		{
-			$domain = ($path) ? DevString::substring($path, 0, DevString::strpos($path, '/')) : HTTP::domain();
-			$dir = ($path) ? DevString::substring($path, DevString::strpos($path, '/'), strlen($path)) : '/';
-			$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
+			$domain = ($path) ? Str::sub($path, 0, Str::pos($path, '/')) : HTTP::domain();
+			$dir = ($path) ? Str::sub($path, Str::pos($path, '/'), strlen($path)) : '/';
+			$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 			$cookiesecure = (bool)$secure;
 			
 			session_set_cookie_params($cookiedie, $dir, $domain, $cookiesecure);

@@ -1,7 +1,8 @@
 <?php
 namespace BlueFission\Data\Datasource;
 
-use BlueFission\DevNumber;
+use BlueFission\Num;
+use BlueFission\IObj;
 use BlueFission\Data\Data;
 use BlueFission\Data\IData;
 
@@ -42,28 +43,37 @@ class Datasource extends Data implements IData {
 	/**
 	 * Reads the current data record from the collection.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function read() {
+	public function read(): IObj
+	{
 		$this->assign( $this->_collection[ $this->_index ] );
+
+		return $this;
 	}
 	
 	/**
 	 * Writes the current data record to the collection.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function write() {
+	public function write(): IObj
+	{
 		$this->_collection[ $this->_index ] = $this->_data;
+
+		return $this;
 	}
 	
 	/**
 	 * Deletes the current data record from the collection.
 	 *
-	 * @return void
+	 * @return IObj
 	 */
-	public function delete() {
+	public function delete(): IObj
+	{
 		unset ( $this->_collection[ $this->_index ] );
+
+		return $this;
 	}
 	
 	/**
@@ -95,7 +105,7 @@ class Datasource extends Data implements IData {
 	 * @return bool
 	 */
 	private function inbounds( $index = null ) {
-		$index = DevNumber::isValid($index) ? $index : $this->_index;
+		$index = Num::isValid($index) ? $index : $this->_index;
 		return ( $index <= count( $this->_collection ) && $index >= 0 );
 	}
 

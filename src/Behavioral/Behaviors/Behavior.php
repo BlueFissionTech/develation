@@ -29,14 +29,14 @@ class Behavior
 	protected $_priority;
 	
 	/**
-	 * @var object $_target The object on which the behavior is being defined.
+	 * @var object $target The object on which the behavior is being defined.
 	 */
-	public $_target;
+	public $target;
 	
 	/**
-	 * @var mixed $_context The context in which the behavior is being defined.
+	 * @var mixed $context The context in which the behavior is being defined.
 	 */
-	public $_context;
+	public $context;
 
 	/**
 	 * Constructor for the Behavior class.
@@ -52,7 +52,7 @@ class Behavior
 		$this->_persistent = $persistent;
 		$this->_passive = $passive;
 		$this->_priority = $priority;
-		$this->_target = null;
+		$this->target = null;
 	}	
 	
 	/**

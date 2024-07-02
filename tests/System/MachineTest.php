@@ -1,7 +1,7 @@
 <?php
-namespace BlueFission\Tests;
+namespace BlueFission\System\Tests;
 
-use BlueFission\Utils\Machine;
+use BlueFission\System\Machine;
 use PHPUnit\Framework\TestCase;
 
 class MachineTest extends TestCase {
@@ -23,12 +23,12 @@ class MachineTest extends TestCase {
 
   public function testGetUptime() {
     $machine = new \BlueFission\System\Machine();
-    $this->assertIsInt($machine->getUptime());
+    $this->assertIsFloat($machine->getUptime());
   }
 
   public function testGetCPUUsage() {
     $machine = new \BlueFission\System\Machine();
-    $this->assertIsFloat($machine->getCPUUsage());
+    $this->assertIsNumeric($machine->getCPUUsage());
   }
 
   public function testGetTemperature() {

@@ -2,6 +2,9 @@
 
 namespace BlueFission\Data\Queues;
 
+use RuntimeException;
+use BlueFission\Collections\Collection;
+
 /**
  * Class FileQueue
  * 
@@ -9,124 +12,107 @@ namespace BlueFission\Data\Queues;
  * @implements IQueue
  */
 class FileQueue extends Queue implements IQueue {
+    const FILENAME = 'file_queue_stack.tmp';
 
-	/**
-	 * A constant for the file name for the file queue stack
-	 */
-	const FILENAME = 'file_queue_stack.tmp';
-		
-	/**
-	 * @var string $_stack 
-	 */
-	private static $_stack;
+    /**
+     * File handle for the queue file.
+     */
+    private static $handle = null;
 
-	/**
-	 * @var array $_array 
-	 */
-	private static $_array;
+    /**
+     * Cache of the queue data.
+     */
+    private static $cache = [];
 
-	/**
-	 * Prevents the class from being instantiated
-	 */
-	private function __construct() {}
-	
-	/**
-	 * Prevents the class from being cloned
-	 */
-	private function __clone() {}
+    private function __construct() {}
 
-	/**
-	 * Returns the instance of the stack
-	 * 
-	 * @return string
-	 */
-	private static function instance() {
-		if(!self::$_stack) self::init();
-		return self::$_stack;
-	}
-	
-	/**
-	 * Initializes the stack
-	 */
-	private static function init() {
-		$tempfile = sys_get_temp_dir().DIRECTORY_SEPARATOR.self::FILENAME;
-		$stack = $tempfile;
+    private function __clone() {}
 
-		self::$_stack = $stack;
-	}
-	
-	/**
-	 * Check if a given queue is empty
-	 * 
-	 * @param string $queue 
-	 * @return boolean
-	 */
-	public static function is_empty($queue) {
-		$stack = self::instance();
+    /**
+     * Ensures that the file handle is opened and ready for use.
+     */
+    private static function ensureFileHandle() {
+        if (self::$handle === null) {
+            $tempfile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . self::FILENAME;
 
-		$count = filesize($stack);
-		if ( $count < 1 )
-			return true;
+            // Try to open file handle
+            self::$handle = fopen($tempfile, 'c+');
+            if (self::$handle === false) {
+                throw new RuntimeException("Unable to open queue file.");
+            }
+            // Acquire an exclusive lock
+            if (!flock(self::$handle, LOCK_EX)) {
+                fclose(self::$handle);
+                self::$handle = null;
+                throw new RuntimeException("Unable to lock queue file.");
+            }
+            // Read existing data into cache
+            $data = stream_get_contents(self::$handle);
+            self::$cache = $data ? unserialize($data) : [];
+        }
+    }
 
-		$data = file_get_contents(self::$stack);
+    public static function isEmpty($queue) {
+        self::ensureFileHandle();
+        return empty(self::$cache[$queue]);
+    }
 
-		self::$_array = unserialize($data);
+    public static function dequeue($queue, $after_id=false, $till_id=false) {
+        self::ensureFileHandle();
 
-		$count = count(self::$_array[$queue]);
+        // Reverse the array if FILO
+        if ( self::$_mode == static::FILO ) {
+        	self::$cache[$queue] = array_reverse(self::$cache[$queue]);
+        }
 
-		return $count ? false : true;
-	}
+        if ( $after_id === false && $till_id === false ) {
+        	$item = array_shift(self::$cache[$queue]);
+        } else {
+            $after_id = $after_id ?? 0;
+            $length = $till_id === false ? count(self::$cache[$queue]) : $till_id;
+            $item = new Collection(array_splice(self::$cache[$queue], $after_id, $length));
+        }
 
-	/**
-	 * Dequeue an item from a given queue
-	 * 
-	 * @param string $queue 
-	 * @param int $after 
-	 * @param int $until 
-	 * @return array|null
-	 */
-	public static function dequeue($queue, $after=false, $until=false) {
-		$stack = self::instance();
-		$data = file_get_contents($stack);
+        // Fix it
+        if ( self::$_mode == static::FILO ) {
+        	self::$cache[$queue] = array_reverse(self::$cache[$queue]);
+        }
+        self::save();
+        return $item;
+    }
 
-		self::$_array = unserialize($data);
-		if ( self::$_mode == static::FILO && is_array(self::$_array)) {
-			self::$_array = array_reverse(self::$_array);
-		}
+    public static function enqueue($queue, $item) {
+        self::ensureFileHandle();
+        self::$cache[$queue][] = $item;
+        self::save();
+    }
 
-		if($after === false && $until === false) {
-			return is_array(self::$_array) ? array_pop( self::$_array[$queue] ) : null;
-		} elseif($after !== false && $until === false) {
-			$until = count(self::$_array)-1;
-		}
-		$items = array_slice ( self::$_array[$queue], $after, $until, true );
+    /**
+     * Writes the current cache back to the file.
+     */
+    private static function save() {
+        if (self::$handle === null) {
+            throw new RuntimeException("File handle is not open.");
+        }
+        // Truncate the file and write serialized data
+        ftruncate(self::$handle, 0);
+        rewind(self::$handle);
+        fwrite(self::$handle, serialize(self::$cache));
+        fflush(self::$handle); // flush output before releasing the lock
+    }
 
-		$data = serialize(self::$_array);
+    /**
+     * Closes the file handle.
+     */
+    public static function close() {
+        if (self::$handle !== null) {
+            flock(self::$handle, LOCK_UN);
+            fclose(self::$handle);
+            self::$handle = null;
+        }
+    }
 
-		file_put_contents($stack, $data);
-
-		return $items;
-	}
-	
-	/**
-	 * Enqueue an item to the given queue
-	 * 
-	 * @param string $queue The name of the queue
-	 * @param mixed $item The item to be added to the queue
-	 * 
-	 * @return void
-	 */
-	public static function enqueue($queue, $item) {
-		$stack = self::instance();
-		$data = file_get_contents($stack);
-
-		self::$_array = unserialize($data);
-
-		self::$_array[$queue][] = $item;
-		
-		$data = serialize(self::$_array);
-
-		file_put_contents($stack, $data);
-	}
-
+    public function __destruct() {
+        self::close();
+    }
 }

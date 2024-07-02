@@ -1,11 +1,15 @@
 <?php
 namespace BlueFission\Data\Storage;
 
-use BlueFission\DevValue;
-use BlueFission\DevString;
+use BlueFission\Val;
+use BlueFission\Str;
+use BlueFission\Arr;
+use BlueFission\IObj;
+use BlueFission\Net\HTTP;
 use BlueFission\Data\IData;
 use BlueFission\Data\FileSystem;
-use BlueFission\Net\HTTP;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Action;
 
 class Disk extends Storage implements IData
 {
@@ -14,10 +18,10 @@ class Disk extends Storage implements IData
 	 * 
 	 * @var array 
 	 */
-	protected $_config = array( 
+	protected $_config = [ 
 		'location'=>'', 
 		'name'=>'' 
-	);
+	];
 		
 	/**
 	 * Constructor method for the disk storage object.
@@ -31,29 +35,48 @@ class Disk extends Storage implements IData
 	/**
 	 * Activates the disk storage object.
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function activate( ) {
-		$path = $this->config('location') ? $this->config('location') : sys_get_temp_dir();
+	public function activate( ): IObj
+	{
+		$path = $this->config('location') ?? sys_get_temp_dir();
 		
-		$name = $this->config('name') ? (string)$this->config('name') : '';
+		$name = $this->config('name') ?? '';
 			
-		if (!$this->config('name'))	{
-			$file = tempnam($path, 'store_');
-		} else {
-			$file = $path.DIRECTORY_SEPARATOR.$name;
+		if (!$name)	{
+			$name = basename(tempnam($path, 'store_'));
 		}
 
-		$filesystem = new FileSystem( array('mode'=>'c+','filter'=>'file') );
-		if ( $filesystem->open($file) ) {
+		$filesystem = new FileSystem( [
+			'mode'=>'c+',
+			'filter'=>'file',
+			'root'=>$path
+		] );
+
+		$filesystem->filename = $name;
+		$filesystem
+		->when(Event::CONNECTED, (function ($b, $m) use ($filesystem) {
 			$this->_source = $filesystem;
-		}
 
-		if ( !$this->_source )  {
-			$this->status( self::STATUS_FAILED_INIT );
-		} else {
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
-		}
+		})->bindTo($this, $this))
+		->when(Event::FAILURE, (function ($b, $m) {
+			if ( $m->when == Action::CONNECT ) {
+				$this->status( self::STATUS_FAILED_INIT );
+				return;
+			}
+			error_log('Failed: ' . $m->info);
+		})->bindTo($this, $this))
+		->when(Event::ERROR, (function ($b, $m) {
+			if ( $m->when == Action::CONNECT ) {
+				$this->status( self::STATUS_FAILED_INIT );
+				return;
+			}
+			error_log('Error: ' . $m->info);
+		})->bindTo($this, $this))
+		->open();
+
+		return parent::activate();
 	}
 	
 	/**
@@ -61,14 +84,18 @@ class Disk extends Storage implements IData
 	 * 
 	 * @return void
 	 */
-	public function write() {
+	protected function _write(): void
+	{
 		$source = $this->_source;
 		$status = self::STATUS_FAILED;
-		$data = DevValue::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data) : $this->_contents; 
-		
-		$source->flush();
-		$source->contents( $data );
-		$source->write();				
+		if (!$source) {
+			$this->status( $status );
+			return;
+		}
+
+		$data = Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents;
+
+		$source->flush()->contents( $data )->write();
 		
 		$status = self::STATUS_SUCCESS;
 		
@@ -78,10 +105,17 @@ class Disk extends Storage implements IData
 	/**
 	 * Reads data from disk storage object.
 	 * 
-	 * @return mixed 
+	 * @return void 
 	 */
-	public function read() {	
+	protected function _read(): void
+	{	
 		$source = $this->_source;
+		if (!$source) {
+			$status = self::STATUS_FAILED;
+			$this->status( $status );
+
+			return;
+		}
 		$source->read();
 
 		$value = $source->contents();
@@ -90,8 +124,7 @@ class Disk extends Storage implements IData
 			$value = json_decode($value, true);
 			$this->contents($value);
 			$this->assign((array)$value);
-		}	
-		return $value;
+		}
 	}
 	
 	/**
@@ -99,8 +132,15 @@ class Disk extends Storage implements IData
 	 *
 	 * @return void
 	 */
-	public function delete() {
+	protected function _delete(): void
+	{
 		$source = $this->_source;
+		if (!$source) {
+			$status = self::STATUS_FAILED;
+			$this->status( $status );
+			return;
+		}
+
 		$source->delete();
 	}
 
@@ -110,8 +150,9 @@ class Disk extends Storage implements IData
 	 * @return void
 	 */
 	public function __destruct() {
-		if (isset($this->_source))
+		if (Val::is($this->_source)) {
 			$this->_source->close();
+		}
 		parent::__destruct();
 	}
 

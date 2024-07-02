@@ -1,8 +1,9 @@
 <?php
 namespace BlueFission\Data\Storage;
 
-use BlueFission\DevString;
-use BlueFission\DevNumber;
+use BlueFission\Str;
+use BlueFission\Num;
+use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
 
@@ -25,12 +26,12 @@ class Session extends Storage implements IData
 	 * 'expire': the time in seconds for the session to expire.
 	 * 'secure': a boolean indicating if the session should be secure.
 	 */
-	protected $_config = array( 
+	protected $_config = [
 		'location'=>'',
 		'name'=>'',
 		'expire'=>'3600',
 		'secure'=>false,
-	);
+	];
 	
 	/**
 	 * Session constructor.
@@ -45,10 +46,10 @@ class Session extends Storage implements IData
 	/**
 	 * Activates the session.
 	 */
-	public function activate( )
+	public function activate( ): IObj
 	{
 		$path = $this->config('location');
-		$name = $this->config('name') ? (string)$this->config('name') : DevString::random();
+		$name = $this->config('name') ? (string)$this->config('name') : Str::random();
 		$expire = (int)$this->config('expire');
 		$secure = $this->config('secure');
 		$this->_source = $name;
@@ -57,7 +58,7 @@ class Session extends Storage implements IData
 		{
 			$domain = ($path) ? substr($path, 0, strpos($path, '/')) : HTTP::domain();
 			$dir = ($path) ? substr($path, strpos($path, '/'), strlen($path)) : '/';
-			$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
+			$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 			$secure = (bool)$secure;
 			
 			session_set_cookie_params($cookiedie, $dir, $domain, $secure);
@@ -69,12 +70,14 @@ class Session extends Storage implements IData
 		
 		if ( !$this->_source ) 
 			$this->status( self::STATUS_FAILED_INIT );
+
+		return $this;
 	}
 	
 	/**
 	 * Writes data to the session.
 	 */
-	public function write()
+	public function write(): IObj
 	{			
 		$value = HTTP::jsonEncode( $this->_data ? $this->_data : $this->_contents);
 		$label = $this->_source;
@@ -83,41 +86,44 @@ class Session extends Storage implements IData
 		$secure = $this->config('secure');
 				
 		$path = ($path) ? $path : HTTP::domain();
-		$cookiedie = (DevNumber::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
+		$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 		$secure = (bool)$secure;
 		$status = ( HTTP::session($label, $value, $cookiedie, $path = null, $secure) ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
 		
-		$this->status( $status );	
+		$this->status( $status );
+
+		return $this;
 	}
 	
 	/**
 	 * Reads session data
 	 * 
-	 * @return mixed Session data
+	 * @return IObj
 	 */
-	public function read()
+	public function read(): IObj
 	{	
 		$value = HTTP::session( $this->_source );
-		if (empty($value)) {
-			return null;
-		}
+
 		if ( function_exists('json_decode'))
 		{
 			$value = json_decode($value);
 			$this->contents($value);
 			$this->assign((array)$value);
 		}
-		return $value; 
+
+		return $this; 
 	}
 
 	/**
 	 * Deletes session data
 	 * 
-	 * @return void
+	 * @return IObj
 	 */
-	public function delete()
+	public function delete(): IObj
 	{
 		$label = $this->_source;
 		unset($_SESSION[$label]);
+
+		return $this;
 	}
 }

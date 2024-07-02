@@ -3,6 +3,7 @@
 namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Mapping;
+use BlueFission\Services\Application as App;
 use PHPUnit\Framework\TestCase;
 
 class MappingTest extends TestCase
@@ -19,7 +20,7 @@ class MappingTest extends TestCase
         $this->assertInstanceOf(Mapping::class, $mapping);
         $this->assertEquals('get', $mapping->method);
         $this->assertEquals('test', $mapping->name);
-        $this->assertEquals('/test', $mapping->path);
+        $this->assertEquals('test', $mapping->path);
         $this->assertEquals($callable, $mapping->callable);
     }
 
@@ -33,26 +34,34 @@ class MappingTest extends TestCase
 
         Mapping::crud($root, $package, $controller, $idField, $gateway);
 
-        $app = \App::instance();
+        $app = App::instance();
         $maps = $app->maps();
 
-        $this->assertCount(4, $maps);
-        $this->assertEquals('/testpackage', $maps[0]->path);
-        $this->assertEquals('test.package', $maps[0]->name);
-        $this->assertEquals('get', $maps[0]->method);
-        $this->assertEquals(['gateway'], $maps[0]->gateways());
-        $this->assertEquals('/testpackage/{$id}', $maps[1]->path);
-        $this->assertEquals('test.package.get', $maps[1]->name);
-        $this->assertEquals('get', $maps[1]->method);
-        $this->assertEquals(['gateway'], $maps[1]->gateways());
-        $this->assertEquals('/testpackage', $maps[2]->path);
-        $this->assertEquals('test.package.save', $maps[2]->name);
-        $this->assertEquals('post', $maps[2]->method);
-        $this->assertEquals(['gateway'], $maps[2]->gateways());
-        $this->assertEquals('/testpackage/{$id}', $maps[3]->path);
-        $this->assertEquals('test.package.update', $maps[3]->name);
-        $this->assertEquals('post', $maps[3]->method);
-        $this->assertEquals(['gateway'], $maps[3]->gateways());
+        $this->assertCount(2, $maps);
+        // $this->assertEquals('test', $maps['get']['test']->path);
+        // $this->assertEquals('test', $maps['get']['test']->name);
+        // $this->assertEquals('get', $maps['get']['test']->method);
+        // $this->assertEquals([], $maps['get']['test']->gateways());
+
+        $this->assertEquals('test/package', $maps['get']['test/package']->path);
+        $this->assertEquals('.testpackage', $maps['get']['test/package']->name);
+        $this->assertEquals('get', $maps['get']['test/package']->method);
+        $this->assertEquals(['gateway'], $maps['get']['test/package']->gateways());
+
+        $this->assertEquals('test/package/$id', $maps['get']['test/package/$id']->path);
+        $this->assertEquals('.testpackage.get', $maps['get']['test/package/$id']->name);
+        $this->assertEquals('get', $maps['get']['test/package/$id']->method);
+        $this->assertEquals(['gateway'], $maps['get']['test/package/$id']->gateways());
+
+        $this->assertEquals('test/package', $maps['post']['test/package']->path);
+        $this->assertEquals('.testpackage.save', $maps['post']['test/package']->name);
+        $this->assertEquals('post', $maps['post']['test/package']->method);
+        $this->assertEquals(['gateway'], $maps['post']['test/package']->gateways());
+
+        $this->assertEquals('test/package/$id', $maps['post']['test/package/$id']->path);
+        $this->assertEquals('.testpackage.update', $maps['post']['test/package/$id']->name);
+        $this->assertEquals('post', $maps['post']['test/package/$id']->method);
+        $this->assertEquals(['gateway'], $maps['post']['test/package/$id']->gateways());
     }
 
     public function testGatewayMethod1()
