@@ -1104,8 +1104,8 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 			// If the dependency class exists, get its dependencies and create an instance of it
 			if ( in_array($dependencyClass, $varTypes) ) {
-+				$dependencies[$dependencyName] = $arguments[$dependencyName] ?? ( $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null );
-+			} elseif ( $dependencyClass ) {
+				$dependencies[$dependencyName] = $arguments[$dependencyName] ?? ( $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null );
+			} elseif ( $dependencyClass ) {
 				$values = array_values($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
 				$dependencies[$dependencyName] = 
 					$arguments[$dependencyName] ?? 
