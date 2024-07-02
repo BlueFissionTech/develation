@@ -38,8 +38,9 @@ class Stdio extends Connection implements IConfigurable
     public function __construct( $config = null )
     {
         parent::__construct();
-        if (Arr::is($config))
+        if (Arr::is($config)) {
             $this->config($config);
+        }
     }
 
     /**
