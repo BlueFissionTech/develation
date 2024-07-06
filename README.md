@@ -26,7 +26,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 ### Data Types
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
 
-- [Data Types Documentation](datatype.md)
+- [Data Types Documentation](datatypes.md)
 
 ### DateTime Handling
 Sophisticated date and time manipulation with object-oriented principles, extending PHP's native `DateTime` class.
