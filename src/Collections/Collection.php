@@ -251,14 +251,30 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 *
 	 * @return mixed|false The current object in the collection, or false if there are no more objects.
 	 */
-	public function each() {
+	public function next() {
 		if ( $this->valid() ) {
 			$row = $this->current();
-			$this->next();
+			$this->tick();
 			return $row;
 		} else {
 			$this->rewind();
 			return false;
+		}
+	}
+
+	/**
+	 * Yield the next item in the collection until complete
+	 */
+	public function yield() {
+		yield from $this->contents();
+	}
+
+	/**
+	 * Iterate a method across all items in the collection
+	 */
+	public funtion each( callable $callback ) {
+		foreach ($this->contents() as $key => $value) {
+			$callback( $value, $key );
 		}
 	}
 
@@ -409,7 +425,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	/**
 	 * Move the iterator to the next element.
 	 */
-	public function next() {
+	public function tick() {
 		return $this->_iterator->next();
 	}
 

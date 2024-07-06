@@ -10,6 +10,8 @@ use BlueFission\IObj;
 use BlueFission\HTML\HTML;
 use BlueFission\Utils\Util;
 use BlueFission\Behavioral\Configurable;
+use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\FileSystem;
 use BlueFission\Data\Storage\Disk;
@@ -72,17 +74,14 @@ class Template extends Obj {
      */
     public function __construct ( $config = null ) 
     {
-    	$this->__configConstruct();
-        parent::__construct( $config );
-        if ( Val::isNotNull( $config ) ) {
-            if (Arr::isAssoc($config)) {
-                $this->config($config);
-                $this->load($this->config('file'));
-            } elseif (Str::is($config)) {
-                $this->config('file', $config);
-                $this->load();
-            }
+        parent::__construct();
+        if ( Val::isNotNull( $config ) && Str::is($config)) {
+            $config = ['file'=>$config];
         }
+
+    	$this->__configConstruct($config);
+    	$this->load();
+        
         $this->_cached = false;
 
         $this->dispatch( State::DRAFT );
@@ -95,7 +94,19 @@ class Template extends Obj {
      */
     public function load ( $file = null ): IObj
     {
+    	$this->perform( State::READING );
+
     	$file = $file ?? $this->config('file');
+
+    	if ( Val::isEmpty($file) ) {
+    		$status = 'No file specified';
+    		$this->status($status);
+    		$this->perform( Event::ERROR, new Meta(info: $status, src: $this, when: State::READING ) );
+    		$this->halt(State::READING);
+
+			return $this;
+		}
+
     	$info = pathinfo($file);
 
     	$file = $info['basename'];
@@ -107,9 +118,12 @@ class Template extends Obj {
 
         if ( Val::isNotNull($file)) {
             $this->_file = (new FileSystem(['root'=>$path]))->open($file);
-
             $this->_template = $this->_file->read()->contents();
+            $this->perform( Event::READ, new Meta(info: 'File loaded', src: $this, when: State::READING ) );
         }
+
+    	$this->halt(State::READING);
+
 
         return $this;
     }

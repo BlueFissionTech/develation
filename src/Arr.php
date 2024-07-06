@@ -402,6 +402,31 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		return $this;
 	}
 
+
+	/**
+	 * Prepend one or more elements to the beginning of an array
+	 */
+	public function _prepend( ...$arrays ): IVal
+	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+		$array = $this->_data;
+		foreach ($arrays as $arg) {
+			if (is_array($arg)) {
+				foreach ($arg as $key=>$value) {
+					if (is_numeric($key) && !in_array($value, $array)) {
+						array_unshift($array, $value);
+					}
+				}
+			}
+		}
+		$this->alter($array);
+
+		return $this;
+	}
+
+
 	public function push( $var ): IVal
 	{
 		if (!$this->is($this->_data)) {
@@ -410,6 +435,67 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 
 		$array = $this->_data;
 		array_push($array, $var);
+
+		$this->alter($array);
+
+		return $this;
+	}
+
+	/**
+	 * Iterate through the array with a callback
+	 */
+	public function _each( callable $callback ): IVal
+	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+
+		$array = $this->_data;
+		foreach ($array as $key=>$value) {
+			$callback($value, $key);
+		}
+
+		return $this;
+	}
+
+
+	/**
+	 * Remove a value from the array
+	 * @param mixed $value
+	 * @return IVal
+	 */
+	public function _remove( mixed $value ): IVal
+	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+
+		$array = $this->_data;
+		$key = array_search($value, $array);
+		if ($key !== false) {
+			unset($array[$key]);
+		}
+
+		$this->alter($array);
+
+		return $this;
+	}
+
+	/**
+	 * Remove a value from the array by offset or key
+	 * @param mixed $offset
+	 * @return IVal
+	 */
+	public function _delete( mixed $offset ): IVal
+	{
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+
+		$array = $this->_data;
+		if (array_key_exists($offset, $array)) {
+			unset($array[$offset]);
+		}
 
 		$this->alter($array);
 
@@ -456,17 +542,6 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		return array_keys($this->_data);
 	}
 		
-	// /**
-	//  * Return the data as an array
-	//  * @return IVal | mixed
-	//  */
-	// public function _val($value = null): IVal | mixed {
-	// 	if ($value && Arr::is($value)) {
-	// 		return parent::_val($value);
-	// 	}
-	// 	return $this->_toArray();
-	// }
-
 	/**
 	 * Return a count of the base array
 	 * @return int the number of elements in $_data

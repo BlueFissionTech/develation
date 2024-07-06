@@ -203,7 +203,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      *
      * @return object An instance of the current class.
      */
-    static function instance()
+    static function getInstance()
     {
         $calledClass = get_called_class();
         if (!isset(self::$_instances[$calledClass])) {
@@ -212,6 +212,21 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
         return self::$_instances[$calledClass];
     }
+
+    /**
+     * Get the first instance of the current class.
+     *
+     * @return object The first instance of the current class.
+     */
+    static function instance()
+    {
+		if (count(self::$_instances) <= 0) {
+	        $calledClass = get_called_class();
+			self::$_instances[$calledClass] = new static();
+		}
+
+		return array_values(self::$_instances)[0];
+	}
 
     /**
      * Set the parameters for this request.
@@ -492,6 +507,40 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		}
 
 		return $this;
+	}
+
+	/**
+	 * Execute a behavior on a service as a command
+	 * @param  string $service  The name of the service
+	 * @param  Behavior|string $behavior The behavior to be executed
+	 * @param  mixed $data     The data to be passed to the behavior
+	 * @param  callable $callback The callback function to be executed
+	 * @return mixed           The result
+	 */
+	public function command( $service, $behavior, $data = null, $callback = null )
+	{
+		$result = null;
+		$module = $this->_services[$service];
+		
+		// $module = instance($service);
+
+		if ( $module ) {
+			$module->message($behavior, $data);
+			$module = $this->service($service);
+
+			if (method_exists($module, 'response')) {
+				$result = $module->response();
+			} else if (method_exists($module, 'status')) {
+				$result = $module->status();
+			}
+
+			if ( $callback ) {
+				return $callback($result);
+			}
+		} else {
+			return $callback("Resource not found");
+		}
+		return;
 	}
 
 	/**
@@ -930,6 +979,33 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			return '404';
 		}
 	}
+
+	/**
+	 * Return the registered abilities
+	 * @return array The abilities of the application
+	 */
+	public function getAbilities()
+    {
+        $abilities = [];
+
+        foreach ($this->_routes as $behaviorName => $senders) {
+
+            foreach ($senders as $senderName => $recipients) {
+            	foreach ( $recipients as $recipient ) {
+            		$service = $recipient['recipient'];
+	                if (!isset($abilities[$service])) {
+	                    $abilities[$service] = [];
+	                }
+
+	                if (!in_array($behaviorName, $abilities[$service])) {
+	                    $abilities[$service][] = $behaviorName;
+	                }
+	            }
+            }
+        }
+
+        return $abilities;
+    }
 
 	/**
 	 * Create an instance of a given class

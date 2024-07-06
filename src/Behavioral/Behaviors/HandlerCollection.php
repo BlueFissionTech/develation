@@ -51,7 +51,7 @@ class HandlerCollection extends Collection
 	 */
 	public function get( $behaviorName )
 	{
-		$handlers = array();
+		$handlers = [];
 		foreach ($this->_value as $c)
 		{
 			if ($c->name() == $behaviorName)

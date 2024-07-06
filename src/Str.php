@@ -180,7 +180,7 @@ class Str extends Val implements IVal {
 	 *
 	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
 	 */
-	public function _pos(string $needle): int {
+	public function _pos(string $needle): int|bool {
 		return strpos($this->_data, $needle);
 	}
 

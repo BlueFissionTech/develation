@@ -69,8 +69,7 @@ class FileSystem extends Data implements IData {
 		
 		// Set the root directory to the current working directory
 		if ( Val::isNotNull($config) ) {
-			if ( Arr::isAssoc($config) )
-			{
+			if ( Arr::isAssoc($config) ) {
 				$this->config($config);
 			} elseif ( Str::is($config) ) {
 				$this->loadInfo($config);
@@ -109,11 +108,16 @@ class FileSystem extends Data implements IData {
 		if ( $file ) {
 			$this->loadInfo( $file );
 		}
+
+// if (Str::pos($file, 'default') !== false) die(var_dump($this->_config));
+
 			
+		// if ($file && Str::pos($file, 'default') !== false) $this->config('root', 'lfjsjs');
 		$success = false;
 		$path = $this->path();
 		$file = $this->file();
 		$status = "File opened successfully";
+
 
 		if (!$this->allowedDir($path)) {
 			$status = "Location is outside of allowed path.";
@@ -224,7 +228,11 @@ class FileSystem extends Data implements IData {
 		$info = pathinfo($path);
 
 		$root = $this->config('root') ?? $this->getSystemRoot();
-		$root = ( $root && Str::pos($path, $root) === 0 ) ? $root : '';
+		// Maybe we should override the root if its passed with the path?
+		// $root = ( $root && Str::pos($path, $root) === 0 ) ? $root : '';
+		if ( Str::pos($path, DIRECTORY_SEPARATOR) === 0 && Arr::is($info) ) {
+			$root = $info['dirname'] ?? $root;
+		}
 
 		$this->config('root', $root);
 		

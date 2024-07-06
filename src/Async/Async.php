@@ -210,7 +210,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
 
     protected function logError(\Exception $e) {
         // Log the error using a logging system or error reporting service.
-        error_log($e)   ;
+        error_log($e);
     }
 
     protected function checkTimeout($task) {

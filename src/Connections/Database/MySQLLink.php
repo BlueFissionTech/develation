@@ -73,7 +73,7 @@ class MySQLLink extends Connection implements IConfigurable
     protected function _open(): void
     {
 		if ( $this->_connection ) {
-			$this->close();
+			return;
 		}
 
         $host = ( $this->config('target') ) ? $this->config('target') : 'localhost';
