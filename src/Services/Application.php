@@ -385,7 +385,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			foreach ($mapping->gateways() as $gatewayName) {
 				if ( isset( $this->_gateways[$gatewayName] ) ) {
 					$gatewayClass = $this->_gateways[$gatewayName];
-					$gateway = $this->getGatwayInstance($gatewayClass);
+					$gateway = $this->resolve($gatewayClass);
 					$gateway->process( $request, $this->_arguments );	
 				}
 			}
@@ -700,7 +700,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$service->type = $reference;	
 			$service->scope = $this;
 			if ( is_subclass_of($reference, Service::class) && count($args) == 0 ) {
-				$service->instance = $this->getServiceInstance($reference);
+				$service->instance = $this->resolve($reference);
 			}
 		} else {
 			$component = $this->component( $name );
@@ -816,7 +816,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$service = $this->_services[$serviceName]->instance();
 		} catch( \Exception $e ) {
 			error_log($e->getMessage());
-			$service = $this->getServiceInstance($serviceName);
+			$service = $this->resolve($serviceName);
 		}
 		if ( $call )
 		{
@@ -1048,10 +1048,10 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * @param string $class 
 	 * @return mixed
 	 */
-	private function getServiceInstance(string $class )
-	{
-		return $this->getDynamicInstance($class);
-	}
+	// private function resolve(string $class )
+	// {
+	// 	return $this->getDynamicInstance($class);
+	// }
 
 	/**
 	 * Get gateway instance
@@ -1059,7 +1059,18 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * @param string $class 
 	 * @return mixed
 	 */
-	private function getGatwayInstance(string $class )
+	// private function getGatwayInstance(string $class )
+	// {
+	// 	return $this->getDynamicInstance($class);
+	// }
+
+	/**
+	 * Get instance or registered item
+	 * 
+	 * @param string $class 
+	 * @return mixed
+	 */
+	private function resolve(string $class )
 	{
 		return $this->getDynamicInstance($class);
 	}
@@ -1214,7 +1225,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$method = new \ReflectionMethod($objectOrClassName, $methodName);
 
 			if ( \is_string($objectOrClassName) && !$method->isStatic() ) {
-				$objectOrClassName = $this->getServiceInstance($objectOrClassName);
+				$objectOrClassName = $this->resolve($objectOrClassName);
 			}
 
 			$preparedCallable = [$objectOrClassName, $methodName];

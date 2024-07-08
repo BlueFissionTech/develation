@@ -64,7 +64,7 @@ To utilize these behaviors, an object within the system should be capable of reg
 Here’s a simple example of how to define and trigger behaviors within an application:
 
 ```php
-$object->register(new Event(Event::LOAD));
+$object->behavior(new Event(Event::LOAD));
 $object->when(Event::LOAD, function() {
     echo "Loaded successfully.";
 });

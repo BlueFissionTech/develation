@@ -433,6 +433,58 @@ class Str extends Val implements IVal {
 		return 0;
 	}
 
+	public function _slugify($string)
+	{
+	    // Replace non-alphanumeric characters with hyphens
+	    $slug = preg_replace('/[^A-Za-z0-9-]+/', '-', $string);
+	    
+	    // Convert the string to lowercase
+	    $slug = strtolower($slug);
+	    
+	    // Trim hyphens from the beginning and end of the string
+	    $slug = trim($slug, '-');
+	    
+	    return $slug;
+	}
+
+	public function _pluralize(string $string)
+	{
+		$irregularWords = [
+			'todo'=>'todos', 'person'=>'people', 'man'=>'men', 'woman'=>'women', 'child'=>'children', 'mouse'=>'mice', 'foot'=>'feet', 'goose'=>'geese', 'die'=>'dice',
+		];
+
+		// Largely animals
+		$identicals = [
+			'news', 'fish', 'sheep', 'moose', 'swine', 'buffalo', 'shrimp', 'trout'
+		];
+
+		if ( in_array($string, $identicals) ) {
+			$plural = $string;
+		} elseif ( in_array($string, array_keys($irregularWords)) ) {
+			$plural = $irregularWords[$string];
+		} elseif (substr($string, -1) == 'y' && substr($string, -2) != 'ay' && substr($string, -2) != 'ey' && substr($string, -2) != 'iy' && substr($string, -2) != 'oy' && substr($string, -2) != 'uy') {
+			$plural = substr($string, 0, -1) . 'ies';
+		} elseif (substr($string, -1) == 's' || substr($string, -2) == 'sh' || substr($string, -2) == 'ch' || substr($string, -2) == 'ss' || substr($string, -1) == 'x' || substr($string, -1) == 'z' || substr($string, -1) == 'o') {
+			$plural = $string . 'es';
+		} elseif (substr($string, -1) == 'f') {
+			$plural = substr($string, 0, -1) . 'ves';
+		} elseif (substr($string, -2) == 'fe') {
+			$plural = substr($string, 0, -2) . 'ves';
+		} elseif (substr($string, -2) == 'us') {
+			$plural = substr($string, 0, -2) . 'i';
+		} elseif (substr($string, -2) == 'is') {
+			$plural = substr($string, 0, -2) . 'es';
+		} elseif ((substr($string, -2) == 'on' && substr($string, -4) != 'tion' && strlen($string) > 4) || (substr($string, -2) == 'um' && substr($string, -3) == 'rum')) {
+			$plural = substr($string, 0, -2) . 'a';
+		} elseif (substr($string, -2) == 'ex') {
+			$plural = substr($string, 0, -2) . 'ices';
+		} else {
+			$plural = $string . 's';
+		}
+
+	    return $plural;
+	}
+
 	/**
 	 * Returns the string representation of the class instance.
 	 * @return string

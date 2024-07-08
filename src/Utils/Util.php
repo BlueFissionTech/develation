@@ -4,6 +4,7 @@ namespace BlueFission\Utils;
 use BlueFission\Val;
 use BlueFission\Net\Email;
 use BlueFission\Net\HTTP;
+use BlueFission\Data\Storage\Disk;
 
 class Util {
     /**
@@ -50,12 +51,118 @@ class Util {
         $count++;
     }
 
+    static function globals($var, $value = null)
+    {
+        if (Val::isNull($value) )
+            return isset( $GLOBALS[$var] ) ? $GLOBALS[$var] : null;
+            
+        $GLOBALS[$var] = $value;
+            
+        $status = ($GLOBALS[$var] = $value) ? true : false;
+        
+        return $status;
+    }
+
+    // Function to get the storage path
+    static function getStoragePath() {
+        // Use an environment variable or fallback to a default path
+        $storagePath = getenv('STORAGE_PATH') ?: __DIR__ . '/storage/data';
+        if (!is_dir($storagePath)) {
+            mkdir($storagePath, 0777, true);
+        }
+        return $storagePath;
+    }
+
+   // Function to get or generate a unique CLI session ID
+    static function getCliSessionId() {
+        try {
+            $userHome = self::getUserHomeDir();
+            $sessionIdFile = $userHome . DIRECTORY_SEPARATOR . '.cli_session_id';
+            if (file_exists($sessionIdFile)) {
+                // Retrieve existing session ID
+                $sessionId = file_get_contents($sessionIdFile);
+            } else {
+                // Generate a new session ID
+                $sessionId = bin2hex(random_bytes(16)); // Generate a random session ID
+                if (file_put_contents($sessionIdFile, $sessionId) === false) {
+                    throw new \Exception("Unable to write session ID to file.");
+                }
+                chmod($sessionIdFile, 0600); // Set file permissions to be read/write for the owner only
+            }
+        } catch (\Exception $e) {
+            // Use an environment variable or generate a unique ID
+            $sessionId = getenv('CLI_SESSION_ID');
+            if (!$sessionId) {
+                $sessionId = bin2hex(random_bytes(16)); // Generate a random session ID
+                putenv("CLI_SESSION_ID=$sessionId"); // Store the session ID in the environment
+            }
+        }
+        return $sessionId;
+    }
+
+
+    // Function to get the storage file name
+    static function getStorageFileName($sessionId) {
+        // Use an environment variable or fallback to a default file name
+        return getenv('STORAGE_FILE_NAME') ?: "cli_storage_{$sessionId}.json";
+    }
+
+    // Function to get the user's home directory in a cross-platform way
+    static function getUserHomeDir() {
+        $homeDir = getenv('HOME'); // Unix-like systems
+        if (!$homeDir) {
+            $homeDrive = getenv('HOMEDRIVE');
+            $homePath = getenv('HOMEPATH');
+            if ($homeDrive && $homePath) { // Windows
+                $homeDir = $homeDrive . $homePath;
+            } else {
+                $homeDir = getenv('USERPROFILE'); // Alternative for Windows
+            }
+        }
+        if (!$homeDir) {
+            throw new \Exception("Unable to determine the user's home directory.");
+        }
+        return $homeDir;
+    }
+
+    static function store($name, $value = null)
+    {
+        if (php_sapi_name() === 'cli') {
+            // CLI environment: use DiskStorage
+            $sessionId = self::getCliSessionId();
+            $storagePath = self::getStoragePath();
+            $storageFileName = self::getStorageFileName($sessionId);
+
+
+            $diskStorage = new Disk([
+                'location' => $storagePath, // Set your desired storage path
+                'name' => $storageFileName   // Set your desired storage file name
+            ]);
+            $diskStorage->activate();
+            $storedData = $diskStorage->read() ?? [];
+
+            if ($value === null) {
+                // Return the value if $value is null
+                return isset($storedData[$name]) ? $storedData[$name] : null;
+            }
+
+            $storedData[$name] = $value;
+            $diskStorage->assign($storedData);
+            $diskStorage->contents(json_encode($storedData));
+            $diskStorage->write();
+            unset($diskStorage);
+        } else {
+            // HTTP environment: use sessions
+            return HTTP::session($name, $value);
+        }
+    }
+
     /**
      * generates a csrf token
      *
      * @return string
      */
-    static function csrf_token()
+    static function csrfToken()
     {
         $token = bin2hex(random_bytes(32));
 
