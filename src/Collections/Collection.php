@@ -272,7 +272,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	/**
 	 * Iterate a method across all items in the collection
 	 */
-	public funtion each( callable $callback ) {
+	public function each( callable $callback ) {
 		foreach ($this->contents() as $key => $value) {
 			$callback( $value, $key );
 		}

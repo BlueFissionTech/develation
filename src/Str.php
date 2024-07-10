@@ -433,10 +433,10 @@ class Str extends Val implements IVal {
 		return 0;
 	}
 
-	public function _slugify($string)
+	public function _slugify(): string
 	{
 	    // Replace non-alphanumeric characters with hyphens
-	    $slug = preg_replace('/[^A-Za-z0-9-]+/', '-', $string);
+	    $slug = preg_replace('/[^A-Za-z0-9-]+/', '-', $this->_data);
 	    
 	    // Convert the string to lowercase
 	    $slug = strtolower($slug);
@@ -447,7 +447,7 @@ class Str extends Val implements IVal {
 	    return $slug;
 	}
 
-	public function _pluralize(string $string)
+	public function _pluralize(): string
 	{
 		$irregularWords = [
 			'todo'=>'todos', 'person'=>'people', 'man'=>'men', 'woman'=>'women', 'child'=>'children', 'mouse'=>'mice', 'foot'=>'feet', 'goose'=>'geese', 'die'=>'dice',
@@ -457,6 +457,8 @@ class Str extends Val implements IVal {
 		$identicals = [
 			'news', 'fish', 'sheep', 'moose', 'swine', 'buffalo', 'shrimp', 'trout'
 		];
+
+		$string = $this->_data;
 
 		if ( in_array($string, $identicals) ) {
 			$plural = $string;
