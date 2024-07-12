@@ -43,14 +43,14 @@ Overrides the parent `value` method to set or get the current date value formatt
 ### is
 
 ```php
-public function _is(): bool
+public function is(): bool
 ```
 Checks if the current value is a valid date.
 
 ### timestamp
 
 ```php
-public function _timestamp($data = null): int|null
+public function timestamp($data = null): int|null
 ```
 Gets or sets the timestamp of the current date instance.
 
@@ -71,7 +71,7 @@ Gets or sets the formatting string for the date representation.
 ### difference
 
 ```php
-public function _difference($time2, $interval = null): float
+public function difference($time2, $interval = null): float
 ```
 Calculates the difference between two dates in the specified interval (e.g., seconds, days).
 
@@ -93,4 +93,4 @@ echo $date->time(14, 30, 0); // Sets the time to 2:30 PM and outputs the result
 
 // Get the difference in days
 $anotherDate = new BlueFission\Date('2023-04-05');
-echo $date->_difference($anotherDate->val(), 'days'); // Outputs the difference in days
+echo $date->difference($anotherDate->val(), 'days'); // Outputs the difference in days
