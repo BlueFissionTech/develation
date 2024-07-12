@@ -9,7 +9,7 @@ class Func extends Val implements IVal {
 	 *
 	 * @var string $type is used to store the data type of the object
 	 */
-	protected $_type = DataTypes::CALLBACK;
+	protected $_type = DataTypes::CALLABLE;
 
 	/**
 	 * Constructor to initialize value of the class
@@ -17,8 +17,17 @@ class Func extends Val implements IVal {
 	 * @param mixed $value
 	 */
 	public function __construct( $value = null, $snapshot = true, $cast = false ) {
-		$value = is_callable( $value ) ? $value : ( ( ( $cast || $this->_forceType ) && !is_null($value)) ? Closure::fromCallable($value) : $value );
+		$value = is_callable( $value, true ) ? $value : ( ( ( $cast || $this->_forceType ) && !is_null($value)) ? Closure::fromCallable($value) : $value );
 		parent::__construct($value);
+	}
+
+	/**
+	 * Returns if the function is callable
+	 * @return boolean
+	 */
+	public function _isCallable(): bool
+	{
+		return is_callable($this->_data);
 	}
 
 	/**
@@ -89,7 +98,7 @@ class Func extends Val implements IVal {
 			$this->trigger(Event::EXCEPTION);
 			throw new \Exception("The value is not callable");
 		}
-		return call_user_func_array($this->_data, $args);
+		return call_user_func_array($this->_data, $args)
 	}
 
 	public function __invoke( $value = null )

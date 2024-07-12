@@ -58,7 +58,7 @@ class Response extends Obj
 		if ( $depth > self::MAX_DEPTH ) {
 			return;
 		}
-		if ( \is_array($values) ) {
+		if ( \Arr:is($values) ) {
 			$mapped = false;
 			$iterations = 0;
 			foreach ( $values as $key=>$value ) {
@@ -66,7 +66,7 @@ class Response extends Obj
 					break;
 				}
 
-				if ( $depth == 0 && Arr::hasKey($this->_data, $key) && $this->$key == null ) {
+				if ( $depth == 0 && $this->_data->hasKey($key) && $this->$key == null ) {
 					$mapped = true;
 					$this->$key = $value;
 				} else {
@@ -100,8 +100,6 @@ class Response extends Obj
 		if ( $depth < 2 && \is_object($values) && $this->data == null  ) {
 			$this->data = $values;
 		}
-
-		// var_dump($this->_data);
 	}
 
 	/**
@@ -112,7 +110,7 @@ class Response extends Obj
 	public function send()
 	{
 		$this->_message = $this->_data->toJson();
-		$this->dispatch( Event::COMPLETE);
+		$this->dispatch( Event::COMPLETE );
 	}
 
 	/**

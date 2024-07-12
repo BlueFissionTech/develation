@@ -78,6 +78,38 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
+	 * Check the value of the var against multiple functions
+	 *
+	 * @return bool
+	 */
+	public function _check($functions = null): bool
+	{
+		$functions = is_array($functions) && !is_callable($functions, true) ? $functions : [$functions];
+
+		$valid = false;
+
+		foreach ($functions as $function) {
+			if ( is_string($function) && method_exists($this, $function) ) {
+				$valid = $this->$function();
+			} elseif ( is_string($function) && method_exists($this, '_'.$function) ) {
+				$valid = $this->{'_'.$function}();
+			} elseif ( is_string($function) && function_exists($function) ) {
+				$valid = $function($this->_data);
+			} elseif ( is_callable($function) ) {
+				$valid = call_user_func($function, $this->_data);
+			} else {
+				$valid = false;
+			}
+
+			if ( !$valid ) {
+				break;
+			}
+		}
+
+		return $valid;
+	}
+
+	/**
 	 * Convert the value to the type of the var
 	 *
 	 * @return IVal

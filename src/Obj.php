@@ -53,7 +53,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
         if ( !Val::is($this->_data) ) {
             $this->_data = new Arr();
         } elseif ( Arr::is($this->_data) ) {
-            $this->_data = new Arr($this->_data);
+            $this->_data = Arr::use();
         }
 
         foreach ( $this->_types as $field=>$type ) {
@@ -113,7 +113,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
      * @param  callable $callable a function to run on the value before setting
      * @return IObj
      */
-    public function constraint( $callable ): IObj
+    public function constraint( callable $callable ): IObj
     {
         $this->_data->contraint( $callable );
 

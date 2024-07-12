@@ -19,8 +19,8 @@ class Disk extends Storage implements IData
 	 * @var array 
 	 */
 	protected $_config = [ 
-		'location'=>'', 
-		'name'=>'' 
+		'location'=>null, 
+		'name'=>null 
 	];
 		
 	/**

@@ -4,6 +4,7 @@ namespace BlueFission\Net;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\HTML\HTML;
+use BlueFission\DataTypes;
 use BlueFission\Obj;
 use BlueFission\Val;
 use BlueFission\Num;
@@ -84,6 +85,13 @@ class Email extends Obj implements IConfigurable, IEmail
         'message'=>'',
         'subject'=>'',
         'additional'=>''
+    ];
+
+    protected $_types = [
+    	'from'=>DataTypes::STRING,
+		'message'=>DataTypes::STRING,
+		'subject'=>DataTypes::STRING,
+		'additional'=>DataTypes::STRING
     ];
 
     /**

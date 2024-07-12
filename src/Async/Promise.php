@@ -2,54 +2,55 @@
 
 namespace BlueFission\Async;
 
+use BlueFission\Func;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Meta;
 
 class Promise {
-    protected $action;
-    protected $onFulfill = null;
-    protected $onReject = null;
-    protected $result = null;
-    protected $state = State::PENDING;
-    protected $asyncInstance;
+    protected $_action;
+    protected $_onFulfill = null;
+    protected $_onReject = null;
+    protected $_result = null;
+    protected $_state = State::PENDING;
+    protected $_asyncInstance;
 
     public function __construct(callable $action, $asyncInstance = null) {
-        $this->action = $action;
-        $this->asyncInstance = $asyncInstance;
+        $this->_action = new Func($action);
+        $this->_asyncInstance = $asyncInstance;
         // $this->start();
     }
 
     public function try() {
         try {
-            ($this->action)($this->resolve(), $this->reject());
+            ($this->_action)($this->resolve(), $this->reject());
         } catch (\Exception $e) {
             $this->reject()($e);
         }
     }
 
     public function then(callable $onFulfill, callable $onReject = null) {
-        $this->onFulfill = $onFulfill;
-        $this->onReject = $onReject;
+        $this->_onFulfill = new Func($onFulfill);
+        $this->_onReject = new Func($onReject);
         return $this;
     }
 
     public function __get($name) {
         if ($name == 'async') {
-            return $this->asyncInstance;
+            return $this->_asyncInstance;
         }
     }
 
     protected function resolve() {
         return function ($value = null) {
-            if ($this->state === State::PENDING) {
-                $this->state = State::FULFILLED;
-                $this->result = $value;
-                if ($this->onFulfill) {
-                    call_user_func($this->onFulfill, $this->result);
+            if ($this->_state === State::PENDING) {
+                $this->_state = State::FULFILLED;
+                $this->_result = $value;
+                if ($this->_onFulfill->isCallable()) {
+                    $this->_onFulfill->call($this->_result);
                 }
-                if ($this->asyncInstance && is_a(IAsync::class, $this->asyncInstance)) {
-                    $this->asyncInstance->perform(Event::SUCCESS, new Meta(data: $this));
+                if ($this->_asyncInstance && is_a(IAsync::class, $this->_asyncInstance)) {
+                    $this->_asyncInstance->perform(Event::SUCCESS, new Meta(data: $this));
                 }
             }
         };
@@ -57,14 +58,14 @@ class Promise {
 
     protected function reject() {
         return function ($reason = null) {
-            if ($this->state === State::PENDING) {
-                $this->state = State::REJECTED;
-                $this->result = $reason;
-                if ($this->onReject) {
-                    call_user_func($this->onReject, $this->result);
+            if ($this->_state === State::PENDING) {
+                $this->_state = State::REJECTED;
+                $this->_result = $reason;
+                if ($this->_onReject->isCallable()) {
+                    $this->_onReject->call($this->_result);
                 }
-                if ($this->asyncInstance && is_a(IAsync::class, $this->asyncInstance)) {
-                    $this->asyncInstance->perform(Event::FAILURE, new Meta(data: $this));
+                if ($this->_asyncInstance && is_a(IAsync::class, $this->_asyncInstance)) {
+                    $this->_asyncInstance->perform(Event::FAILURE, new Meta(data: $this));
                 }
             }
         };

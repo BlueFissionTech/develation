@@ -103,16 +103,17 @@ class Curl extends Connection implements IConfigurable
 			
 			curl_setopt($this->_connection, CURLOPT_URL, $target);
 			curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
-			if (!empty($this->config('headers'))) {
-				curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $this->config('headers'));
+			if (!Val::empty($this->config('headers'))) {
+				curl_setopt($this->_connection, CURLOPT_HTTPHEADER, Val::grab());
 			}
 
 			if ( $this->config('verbose') ) {
 				curl_setopt($this->_connection, CURLOPT_VERBOSE, true);
 			}
 
-			if ( $this->config('username') && $this->config('password') )
+			if ( $this->config('username') && $this->config('password') ) {
     			curl_setopt($this->_connection, CURLOPT_USERPWD, $this->config('username') . ':' . $this->config('password'));
+			}
 			
 			$status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 
@@ -156,19 +157,16 @@ class Curl extends Connection implements IConfigurable
 		
 		if ($curl)
 		{
-			if (Val::isNotNull($query))
-			{
-
-				if (Arr::isAssoc($query))
-				{
-					$this->assign($query);
-				}
+			if (Arr::check($query, ['isNotNull', 'isAssoc'])) {
+				$this->assign(Arr::grab());
 			}
+
 			$data = $this->_data->val();
 
 			if (Arr::size($data) > 0) {
 				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
 			}
+
 			//set the url, number of POST vars, POST data
 			if ( $method == 'post' ) {
 				if ( Arr::size($data) > 0 ) {
@@ -211,9 +209,7 @@ class Curl extends Connection implements IConfigurable
 				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
 				new Meta(when: Action::PROCESS, info: $status ) 
 			);
-		}
-		else
-		{
+		} else {
 			$status = self::STATUS_NOTCONNECTED;
 			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
 		}
@@ -223,5 +219,4 @@ class Curl extends Connection implements IConfigurable
 
 		return $this;
 	}
-
 }

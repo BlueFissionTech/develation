@@ -17,5 +17,5 @@ enum DataTypes: string
 	case RESOURCE = 'resource';
 	case NULL = 'null';
 	case SCALAR = 'scalar';
-	case CALLBACK = 'callback';
+	case CALLABLE = 'callable';
 }

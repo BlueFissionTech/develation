@@ -189,9 +189,7 @@ class Socket extends Connection implements IConfigurable
 				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
 				new Meta(when: Action::PROCESS, info: $status ) 
 			);
-		}
-		else
-		{
+		} else {
 			$status = self::STATUS_NOTCONNECTED;
 			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
 		}	

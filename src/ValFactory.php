@@ -29,6 +29,9 @@ class ValFactory {
 			case DataTypes::OBJECT->value:
 				$class = '\BlueFission\Obj';
 				break;
+			case DataTypes::CALLABLE->value:
+				$class = '\BlueFission\Func';
+				break;
 			default:
 			case DataTypes::GENERIC->value:
 				$class = '\BlueFission\Val';

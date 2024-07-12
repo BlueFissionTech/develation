@@ -53,7 +53,6 @@ class Stdio extends Connection implements IConfigurable
     {
         $this->close();
 
-        $this->_connection;
         $this->_connection = [
             'in' => $this->config('target') ? fopen($this->config('target'), 'r') : (defined('STDIN') ? STDIN : fopen('php://input', 'r')),
             'out' => $this->config('output') ? fopen($this->config('output'), 'w') : (defined('STDOUT') ? STDOUT : fopen('php://output', 'w'))
@@ -64,7 +63,6 @@ class Stdio extends Connection implements IConfigurable
         $this->perform( 
             $this->_connection['in'] && $this->_connection['out'] 
             ? [Event::SUCCESS, Event::CONNECTED, State::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
-
 
         if ( $this->_connection['in'] ) {
             stream_set_blocking($this->_connection['in'], false);
@@ -99,7 +97,7 @@ class Stdio extends Connection implements IConfigurable
                 break;
             } elseif ($numChangedStreams > 0) {
                 // Data is available for reading
-                $data = fgets($this->_connection['in']);
+                $data = fread($this->_connection['in'], 1024);
 
                 if ($data !== false) {
                     $this->_result .= $data;
@@ -120,6 +118,33 @@ class Stdio extends Connection implements IConfigurable
         // $this->halt(State::BUSY);
     }
 
+    /**
+     * Captures arrow key presses and returns corresponding actions.
+     * 
+     * @return string|null Captured action
+     */
+    public function captureKeyPress()
+    {
+        $this->listen();
+
+        if (strpos($this->_result, "\033") === 0) { // Escape sequence detected
+            $this->_result = ''; // Reset result buffer after capturing
+            switch ($this->_result) {
+                case "\033[A":
+                    return 'up';
+                case "\033[B":
+                    return 'down';
+                case "\033[C":
+                    return 'right';
+                case "\033[D":
+                    return 'left';
+                default:
+                    return null;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Writes data to standard output.
@@ -138,6 +163,45 @@ class Stdio extends Connection implements IConfigurable
         $this->halt(State::SENDING);
 
         return $this;
+    }
+
+    /**
+     * Writes colored data to standard output.
+     * 
+     * @param string $data Data to write
+     * @param int $color Color code
+     * @return $this
+     */
+    public function sendColored($data, $color)
+    {
+        $coloredData = "\033[{$color}m{$data}\033[0m";
+        return $this->send($coloredData);
+    }
+
+    /**
+     * Writes styled data to standard output.
+     * 
+     * @param string $data Data to write
+     * @param int $style Style code
+     * @return $this
+     */
+    public function sendStyled($data, $style)
+    {
+        $styledData = "\033[{$style}m{$data}\033[0m";
+        return $this->send($styledData);
+    }
+
+    /**
+     * Writes data with background color to standard output.
+     * 
+     * @param string $data Data to write
+     * @param int $color Background color code
+     * @return $this
+     */
+    public function sendBackground($data, $color)
+    {
+        $bgColoredData = "\033[{$color}m{$data}\033[0m";
+        return $this->send($bgColoredData);
     }
 
     /**

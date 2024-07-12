@@ -147,3 +147,135 @@ $obj->field('age')->constraint(function($value) {
 $obj->age = 30; // Valid
 $obj->age = 'thirty'; // Throws exception
 ```
+
+### Extending Functionality
+
+The `Obj` class can be extended to add custom functionality or behavior, making it a versatile base class for more specialized object types.
+
+```php
+class CustomObj extends BlueFission\Obj {
+
+    protected $_data = [
+        'customField1' => null,
+        'customField2' => null,
+        'customField3' => 'value'
+    ];
+
+    protected $_types = [
+        'customField1' => BlueFission\DataTypes::STRING
+        'customField2' => BlueFission\DataTypes::INTEGER
+        'customField3' => BlueFission\DataTypes::STRING
+    
+    ];
+
+    public function customMethod() {
+        // Custom logic here
+    }
+}
+```
+
+#### The `$_data` Property
+
+The `$_data` property defines the initial fields of the object and their default values. It can be overridden in subclasses to provide a custom set of fields.
+
+```php
+class Person extends \BlueFission\Obj {
+    protected $_data = [
+        'name' => null,
+        'age' => null
+    ];
+}
+
+$obj = new Person();
+$obj->name = 'John Doe';
+$obj->age = 30;
+```
+
+#### The `$_types` Property
+
+The `$_types` property defines the data types for the fields, ensuring that the fields adhere to specific types. This property can be customized in subclasses to enforce stricter data type checks. When setting types for fields, those fields are then cast as `BlueFission\Val` [datatypes](datatypes.md) allowing their features and methods to be available to the field. Whether or not the field is locked to a datatype can be set with the `_lockDataType` property. Further, the `exposeValueObject` method can be used to expose the `Val` object directly, or just the value of the object.
+
+```php
+class Person extends \BlueFission\Obj {
+    protected $_data = [
+        'name' => null,
+        'age' => null
+    ];
+
+    protected $_types = [
+        'name' => \BlueFission\DataTypes::STRING,
+        'age' => \BlueFission\DataTypes::INTEGER
+    ];
+
+    protected $_lockDataType = true;
+
+    protected $_exposeValueObject = true;
+}
+
+$obj = new Person();
+
+$obj->name = 'john doe';
+
+$upperCase = $obj->name->capitalize(); // 'John Doe'
+
+$obj->age = 'thirty'; // Throws exception
+```
+
+### Using Events
+
+Events can be used to trigger actions based on changes to the object's state. The `Dispatches` trait provides a simple way to manage event-driven programming within the object.
+
+```php
+use BlueFission\Behavioral\Behaviors\Meta;
+
+class Person extends \BlueFission\Obj {
+    public function __construct() {
+        parent::__construct();
+        $this->when('onAgeChange', function($behavior, $meta) {
+            echo "Age changed to: " . $meta->data;
+        });
+    }
+
+    public function setAge($age) {
+        $this->age = $age;
+        $this->dispatch('onAgeChange', new Meta(data: $age));
+    }
+}
+
+$obj = new Person();
+
+$obj->setAge(30); // Outputs: Age changed to: 30
+```
+
+This can also be accomplished directly through typed fields.
+
+```php
+class Person extends \BlueFission\Obj {
+    protected $_data = [
+        'name' => null,
+        'age' => null
+    ];
+
+    protected $_types = [
+        'name' => \BlueFission\DataTypes::STRING,
+        'age' => \BlueFission\DataTypes::INTEGER
+    ];
+
+    protected $_lockDataType = true;
+
+    protected $_exposeValueObject = true;
+
+    public function __construct() {
+        parent::__construct();
+        $this->when(Event::CHANGE, function() {
+            if
+            echo "My values have changed";
+        });
+    }
+}
+
+$obj = new Person();
+
+$obj->name = 'Jane Doe'; // Outputs: My values have changed
+```
+

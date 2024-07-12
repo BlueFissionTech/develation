@@ -2,9 +2,6 @@
 
 namespace BlueFission;
 
-use BlueFission\Behavioral\Behaviors\Event;
-use Closure;
-
 // This class, which will be embedded in every IVal and IObj class, including those that use Behaves, Configurable, or Programmable or implement their interfaces
 // Will be sent every fired event and hold configuration setting overrides for most IConfigurable objects. Because it can be hard to run code or test with
 // Global state object, especially those that prevail over the project as much as this one, it is turned off by default and must be activated before it does
