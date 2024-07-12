@@ -216,7 +216,7 @@ $obj = new Person();
 
 $obj->name = 'john doe';
 
-$upperCase = $obj->name->capitalize(); // 'John Doe'
+$obj->name->capitalize(); // 'John Doe'
 
 $obj->age = 'thirty'; // Throws exception
 ```
