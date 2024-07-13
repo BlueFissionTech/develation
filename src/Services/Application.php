@@ -1043,34 +1043,12 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	/**
-	 * Get service instance
-	 * 
-	 * @param string $class 
-	 * @return mixed
-	 */
-	// private function resolve(string $class )
-	// {
-	// 	return $this->getDynamicInstance($class);
-	// }
-
-	/**
-	 * Get gateway instance
-	 * 
-	 * @param string $class 
-	 * @return mixed
-	 */
-	// private function getGatwayInstance(string $class )
-	// {
-	// 	return $this->getDynamicInstance($class);
-	// }
-
-	/**
 	 * Get instance or registered item
 	 * 
 	 * @param string $class 
 	 * @return mixed
 	 */
-	private function resolve(string $class )
+	public function resolve(string $class )
 	{
 		return $this->getDynamicInstance($class);
 	}

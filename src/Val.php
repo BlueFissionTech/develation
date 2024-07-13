@@ -389,6 +389,110 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
+	 * Execute a callback function if the stored value is true
+	 *
+	 * @param callable $callback The callback function to execute
+	 *
+	 * @return IVal The instance of the Flag class
+	 */
+	public function then( $callback ) {
+		if ( $this->_data ) {
+			$callback( $this );
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Execute a callback function if the stored value is false
+	 *
+	 * @param callable $callback The callback function to execute
+	 *
+	 * @return IVal The instance of the Flag class
+	 */
+	public function otherwise( $callback ) {
+		if ( !$this->_data ) {
+			$callback( $this );
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Combine the stored boolean value with another boolean value using the AND operator
+	 *
+	 * @param mixed $value The boolean value to combine with the stored value
+	 *
+	 * @return IVal The instance of the Flag class
+	 */
+	public function and( $value ) {
+		if ( $value instanceof IVal ) {
+			$value = $value->val();
+		}
+
+		$this->_data = $this->_data && $value;
+		return $this;
+	}
+
+	/**
+	 * Combine the stored boolean value with another boolean value using the OR operator
+	 *
+	 * @param mixed $value The boolean value to combine with the stored value
+	 *
+	 * @return IVal The instance of the Flag class
+	 */
+	public function or( $value ) {
+		if ( $value instanceof IVal ) {
+			$value = $value->val();
+		}
+
+		$this->_data = $this->_data || $value;
+		return $this;
+	}
+
+	/**
+	 * Negate the stored boolean value
+	 *
+	 * @return IVal The instance of the Flag class
+	 */
+	public function not() {
+		$this->_data = !$this->_data;
+		return $this;
+	}
+
+	/**
+	 * Combine the stored boolean value with another boolean value using the XOR operator
+	 *
+	 * @param mixed $value The boolean value to combine with the stored value
+	 *
+	 * @return IVal The instance of the Flag class
+	 */
+	public function xor( $value ) {
+		if ( $value instanceof IVal ) {
+			$value = $value->val();
+		}
+
+		$this->_data = $this->_data xor $value;
+		return $this;
+	}
+
+	/**
+	 * Combine the stored boolean value with another boolean value using the NOR operator
+	 *
+	 * @param mixed $value The boolean value to combine with the stored value
+	 *
+	 * @return IVal The instance of the Flag class
+	 */
+	public function nor( $value ) {
+		if ( $value instanceof IVal ) {
+			$value = $value->val();
+		}
+
+		$this->_data = !($this->_data || $value);
+		return $this;
+	}
+
+	/**
 	 * Check if a var is truthy
 	 *
 	 * @return bool
@@ -574,6 +678,20 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function __call( $method, $args )
 	{
+		// if ( method_exists($this, $method) ) {
+		// 	$this->trigger(Event::ACTION_PERFORMED);
+		// 	$func = new \ReflectionMethod($this, $method);
+		// 	$return = $func->getReturnType();
+
+		// 	$output = $func->invokeArgs($this, $args);
+
+		// 	if ( strpos($method, '_') !== false && strpos($method, '__') !== 0 && $return == 'bool' ) {
+		// 		$output = self::make((bool)$output);
+		// 	}
+
+		// 	return $output;
+		// }
+
 		if ( method_exists($this, self::PRIVATE_PREFIX.$method) ) {
 			$output = call_user_func_array([$this, self::PRIVATE_PREFIX.$method], $args);
 
