@@ -90,6 +90,8 @@ class Stdio extends Connection implements IConfigurable
 
         $numChangedStreams = @stream_select($readStreams, $writeStreams, $exceptStreams, $timeout);
 
+        $this->_result = '';
+
         if ($numChangedStreams === false) {
             // Error occurred during stream_select
             $error = "stream_select error";
