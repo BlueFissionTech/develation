@@ -539,7 +539,9 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		if (!$this->is($this->_data)) {
 			return [];
 		}
-		return array_keys($this->_data);
+		$keys = array_keys($this->_data);
+
+		return Arr::make($keys);
 	}
 		
 	/**
@@ -653,6 +655,19 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		}
 
 		$this->set($offset, $value);
+	}
+
+	/**
+	 * Get the next value in the array and advance the internal pointer
+	 * @return mixed
+	 * 
+	 */
+	public function next() {
+		try {
+			return next($this->_data);
+		} catch (\Exception $e) {
+			return null;
+		}
 	}
 
 	/**

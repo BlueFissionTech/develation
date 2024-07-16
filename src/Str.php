@@ -66,6 +66,14 @@ class Str extends Val implements IVal {
     	return is_string($this->_data);
 	}
 
+	public function _split( $delimiter = ' ' ): Arr
+	{
+		$string = $this->_data;
+		$split = explode($delimiter, $string);
+		$arr = new Arr($split);
+		return $arr;
+	}
+
 	/**
 	 * Generate a random string
 	 * 

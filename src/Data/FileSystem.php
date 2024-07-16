@@ -268,20 +268,20 @@ class FileSystem extends Data implements IData {
 	 */
 	private function file(): string|null
 	{
-		if ( !$this->basename->val() && $this->extension->val() ) {
-			$this->basename->val() = implode( '.', [$this->filename->val(), $this->extension->val()] );
-		} elseif ( !$this->basename->val() ) {
-			$this->basename->val() = $this->filename->val();
+		if ( !$this->basename && $this->extension ) {
+			$this->basename = implode( '.', [$this->filename, $this->extension] );
+		} elseif ( !$this->basename ) {
+			$this->basename = $this->filename;
 		}
 
-		return $this->basename->val();
+		return $this->basename;
 	}
 
 	/**
 	 * Get the full path of the file
 	 * @return string|null
 	 */
-	private function path(): string|null
+	public function path(): string|null
 	{
 		$pathParts = [];
 
@@ -289,8 +289,8 @@ class FileSystem extends Data implements IData {
 			$pathParts[] = $this->config('root');
 		}
 
-		if ( $this->dirname->val() ) {
-			$pathParts[] = $this->dirname->val();
+		if ( $this->dirname ) {
+			$pathParts[] = $this->dirname;
 
 		}
 
@@ -585,7 +585,7 @@ class FileSystem extends Data implements IData {
 			$extensions = $this->filter();
 			
 			if (preg_match($extensions, $document['name'])) {
-				$location = $this->dirname->val() .'/'. (($this->filename->val() == '') ? basename($document['name']) : $this->file());
+				$location = $this->dirname .'/'. (($this->filename == '') ? basename($document['name']) : $this->file());
 				if ($document['size'] > 1) {
 					if (is_uploaded_file($document['tmp_name'])) {
 
@@ -785,7 +785,7 @@ class FileSystem extends Data implements IData {
 							if ($remove_orig) {
 								$this->delete($file);
 								if (!$this->exists($this->file())) {
-									$this->dirname->val() = $dest;
+									$this->dirname = $dest;
 								}
 							}
 
@@ -845,7 +845,7 @@ class FileSystem extends Data implements IData {
 
 		if ( !$root ) {
 			// return false;
-			$root = @realpath($this->dirname->val()) ? @realpath($this->dirname->val()) : ( $this->dirname->val() ? $this->dirname->val() : DIRECTORY_SEPARATOR );
+			$root = @realpath($this->dirname) ? @realpath($this->dirname) : ( $this->dirname ? $this->dirname : DIRECTORY_SEPARATOR );
 		}
 
 		if ( !$dir ) {

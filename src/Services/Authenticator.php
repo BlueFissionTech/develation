@@ -87,7 +87,7 @@ class Authenticator extends Service {
 		// $users = $this->config('users');
 		// $users->
 
-		if (!$this->confirmIPAddress($_SERVER['REMOTE_ADDR']) ) {
+		if (isset($_SERVER['REMOTE_ADDR']) && !$this->confirmIPAddress($_SERVER['REMOTE_ADDR']) ) {
 			$this->_status[] = 'Too many failures';
 			return false;
 		}

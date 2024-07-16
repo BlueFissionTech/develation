@@ -1,9 +1,6 @@
 <?php
 namespace BlueFission\Behavioral;
 
-use BlueFission\Val;
-use BlueFission\Str;
-use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -68,7 +65,7 @@ trait Dispatches {
 	 */
 	public function behavior( $behavior, $callback = null ): IDispatcher 
 	{
-		if ( is_string($behavior) && Val::isNotEmpty($behavior))
+		if ( is_string($behavior) && !empty($behavior))
 			$behavior = new Behavior($behavior);
 
 		if ( !($behavior instanceof Behavior) ) {

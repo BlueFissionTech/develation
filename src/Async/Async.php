@@ -105,7 +105,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
             'retry_strategy' => 'simple',
             'timeout' => 300,
             'notifyURL' => 'http://localhost:8080',
-        ])();
+        ]);
     }
 
     /**

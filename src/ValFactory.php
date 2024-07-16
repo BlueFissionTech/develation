@@ -7,6 +7,10 @@ class ValFactory {
 		$args = func_get_args();
 		array_shift($args);
 
+		if ( $type instanceof DataTypes ) {
+			$type = $type->value;
+		}
+
 		switch (strtolower($type)) {
 			case DataTypes::STRING->value:
 				$class = '\BlueFission\Str';
