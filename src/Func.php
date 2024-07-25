@@ -55,9 +55,9 @@ class Func extends Val implements IVal {
 	 * @param  object $object the object to bind to
 	 * @return IVal         the func object
 	 */
-	public function bind( $object ): IVal
+	public function bind( $object, $scope = null ): IVal
 	{
-		$this->_data = $this->_data->bindTo($object);
+		$this->_data = $this->_data->bindTo($object, $scope);
 
 		return $this;
 	}
@@ -98,7 +98,15 @@ class Func extends Val implements IVal {
 			$this->trigger(Event::EXCEPTION);
 			throw new \Exception("The value is not callable");
 		}
-		return call_user_func_array($this->_data, $args);
+
+		// make sure arguments that are pass by reference are honored
+		$ref_args = [];
+		foreach ($this->expects() as $i => $param) {
+			$ref_args[$i] = &$args[$i];
+		}
+
+		// call the function
+		return call_user_func_array($this->_data, $ref_args);
 	}
 
 	public function __invoke( $value = null )

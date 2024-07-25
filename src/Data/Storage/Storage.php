@@ -90,6 +90,8 @@ class Storage extends Data implements IData
 		$this->behavior( new StorageAction( StorageAction::WRITE ), [&$this, 'write'] );
 		$this->behavior( new StorageAction( StorageAction::DELETE ), [&$this, 'delete'] );
 
+		$this->perform( [State::DISCONNECTED, Event::DEACTIVATED ] );
+
 		return $this;
 	}
 	
@@ -103,7 +105,11 @@ class Storage extends Data implements IData
 			$this->_source = null;
 		}
 		if ( Val::isNotNull($this->_source) ) {
-			$this->perform( Event::ACTIVATED );
+			$this->halt( State::DISCONNECTED );
+			$this->perform( [Event::ACTIVATED, State::CONNECTED ] );
+		} else {
+			$this->perform( Event::FAILURE, new Meta(when: Action::ACTIVATE, info: self::STATUS_FAILED_INIT) );
+			$this->perform( State::FAILURE );
 		}
 		return $this;
 	}
@@ -171,4 +177,21 @@ class Storage extends Data implements IData
 
 		return null;
 	}
+
+	/**
+     * Deactivates the storage class
+     *
+     * @return IObj $this
+     */
+    public function deactivate(): IObj {
+        // Implement deactivation logic
+        $this->perform( State::DISCONNECTING );
+        if ( method_exists($this, '_disconnect') ) {
+        	$this->_disconnect();
+        }
+        $this->_source = null;
+        $this->halt([State::CONNECTED, State::DISCONNECTING ]);
+        $this->perform( [State::DISCONNECTED, Event::DEACTIVATED ] );
+        return $this;
+    }
 }

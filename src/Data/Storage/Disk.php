@@ -144,6 +144,14 @@ class Disk extends Storage implements IData
 		$source->delete();
 	}
 
+	public function deactivate(): IObj {
+        if (Val::is($this->_source)) {
+            $this->_source->close();
+        }
+        $this->_source = null;
+        return $this;
+    }
+
 	/**
 	 * Close the connection to the underlying source and call parent destructor
 	 *

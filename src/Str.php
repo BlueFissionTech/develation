@@ -30,7 +30,6 @@ class Str extends Val implements IVal {
 		parent::__construct($value);
 	}
 
-
 	/**
 	 * Convert the value to the type of the var
 	 *
@@ -82,7 +81,7 @@ class Str extends Val implements IVal {
 	 * 
 	 * @return IVal
 	 */
-	public function _random(int $length = 8, bool $symbols = false): IVal {
+	public function _rand(int $length = 8, bool $symbols = false): IVal {
 		$alphanum = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		if ($symbols) $alphanum .= "~!@#\$%^&*()_+=";
 

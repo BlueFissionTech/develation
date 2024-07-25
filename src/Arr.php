@@ -200,9 +200,12 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		}
 
         $var = $this->_data;
+
         if ( !empty( $var ) && count($var) >= 1) {
             if ( count($var) == 1 && !$this->isAssoc($var) && empty( $var[0]) ) return false;
-        }
+        } elseif ( empty( $var ) || count($var) < 1 ) {
+			return false;
+		}
 
         return true;
     }
@@ -234,7 +237,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
      * @param mixed $key
      * @return mixed|null
      */
-    public function get( $key ) {
+    public function get(mixed $key ) {
     	if (!$this->is($this->_data)) {
 			return false;
 		}
@@ -251,13 +254,33 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
      * @param mixed $key
      * @param mixed $value
      */
-    public function set( $key, $value ) {
+    public function set(mixed $key, mixed $value ) {
     	if (!$this->is($this->_data)) {
 			return false;
 		}
 
         $this->_data[$key] = $value;
         $this->trigger( Event::CHANGE );
+    }
+
+    /**
+     * Sort the array
+     * @param callable|null $callable
+     * @return IVal
+    */
+   public function _sort( callable $callable = null ): IVal
+    {
+    	if (!$this->is($this->_data)) {
+    		return $this;
+    	}
+
+    	if ($callable) {
+			usort($this->_data, $callable);
+		} else {
+			sort($this->_data);
+		}
+
+        return $this;
     }
 
     /**
@@ -358,6 +381,10 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		}
 		$array = $this->_data;
 		foreach ($arrays as $arg) {
+			if ( $arg instanceof Arr ) {
+				$arg = $arg->toArray();
+			}
+
 			if (is_array($arg)) {
 				foreach ($arg as $key=>$value) {
 					if (is_array($value) && isset($array[$key]) && is_array($array[$key])) {
@@ -389,6 +416,10 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		}
 		$array = $this->_data;
 		foreach ($arrays as $arg) {
+			if ( $arg instanceof Arr ) {
+				$arg = $arg->toArray();
+			}
+
 			if (is_array($arg)) {
 				foreach ($arg as $key=>$value) {
 					if (is_numeric($key) && !in_array($value, $array)) {
@@ -507,37 +538,63 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 * get intersection between the $_data and the argument array
 	 * @param array $array
 	 *
-	 * @return array
+	 * @return Arr
 	 */
-	public function _intersect( array $array ): array {
-		if (!$this->is($this->_data)) {
-			return [];
+	public function _intersect( array|Arr $array ): Arr {
+		if ( !is_array($array) ) {
+			$array = $array->toArray();
 		}
 
-		return array_intersect($this->_data, $array);
+		if (!$this->is($this->_data)) {
+			return Arr::make([]);
+		}
+
+		$array = array_intersect($this->_data, $array);
+
+		return Arr::make($array);
 	}
 
 	/**
 	 * get difference between the $_data and the argument array
 	 * @param array $array
 	 *
-	 * @return array
+	 * @return Arr
 	 */
-	public function _diff( array $array ): array {
-		if (!$this->is($this->_data)) {
-			return [];
+	public function _diff( array|Arr $array ): Arr {
+		if ( !is_array($array) ) {
+			$array = $array->toArray();
 		}
 
-		return array_diff($this->_data, $array);
+		if (!$this->is($this->_data)) {
+			return Arr::make([]);
+		}
+
+		$array = array_diff($this->_data, $array);
+
+		return Arr::make($array);
+	}
+
+	/**
+	 * flip the keys and values of the $_data array
+	 * @return Arr
+	 */
+	public function _flip(): Arr {
+		if (!$this->is($this->_data)) {
+			return Arr::make([]);
+		}
+
+		$array = array_flip($this->_data);
+
+		return Arr::make($array);
 	}
 
 	/**
 	 * get the keys of the $_data array
-	 * @return array
+	 * @return Arr
 	 */
-	public function _keys(): array {
+	public function _keys(): Arr {
 		if (!$this->is($this->_data)) {
-			return [];
+			return Arr::make([]);
 		}
 		$keys = array_keys($this->_data);
 
@@ -551,7 +608,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	public function count(): int
 	{
 		if (!$this->is($this->_data)) {
-			return null;
+			return 0;
 		}
 		return count($this->_data);
 	}
@@ -575,7 +632,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	}
 
 	/**
-	 * Case insensitive remove duplicate values from an array as a reference
+	 * Case-insensitive remove duplicate values from an array as a reference
 	 * @return IVal
 	 */
 	public function _iUnique(): IVal
@@ -690,13 +747,14 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
         return new \ArrayIterator($this->_data);
     }
 
-     /**
+    /**
      * Magic method for handling static calls.
      * Overrides to specially handle the 'count' method due to Countable interface.
      *
      * @param string $method The name of the method being called.
      * @param array $args The arguments passed to the method.
      * @return mixed
+     * @throws \Exception
      */
     public static function __callStatic($method, $args)
     {

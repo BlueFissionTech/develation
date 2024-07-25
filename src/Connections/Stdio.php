@@ -78,7 +78,7 @@ class Stdio extends Connection implements IConfigurable
      * 
      * @return void
      */
-    private function listen()
+    protected function listen()
     {
         // $this->perform(State::BUSY);
 

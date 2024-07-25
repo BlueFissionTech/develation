@@ -242,6 +242,27 @@ class Num extends Val implements IVal {
 		return $this;
 	}
 
+	/**
+	 * Get a random number
+	 *
+	 * @param int $min The minimum value
+	 * @param int|null $max The maximum value
+	 *
+	 * @return IVal
+	 */
+	public function _rand( $min = 0, $max = null ): IVal
+	{
+		if ( $max === null ) {
+			$max = $this->_data;
+		}
+
+		$number = mt_rand($min, $max);
+
+		$this->alter($number);
+
+		return $this;
+	}
+
     /**
      * Calculate the ratio between two values
      *
@@ -297,7 +318,7 @@ class Num extends Val implements IVal {
      *
      * @return IVal
      */
-    public function _square(): IVal
+    public function _sq(): IVal
     {
         $value = $this->pow(2)->val();
 
@@ -327,7 +348,7 @@ class Num extends Val implements IVal {
      *
      * @return IVal
      */
-    public function _squareRoot(): IVal 
+    public function _sqrt(): IVal 
     {
         $value = sqrt($this->_data);
 
