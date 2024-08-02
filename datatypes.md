@@ -251,8 +251,8 @@ echo $myString->greet(); // Outputs: Hello, World
 
 ```php
 $myNumber = Num::make(150);
-$myNumber->constraint(function($value) {
-    return $value <= 100 ? $value : 100;
+$myNumber->constraint(function(&$value) {
+    $value = $value <= 100 ? $value : 100;
 });
 echo $myNumber->val(); // Outputs: 100
 ```
