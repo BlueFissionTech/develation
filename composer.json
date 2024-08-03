@@ -14,7 +14,10 @@
     "minimum-stability": "dev",
     "require": {
         "php": "*",
-        "cboden/ratchet": "^0.4.4"
+        "cboden/ratchet": "^0.4.4",
+        "psr/http-message": "^2.0@dev",
+        "psr/http-client": "^1.0@dev",
+        "php-http/discovery": "1.x-dev"
     },
     "git": {
         "platform-check": true
@@ -34,5 +37,10 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^11.1@dev"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
     }
 }

@@ -195,4 +195,9 @@ abstract class Connection extends Obj implements IConfigurable
 	{
 		return $this->_result;
 	}
+
+    public function connection()
+    {
+        return $this->_connection;
+    }
 }
