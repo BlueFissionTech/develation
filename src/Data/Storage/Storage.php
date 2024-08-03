@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Data\Storage;
 
 use BlueFission\Val;
