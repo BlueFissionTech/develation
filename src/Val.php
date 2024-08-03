@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
@@ -659,7 +660,7 @@ class Val implements IVal, IDispatcher {
 	{
 		foreach ($this->_constraints as $constraint) {
 			foreach ($constraint as $callable) {
-				call_user_func($callable, $value);
+				call_user_func_array($callable, [&$value]);
 			}
 		}
 		if ($this->_data != $value) {
@@ -678,20 +679,6 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function __call( $method, $args )
 	{
-		// if ( method_exists($this, $method) ) {
-		// 	$this->trigger(Event::ACTION_PERFORMED);
-		// 	$func = new \ReflectionMethod($this, $method);
-		// 	$return = $func->getReturnType();
-
-		// 	$output = $func->invokeArgs($this, $args);
-
-		// 	if ( strpos($method, '_') !== false && strpos($method, '__') !== 0 && $return == 'bool' ) {
-		// 		$output = self::make((bool)$output);
-		// 	}
-
-		// 	return $output;
-		// }
-
 		if ( method_exists($this, self::PRIVATE_PREFIX.$method) ) {
 			$output = call_user_func_array([$this, self::PRIVATE_PREFIX.$method], $args);
 

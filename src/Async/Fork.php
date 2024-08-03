@@ -18,12 +18,12 @@ class Fork extends Async {
      * @param int $priority The priority of the task; higher values are processed earlier.
      * @return Promise The promise associated with the asynchronous operation.
      */
-    public static function do($task, $priority = 10) {
+    public static function do($task, $priority = 10, &$processId = null) {
         if (!function_exists('pcntl_fork')) {
             throw new Exception("The pcntl extension is required to fork processes.");
         }
 
-        $promise = new Promise(function($resolve, $reject) use ($task) {
+        $promise = new Promise(function($resolve, $reject) use ($task, &$processId) {
             $pid = pcntl_fork();
 
             if ($pid == -1) {
@@ -35,7 +35,9 @@ class Fork extends Async {
                 $status = null;
                 pcntl_waitpid($pid, $status, WNOHANG); // Non-blocking wait
                 // You might want to implement a more robust checking or signaling mechanism here
-                $resolve($pid);
+                if ($processId) {
+                    $processId = $pid;
+                }
             } else {
                 // Child process will execute the task
                 call_user_func($task, $resolve, $reject);

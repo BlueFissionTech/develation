@@ -10,6 +10,7 @@ use BlueFission\Data\IData;
 use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\Storage\Behaviors\StorageAction;
 
 /**
@@ -90,7 +91,7 @@ class Storage extends Data implements IData
 		$this->behavior( new StorageAction( StorageAction::WRITE ), [&$this, 'write'] );
 		$this->behavior( new StorageAction( StorageAction::DELETE ), [&$this, 'delete'] );
 
-		$this->perform( [State::DISCONNECTED, Event::DEACTIVATED ] );
+		$this->perform( State::DISCONNECTED );
 
 		return $this;
 	}
@@ -191,7 +192,7 @@ class Storage extends Data implements IData
         }
         $this->_source = null;
         $this->halt([State::CONNECTED, State::DISCONNECTING ]);
-        $this->perform( [State::DISCONNECTED, Event::DEACTIVATED ] );
+        $this->perform( State::DISCONNECTED );
         return $this;
     }
 }

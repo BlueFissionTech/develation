@@ -144,12 +144,10 @@ class Disk extends Storage implements IData
 		$source->delete();
 	}
 
-	public function deactivate(): IObj {
+	private function _disconnect() {
         if (Val::is($this->_source)) {
             $this->_source->close();
         }
-        $this->_source = null;
-        return $this;
     }
 
 	/**

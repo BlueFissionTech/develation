@@ -117,7 +117,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	}
 
 	/**
-	 * Shifts the first element off of the data arra
+	 * Shifts the first element off of the data array
 	 * @return mixed the first element
 	 */
 	public function _shift( ): mixed
@@ -262,6 +262,26 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
         $this->_data[$key] = $value;
         $this->trigger( Event::CHANGE );
     }
+
+    /**
+     * Gets a slice of the array
+     *
+     * @param int $offset
+     * @param int|null $length
+     * @return IVal
+     */
+    public function _slice(int $offset, int $length = null): array
+    {
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+		
+		$array = $this->_data;
+		$array = array_slice($array, $offset, $length);
+
+		return $array;
+	}
+
 
     /**
      * Sort the array
@@ -546,7 +566,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		}
 
 		if (!$this->is($this->_data)) {
-			return Arr::make([]);
+			return Arr::make();
 		}
 
 		$array = array_intersect($this->_data, $array);
@@ -566,7 +586,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		}
 
 		if (!$this->is($this->_data)) {
-			return Arr::make([]);
+			return Arr::make();
 		}
 
 		$array = array_diff($this->_data, $array);
@@ -580,7 +600,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 */
 	public function _flip(): Arr {
 		if (!$this->is($this->_data)) {
-			return Arr::make([]);
+			return Arr::make();
 		}
 
 		$array = array_flip($this->_data);
@@ -594,7 +614,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 */
 	public function _keys(): Arr {
 		if (!$this->is($this->_data)) {
-			return Arr::make([]);
+			return Arr::make();
 		}
 		$keys = array_keys($this->_data);
 
@@ -665,7 +685,26 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	 */
 	public function delta()
 	{
-		return $this->diff($this->_snapshot);
+		return $this->distance($this->_snapshot);
+	}
+
+	public function _distance(array $array2): float {
+		if (!$this->is($this->_data)) {
+			return $this;
+		}
+
+		$array1 = $this->_data;
+
+	    $keys = array_unique(array_merge(array_keys($array1), array_keys($array2)));
+	    $distance = 0;
+
+	    foreach ($keys as $key) {
+	        $value1 = $array1[$key] ?? 0;
+	        $value2 = $array2[$key] ?? 0;
+	        $distance += abs($value1 - $value2);
+	    }
+
+	    return $distance;
 	}
 
 	/**

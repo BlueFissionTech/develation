@@ -53,6 +53,7 @@ class System implements IDispatcher {
 	 *
 	 * @param string $command
 	 * @return boolean
+	 * 
 	 */
 	public function isValidCommand($command) {
 		// check is the command is a system registered command

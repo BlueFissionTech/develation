@@ -17,7 +17,6 @@ class IPC {
 
     public function write($channel, $message) {
         if ($this->retryConnection()) {
-            $this->_storage->activate();
             $data = $this->_storage->read() ?? [];
             $data[$channel][] = $message;
             $this->_storage->contents($data);
@@ -30,7 +29,6 @@ class IPC {
 
     public function read($channel) {
         if ($this->retryConnection()) {
-            $this->_storage->activate();
             $data = $this->_storage->read() ?? [];
             $messages = $data[$channel] ?? [];
             $this->_storage->deactivate();
@@ -42,7 +40,6 @@ class IPC {
 
     public function clear($channel) {
         if ($this->retryConnection()) {
-            $this->_storage->activate();
             $data = $this->_storage->read() ?? [];
             unset($data[$channel]);
             $this->_storage->contents($data);

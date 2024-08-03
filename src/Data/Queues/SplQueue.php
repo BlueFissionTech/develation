@@ -31,7 +31,7 @@ class SplQueue extends Queue implements IQueue {
         return null;
     }
 
-    public static function enqueue($item, $queue) {
+    public static function enqueue($queue, $item) {
         $queues = self::instance($queue);
         $queues->enqueue($item);
     }

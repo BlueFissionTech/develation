@@ -73,7 +73,7 @@ class Util {
         return $storagePath;
     }
 
-   // Function to get or generate a unique CLI session ID
+    // Function to get or generate a unique CLI session ID
     static function getCliSessionId() {
         try {
             $userHome = self::getUserHomeDir();
@@ -139,7 +139,7 @@ class Util {
                 'name' => $storageFileName   // Set your desired storage file name
             ]);
             $diskStorage->activate();
-            $storedData = $diskStorage->read() ?? [];
+            $storedData = $diskStorage->read()->contents() ?? [];
 
             if ($value === null) {
                 // Return the value if $value is null

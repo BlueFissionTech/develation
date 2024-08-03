@@ -178,7 +178,7 @@ class Num extends Val implements IVal {
 	 *
 	 * @return IVal
 	 */
-	public function _subtract(): IVal
+	public function _sub(): IVal
 	{
 		$values = func_get_args();
 		$number = $this->_data;

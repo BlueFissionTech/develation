@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission;
 
 use BlueFission\IVal;

@@ -16,7 +16,7 @@ namespace BlueFission;
 // `DevElation::subscribe($this, $eventOrBehavior);` now registers that item as a listener of that event through `Dispatches::trigger($eventName, $args);`
 
 class DevElation {
-    private static $isActive = false;
+    private static $_isActive = false;
     private static $_config = [];
     private static $_filters = [];
     private static $_actions = [];
@@ -25,13 +25,13 @@ class DevElation {
     public static function up()
     {
         // Activate the class
-        self::$isActive = true;
+        self::$_isActive = true;
     }
 
     public static function down()
     {
         // Deactivate the class
-        self::$isActive = false;
+        self::$_isActive = false;
     }
 
     public static function config($key = null, $value = null)
@@ -60,7 +60,7 @@ class DevElation {
     public static function apply($name = null, $value)
     {
     	$name = self::generateHookName($name);
-        if (!self::$isActive || !isset(self::$_filters[$name])) {
+        if (!self::$_isActive || !isset(self::$_filters[$name])) {
             return $value;
         }
         foreach (self::$_filters[$name] as $priority => $filters) {
@@ -83,7 +83,7 @@ class DevElation {
     public static function do($name = null, $args = [])
     {
     	$name = self::generateHookName($name);
-        if (!self::$isActive || !isset(self::$_actions[$name])) {
+        if (!self::$_isActive || !isset(self::$_actions[$name])) {
             return;
         }
         foreach (self::$_actions[$name] as $priority => $actions) {
@@ -109,7 +109,7 @@ class DevElation {
 
     public static function trigger($eventName, $args = [])
     {
-        if (!self::$isActive || !isset(self::$_listeners[$eventName])) {
+        if (!self::$_isActive || !isset(self::$_listeners[$eventName])) {
             return;
         }
         foreach (self::$_listeners[$eventName] as $listener) {

@@ -313,6 +313,30 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Replaces a substring within the string
+	 *
+	 * @param int $start The starting position of the substring to replace
+	 * @param int $length The length of the substring to replace
+	 * @param string $replacement The replacement string
+	 * @param bool $preserveLength If true, the replacement string will be truncated or padded to match the length of the substring being replaced
+	 * 
+	 */
+	public function _replaceSub(int $start, int $length, string $replacement, bool $preserveLength = false): IVal {
+		$string = $this->_data;
+		$replacementLength = strlen($replacement);
+
+		if ($preserveLength) {
+			$replacement = substr($replacement, 0, $length);
+		}
+
+		$string = substr_replace($string, $replacement, $start, $length);
+
+		$this->alter($string);
+
+		return $this;
+	}
+
+	/**
 	 * Trims whitespace from the beginning and end of the string
 	 *
 	 * @return IVal
