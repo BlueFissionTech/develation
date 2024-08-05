@@ -51,6 +51,16 @@ class Request extends Obj {
 		return $request;
 	}
 
+	public function file($field)
+	{
+		$file = $_FILES[$field] ?? null;
+		if ( !$file ) {
+			return null;
+		}
+
+		return new Upload($file);
+	}
+
 	/**
 	 * Retrieves the request method.
 	 *

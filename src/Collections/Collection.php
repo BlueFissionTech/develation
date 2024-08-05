@@ -298,6 +298,27 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	}
 
 	/**
+	 * Flatten, flatten the collection
+	 * @return Collection
+	 */
+	public function flatten() {
+		$list = $this->contents();
+		$flat = [];
+		foreach ($list as $item) {
+			if ( is_array($item) ) {
+				$flat = array_merge( $flat, $item );
+			} else {
+				$flat[] = $item;
+			}
+		}
+		return new Collection( $flat );
+	}
+
+	public function flatMap( callable $callback ) {
+		return $this->map( $callback )->flatten();
+	}
+
+	/**
 	 * Sort, apply a sorting fucntion to the collection
 	 * @param  callable $callback The callback to apply to each item
 	 * @return Collection
