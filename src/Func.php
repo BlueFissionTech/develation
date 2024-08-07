@@ -17,7 +17,7 @@ class Func extends Val implements IVal {
 	 * @param mixed $value
 	 */
 	public function __construct( $value = null, $snapshot = true, $cast = false ) {
-		$value = is_callable( $value, true ) ? $value : ( ( ( $cast || $this->_forceType ) && !is_null($value)) ? Closure::fromCallable($value) : $value );
+		$value = is_callable( $value, true ) ? $value : ( ( ( $cast || $this->_forceType ) && !is_null($value)) ? \Closure::fromCallable($value) : $value );
 		parent::__construct($value);
 	}
 
