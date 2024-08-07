@@ -553,7 +553,7 @@ class Val implements IVal, IDispatcher {
 	 * pass the value as a reference bound to $_data
 	 *
 	 * @param mixed $value
-	 * @return IVAl
+	 * @return IVal
 	 */
 	public function ref(&$value): IVal
 	{
