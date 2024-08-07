@@ -6,8 +6,6 @@ use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Obj;
 use BlueFission\Arr;
-use BlueFission\Behavioral\IDispatcher;
-use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Behavior;
 
 /**
@@ -15,8 +13,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
  *
  * @package BlueFission\Services
  */
-class Service extends Obj implements IDispatcher {
-	use Dispatches;
+class Service extends Obj {
 
 	/**
 	 * @var array $registrations
@@ -65,7 +62,7 @@ class Service extends Obj implements IDispatcher {
 	public function __construct() 
 	{
 		parent::__construct();
-		$this->_registrations = array();
+		$this->_registrations = [];
 		$this->scope = $this;
 	}
 
