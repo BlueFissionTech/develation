@@ -68,6 +68,10 @@ class Func extends Val implements IVal {
 	 */
 	public function expects(): array
 	{
+		if ( is_string($this->_data) || is_array($this->_data) ) {
+			$this->_data = \Closure::fromCallable($this->_data);
+		}
+
 		try {
 			$reflector = new \ReflectionFunction($this->_data);
 			return $reflector->getParameters();
