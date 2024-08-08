@@ -49,7 +49,7 @@ class Cookie extends Storage implements IData
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
 		$cookiesecure = $this->config('secure');
-		$name = $this->config('name') ? (string)$this->config('name') : Str::random();
+		$name = $this->config('name') ? (string)$this->config('name') : Str::rand();
 		
 		if (isset($_COOKIE[$name])) {
 			$this->_contents = $_COOKIE[$name];

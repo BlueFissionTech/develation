@@ -147,7 +147,7 @@ class MySQLLink extends Connection implements IConfigurable
 
 				if (Arr::isAssoc($query))
 				{
-					$this->_data = $query; 
+					$this->_data->val($query);
 				}
 				else if (Str::is($query))
 				{
@@ -169,7 +169,7 @@ class MySQLLink extends Connection implements IConfigurable
 			
 			$key = $this->config('key');
 
-			if ($this->field($key) )
+			if ( $this->field($key) )
 			{
 				$value = self::sanitize( $this->field($key) );
 				$keyField = self::sanitize( $this->config('key') );
@@ -194,7 +194,7 @@ class MySQLLink extends Connection implements IConfigurable
 	private function _read(): void
 	{
 		$table = $this->config('table');
-		$data = $this->_data->val();
+		$data = $this->_data;
 		$this->find($table, $data);
 	}
 
@@ -221,7 +221,7 @@ class MySQLLink extends Connection implements IConfigurable
 			foreach ($data as $a) array_push($temp_values, self::sanitize($a));
 			
 			$count = 0;
-			foreach (Arr::keys($data) as $a) 
+			foreach ($data->keys() as $a) 
 			{
 				array_push($where, $a ."=". $temp_values[$count]);
 				$count++;
@@ -288,13 +288,22 @@ class MySQLLink extends Connection implements IConfigurable
 			// Turn array into a string
 			
 			// Prepare each value for input
-			foreach ($data as $a) {
+			foreach ($data as $key => $a) {
+				// continue if the key is a primary key
+				if ($key == $this->config('key')) {
+					continue;
+				}
 				array_push($temp_values, self::sanitize($a));
 			}
 
 			$count = 0;
-			foreach (Arr::keys($data) as $a) 
+			foreach ($data->keys() as $a) 
 			{
+				// continue if the key is a primary key
+				if ($a == $this->config('key')) {
+					continue;
+				}
+				
 				if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
 					$insert[$a] = $temp_values[$count];
 				}
@@ -315,7 +324,7 @@ class MySQLLink extends Connection implements IConfigurable
 				$result = $db->query($query);
 				$success = ( $result ) ? true : false;
 				$status = ( $success ) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
-				$this->assign( $result->fetch_object() );
+				// $this->assign( $result->fetch_object() );
 			} catch ( \Exception | \MySQLiQueryException $e ) {
 				error_log($e->getMessage());
 				$status = self::STATUS_FAILED;
@@ -326,7 +335,7 @@ class MySQLLink extends Connection implements IConfigurable
 			$this->_result = $success;
 			$this->halt([State::BUSY, State::SENDING, State::PROCESSING]);
 
-			$this->perform(Event::SENT, new Meta(data: $data));
+			$this->perform(Event::SENT, new Meta(data: $data->val()));
 			$this->perform([Action::RECEIVE]);
 			$this->perform(Event::RECEIVED, new Meta(data: $this->_result));
 		}
@@ -374,7 +383,7 @@ class MySQLLink extends Connection implements IConfigurable
 			foreach ($data as $a) array_push($temp_values, self::sanitize($a));
 			
 			$count = 0;
-			foreach (Arr::keys($data) as $a) 
+			foreach ($data->keys()as $a) 
 			{
 				//convert into query string
 				if ($ignore_null === true ) 
@@ -415,7 +424,7 @@ class MySQLLink extends Connection implements IConfigurable
 
 			$this->halt([State::BUSY, State::SENDING, State::PROCESSING]);
 
-			$this->perform(Event::SENT, new Meta(data: $data));
+			$this->perform(Event::SENT, new Meta(data: $data->val()));
 			$this->perform([Action::RECEIVE]);
 			$this->perform(Event::RECEIVED, new Meta(data: $this->_result));
 		}
@@ -463,7 +472,7 @@ class MySQLLink extends Connection implements IConfigurable
 		}
 		if (isset($table) && $table != '') 
 		{ //if a table is specified
-			if (count($data) >= 1) 
+			if ($data->size() >= 1) 
 			{ //validates number of fields and values
 				switch ($type) 
 				{
@@ -611,7 +620,7 @@ class MySQLLink extends Connection implements IConfigurable
 		});
 
 		$string->constraint(function(&$value) {
-			if (Val::isNull($value) || Val::isEmpty($value) || Str::length($value) <= 0) {
+			if (Val::isNull($value) || Val::isEmpty($value) || Str::len($value) <= 0) {
 				$value = '';
 			}
 		});

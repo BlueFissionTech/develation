@@ -49,7 +49,7 @@ class Session extends Storage implements IData
 	public function activate( ): IObj
 	{
 		$path = $this->config('location');
-		$name = $this->config('name') ? (string)$this->config('name') : Str::random();
+		$name = $this->config('name') ? (string)$this->config('name') : Str::rand();
 		$expire = (int)$this->config('expire');
 		$secure = $this->config('secure');
 		$this->_source = $name;

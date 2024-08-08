@@ -37,7 +37,7 @@ class Spreadsheet extends Storage implements IData {
 	{
 		$path = $this->config('location') ? $this->config('location') : sys_get_temp_dir();
 		
-		$name = $this->config('name') ? (string)$this->config('name') : Str::random();
+		$name = $this->config('name') ? (string)$this->config('name') : Str::rand();
 			
 		if (!$this->config('name'))	{
 			$file = tempnam($path, $name);		

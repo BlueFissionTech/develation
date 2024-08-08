@@ -6,6 +6,7 @@ use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Obj;
 use BlueFission\Arr;
+use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Behaviors\Behavior;
 
 /**

@@ -299,7 +299,7 @@ class MysqlField {
 		if ( count($this->_foreign) > 0 ) {
 			foreach ( $this->_foreign as $entity => $values ) {
 				$extras[] = "INDEX `{$this->_name}_idx` (`{$this->_name}` ASC) VISIBLE";
-				$foreign = "CONSTRAINT `{$this->_name}_".Str::random(null, 4)."`\n".
+				$foreign = "CONSTRAINT `{$this->_name}_".Str::rand(null, 4)."`\n".
 				    "FOREIGN KEY (`{$this->_name}`)\n".
 				    "REFERENCES `$entity` (`{$values['on']}`)\n";
 

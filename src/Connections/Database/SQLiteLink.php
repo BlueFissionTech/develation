@@ -565,7 +565,7 @@ class SQLiteLink extends Connection implements IConfigurable
         });
 
         $string->constraint(function(&$value) {
-            if (Val::isNull($value) || Val::isEmpty($value) || Str::length($value) <= 0) {
+            if (Val::isNull($value) || Val::isEmpty($value) || Str::len($value) <= 0) {
                 $value = '';
             }
         });

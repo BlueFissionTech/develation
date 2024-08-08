@@ -147,7 +147,7 @@ class MySQL extends Storage implements IData
 
 		$tables = $this->tables();
 
-		if ( count($tables) < 1 ) {
+		if ( Arr::size($tables) < 1 ) {
 			$this->status( self::STATUS_FAILED );
 			return $this;
 		}
@@ -155,7 +155,6 @@ class MySQL extends Storage implements IData
 		$table = $tables[0];
 		$table = isset( $tables[0] ) ? $tables[0] : $this->config(self::NAME_FIELD);
 		
-		// foreach ($this->fields() as $table=>$column)
 		foreach ($this->fields() as $field=>$column)
 		{
 			$name = $column['Field'];
@@ -163,7 +162,7 @@ class MySQL extends Storage implements IData
 			{
 				if (!isset($keys[$table])) $keys[$table] = $name;
 			}
-			if ( is_array($this->config('fields')) && count($this->config('fields')) > 0 && !in_array($field, $this->config('fields')) ) {
+			if ( Arr::is($this->config('fields')) && Arr::size($this->config('fields')) > 0 && !Arr::has($this->config('fields'), $field) ) {
 				continue;
 			}
 
@@ -183,7 +182,7 @@ class MySQL extends Storage implements IData
 			}
 
 			$table = $value;
-			$key = isset($keys[$table]) ? $keys[$table] : null;
+			$key = $keys[$table] ?? null;
 			$db->config('key', $key);
 			$db->config('table', $table);
 			$db->config('ignore_null', $this->config('ignore_null'));
@@ -193,8 +192,8 @@ class MySQL extends Storage implements IData
 
 			foreach ($fields as $column) {
 				$field = $column['Field'];
-				if ( is_array($this->config('fields')) && count($this->config('fields')) > 0 
-					&& (!in_array($field, $this->config('fields')) ||
+				if ( Arr::is($this->config('fields')) && Arr::size($this->config('fields')) > 0 
+					&& (!Arr::use()->has($field) ||
 					($column['Default'] !== null && $this->field($field) === null))) {
 					continue;
 				}
@@ -208,7 +207,7 @@ class MySQL extends Storage implements IData
 			//$status = $success ? self::STATUS_FAILED : self::STATUS_SUCCESS;
 
 			if (!$affected_row && $success && $key) {
-				$affected_row = Val::isNotNull($this->_data[$key]) ? $this->_data[$key] : $db->last_row();
+				$affected_row = Val::isNotNull($this->_data[$key]) ? $this->_data[$key] : $db->lastRow();
 				$this->_last_row_affected = $affected_row;
 			}
 
@@ -288,7 +287,7 @@ class MySQL extends Storage implements IData
 			if ( $a != $table )
 			{
 				$join = $this->table($a);
-				if (is_array($join)) 
+				if (Arr::is($join)) 
 				{
 					if ($this->config('auto_join')) {
 						$field = $this->arrayKeyIntersect($this->table($table), $join);
@@ -312,7 +311,7 @@ class MySQL extends Storage implements IData
 							$b = $tables[$i];
 							if ($a != $b) {
 								$join_2 = $this->table($b);
-								if (is_array($join_2)) {
+								if (Arr::is($join_2)) {
 									$fields = $this->arrayKeyIntersect($this->table($a), $join_2);
 									foreach ($fields as $c=>$d) {
 										$on[] = $a . ".$c  = $b.$c";
@@ -320,7 +319,7 @@ class MySQL extends Storage implements IData
 								}
 								
 								$join_2 = $this->arrayKeyIntersect($this->table($b), $relations);
-								if (is_array($join_2)) {	
+								if (Arr::is($join_2)) {	
 									$fields = $this->arrayKeyIntersect($this->tables($a), $join_2);
 									foreach ($fields as $c=>$d) {
 										$on[] = $a . ".$c  = $b.$c";
@@ -696,13 +695,13 @@ class MySQL extends Storage implements IData
 		// var_dump($this->config('name'));
 		//if (!$this->_fields || count( $this->config(self::NAME_FIELD) ) > 0 )
 		
-		$tableDiff = Arr::merge(Arr::diff($this->tables(), Arr::toArray($this->config('name'))), Arr::diff(Arr::toArray($this->config('name')), $this->tables()));
-		if ( count($tableDiff) > 0 ) {
-			$this->_fields = [];;
+		$tableDiff = array_merge(Arr::diff($this->tables(), Arr::toArray($this->config('name'))), Arr::diff(Arr::toArray($this->config('name')), $this->tables()));
+		if ( Arr::size($tableDiff) > 0 ) {
+			$this->_fields = [];
 		}
 		
 		// TODO make sure this works as expected and it actually compares the arrays
-		if ( !$this->_fields )
+		if ( Arr::size($this->_fields) <= 0 )
 		{
 			$data = [];
 			//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
@@ -714,6 +713,7 @@ class MySQL extends Storage implements IData
 			
 			$this->perform( State::DRAFT );
 			$active_fields = Arr::toArray( $this->config('fields') );
+
 			foreach ($tables as $table)
 			{
 				$query = "SHOW COLUMNS FROM `$table`";
@@ -750,7 +750,7 @@ class MySQL extends Storage implements IData
 		{
 			$table = $value;
 			// $table = $this->_fields[$i]['value'];
-			$fields = Arr::merge($fields, $table);
+			$fields = array_merge($fields, $table);
 		}
 		reset($this->_fields);
 
@@ -874,7 +874,7 @@ class MySQL extends Storage implements IData
 						}
 					}
 					if (Str::has($type, 'set')) {
-						if (is_array($this->field($field_name))) {
+						if (Arr::is($this->field($field_name))) {
 							$this->field($field_name, implode(', ', $this->field($field_name)));
 						} elseif (!is_string($this->field($field_name))) {
 							$this->status("Field '$field_name' contains invalid input!");
@@ -1068,7 +1068,7 @@ class MySQL extends Storage implements IData
 		$fields = $this->table($table);
 	
 		$condition = $this->condition($member);
-		$condition_str = is_array( $condition ) ? $condition[0] : $condition; 
+		$condition_str = Arr::is( $condition ) ? $condition[0] : $condition; 
 		if ($condition_str === null ) {
 			$condition_str = '';
 		}
@@ -1091,7 +1091,7 @@ class MySQL extends Storage implements IData
 				{
 					$match_str = "$table.$member";
 				}
-				if ( is_array( $value ) ) 
+				if ( Arr::is( $value ) ) 
 				{
 					foreach ( $value as $a ) 
 					{
@@ -1109,7 +1109,7 @@ class MySQL extends Storage implements IData
 			} 
 			elseif ( strtoupper( $condition_str ) == 'IN' ) 
 			{
-				if ( is_array( $value ) ) 
+				if ( Arr::is( $value ) ) 
 				{
 					foreach ( $value as $a )
 					{
@@ -1127,7 +1127,7 @@ class MySQL extends Storage implements IData
 			} 
 			elseif ( strtoupper( $condition_str ) == 'NOT IN' ) 
 			{
-				if ( is_array( $value ) ) 
+				if ( Arr::is( $value ) ) 
 				{
 					foreach ( $value as $a )
 					{
@@ -1145,7 +1145,7 @@ class MySQL extends Storage implements IData
 			} 
 			else 
 			{
-				if ( is_array( $value ) ) 
+				if ( Arr::is( $value ) ) 
 				{
 					$count = 0;
 					foreach ( $value as $a ) 
@@ -1153,7 +1153,7 @@ class MySQL extends Storage implements IData
 						if ( Val::isNotNull( $a ) ) 
 						{
 							$temp_where = '';
-							$condition_str = ((array_key_exists($member, $this->_conditions)) ? ((is_array($condition)) ? $condition[$count] : $condition) : " = ");
+							$condition_str = ((array_key_exists($member, $this->_conditions)) ? ((Arr::is($condition)) ? $condition[$count] : $condition) : " = ");
 							
 							if ( $condition_str == 'Like' || $condition_str == '^' ) 
 							{
@@ -1187,7 +1187,7 @@ class MySQL extends Storage implements IData
 							$count++;
 						}
 					}
-					$where = implode( ( is_array( $condition ) ) ? ' AND ' : ' OR ', $where_r );
+					$where = implode( ( Arr::is( $condition ) ) ? ' AND ' : ' OR ', $where_r );
 				} 
 				else 
 				{
