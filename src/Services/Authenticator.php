@@ -129,7 +129,6 @@ class Authenticator extends Service {
 	 * @return bool Returns true if user is authenticated, false otherwise
 	 */
 	public function isAuthenticated() {
-		// return true;
 		$this->_session->read();
 		$data = $this->_session->data();
 		if ( Val::isNotEmpty( $data ) ) {
@@ -161,7 +160,7 @@ class Authenticator extends Service {
 		$attempts = $this->_datasource;
 		$attempts->config('name', $this->config('login_attempts_table'));
 		$attempts->activate();
-		$last = array();
+		$last = [];
 		$attempts->field('ip_address', $value);
 		$attempts->read();
 		$last = $attempts->data();
@@ -199,7 +198,7 @@ class Authenticator extends Service {
 		$attempts = $this->_datasource;
 		$attempts->config('name', $this->config('login_attempts_table'));
 		$attempts->activate();
-		$last = array();
+		$last = [];
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
 		$attempts->read();
 		$last = $attempts->data();
@@ -225,7 +224,7 @@ class Authenticator extends Service {
 		$attempts->clear();
 		$attempts->config('name', $this->config('login_attempts_table'));
 		$attempts->activate();
-		$last = array();
+		$last = [];
 		$attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
 		$attempts->read();
 		$last = $attempts->data();
@@ -279,6 +278,10 @@ class Authenticator extends Service {
 	 * @return bool True if the session was successfully set, otherwise false.
 	 */
 	public function setSession() {
+		// $this->_session->read();
+		// $data = $this->_session->data();
+		// die(var_dump($_SESSION));
+
 		if ( isset( $_COOKIE[$this->config('session')] ) ) {
 			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')]))) {
 				return true;
@@ -289,15 +292,15 @@ class Authenticator extends Service {
 		}
 
 		if ( !$this->isAuthenticated() ) return false;
-		$loginData = array(
+		$loginData = [
 			'username' => $this->username,
 			'id' => $this->id,
 			'duration' => $this->config('duration')
-		);
+		];
 
-		$cookie = HTTP::jsonEncode( ($loginData) );
+		// $cookie = HTTP::jsonEncode( ($loginData) );
 
-		if ($this->setAuthCookie($cookie)) {
+		if ($this->setAuthCookie($loginData, $loginData['duration'])) {
 			return true;
 		} else {
 			$this->_status[] = "Could not save session";
@@ -338,7 +341,9 @@ class Authenticator extends Service {
 		*/
 	
 		$this->_session->clear();
-		$this->_session->assign($value);
+		$this->_session->username = $value['username'];
+		$this->_session->id = $value['id'];
+
 		$this->_session->write();
 
 		return true;

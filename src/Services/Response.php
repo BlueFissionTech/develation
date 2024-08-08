@@ -58,7 +58,7 @@ class Response extends Obj
 		if ( $depth > self::MAX_DEPTH ) {
 			return;
 		}
-		if ( \Arr::is($values) ) {
+		if ( Arr::is($values) ) {
 			$mapped = false;
 			$iterations = 0;
 			foreach ( $values as $key=>$value ) {

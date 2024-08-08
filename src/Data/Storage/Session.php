@@ -79,7 +79,7 @@ class Session extends Storage implements IData
 	 */
 	public function write(): IObj
 	{			
-		$value = HTTP::jsonEncode( $this->_data ? $this->_data : $this->_contents);
+		$value = HTTP::jsonEncode( $this->_data->size() > 0 ? $this->_data->val() : $this->_contents);
 		$label = $this->_source;
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
@@ -88,7 +88,7 @@ class Session extends Storage implements IData
 		$path = ($path) ? $path : HTTP::domain();
 		$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 		$secure = (bool)$secure;
-		$status = ( HTTP::session($label, $value, $cookiedie, $path = null, $secure) ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+		$status = ( HTTP::session($label, $value, $cookiedie, $path, $secure) ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
 		
 		$this->status( $status );
 
@@ -104,7 +104,7 @@ class Session extends Storage implements IData
 	{	
 		$value = HTTP::session( $this->_source );
 
-		if ( function_exists('json_decode'))
+		if ( $value && function_exists('json_decode'))
 		{
 			$value = json_decode($value);
 			$this->contents($value);

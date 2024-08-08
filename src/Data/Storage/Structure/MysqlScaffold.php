@@ -29,7 +29,12 @@ class MysqlScaffold implements IScaffold {
 		$mysql = new Mysql(['location'=>null, 'name'=>$entity]);
 		$mysql->activate();
 		$mysql->run($query);
-		print( "Creating {$entity}. " . $mysql->status(). "\n");
+		$status = $mysql->status();
+
+		if ($status != Mysql::STATUS_SUCCESS) {
+			$status .= " " . $mysql->error();
+		}
+		print( "Creating {$entity}. " . $status . "\n");
 	}
 
 	/**
@@ -52,6 +57,11 @@ class MysqlScaffold implements IScaffold {
 		$mysql = new Mysql(['location'=>null, 'name'=>$entity]);
 		$mysql->activate();
 		$mysql->run($query);
-		print( "Dropping {$entity}. " . $mysql->status(). "\n");
+		$status = $mysql->status();
+
+		if ($status != Mysql::STATUS_SUCCESS) {
+			$status .= " " . $mysql->error();
+		}
+		print( "Dropping {$entity}. " . $status . "\n");
 	}	
 }

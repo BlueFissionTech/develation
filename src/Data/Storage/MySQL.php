@@ -256,7 +256,7 @@ class MySQL extends Storage implements IData
 		$on = [];
 		
 		$distinct = [];
-		$where = array('1');
+		$where = ['1'];
 		$sort = [];
 		
 		foreach ($data as $a=>$b) 
@@ -266,7 +266,7 @@ class MySQL extends Storage implements IData
 			if ($this->distinctCase($table, $a))
 				$distinct[] = $this->distinctCase($table, $a);
 		}
-		
+
 		// Use Ordered Sort Cases
 		foreach ( $this->_order as $a=>$b )
 		{
@@ -915,9 +915,9 @@ class MySQL extends Storage implements IData
 	 * @param string|array $condition The condition to be set
 	 * @param mixed $value The value to be set
 	 * 
-	 * @return mixed
+	 * @return mixed $this or condition
 	 */
-	public function condition($member, $condition = null, $value = null): mixed
+	public function condition($member, $condition = null, $value = null): mixed 
 	{
 		//if (!$this->exists($member)) return false;
 		$values = ['=', '<=>', '>', '<', '>=', '<=', '<>', 'IS', 'IS NOT', 'LIKE', 'NOT LIKE'];
@@ -928,6 +928,9 @@ class MySQL extends Storage implements IData
 					if (Str::trim($c) == $member) return $b;
 				}
 			}
+
+			return false;
+
 		}
 		if ( Val::isNotEmpty( $value ) ) 
 		{
@@ -953,7 +956,7 @@ class MySQL extends Storage implements IData
 	 * @param string $member The member to be set/retrieved order
 	 * @param string $order The order to be set
 	 * 
-	 * @return mixed Returns the order if only $member is passed, returns boolean false on failure, returns $this if the method is successful
+	 * @return mixed $this or order
 	 */
 	public function order($member, $order = null): mixed
 	{
@@ -966,6 +969,8 @@ class MySQL extends Storage implements IData
 					if (trim($c) == $member) return $b;
 				}
 			}
+
+			return false;
 		}
 		if ( !in_array(strtoupper($order), $values)) return false;
 
@@ -981,19 +986,20 @@ class MySQL extends Storage implements IData
 	 *
 	 * @return mixed  The aggregated result or the current object if setting the aggregation
 	 */
-	public function aggregate($member, $function = null): IObj
+	public function aggregate($member, $function = null): mixed
 	{
 		//if (!$this->exists($member)) return false;
 
-		$values = array('AVG', 'BIT_AND', 'BIT_OR', 'BIT_XOR', 'COUNT', 'GROUP_CONCAT', 'MAX', 'MIN', 'STD', 'STDDEV_POP', 'STDDEV_SAMP', 'STDDEV', 'SUM', 'VAR_POP', 'VAR_SAMP', 'VARIANCE');
+		$values = ['AVG', 'BIT_AND', 'BIT_OR', 'BIT_XOR', 'COUNT', 'GROUP_CONCAT', 'MAX', 'MIN', 'STD', 'STDDEV_POP', 'STDDEV_SAMP', 'STDDEV', 'SUM', 'VAR_POP', 'VAR_SAMP', 'VARIANCE'];
 
 		if (Val::isNull($function))
 		{
 			return $this->_aggregate[$member];
 		}
 
-		if ( !in_array(strtoupper($function), $values)) return false;
-		$this->_aggregate[$member] = $function;
+		if ( in_array(strtoupper($function), $values)) {
+			$this->_aggregate[$member] = $function;
+		}
 
 		return $this;
 	}
@@ -1004,14 +1010,15 @@ class MySQL extends Storage implements IData
 	 * @param string $member  The name of the first member
 	 * @param string $field  The name of the second member
 	 *
-	 * @return mixed  The current object if setting the relation or the related member if getting the relation
+	 * @return mixed $this or the relation if $field is not null
 	 */
 	public function relation($member, $field = null): mixed
 	{
 		//if (!$this->exists($member)) return false;
 		
-		if (Val::isNull($field))
+		if (Val::isNull($field)) {
 			return $this->_relations[$member];
+		}
 		
 		$this->_relations[$field] = $member;
 
@@ -1236,8 +1243,9 @@ class MySQL extends Storage implements IData
 		
 		if (array_key_exists($member, $this->_order) && array_key_exists($member, $members) ) 
 		{
-			if (strtoupper($this->order($member)) == 'RAND()') $sort = " " . $this->order($member);
-			else $sort = $table . ".$member " . $this->order($member);
+			$order = $this->order($member);
+			if (strtoupper($order) == 'RAND()') $sort = " " . $order;
+			else $sort = $table . ".$member " . $order;
 		}
 		
 		return $sort;

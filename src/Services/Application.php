@@ -1143,8 +1143,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		
 		$varTypes = ['string', 'int', 'float', 'bool', 'array', 'object', 'callable', 'iterable', 'void', 'null'];
 
+		$callingClass = $functionOrMethod?->class;
+		
 		foreach ($parameters as $parameter) {
-			$callingClass = $functionOrMethod->class ?? '';
 
 			// Get the name of the dependency class
 			$dependencyClass = '';
@@ -1172,6 +1173,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 				$dependencies[$dependencyName] = $arguments[$dependencyName] ?? ( $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null );
 			} elseif ( $dependencyClass ) {
 				$values = array_values($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
+
 				$dependencies[$dependencyName] = 
 					$arguments[$dependencyName] ?? 
 					new $dependencyClass(...$values);

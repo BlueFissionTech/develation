@@ -186,7 +186,7 @@ class HTTP {
 	static function session($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
 		if (Val::isNull($value) )
-			return isset( $_SESSION[$var] ) ? $_SESSION[$var] : null;
+			return $_SESSION[$var] ?? null;
 			
 		if (session_id() == '') 
 		{
