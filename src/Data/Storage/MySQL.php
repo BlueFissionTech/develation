@@ -183,6 +183,7 @@ class MySQL extends Storage implements IData
 
 			$table = $value;
 			$key = $keys[$table] ?? null;
+			$db->clear();
 			$db->config('key', $key);
 			$db->config('table', $table);
 			$db->config('ignore_null', $this->config('ignore_null'));
@@ -212,10 +213,10 @@ class MySQL extends Storage implements IData
 			}
 
 			$status = $success ? self::STATUS_SUCCESS : $db->status();
-			$this->status( $status );
 			if ($success) {
 				$this->id($this->lastRow());
 			}
+			$this->status( $status );
 		}
 		
 		return $this;

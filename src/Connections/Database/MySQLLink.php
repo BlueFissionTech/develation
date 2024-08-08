@@ -324,7 +324,8 @@ class MySQLLink extends Connection implements IConfigurable
 				$result = $db->query($query);
 				$success = ( $result ) ? true : false;
 				$status = ( $success ) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
-				// $this->assign( $result->fetch_object() );
+				$this->_last_row = $db->insert_id ?? $this->_last_row;
+				$this->field($this->config('key'), $this->_last_row);
 			} catch ( \Exception | \MySQLiQueryException $e ) {
 				error_log($e->getMessage());
 				$status = self::STATUS_FAILED;
@@ -411,7 +412,6 @@ class MySQLLink extends Connection implements IConfigurable
 				$result = $db->query($query);
 				$success = ( $result ) ? true : false;
 				$status = ( $success ) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
-				$this->assign( $result->fetch_object() );
 			} catch ( \Exception | \MySQLiQueryException $e ) {
 				error_log($e->getMessage());
 				$status = self::STATUS_FAILED;
@@ -478,16 +478,8 @@ class MySQLLink extends Connection implements IConfigurable
 				{
 				case self::INSERT:
 					//attempt a database insert
-					if ($this->insert($table, $data)) 
-					{
-						$status = "Successfully Inserted Entry.";
-						$last_row = $db->insert_id;
-						$success = true;
-					} 
-					else 
-					{
-						$status = "Insert Failed. Reason: " . $db->error;
-					}
+					$this->insert($table, $data);
+					$status = $this->status();
 					break;
 				case self::UPDATE_SPECIFIED:
 					$ignore_null = true;
@@ -495,16 +487,8 @@ class MySQLLink extends Connection implements IConfigurable
 					//attempt a database update
 					if (isset($where) && $where != '') 
 					{
-						if ($this->update($table, $data, $where, $ignore_null)) 
-						{
-							$status = "Successfully Updated Entry.";
-							$last_row = $db->insert_id;
-							$success = true;
-						} 
-						else 
-						{
-							$status = "Update Failed. Reason: " . $db->error;
-						}
+						$this->update($table, $data, $where, $ignore_null);
+						$status = $this->status();
 					} 
 					else 
 					{
@@ -534,8 +518,6 @@ class MySQLLink extends Connection implements IConfigurable
 			$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
 			new Meta(when: Action::PROCESS, info: $status ) 
 		);
-		
-		$this->_last_row = $last_row ? $last_row : $this->_last_row;
 
 		return;
 	}
@@ -619,18 +601,18 @@ class MySQLLink extends Connection implements IConfigurable
 			}
 		});
 
-		$string->constraint(function(&$value) {
-			if (Val::isNull($value) || Val::isEmpty($value) || Str::len($value) <= 0) {
-				$value = '';
-			}
-		});
-
 		$string->constraint(function(&$value) use ($db, $pattern, $replacement) {
 			if (Val::isNotNull($value)) {
 				if ($db) {
 					$value = $db->real_escape_string(stripslashes($value));
 				}
 				$value = preg_replace($pattern, $replacement, $value);
+			}
+		});
+
+		$string->constraint(function(&$value) {
+			if (Val::isEmpty($value) || Str::len($value) <= 0) {
+				$value = '\'\'';
 			}
 		});
 
