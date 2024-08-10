@@ -1,14 +1,14 @@
 <?php
 namespace BlueFission\Data\Storage\Structure;
 
-use BlueFission\Connections\Database\MysqlLink;
+use BlueFission\Connections\Database\MySQLLink;
 use BlueFission\Str;
 
 /**
- * Class MysqlField 
+ * Class MySQLField 
  * Represents a field in a MySQL table. 
  */
-class MysqlField {
+class MySQLField {
     /**
      * @var string The name of the field.
      */
@@ -60,21 +60,21 @@ class MysqlField {
     private $_autoincrement;
 
     /**
-     * @var MysqlLink a connection to the target database.
+     * @var MySQLLink a connection to the target database.
      */
     private $_link;
 
     /**
-     * Constructor for the MysqlField class.
+     * Constructor for the MySQLField class.
      *
      * @param string $name The name of the field.
      *
-     * @return MysqlField 
+     * @return MySQLField 
      */
     public function __construct($name)
     {
         $this->_name = $name;
-        $this->_link = new MysqlLink();
+        $this->_link = new MySQLLink();
 
         return $this;
     }
@@ -84,7 +84,7 @@ class MysqlField {
      *
      * @param string $type The type of the field.
      *
-     * @return MysqlField 
+     * @return MySQLField 
      */
     public function type($type)
     {
@@ -98,7 +98,7 @@ class MysqlField {
      *
      * @param int $size The size of the field.
      *
-     * @return MysqlField 
+     * @return MySQLField 
      */
     public function size($size)
     {
@@ -112,7 +112,7 @@ class MysqlField {
      *
      * @param boolean $isTrue If the field is a primary key.
      *
-     * @return MysqlField 
+     * @return MySQLField 
      */
     public function primary( $isTrue = true)
     {
@@ -126,7 +126,7 @@ class MysqlField {
      *
      * @param boolean $isTrue If the field is auto-incremented.
      *
-     * @return MysqlField 
+     * @return MySQLField 
      */
     public function autoincrement( $isTrue = true)
     {
@@ -140,7 +140,7 @@ class MysqlField {
      *
      * @param boolean $isTrue If the field is unique.
      *
-     * @return MysqlField 
+     * @return MySQLField 
      */
     public function unique( $isTrue = true)
     {

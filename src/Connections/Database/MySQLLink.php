@@ -49,7 +49,7 @@ class MySQLLink extends Connection implements IConfigurable
      * This method sets the configuration, if provided, and sets the connection property to the last stored connection.
      *
      * @param mixed $config The configuration for the connection.
-     * @return MysqlLink 
+     * @return MySQLLink 
      */
     public function __construct( $config = null )
     {

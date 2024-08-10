@@ -2,11 +2,11 @@
 namespace BlueFission\Data\Storage\Structure;
 
 /**
- * Class MysqlStructure
+ * Class MySQLStructure
  *
  * Extends the base Structure class and implements a structure specific to MYSQL database.
  */
-class MysqlStructure extends Structure {
+class MySQLStructure extends Structure {
 	/**
 	 * Fields of the table
 	 *
@@ -95,7 +95,7 @@ class MysqlStructure extends Structure {
 	const DATETIME_FIELD = 'datetime';
 
 	/**
-	 * MysqlStructure constructor.
+	 * MySQLStructure constructor.
 	 *
 	 * @param string $name The name of the table.
 	 */
@@ -111,11 +111,11 @@ class MysqlStructure extends Structure {
 	 * @param string $type Type of the field
 	 * @param null|int $size Size of the field
 	 *
-	 * @return MysqlField
+	 * @return MySQLField
 	 */
 	private function newField($name, $type, $size = null)
 	{
-		$field = new MysqlField($name);
+		$field = new MySQLField($name);
 		$field->type($type)->size($size);
 		$this->_fields[$name] = $field;
 

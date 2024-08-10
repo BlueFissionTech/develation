@@ -1,14 +1,14 @@
 <?php
 namespace BlueFission\Data\Storage\Structure;
 
-use BlueFission\Data\Storage\Mysql;
+use BlueFission\Data\Storage\MySQL;
 
 /**
- * Class MysqlScaffold
+ * Class MySQLScaffold
  *
  * @package BlueFission\Data\Storage\Structure
  */
-class MysqlScaffold implements IScaffold {
+class MySQLScaffold implements IScaffold {
 
 	/**
 	 * Creates a new MySQL table using the entity name and a processor to configure the structure.

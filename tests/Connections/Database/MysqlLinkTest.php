@@ -2,11 +2,11 @@
 namespace BlueFission\Tests\Connections\Database;
 
 use BlueFission\Tests\Connections\ConnectionTest;
-use BlueFission\Connections\Database\MysqlLink;
+use BlueFission\Connections\Database\MySQLLink;
  
-class MysqlLinkTest extends ConnectionTest {
+class MySQLLinkTest extends ConnectionTest {
  
- 	static $classname = 'BlueFission\Connections\Database\MysqlLink';
+ 	static $classname = 'BlueFission\Connections\Database\MySQLLink';
 
  	public function setUp(): void
  	{
