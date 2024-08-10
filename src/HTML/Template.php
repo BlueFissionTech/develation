@@ -124,7 +124,6 @@ class Template extends Obj {
 
     	$this->halt(State::READING);
 
-
         return $this;
     }
 
@@ -559,8 +558,9 @@ class Template extends Obj {
 	 * @return string The rendered output
 	 */
 	public function render ( ) 
-	{
+	{		
 		$this->executeModules();
+		$this->applyTemplate();
 		$this->commit( $this->config('format') );
 		ob_start();
 		if ($this->config('eval'))
@@ -584,6 +584,10 @@ class Template extends Obj {
 	 */
 	private function executeModules(): IObj
 	{
+		if ( $this->_template == null ) {
+			return $this;
+		}
+
 		$pattern = "/@".$this->config('module_token')."\('(.*)'\)/";
 
 		preg_match_all( $pattern, $this->_template, $matches );
@@ -599,7 +603,33 @@ class Template extends Obj {
 		}
 
 		return $this;
-
 	}
 
+	private function applyTemplate(): IObj
+	{
+		if ( $this->_template == null ) {
+			return $this;
+		}
+
+		// if a `@template('path-to-template.html')` tag is found, load the template
+		// load that content as the `$_template`
+		if (preg_match("/@template\('(.*)'\)/", $this->_template, $matches)) {
+			$content = $this->_template;
+			$template = new Template($this->config());
+			$template->load($matches[1]);
+			$this->_template = $template->render();
+
+			// if any content is wrapped in a `@section('section-name')...@endsection` tag,
+			// replace that content with the content of the section from the template wherever 
+			// there's an @output('section-name') tag
+			if (preg_match_all("/@section\('(.*)'\)(.*?)@endsection/s", $content, $sectionMatches)) {
+				foreach ($sectionMatches[1] as $i => $sectionName) {
+					$sectionContent = $sectionMatches[2][$i];
+					$this->_template = str_replace("@output('$sectionName')", $sectionContent, $this->_template);
+				}
+			}
+		}
+
+		return $this;
+	}
 }
