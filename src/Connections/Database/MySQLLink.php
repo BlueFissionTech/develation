@@ -585,6 +585,10 @@ class MySQLLink extends Connection implements IConfigurable
 	 */
 	public static function sanitize($string, $datetime = false) 
 	{
+		if (Val::isNull($string)) {
+			return 'NULL';
+		}
+		
 		$db = end ( self::$_database );
 		$pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
 		$replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', '' ];

@@ -295,6 +295,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			    $csrf = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'];
 			}
 
+			// @TODO: Fix this so database storage is also accepted using dependency injection then called like below
+			// $token = $this->_session->field('_token');
+
 			if (!$csrf) {
 				die('Invalidateable Request');
 			} elseif (!$_SESSION['_token']) {
