@@ -54,21 +54,21 @@ class Authenticator extends Service {
 	 *
 	 * @var Storage
 	 */
-	private $_datasource;
+	protected $_datasource;
 
 	/**
 	 * The session object
 	 *
 	 * @var Storage
 	 */
-	private $_session;
+	protected $_session;
 
 	/**
 	 * The password verification function
 	 *
 	 * @var callable
 	 */
-	private $_verificationFunction;
+	protected $_verificationFunction;
 
 	/**
 	 * The Authenticator constructor
