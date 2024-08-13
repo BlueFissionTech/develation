@@ -57,6 +57,20 @@ class Authenticator extends Service {
 	private $_datasource;
 
 	/**
+	 * The session object
+	 *
+	 * @var Storage
+	 */
+	private $_session;
+
+	/**
+	 * The password verification function
+	 *
+	 * @var callable
+	 */
+	private $_verificationFunction;
+
+	/**
 	 * The Authenticator constructor
 	 *
 	 * @param Storage $datasource
@@ -105,20 +119,26 @@ class Authenticator extends Service {
 		}
 		
 		$savedpass = $userinfo[$this->config('password_field')];
-		$id = $userinfo['user_id'];
 
-		// $password = password_hash($password, PASSWORD_DEFAULT);
-
-		if ( empty($savedpass) || !password_verify($password, $savedpass) ) {
+		if ( empty($savedpass) || !$this->verifyPassword($password, $savedpass) ) {
 			$this->_status[] = "Username or password incorrect";
 			return false;
 		}
 
 		$this->username = $userinfo[$this->config('username_field')];
-		// $this->displayname = $userinfo['displayname'];
 		$this->id = $userinfo[$this->config('id_field')];
 		
 		return true;
+	}
+
+	private function verifyPassword($password, $savedpass) {
+		if (! $this->_verificationFunction ) {
+			$this->_verificationFunction = function($password, $savedpass) {
+				return password_verify($password, $savedpass);
+			};
+		}
+
+		return $this->_verificationFunction($password, $savedpass);
 	}
 
 	/**

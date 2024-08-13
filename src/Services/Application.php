@@ -282,33 +282,6 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		return $this;
 	}
 
-	/**
-	 * Validate the csrf token
-	 * 
-	 * @return $this
-	 */
-	public function validateCsrf()
-	{
-		if ($_SERVER['REQUEST_METHOD'] == 'POST' ) {
-			$csrf = null;
-			if ( isset($_POST['_token']) || isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
-			    $csrf = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'];
-			}
-
-			// @TODO: Fix this so database storage is also accepted using dependency injection then called like below
-			// $token = $this->_session->field('_token');
-
-			if (!$csrf) {
-				die('Invalidateable Request');
-			} elseif (!$_SESSION['_token']) {
-				die('Invalidateable Session');
-			} elseif (!hash_equals($_SESSION['_token'], $csrf)) {
-				die('Invalid Request');
-			}
-		}
-		return $this;
-	}
-
 	public function assetDir($directory = null) {
 		if ( $directory ) {
 			$this->_assetDir = $directory;
