@@ -15,37 +15,37 @@ class Promise {
     protected $_state = State::PENDING;
     protected $_asyncInstance;
 
-    public function __construct(callable $action, $asyncInstance = null) {
-        $this->_action = new Func($action);
-        $this->_asyncInstance = $asyncInstance;
+    public function __construct(callable $_action, $_asyncInstance = null) {
+        $this->_action = new Func($_action);
+        $this->_asyncInstance = $_asyncInstance;
         // $this->start();
     }
 
     public function try() {
         try {
             ($this->_action)($this->resolve(), $this->reject());
-        } catch (\Exception $e) {
-            $this->reject()($e);
+        } catch (\Exception $_e) {
+            $this->reject()($_e);
         }
     }
 
-    public function then(callable $onFulfill, callable $onReject = null) {
-        $this->_onFulfill = new Func($onFulfill);
-        $this->_onReject = new Func($onReject);
+    public function then(callable $_onFulfill, callable $_onReject = null) {
+        $this->_onFulfill = new Func($_onFulfill);
+        $this->_onReject = new Func($_onReject);
         return $this;
     }
 
-    public function __get($name) {
-        if ($name == 'async') {
+    public function __get($_name) {
+        if ($_name == 'async') {
             return $this->_asyncInstance;
         }
     }
 
     protected function resolve() {
-        return function ($value = null) {
+        return function ($_value = null) {
             if ($this->_state === State::PENDING) {
                 $this->_state = State::FULFILLED;
-                $this->_result = $value;
+                $this->_result = $_value;
                 if ($this->_onFulfill->isCallable()) {
                     $this->_onFulfill->call($this->_result);
                 }
@@ -57,10 +57,10 @@ class Promise {
     }
 
     protected function reject() {
-        return function ($reason = null) {
+        return function ($_reason = null) {
             if ($this->_state === State::PENDING) {
                 $this->_state = State::REJECTED;
-                $this->_result = $reason;
+                $this->_result = $_reason;
                 if ($this->_onReject->isCallable()) {
                     $this->_onReject->call($this->_result);
                 }

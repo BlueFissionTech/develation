@@ -73,10 +73,10 @@ class Action extends Behavior
 	/**
 	 * Constructor
 	 * 
-	 * @param string $name  The name of the action
+	 * @param string $_name  The name of the action
 	 */
-	public function __construct( $name )
+	public function __construct( $_name )
 	{
-		parent::__construct( $name, 0, false, true );
+		parent::__construct( $_name, 0, false, true );
 	}
 }

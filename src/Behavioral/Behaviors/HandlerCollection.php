@@ -14,14 +14,14 @@ class HandlerCollection extends Collection
 	/**
 	 * Add a handler to the collection with optional priority value
 	 *
-	 * @param object $handler The handler to add
-	 * @param int $priority The priority value for the handler
+	 * @param object $_handler The handler to add
+	 * @param int $_priority The priority value for the handler
 	 * @return ICollection
 	 */
-	public function add($handler, $priority = null): ICollection
+	public function add($_handler, $_priority = null): ICollection
 	{
-		$handler->priority($priority);
-		$this->_value->append($handler);
+		$_handler->priority($_priority);
+		$this->_value->append($_handler);
 		$this->prioritize();
 
 		return $this;
@@ -30,14 +30,14 @@ class HandlerCollection extends Collection
 	/**
 	 * Check if the collection has a handler with the given name
 	 *
-	 * @param string $behaviorName The name of the behavior to check for
+	 * @param string $_behaviorName The name of the behavior to check for
 	 * @return bool
 	 */
-	public function has( $behaviorName )
+	public function has( $_behaviorName )
 	{
 		foreach ($this->_value as $c)
 		{
-			if ($c->name() == $behaviorName)
+			if ($c->name() == $_behaviorName)
 				return true;
 		}
 		return false;
@@ -46,40 +46,40 @@ class HandlerCollection extends Collection
 	/**
 	 * Get an array of handlers with the given behavior name
 	 *
-	 * @param string $behaviorName The name of the behavior to get handlers for
+	 * @param string $_behaviorName The name of the behavior to get handlers for
 	 * @return array
 	 */
-	public function get( $behaviorName )
+	public function get( $_behaviorName )
 	{
-		$handlers = [];
+		$_handlers = [];
 		foreach ($this->_value as $c)
 		{
-			if ($c->name() == $behaviorName)
-				$handlers[] = $c;
+			if ($c->name() == $_behaviorName)
+				$_handlers[] = $c;
 		}
-		return $handlers;
+		return $_handlers;
 	}
 
 	/**
 	 * Raise a behavior event and trigger the associated handlers
 	 *
-	 * @param object $behavior The behavior object to raise
-	 * @param object $sender The sender object of the behavior event
-	 * @param array $args An array of arguments for the behavior event
+	 * @param object $_behavior The behavior object to raise
+	 * @param object $_sender The sender object of the behavior event
+	 * @param array $_args An array of arguments for the behavior event
 	 * @return ICollection
 	 */
-	public function raise($behavior, $sender, $args): ICollection
+	public function raise($_behavior, $_sender, $_args): ICollection
 	{
-		if (is_string($behavior))
-			$behavior = new Behavior($behavior);
+		if (is_string($_behavior))
+			$_behavior = new Behavior($_behavior);
 
-		$behavior->target = $behavior->target ?? $sender;
+		$_behavior->target = $_behavior->target ?? $_sender;
 
 		foreach ($this->_value as $c)
 		{
-			if ($c->name() == $behavior->name())
+			if ($c->name() == $_behavior->name())
 			{
-				$c->raise($behavior, $args);
+				$c->raise($_behavior, $_args);
 			}
 		}
 
@@ -93,18 +93,18 @@ class HandlerCollection extends Collection
 	 */
 	private function prioritize()
 	{
-		$compare = $this->_value->uasort( function( $a, $b ) {
-			if ( !($a instanceof Handler) || !($b instanceof Handler ) )
+		$_compare = $this->_value->uasort( function( $_a, $_b ) {
+			if ( !($_a instanceof Handler) || !($_b instanceof Handler ) )
 				return -1;
 
-			if ($a->priority() == $b->priority()) 
+			if ($_a->priority() == $_b->priority()) 
 			{
 				return 0;
 			}
 		
-			return ($a->priority() < $b->priority()) ? -1 : 1;
+			return ($_a->priority() < $_b->priority()) ? -1 : 1;
 		});
 
-		return $compare;
+		return $_compare;
 	}
 }

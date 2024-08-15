@@ -26,14 +26,14 @@ class Handler
 	/**
 	 * Handler constructor.
 	 *
-	 * @param Behavior $behavior
-	 * @param callable $callback
-	 * @param int $priority
+	 * @param Behavior $_behavior
+	 * @param callable $_callback
+	 * @param int $_priority
 	 */
-	public function __construct(Behavior $behavior, $callback, $priority = 0) {
-		$this->_behavior = $behavior;
-		$this->_callback = $this->prepare($callback);
-		$this->_priority = (int)$priority;
+	public function __construct(Behavior $_behavior, $_callback, $_priority = 0) {
+		$this->_behavior = $_behavior;
+		$this->_callback = $this->prepare($_callback);
+		$this->_priority = (int)$_priority;
 	}
 
 	/**
@@ -48,17 +48,17 @@ class Handler
 	/**
 	 * Raises the behavior and calls the handler callback function.
 	 *
-	 * @param Behavior $behavior
-	 * @param mixed $args
+	 * @param Behavior $_behavior
+	 * @param mixed $_args
 	 */
-	public function raise(Behavior $behavior, $args) {
+	public function raise(Behavior $_behavior, $_args) {
 		if ($this->_callback)
 		{
 
-			$args = $args ?? null;
+			$_args = $_args ?? null;
 						
 			if (is_callable($this->_callback)) {
-				call_user_func_array($this->_callback, [$behavior, $args]);
+				call_user_func_array($this->_callback, [$_behavior, $_args]);
 			}
 		}
 	}
@@ -66,23 +66,23 @@ class Handler
 	/**
 	 * Prepares the callback function to be used as a callable.
 	 *
-	 * @param callable $callback
+	 * @param callable $_callback
 	 * @return callable
 	 */
-	private function prepare($callback) {
+	private function prepare($_callback) {
 		$process = '';
-		if ( is_array( $callback ) ) {
-			if ( count($callback) < 2 ) {
-				$process = $callback[0];
+		if ( is_array( $_callback ) ) {
+			if ( count($_callback) < 2 ) {
+				$process = $_callback[0];
 			} else {
-				$process = $callback;
+				$process = $_callback;
 			}
-		} elseif ( is_string( $callback ) ) {
-			$process = $callback;
+		} elseif ( is_string( $_callback ) ) {
+			$process = $_callback;
 			if ($pos = strpos($process, '('))
 				$process = substr($process, 0, $pos);
 		} else {
-			$process = $callback;
+			$process = $_callback;
 		}
 		
 		if (!is_callable($process, true) ) {
@@ -95,12 +95,12 @@ class Handler
 	/**
 	 * Gets or sets the priority of the handler.
 	 *
-	 * @param int|null $int
+	 * @param int|null $_int
 	 * @return int
 	 */
-	public function priority( $int = null ) {
-		if ( $int )
-			$this->_priority = (int)$int;
+	public function priority( $_int = null ) {
+		if ( $_int )
+			$this->_priority = (int)$_int;
 
 		return $this->_priority;
 	}

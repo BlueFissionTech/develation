@@ -14,57 +14,57 @@ class Fork extends Async {
     /**
      * Forks the current PHP process to execute a task in a separate process.
      *
-     * @param callable $task The task to execute in the forked process. This task should accept two parameters: resolve and reject functions.
-     * @param int $priority The priority of the task; higher values are processed earlier.
+     * @param callable $_task The task to execute in the forked process. This task should accept two parameters: resolve and reject functions.
+     * @param int $_priority The priority of the task; higher values are processed earlier.
      * @return Promise The promise associated with the asynchronous operation.
      */
-    public static function do($task, $priority = 10, &$processId = null) {
+    public static function do($_task, $_priority = 10, &$_processId = null) {
         if (!function_exists('pcntl_fork')) {
             throw new Exception("The pcntl extension is required to fork processes.");
         }
 
-        $promise = new Promise(function($resolve, $reject) use ($task, &$processId) {
-            $pid = pcntl_fork();
+        $_promise = new Promise(function($_resolve, $_reject) use ($_task, &$_processId) {
+            $_pid = pcntl_fork();
 
-            if ($pid == -1) {
+            if ($_pid == -1) {
                 // Handle error: failed to fork
-                $reject("Could not fork the process.");
-            } elseif ($pid) {
+                $_reject("Could not fork the process.");
+            } elseif ($_pid) {
                 // Parent process will reach this branch
                 // Use non-blocking wait to check child process status
-                $status = null;
-                pcntl_waitpid($pid, $status, WNOHANG); // Non-blocking wait
+                $_status = null;
+                pcntl_waitpid($_pid, $_status, WNOHANG); // Non-blocking wait
                 // You might want to implement a more robust checking or signaling mechanism here
-                if ($processId) {
-                    $processId = $pid;
+                if ($_processId) {
+                    $_processId = $_pid;
                 }
             } else {
                 // Child process will execute the task
-                call_user_func($task, $resolve, $reject);
+                call_user_func($_task, $_resolve, $_reject);
                 exit(0); // Ensure the child exits after task completion
             }
         }, self::instance());
 
-        self::keep($promise, $priority);
+        self::keep($_promise, $_priority);
 
-        return $promise;
+        return $_promise;
     }
 
     public static function resolve() {
-        return function($pid) {
+        return function($_pid) {
             // Success handler: child process has started successfully
-            \pcntl_waitpid($pid, $status, WNOHANG); // Optionally use WNOHANG to avoid blocking
-            if (\pcntl_wifexited($status)) {
-                $exitStatus = \pcntl_wexitstatus($status);
-                return "Child exited with status $exitStatus";
+            \pcntl_waitpid($_pid, $_status, WNOHANG); // Optionally use WNOHANG to avoid blocking
+            if (\pcntl_wifexited($_status)) {
+                $_exitStatus = \pcntl_wexitstatus($_status);
+                return "Child exited with status $_exitStatus";
             }
         };
     }
 
     public static function reject() {
-        return function($error) {
+        return function($_error) {
             // Error handler: handle fork failure
-            throw new \Exception("Fork failed: $error");
+            throw new \Exception("Fork failed: $_error");
         };
     }
 
