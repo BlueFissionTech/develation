@@ -86,10 +86,10 @@ class State extends Behavior
 	/**
 	 * State constructor.
 	 *
-	 * @param string $_name The name of the state behavior.
+	 * @param string $name The name of the state behavior.
 	 */
-	public function __construct( $_name )
+	public function __construct( $name )
 	{
-		parent::__construct( $_name, 0, true, true );
+		parent::__construct( $name, 0, true, true );
 	}
 }

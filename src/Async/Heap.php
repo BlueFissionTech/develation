@@ -14,12 +14,12 @@ class Heap extends Async {
     /**
      * Adds a task to the stack.
      * 
-     * @param callable $_function The function that represents the task to be executed.
-     * @param int $_priority The priority of the task; higher values are processed earlier.
+     * @param callable $function The function that represents the task to be executed.
+     * @param int $priority The priority of the task; higher values are processed earlier.
      * @return Heap The instance of the Heap class.
      */
-    public static function do($_function, $_priority = 10) {
-        return static::exec($_function, $_priority);
+    public static function do($function, $priority = 10) {
+        return static::exec($function, $priority);
     }
 
     /**

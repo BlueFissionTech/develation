@@ -16,72 +16,72 @@ class Remote extends Async {
     /**
      * Executes a HTTP request using the Curl class.
      * 
-     * @param string $_url The URL to request.
-     * @param array $_options Options for the HTTP request including headers, body, etc.
-     * @param int $_priority The priority of the task in the queue.
+     * @param string $url The URL to request.
+     * @param array $options Options for the HTTP request including headers, body, etc.
+     * @param int $priority The priority of the task in the queue.
      * @return Remote The instance of the Remote class.
      */
-    public static function do($_url, array $_options = [], $_priority = 10) {
-        $_function = function($_resolve, $_reject) use ($_url, $_options) {
-            $_result = null;
+    public static function do($url, array $options = [], $priority = 10) {
+        $function = function($resolve, $reject) use ($url, $options) {
+            $result = null;
 
-            $_curl = new Curl([
-                'target' => $_url,
-                'method' => $_options['method'] ?? 'get',
-                'headers' => $_options['headers'] ?? [],
-                'username' => $_options['username'] ?? null,
-                'password' => $_options['password'] ?? null,
+            $curl = new Curl([
+                'target' => $url,
+                'method' => $options['method'] ?? 'get',
+                'headers' => $options['headers'] ?? [],
+                'username' => $options['username'] ?? null,
+                'password' => $options['password'] ?? null,
             ]);
 
-            if (!empty($_options['data'])) {
-                $_curl->assign($_options['data']);
+            if (!empty($options['data'])) {
+                $curl->assign($options['data']);
             }
 
-            $_curl
-            ->when(Event::CONNECTED, function($_behavior, $_args) use ($_curl) {
-                $_curl->query();
+            $curl
+            ->when(Event::CONNECTED, function($behavior, $args) use ($curl) {
+                $curl->query();
             })
-            ->when(Event::PROCESSED, function($_behavior, $_args) use ($_resolve, $_curl, &$_result) {
-                $_result = $_curl->result();
-                $_curl->close();
-                $_resolve($_result);
+            ->when(Event::PROCESSED, function($behavior, $args) use ($resolve, $curl, &$result) {
+                $result = $curl->result();
+                $curl->close();
+                $resolve($result);
             })
-            ->when(Event::FAILURE, (function($_behavior, $_args) use ($_reject) {
-                $_reject($_args->info);
-                $_httpStatusCode = ($this->_connection ? curl_getinfo($this->_connection, CURLINFO_HTTP_CODE) : 'No Connection');
+            ->when(Event::FAILURE, (function($behavior, $args) use ($reject) {
+                $reject($args->info);
+                $httpStatusCode = ($this->_connection ? curl_getinfo($this->_connection, CURLINFO_HTTP_CODE) : 'No Connection');
 
-                throw new \Exception("HTTP request failed: ({$_httpStatusCode}) " . $_args->info);
-            })->bindTo($_curl, $_curl))
+                throw new \Exception("HTTP request failed: ({$httpStatusCode}) " . $args->info);
+            })->bindTo($curl, $curl))
             
-            ->when(Event::ERROR, (function($_behavior, $_args) use ($_reject) {
-                $_reject($_args->info);
-                $_httpStatusCode = curl_getinfo($this->_connection, CURLINFO_HTTP_CODE);
+            ->when(Event::ERROR, (function($behavior, $args) use ($reject) {
+                $reject($args->info);
+                $httpStatusCode = curl_getinfo($this->_connection, CURLINFO_HTTP_CODE);
 
-                throw new \Exception("HTTP request error: ({$_httpStatusCode}) " . $_args->info);
-            })->bindTo($_curl, $_curl))
+                throw new \Exception("HTTP request error: ({$httpStatusCode}) " . $args->info);
+            })->bindTo($curl, $curl))
             ->open();
 
-            if (!$_result) {
-                throw new \Exception("HTTP response empty: " . $_curl->status());
+            if (!$result) {
+                throw new \Exception("HTTP response empty: " . $curl->status());
             }
         };
 
-        return static::exec($_function, $_priority);
+        return static::exec($function, $priority);
     }
 
     /**
      * Override executeFunction to handle HTTP specific retries and errors.
      */
-    protected function executeFunction($_function) {
+    protected function executeFunction($function) {
         try {
-            $_result = $_function();
-            yield $_result;
+            $result = $function();
+            yield $result;
             $this->perform(Event::SUCCESS);
-        } catch (\Exception $_e) {
-            $this->perform(Event::FAILURE, ['message' => $_e->getMessage()]);
-            $this->logError($_e);
-            if ($this->shouldRetry($_e)) {
-                $this->retry($_function);
+        } catch (\Exception $e) {
+            $this->perform(Event::FAILURE, ['message' => $e->getMessage()]);
+            $this->logError($e);
+            if ($this->shouldRetry($e)) {
+                $this->retry($function);
             } else {
                 yield null; // Yield null on non-retryable failure
             }
@@ -91,26 +91,26 @@ class Remote extends Async {
     /**
      * Determines whether the request should be retried based on the exception.
      *
-     * @param \Exception $_e The exception thrown during the request.
+     * @param \Exception $e The exception thrown during the request.
      * @return bool True if the request should be retried, false otherwise.
      */
-    protected function shouldRetry(\Exception $_e) {
+    protected function shouldRetry(\Exception $e) {
         // Implement retry logic based on HTTP status codes or specific error messages
-        $_retry = false;
+        $retry = false;
         
-        if (strpos($_e->getMessage(), 'timed out') !== false) {
-            $_retry = true;
+        if (strpos($e->getMessage(), 'timed out') !== false) {
+            $retry = true;
         }
 
-        if (strpos($_e->getMessage(), '(500)') !== false) {
-            $_retry = true;
+        if (strpos($e->getMessage(), '(500)') !== false) {
+            $retry = true;
         }
 
-        return $_retry;
+        return $retry;
     }
 
-    protected function logError(\Exception $_e) {
+    protected function logError(\Exception $e) {
         // Optionally log the error to a specific log file or error tracking service
-        parent::logError($_e);
+        parent::logError($e);
     }
 }

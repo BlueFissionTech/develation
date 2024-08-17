@@ -25,27 +25,27 @@ class Sock implements IDispatcher, IConfigurable {
         'class' => WebSocketServer::class, // Your WebSocket handler class
     ];
 
-    public function __construct($_port = 8080, $_config = []) {
+    public function __construct($port = 8080, $config = []) {
         
-        $this->__configConstruct($_config);
+        $this->__configConstruct($config);
 
-        $this->_port = $_port;
-        $this->config($_config);
+        $this->_port = $port;
+        $this->config($config);
     }
 
     public function start() {
         $this->status("Starting WebSocket server on port {$this->config('port')}");
-        $_class = $this->config('class');
-        $_webSocket = new WsServer(new $_class());
-        $_server = IoServer::factory(
-            new HttpServer($_webSocket),
+        $class = $this->config('class');
+        $webSocket = new WsServer(new $class());
+        $server = IoServer::factory(
+            new HttpServer($webSocket),
             $this->config('port'),
             $this->config('host')
         );
 
-        $this->_server = $_server;
+        $this->_server = $server;
         $this->perform(Event::INITIALIZED);
-        $_server->run();
+        $server->run();
     }
 
     public function stop() {
