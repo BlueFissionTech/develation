@@ -18,36 +18,36 @@ class Thread extends Async {
      * @param array $args Arguments to be passed to the function.
      * @return Promise A promise that resolves when the parallel execution completes.
      */
-    public static function do($task, $priority = 10) {
-        if (Arr::is($task)) {
-            $taskCopy = $task;
-            $task = \Closure::fromCallable($task);
-            if ( isset($taskCopy[0]) && is_object($taskCopy[0]) ) {
-                $task->bindTo($taskCopy[0], $taskCopy[0]);
+    public static function do($_task, $_priority = 10) {
+        if (Arr::is($_task)) {
+            $_taskCopy = $_task;
+            $_task = \Closure::fromCallable($_task);
+            if ( isset($_taskCopy[0]) && is_object($_taskCopy[0]) ) {
+                $_task->bindTo($_taskCopy[0], $_taskCopy[0]);
             }
         }
 
-        $promise = new Promise(function($resolve, $reject) use ($task) {
-            $runtime = ( self::$_bootstrap ? new Runtime(self::$_bootstrap) : new Runtime() );
+        $promise = new Promise(function($resolve, $reject) use ($_task) {
+            $_runtime = ( self::$_bootstrap ? new Runtime(self::$_bootstrap) : new Runtime() );
 
             try {
-                $future = $runtime->run($task, [$resolve, $reject]);
-                $result = $future->value();
-                $resolve($result);
+                $_future = $_runtime->run($_task, [$resolve, $reject]);
+                $_result = $_future->value();
+                $resolve($_result);
             } catch (\Exception $e) {
                 $reject($e);
             }
         }, self::instance());
 
-        self::keep($promise, $priority);
+        self::keep($promise, $_priority);
 
         return $promise;
     }
 
     public static function resolve() {
-        return function($response) {
+        return function($_response) {
             // Success handler: handle thread success
-            return $response;
+            return $_response;
         };
     }
 
@@ -58,7 +58,7 @@ class Thread extends Async {
         };
     }
 
-    public static function setBootstrap($bootstrap) {
-        self::$_bootstrap = $bootstrap;
+    public static function setBootstrap($_bootstrap) {
+        self::$_bootstrap = $_bootstrap;
     }
 }

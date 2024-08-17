@@ -29,30 +29,30 @@ class Behavior
 	protected $_priority;
 	
 	/**
-	 * @var object $target The object on which the behavior is being defined.
+	 * @var object $_target The object on which the behavior is being defined.
 	 */
-	public $target;
+	public $_target;
 	
 	/**
-	 * @var mixed $context The context in which the behavior is being defined.
+	 * @var mixed $_context The context in which the behavior is being defined.
 	 */
-	public $context;
+	public $_context;
 
 	/**
 	 * Constructor for the Behavior class.
 	 *
-	 * @param string $name The name of the behavior.
-	 * @param int $priority The priority of the behavior.
-	 * @param bool $passive A flag to indicate whether the behavior should be passive or not.
-	 * @param bool $persistent A flag to indicate whether the behavior should persist or not.
+	 * @param string $_name The name of the behavior.
+	 * @param int $_priority The priority of the behavior.
+	 * @param bool $_passive A flag to indicate whether the behavior should be passive or not.
+	 * @param bool $_persistent A flag to indicate whether the behavior should persist or not.
 	 */
-	public function __construct($name, $priority = 0, $passive = true, $persistent = true)
+	public function __construct($_name, $_priority = 0, $_passive = true, $_persistent = true)
 	{
-		$this->_name = $name;
-		$this->_persistent = $persistent;
-		$this->_passive = $passive;
-		$this->_priority = $priority;
-		$this->target = null;
+		$this->_name = $_name;
+		$this->_persistent = $_persistent;
+		$this->_passive = $_passive;
+		$this->_priority = $_priority;
+		$this->_target = null;
 	}	
 	
 	/**

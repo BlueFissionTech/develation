@@ -60,10 +60,10 @@ class Event extends Behavior
 	/**
 	 * Constructor for the Event class
 	 *
-	 * @param string $name The name of the event.
+	 * @param string $_name The name of the event.
 	 */
-	public function __construct( $name )
+	public function __construct( $_name )
 	{
-		parent::__construct( $name, 0, true, false );
+		parent::__construct( $_name, 0, true, false );
 	}
 }

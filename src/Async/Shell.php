@@ -15,30 +15,30 @@ class Shell extends Async {
     /**
      * Executes a shell command asynchronously.
      * 
-     * @param string $command The shell command to execute.
-     * @param int $priority The priority of the task; higher values are processed earlier.
+     * @param string $_command The shell command to execute.
+     * @param int $_priority The priority of the task; higher values are processed earlier.
      * @return Shell The instance of the Shell class.
      */
-    public static function do($command, $priority = 10) {
-        $function = function() use ($command) {
-            $process = new Process($command);
-            $process->start();
-            while ($status = $process->status()) {
-                if (!$status) {
+    public static function do($_command, $_priority = 10) {
+        $_function = function() use ($_command) {
+            $_process = new Process($_command);
+            $_process->start();
+            while ($_status = $_process->status()) {
+                if (!$_status) {
                     // If process is no longer running, break the loop
                     break;
                 }
                 // Here you could add code to process any output as it's received
-                $output = $process->output();
-                yield $output;
+                $_output = $_process->output();
+                yield $_output;
             }
             // Optionally handle any final output or cleanup
-            $output = $process->output(); // Get any remaining output
-            $process->close();
-            yield $output;
+            $_output = $_process->output(); // Get any remaining output
+            $_process->close();
+            yield $_output;
         };
 
-        return static::exec($function, $priority);
+        return static::exec($_function, $_priority);
     }
 
     /**
