@@ -9,7 +9,7 @@ use BlueFission\Behavioral\Behaviors\Event;
  * The Thread class extends the Async functionality to handle true concurrent tasks using PHP's parallel extension.
  */
 class Thread extends Async {
-    protected static string $_bootstrap = '';
+    protected static string $bootstrap = '';
 
     /**
      * Executes a function in parallel (simulating a thread).
@@ -28,7 +28,7 @@ class Thread extends Async {
         }
 
         $promise = new Promise(function($resolve, $reject) use ($task) {
-            $runtime = ( self::$_bootstrap ? new Runtime(self::$_bootstrap) : new Runtime() );
+            $runtime = ( self::$bootstrap ? new Runtime(self::$bootstrap) : new Runtime() );
 
             try {
                 $future = $runtime->run($task, [$resolve, $reject]);
@@ -59,6 +59,6 @@ class Thread extends Async {
     }
 
     public static function setBootstrap($bootstrap) {
-        self::$_bootstrap = $bootstrap;
+        self::$bootstrap = $bootstrap;
     }
 }

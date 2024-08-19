@@ -17,7 +17,7 @@ use BlueFission\Net\Email;
 class Log extends Data implements iData
 {
     /**
-     * @var array $_config - Configuration options for the Log class.
+     * @var array $config - Configuration options for the Log class.
      *      storage - The destination where the log data should be stored.
      *      file - The file path where log data should be stored.
      *      email - The email address where log data should be sent.
@@ -26,12 +26,12 @@ class Log extends Data implements iData
      *      max_logs - The maximum number of logs that should be stored.
      *      instant - Whether to write the log data immediately or store it until write() is called.
      */
-    protected $_config = array('storage'=>'', 'file'=>'application.log', 'email'=>'', 'subject'=>'', 'from'=>'', 'max_logs'=>100, 'instant'=>false);
+    protected $config = array('storage'=>'', 'file'=>'application.log', 'email'=>'', 'subject'=>'', 'from'=>'', 'max_logs'=>100, 'instant'=>false);
     
     /**
-     * @var array $_messages - An array to store log data.
+     * @var array $messages - An array to store log data.
      */
-    static $_messages;
+    static $messages;
     
     /**
      * @var int SYSTEM - Constant value to indicate that log data should be stored in the system logs.
@@ -49,9 +49,9 @@ class Log extends Data implements iData
     const FILE = 3;
     
     /**
-     * @var Log $_instance - An instance of the Log class.
+     * @var Log $instance - An instance of the Log class.
      */
-    static $_instance;
+    static $instance;
     
     /**
      * Log constructor.
@@ -65,7 +65,7 @@ class Log extends Data implements iData
             $this->config($config);
             
         if ( !$this->config('storage') ) $this->config('storage', self::FILE);
-        self::$_messages = array();
+        self::$messages = array();
     }
     
     /**
@@ -75,10 +75,10 @@ class Log extends Data implements iData
      */
     public static function instance()
     {
-        if (Val::isNull(Log::$_instance))
-            Log::$_instance = new Log();
+        if (Val::isNull(Log::$instance))
+            Log::$instance = new Log();
             
-        return Log::$_instance;
+        return Log::$instance;
     }
     
     /**
@@ -111,8 +111,8 @@ class Log extends Data implements iData
 		$type = $destination ? $this->config('storage') : self::SYSTEM;
 		if ($type == self::FILE && $destination )
 		{
-			$file_config = ['mode'=>'a']; 
-			$messenger = new FileSystem($file_config);
+			$fileConfig = ['mode'=>'a']; 
+			$messenger = new FileSystem($fileConfig);
 			$messenger->open( $destination );
 			$messenger->read();
 			$status = $messenger->status();
@@ -149,8 +149,8 @@ class Log extends Data implements iData
 				case self::FILE:
 					if ( class_exists('FileSystem') )
 					{
-						$file_config = ['mode'=>'a']; 
-						$messenger = new FileSystem($file_config);
+						$fileConfig = ['mode'=>'a']; 
+						$messenger = new FileSystem($fileConfig);
 						$messenger->file( $this->config('file') );
 						$messenger->contents( $message );
 						$messenger->write();
@@ -196,8 +196,8 @@ class Log extends Data implements iData
 		$type = $destination ? $this->config('storage') : self::SYSTEM;
 		if ($type == self::FILE && class_exists('FileSystem') )
 		{
-			$file_config = ['mode'=>'a']; 
-			$messenger = new FileSystem($file_config);
+			$fileConfig = ['mode'=>'a']; 
+			$messenger = new FileSystem($fileConfig);
 			$messenger->file( $destination );
 			$messenger->delete();
 			$status = $messenger->status();
@@ -218,7 +218,7 @@ class Log extends Data implements iData
 	private function message( $records = null ): string
 	{
 		$records = (Val::isNull($records)) ? $records : $this->config('max_logs');
-		$message = array_slice($this->_data, -($records));
+		$message = array_slice($this->data, -($records));
 		$message = array_filter($message);
 		// $output = implode("\n", $message)."\n";
 		$output = '';

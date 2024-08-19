@@ -61,7 +61,7 @@ class FileQueue extends Queue implements IQueue {
         self::ensureFileHandle();
 
         // Reverse the array if FILO
-        if ( self::$_mode == static::FILO ) {
+        if ( self::$mode == static::FILO ) {
         	self::$cache[$queue] = array_reverse(self::$cache[$queue]);
         }
 
@@ -74,7 +74,7 @@ class FileQueue extends Queue implements IQueue {
         }
 
         // Fix it
-        if ( self::$_mode == static::FILO ) {
+        if ( self::$mode == static::FILO ) {
         	self::$cache[$queue] = array_reverse(self::$cache[$queue]);
         }
         self::save();

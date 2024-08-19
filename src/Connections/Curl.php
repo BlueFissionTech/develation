@@ -26,21 +26,21 @@ class Curl extends Connection implements IConfigurable
 	 *
 	 * @var string
 	 */
-	protected $_result;
+	protected $result;
 
 	/**
 	 * Options to use
 	 *
 	 * @var array
 	 */
-	protected $_options = [];
+	protected $options = [];
 
 	/**
 	 * Configuration data for the cURL connection.
 	 *
 	 * @var array
 	 */
-	protected $_config = [
+	protected $config = [
 		'target'=>'',
 		'username'=>'',
 		'password'=>'',
@@ -74,7 +74,7 @@ class Curl extends Connection implements IConfigurable
 	 */
 	public function option($option, $value): IObj
 	{
-		$this->_options[$option] = $value;
+		$this->options[$option] = $value;
 
 		return $this;
 	}
@@ -90,34 +90,34 @@ class Curl extends Connection implements IConfigurable
 		$target = $this->config('target') ?? HTTP::domain();
 		$refresh = (bool)$this->config('refresh');
 
-		if ( $this->_connection ) {
+		if ( $this->connection ) {
 			$this->close();
 		}
 		
 		if ( !$this->config('validate_host') || HTTP::urlExists($target) )
 		{
-			$data = $this->_data;
+			$data = $this->data;
 
 			//open connection
-			$this->_connection = curl_init();
+			$this->connection = curl_init();
 			
-			curl_setopt($this->_connection, CURLOPT_URL, $target);
-			curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
+			curl_setopt($this->connection, CURLOPT_URL, $target);
+			curl_setopt($this->connection, CURLOPT_COOKIESESSION, $refresh);
 			if (!Val::empty($this->config('headers'))) {
-				curl_setopt($this->_connection, CURLOPT_HTTPHEADER, Val::grab());
+				curl_setopt($this->connection, CURLOPT_HTTPHEADER, Val::grab());
 			}
 
 			if ( $this->config('verbose') ) {
-				curl_setopt($this->_connection, CURLOPT_VERBOSE, true);
+				curl_setopt($this->connection, CURLOPT_VERBOSE, true);
 			}
 
 			if ( $this->config('username') && $this->config('password') ) {
-    			curl_setopt($this->_connection, CURLOPT_USERPWD, $this->config('username') . ':' . $this->config('password'));
+    			curl_setopt($this->connection, CURLOPT_USERPWD, $this->config('username') . ':' . $this->config('password'));
 			}
 			
-			$status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
+			$status = $this->connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 
-			$this->perform( $this->_connection 
+			$this->perform( $this->connection 
 				? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
 
 		} else {
@@ -135,8 +135,8 @@ class Curl extends Connection implements IConfigurable
 	 */
 	protected function _close (): void
 	{
-    	if ( $this->_connection) {
-			curl_close($this->_connection);
+    	if ( $this->connection) {
+			curl_close($this->connection);
 		}
 		$this->perform(State::DISCONNECTED);
 	}
@@ -152,7 +152,7 @@ class Curl extends Connection implements IConfigurable
 	{
 		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
-		$curl = $this->_connection;
+		$curl = $this->connection;
 		$method = Str::lower($this->config('method'));
 		
 		if ($curl)
@@ -161,7 +161,7 @@ class Curl extends Connection implements IConfigurable
 				$this->assign(Arr::grab());
 			}
 
-			$data = $this->_data->val();
+			$data = $this->data->val();
 
 			if (Arr::size($data) > 0) {
 				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
@@ -184,14 +184,14 @@ class Curl extends Connection implements IConfigurable
 				curl_setopt($curl, CURLOPT_URL, $this->config('target').'/'.HTTP::query($data));
 			}
 			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-			foreach ($this->_options as $option=>$value) {
+			foreach ($this->options as $option=>$value) {
 				curl_setopt($curl, $option, $value);
 			}
 			
 			//execute post
 			$this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
-			$this->_result = curl_exec($curl);
-			if ($this->_result === false) {
+			$this->result = curl_exec($curl);
+			if ($this->result === false) {
 			    $error = curl_error($curl);
 			    error_log('CURL Error: ' . $error);
 			    $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $error));
@@ -201,12 +201,12 @@ class Curl extends Connection implements IConfigurable
 
 			$this->perform(Event::SENT, new Meta(data: $data));
 			$this->perform([Action::RECEIVE]);
-			$this->perform(Event::RECEIVED, new Meta(data: $this->_result));
+			$this->perform(Event::RECEIVED, new Meta(data: $this->result));
 
-			$status = ( $this->_result ) ? self::STATUS_SUCCESS : ($error ?? self::STATUS_FAILED);
+			$status = ( $this->result ) ? self::STATUS_SUCCESS : ($error ?? self::STATUS_FAILED);
 
 			$this->perform( 
-				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+				$this->result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
 				new Meta(when: Action::PROCESS, info: $status ) 
 			);
 		} else {

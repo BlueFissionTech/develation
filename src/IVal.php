@@ -15,7 +15,7 @@ interface IVal {
 	 *
 	 * @param mixed $value
 	 *
-	 * @return mixed The value of the data member `_data`
+	 * @return mixed The value of the data member `data`
 	 */
 	public function val($value = null): mixed;
 
@@ -26,7 +26,7 @@ interface IVal {
 	public function clear(): IVal;
 
 	/**
-	 * pass the value as a reference bound to $_data
+	 * pass the value as a reference bound to $data
 	 *
 	 * @param mixed $value
 	 * @return void
@@ -89,7 +89,7 @@ interface IVal {
 	public function _is(): bool;
 
 	/**
-	 * Check if var is a valid instance of $_type
+	 * Check if var is a valid instance of $type
 	 *
 	 * @return bool
 	 */

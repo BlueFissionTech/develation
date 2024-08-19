@@ -30,14 +30,14 @@ class Response extends Obj
 	 *
 	 * @var string
 	 */
-	protected $_message;
+	protected $message;
 
 	/**
 	 * Data to be included in the HTTP response
 	 *
 	 * @var array
 	 */
-	protected $_data = [
+	protected $data = [
 		'id'=>'',
 		'list'=>'',
 		'data'=>'',
@@ -66,7 +66,7 @@ class Response extends Obj
 					break;
 				}
 
-				if ( $depth == 0 && $this->_data->hasKey($key) && $this->$key == null ) {
+				if ( $depth == 0 && $this->data->hasKey($key) && $this->$key == null ) {
 					$mapped = true;
 					$this->$key = $value;
 				} else {
@@ -109,7 +109,7 @@ class Response extends Obj
 	 */
 	public function send()
 	{
-		$this->_message = $this->_data->toJson();
+		$this->message = $this->data->toJson();
 		$this->dispatch( Event::COMPLETE );
 	}
 
@@ -120,7 +120,7 @@ class Response extends Obj
 	 */
 	public function deliver() 
 	{
-		echo $this->_message ?? '{}';
+		echo $this->message ?? '{}';
 		exit;
 	}
 
@@ -131,7 +131,7 @@ class Response extends Obj
 	 */
 	public function message()
 	{
-		return $this->_message;
+		return $this->message;
 	}
 
 	/**

@@ -31,7 +31,7 @@ class Uri {
 	 *
 	 * @var string
 	 */
-	private $_valueToken = '$';
+	private $valueToken = '$';
 
 	/**
 	 * Uri constructor.
@@ -123,7 +123,7 @@ class Uri {
 
 		if ( count( $uri_parts ) == count( $this->parts ) ) {
 			for ( $i = 0; $i < count($uri_parts); $i++ ) {
-				if ( strpos($uri_parts[$i], $this->_valueToken) === 0 ) {
+				if ( strpos($uri_parts[$i], $this->valueToken) === 0 ) {
 					$arguments[ substr($uri_parts[$i], 1) ] = $this->parts[$i];
 				}
 			}
@@ -144,8 +144,8 @@ class Uri {
 		if ( $firstPart == $secondPart ) {
 			return true;
 		}
-		if ( strpos($firstPart, $this->_valueToken) === 0 
-			|| strpos($secondPart, $this->_valueToken) === 0 ) {
+		if ( strpos($firstPart, $this->valueToken) === 0 
+			|| strpos($secondPart, $this->valueToken) === 0 ) {
 			return true;
 		}
 

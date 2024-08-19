@@ -4,25 +4,25 @@ namespace BlueFission\Behavioral;
 use BlueFission\IPC\IPC;
 
 trait IPCDispatches {
-    protected $_ipc;
+    protected $ipc;
 
     public function setIPC(IPC $ipc) {
-        $this->_ipc = $ipc;
+        $this->ipc = $ipc;
     }
 
     public function dispatchIPC($channel, $message) {
-        if ($this->_ipc) {
-            $this->_ipc->write($channel, $message);
+        if ($this->ipc) {
+            $this->ipc->write($channel, $message);
         }
     }
 
     public function listenIPC($channel, callable $callback) {
-        if ($this->_ipc) {
-            $messages = $this->_ipc->read($channel);
+        if ($this->ipc) {
+            $messages = $this->ipc->read($channel);
             foreach ($messages as $message) {
                 $callback($message);
             }
-            $this->_ipc->clear($channel);
+            $this->ipc->clear($channel);
         }
     }
 }

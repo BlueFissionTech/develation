@@ -48,14 +48,14 @@ class Remote extends Async {
             })
             ->when(Event::FAILURE, (function($behavior, $args) use ($reject) {
                 $reject($args->info);
-                $httpStatusCode = ($this->_connection ? curl_getinfo($this->_connection, CURLINFO_HTTP_CODE) : 'No Connection');
+                $httpStatusCode = ($this->connection ? curl_getinfo($this->connection, CURLINFO_HTTP_CODE) : 'No Connection');
 
                 throw new \Exception("HTTP request failed: ({$httpStatusCode}) " . $args->info);
             })->bindTo($curl, $curl))
             
             ->when(Event::ERROR, (function($behavior, $args) use ($reject) {
                 $reject($args->info);
-                $httpStatusCode = curl_getinfo($this->_connection, CURLINFO_HTTP_CODE);
+                $httpStatusCode = curl_getinfo($this->connection, CURLINFO_HTTP_CODE);
 
                 throw new \Exception("HTTP request error: ({$httpStatusCode}) " . $args->info);
             })->bindTo($curl, $curl))

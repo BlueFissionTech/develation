@@ -33,49 +33,49 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 *
 	 * @var array
 	 */
-	private static $_instances = [];
+	private static $instances = [];
 
 	/**
 	 * A collection of broadcasted events
 	 *
 	 * @var array
 	 */
-	private $_broadcastedEvents = [];
+	private $broadcastedEvents = [];
 
 	/**
 	 * An array to store the broadcast chain
 	 *
 	 * @var array
 	 */
-	private $_broadcastChain = [];
+	private $broadcastChain = [];
 
 	/**
 	 * Store the last arguments
 	 *
 	 * @var null
 	 */
-	private $_last_args = null;
+	private $lastArgs = null;
 
 	/**
 	 * Store the depth of this application
 	 *
 	 * @var int
 	 */
-	private $_depth = 0;
+	private $depth = 0;
 
 	/**
 	 * Store directory to proxy files from
 	 *
 	 * @var string
 	 */
-	private $_assetDir = "";
+	private $assetDir = "";
 
 	/**
 	 * Default configuration for the application
 	 *
 	 * @var array
 	 */
-	protected $_config = array(
+	protected $config = array(
 		'template'=>'',
 		'storage'=>'',
 		'name'=>'Application',
@@ -86,7 +86,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 *
 	 * @var array
 	 */
-	protected $_parameters = array(
+	protected $parameters = array(
 		'_method',
 		'service',
 		'behavior',
@@ -98,85 +98,85 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 *
 	 * @var mixed
 	 */
-	private $_context;
+	private $context;
 
 	/**
 	 * The connection for this application
 	 *
 	 * @var mixed
 	 */
-	private $_connection;
+	private $connection;
 
 	/**
 	 * The storage for this application
 	 *
 	 * @var mixed
 	 */
-	private $_storage;
+	private $storage;
 
 	/**
 	 * The agent for this application
 	 *
 	 * @var mixed
 	 */
-	private $_agent;
+	private $agent;
 
 	/**
 	 * A collection of services for this application
 	 *
 	 * @var Collection
 	 */
-	protected $_services;
+	protected $services;
 
 	/**
 	 * A collection of gateways for this application
 	 *
 	 * @var array
 	 */
-	protected $_gateways = [];
+	protected $gateways = [];
 
 	/**
 	 * A collection of bindings for this application
 	 *
 	 * @var array
 	 */
-	protected $_bindings = [];
+	protected $bindings = [];
 
 	/**
 	 * A collection of mappings for this application
 	 *
 	 * @var array
 	 */
-	protected $_mappings = [];
+	protected $mappings = [];
 
 	/**
 	 * A collection of mapping names for this application
 	 *
 	 * @var array
 	 */
-	protected $_mappingNames = [];
+	protected $mappingNames = [];
 	    /**
      * An array to store bound arguments.
-     * @var array $_boundArguments 
+     * @var array $boundArguments 
      */
-    protected $_boundArguments = [];
+    protected $boundArguments = [];
 
     /**
      * An array to store routes.
-     * @var array $_routes 
+     * @var array $routes 
      */
-    protected $_routes = [];
+    protected $routes = [];
     /**
      * An array to store arguments.
-     * @var array $_arguments 
+     * @var array $arguments 
      */
-    protected $_arguments = [];
+    protected $arguments = [];
 
-    private $_operation = null;
+    private $operation = null;
 
-    private $_conditions = [];
+    private $conditions = [];
 
-    private $_cmdpath = "";
+    private $cmdpath = "";
 
     /**
      * The class constructor
@@ -186,16 +186,16 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
     public function __construct() 
     {
         $calledClass = get_called_class();
-        if (isset(self::$_instances[$calledClass])) {
-            return self::$_instances[$calledClass];
+        if (isset(self::$instances[$calledClass])) {
+            return self::$instances[$calledClass];
         }
 
         parent::__construct();
         $this->__tConstruct(); // Call trait constructor
-        $this->_services = new Collection();
-        $this->_broadcastedEvents[$this->name()] = [];
+        $this->services = new Collection();
+        $this->broadcastedEvents[$this->name()] = [];
 
-        self::$_instances[$calledClass] = $this;
+        self::$instances[$calledClass] = $this;
     }
 
     /**
@@ -206,11 +206,11 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
     static function getInstance()
     {
         $calledClass = get_called_class();
-        if (!isset(self::$_instances[$calledClass])) {
-            self::$_instances[$calledClass] = new static();
+        if (!isset(self::$instances[$calledClass])) {
+            self::$instances[$calledClass] = new static();
         }
 
-        return self::$_instances[$calledClass];
+        return self::$instances[$calledClass];
     }
 
     /**
@@ -220,12 +220,12 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      */
     static function instance()
     {
-		if (count(self::$_instances) <= 0) {
+		if (count(self::$instances) <= 0) {
 	        $calledClass = get_called_class();
-			self::$_instances[$calledClass] = new static();
+			self::$instances[$calledClass] = new static();
 		}
 
-		return array_values(self::$_instances)[0];
+		return array_values(self::$instances)[0];
 	}
 
     /**
@@ -237,7 +237,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      */
     public function params($params) 
     {
-        $this->_parameters = Arr::toArray($params);
+        $this->parameters = Arr::toArray($params);
 	
         return $this;
     }
@@ -252,30 +252,30 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 
 		if ( $argc > 1 ) {
-			$this->_arguments[$this->_parameters[0]] = 'console';
+			$this->arguments[$this->parameters[0]] = 'console';
 			for ( $i = 1; $i <= $argc-1; $i++) {
-				$this->_arguments[$this->_parameters[$i]] = $argv[$i];
+				$this->arguments[$this->parameters[$i]] = $argv[$i];
 			}
 		} elseif ( count( $_GET ) > 0 || count( $_POST ) > 0 ) {
-			$args = $this->_parameters;
+			$args = $this->parameters;
 			foreach ( $args as $arg ) {
-				$this->_arguments[$arg] = Util::value($arg);
+				$this->arguments[$arg] = Util::value($arg);
 			}
 		}
 
 		$uri = new Uri();
 		
 		// Get the method for this request
-		$this->_arguments[$this->_parameters[0]] = (isset($this->_arguments[$this->_parameters[0]])) ? $this->_arguments[$this->_parameters[0]] : strtolower( isset($_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : 'GET' );
+		$this->arguments[$this->parameters[0]] = (isset($this->arguments[$this->parameters[0]])) ? $this->arguments[$this->parameters[0]] : strtolower( isset($_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : 'GET' );
 		
 		// Get the service targeted by this request
-		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : ( $uri->parts[0] ?? $this->name() );
+		$this->arguments[$this->parameters[1]] = (isset($this->arguments[$this->parameters[1]])) ? $this->arguments[$this->parameters[1]] : ( $uri->parts[0] ?? $this->name() );
 
 		// get the behavior triggered by this request
-		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $uri->parts[1] ?? '' ); // TODO send a universal default behavior
+		$this->arguments[$this->parameters[2]] = (isset($this->arguments[$this->parameters[2]])) ? $this->arguments[$this->parameters[2]] : ( $uri->parts[1] ?? '' ); // TODO send a universal default behavior
 
 		// get the data triggered by this request
-		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($uri->parts, 2) ?? null );
+		$this->arguments[$this->parameters[3]] = (isset($this->arguments[$this->parameters[3]])) ? $this->arguments[$this->parameters[3]] : ( array_slice($uri->parts, 2) ?? null );
 
 		// die(var_dump(parse_url($url, PHP_URL_PATH)));
 
@@ -284,9 +284,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function assetDir($directory = null) {
 		if ( $directory ) {
-			$this->_assetDir = $directory;
+			$this->assetDir = $directory;
 		}
-		return $this->_assetDir;
+		return $this->assetDir;
 	}
 
 	public function fileExists($path) {
@@ -345,30 +345,30 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	public function process() {
-		$args = array_slice($this->_arguments, 1);
+		$args = array_slice($this->arguments, 1);
 
 		$behavior = $args['behavior'];
 		
 		$uri = new Uri();
-		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
+		if ( isset($this->mappings[$this->arguments['_method']]) && $this->uriExists(array_keys($this->mappings[$this->arguments['_method']]) ) ) {
 
-			// $mapping = $this->_mappings[$this->_arguments['_method']][$location];
-			$this->_cmdpath = $this->returnMatchingUri(array_keys($this->_mappings[$this->_arguments['_method']]));
-			$mapping = $this->_mappings[$this->_arguments['_method']][$this->_cmdpath];
+			// $mapping = $this->mappings[$this->arguments['_method']][$location];
+			$this->cmdpath = $this->returnMatchingUri(array_keys($this->mappings[$this->arguments['_method']]));
+			$mapping = $this->mappings[$this->arguments['_method']][$this->cmdpath];
 
 			$request = new Request();
 
 			foreach ($mapping->gateways() as $gatewayName) {
-				if ( isset( $this->_gateways[$gatewayName] ) ) {
-					$gatewayClass = $this->_gateways[$gatewayName];
+				if ( isset( $this->gateways[$gatewayName] ) ) {
+					$gatewayClass = $this->gateways[$gatewayName];
 					$gateway = $this->resolve($gatewayClass);
-					$gateway->process( $request, $this->_arguments );	
+					$gateway->process( $request, $this->arguments );	
 				}
 			}
 
-			$this->_operation = $this->prepareCallable($mapping->callable);
+			$this->operation = $this->prepareCallable($mapping->callable);
 
-			$this->_conditions = array_merge($args['data'], $uri->buildArguments($this->_cmdpath) );
+			$this->conditions = array_merge($args['data'], $uri->buildArguments($this->cmdpath) );
 		}
 
 		return $this;
@@ -380,24 +380,24 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * @return $this
 	 */
 	public function run() {
-		$args = array_slice($this->_arguments, 1);
+		$args = array_slice($this->arguments, 1);
 		$behavior = $args['behavior'];
 		$uri = new Uri();
 
-		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
+		if ( isset($this->mappings[$this->arguments['_method']]) && $this->uriExists(array_keys($this->mappings[$this->arguments['_method']]) ) ) {
 			// TODO make this more elegant
 			/* This should never have an array as callable becase of "prepareCallable"
 			if ( $callable[0] instanceof \BlueFission\Services\Service  ) {
 				$callable[0]->parent( $this );
 			}
 			*/
-			if ( $this->_operation instanceof \BlueFission\Services\Service  ) {
-				$this->_operation->parent( $this );
+			if ( $this->operation instanceof \BlueFission\Services\Service  ) {
+				$this->operation->parent( $this );
 			}
 
-			$result = $this->executeServiceMethod($this->_operation, $this->_conditions);
+			$result = $this->executeServiceMethod($this->operation, $this->conditions);
 
-			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($this->_cmdpath, $this->_arguments['_method']) ?? $this->_cmdpath);
+			$this->boost(new Event('OnAppNavigated'), $this->getMappingName($this->cmdpath, $this->arguments['_method']) ?? $this->cmdpath);
 
 			print($result);
 		} elseif ( $args['service'] == $this->name() ) {
@@ -466,12 +466,12 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function execute( $behavior, $args = null, $callback = null )
 	{
-		$this->_last_args = null;
+		$this->lastArgs = null;
 		if ( Str::is($behavior) )
 			$behavior = new Behavior( $behavior );
 
 		if ( $behavior instanceof Behavior ) {
-			$this->_broadcastedEvents[$this->name()] = array($behavior->name());
+			$this->broadcastedEvents[$this->name()] = array($behavior->name());
 
 			$behavior->context = $args;	
 		
@@ -496,7 +496,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	public function command( $service, $behavior, $data = null, $callback = null )
 	{
 		$result = null;
-		$module = $this->_services[$service];
+		$module = $this->services[$service];
 		
 		// $module = instance($service);
 
@@ -528,7 +528,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function bind( $classname, $newclassname ) 
 	{
-		$this->_bindings[$classname] = $newclassname;
+		$this->bindings[$classname] = $newclassname;
 	}
 
 	/**
@@ -540,7 +540,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function bindArgs( array $arguments, string $classname = '_' )
 	{
-		$this->_boundArguments[$classname] = $arguments;
+		$this->boundArguments[$classname] = $arguments;
 	}
 
 	/**
@@ -572,7 +572,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		$mapping->callable = $callable;
 		$mapping->name = $name;
 		
-		$this->_mappings[$method][$path] = $mapping;
+		$this->mappings[$method][$path] = $mapping;
 
 		return $mapping;
 	}
@@ -584,7 +584,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function maps()
 	{
-		return $this->_mappings;
+		return $this->mappings;
 	}
 
 	/**
@@ -597,7 +597,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function getMappingName( $location, $method = 'get' ) {
 		$result = '';
-		foreach ( $this->_mappings[$method] as $path=>$mapping ) {
+		foreach ( $this->mappings[$method] as $path=>$mapping ) {
 			if ( $location == $path || $location.'/' == $path ) {
 				$result = $mapping->name;
 				break; 
@@ -616,7 +616,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function gateway($name, $class)
 	{
-		$this->_gateways[$name] = $class;
+		$this->gateways[$name] = $class;
 
 		return $this;
 	}
@@ -689,7 +689,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		$service->name = $name;
 		$service->arguments = $args;
 
-		$this->_services->add( $service, $name );
+		$this->services->add( $service, $name );
 
 		return $this;
 	}
@@ -714,13 +714,13 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$function_name = uniqid($behavior->name().'_');
 			$this->learn($function_name, $callable, $behavior);
 		} else {
-			if ( !$this->_services->has( $serviceName ) ) {
+			if ( !$this->services->has( $serviceName ) ) {
 				$this->delegate($serviceName);
 			}
 
 			$handler = new Handler($behavior, $callable);
 
-			$this->_services[$serviceName]->register($behavior->name(), $handler, $level);
+			$this->services[$serviceName]->register($behavior->name(), $handler, $level);
 		}
 
 		$this->route($this->name(), $serviceName, $behavior);
@@ -740,11 +740,11 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function route( $senderName, $recipientName, $behavior, $callback = null )
 	{
-		if ( !$this->_services->has( $senderName ) && $this->name() != $senderName ) {
+		if ( !$this->services->has( $senderName ) && $this->name() != $senderName ) {
 			throw new Exception("The service {$senderName} is not registered", 1);
 		}
 
-		if ( !$this->_services->has( $recipientName ) && $this->name() != $recipientName )
+		if ( !$this->services->has( $recipientName ) && $this->name() != $recipientName )
 		{
 			throw new Exception("The service {$recipientName} is not registered", 1);
 		}
@@ -753,7 +753,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$behavior = new Behavior($behavior);
 		}
 
-		$handlers = $this->_handlers->get($behavior->name());
+		$handlers = $this->handlers->get($behavior->name());
 		$new_broadcast = true;
 		$broadcaster = [$this, 'broadcast'];
 
@@ -770,7 +770,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$this->register($senderName, $behavior, [$this, 'boost']);
 		}
 
-		$this->_routes[$behavior->name()][$senderName][] = ['recipient'=>$recipientName, 'callback'=>$callback];
+		$this->routes[$behavior->name()][$senderName][] = ['recipient'=>$recipientName, 'callback'=>$callback];
 
 		return $this;
 	}
@@ -785,11 +785,11 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function service( $serviceName, $call = null )
 	{
-		if ( !$this->_services->has( $serviceName ) )
+		if ( !$this->services->has( $serviceName ) )
 			throw new Exception("The service {$serviceName} is not registered", 1);
 		
 		try {
-			$service = $this->_services[$serviceName]->instance();
+			$service = $this->services[$serviceName]->instance();
 		} catch( \Exception $e ) {
 			error_log($e->getMessage());
 			$service = $this->resolve($serviceName);
@@ -799,9 +799,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$params = func_get_args();
 			$args = array_slice( $params, 2 );
 
-			$response = $this->_services[$serviceName]->call( $call, $args );
+			$response = $this->services[$serviceName]->call( $call, $args );
 
-			$this->_services[$serviceName]->dispatch( Event::COMPLETE, $response);
+			$this->services[$serviceName]->dispatch( Event::COMPLETE, $response);
 		}
 
 		return $service;
@@ -815,7 +815,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function broadcast( $behavior, $args = null )
 	{
-		if (empty($this->_broadcastChain)) $this->_broadcastChain = ["Base"];
+		if (empty($this->broadcastChain)) $this->broadcastChain = ["Base"];
 
 		if ( !($behavior instanceof Behavior) )
 		{
@@ -824,18 +824,18 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 		$behavior->context = $args ?? $behavior->context;
 
-		$this->_last_args = $behavior->context ?? $this->_last_args;
+		$this->lastArgs = $behavior->context ?? $this->lastArgs;
 		
-		$this->_depth++;
-		foreach ( $this->_routes as $behaviorName=>$senders )
+		$this->depth++;
+		foreach ( $this->routes as $behaviorName=>$senders )
 		{
 			if ( $behavior->name() == $behaviorName )
 			{
 				foreach ( $senders as $senderName=>$recipients )
 				{
-					if (!isset($this->_broadcastedEvents[$senderName])) $this->_broadcastedEvents[$senderName] = [];
+					if (!isset($this->broadcastedEvents[$senderName])) $this->broadcastedEvents[$senderName] = [];
 
-					if (Arr::has($this->_broadcastedEvents[$senderName], $behavior->name())) {
+					if (Arr::has($this->broadcastedEvents[$senderName], $behavior->name())) {
 						continue;
 					}
 
@@ -845,7 +845,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 						if ($behavior->target instanceof Service || $behavior->target instanceof Application) {
 							$targetName = $behavior->target->name();
 						} else {
-							foreach ( $this->_services as $service ) {
+							foreach ( $this->services as $service ) {
 								if ( $service->instance === $behavior->target ) {
 									$targetName = $service->name();
 									break;
@@ -853,30 +853,30 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 							}
 						}
 						if (
-							!Arr::has($this->_broadcastedEvents[$senderName], $behavior->name()) && 
+							!Arr::has($this->broadcastedEvents[$senderName], $behavior->name()) && 
 							$targetName == $senderName || 
-							( isset($this->_broadcastChain[$this->_depth-1]) && $this->_broadcastChain[$this->_depth-1] == $targetName)
+							( isset($this->broadcastChain[$this->depth-1]) && $this->broadcastChain[$this->depth-1] == $targetName)
 						)
 						{
 							$name = $recipient['callback'] ? $recipient['callback'] : $behavior->name();
 
-							$this->_broadcastChain[$this->_depth] = $senderName;
+							$this->broadcastChain[$this->depth] = $senderName;
 							
-							$this->_broadcastedEvents[$senderName][] = $name;
+							$this->broadcastedEvents[$senderName][] = $name;
 
-							$this->message( $recipient['recipient'], $behavior, $this->_last_args, $recipient['callback'] );
+							$this->message( $recipient['recipient'], $behavior, $this->lastArgs, $recipient['callback'] );
 						}
 					}
 				}
 			}
 		}
 
-		$this->_depth--;
+		$this->depth--;
 
-		if ( $this->_depth == 0 ) {
-			$this->_broadcastedEvents = [];
-			$this->_broadcastChain = [];
-			$this->_last_args = null;
+		if ( $this->depth == 0 ) {
+			$this->broadcastedEvents = [];
+			$this->broadcastChain = [];
+			$this->lastArgs = null;
 		}
 	}
 
@@ -933,7 +933,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$recipient = $this;
 			$behavior->context = $data;
 		} else {
-			$recipient = $this->_services[$service];
+			$recipient = $this->services[$service];
 		}
 
 		if ( Val::isNotNull($callback) && Str::is($callback) ) {
@@ -964,7 +964,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
     {
         $abilities = [];
 
-        foreach ($this->_routes as $behaviorName => $senders) {
+        foreach ($this->routes as $behaviorName => $senders) {
 
             foreach ($senders as $senderName => $recipients) {
             	foreach ( $recipients as $recipient ) {
@@ -1074,8 +1074,8 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	private function boundArguments(String $classname = null)
 	{
-		if ( array_key_exists($classname, $this->_boundArguments) ) {
-			return $this->_boundArguments[$classname];
+		if ( array_key_exists($classname, $this->boundArguments) ) {
+			return $this->boundArguments[$classname];
 		}
 
 		if ( $classname ) {
@@ -1090,18 +1090,18 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	        }
 
 	        foreach ( $parents as $parent ) {
-	        	if ( array_key_exists($parent, $this->_boundArguments) ) {
-					return $this->_boundArguments[$parent];
+	        	if ( array_key_exists($parent, $this->boundArguments) ) {
+					return $this->boundArguments[$parent];
 				}
 	        }
 	        foreach ( $interfaces as $interface ) {
-	        	if ( array_key_exists($interface, $this->_boundArguments) ) {
-					return $this->_boundArguments[$interface];
+	        	if ( array_key_exists($interface, $this->boundArguments) ) {
+					return $this->boundArguments[$interface];
 				}
 	        }
 	    }
 
-	    return $this->_boundArguments['_'] ?? [];
+	    return $this->boundArguments['_'] ?? [];
 	}
 
 	/**
@@ -1132,8 +1132,8 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$dependencyName = $parameter->getName();
 
 			// Check if the dependency class has a binding
-			if (\array_key_exists($dependencyClass, $this->_bindings)) {
-				$dependencyClass = $this->_bindings[$dependencyClass];
+			if (\array_key_exists($dependencyClass, $this->bindings)) {
+				$dependencyClass = $this->bindings[$dependencyClass];
 			}
 
 			// Merge the arguments with the application registered named bindings by class

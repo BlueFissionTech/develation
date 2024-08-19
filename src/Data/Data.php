@@ -116,8 +116,8 @@ class Data extends Obj implements IData
         $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::READ) );
         $this->perform( State::READING );
 
-        if ( method_exists($this, '_read') ) {
-            $this->_read();
+        if ( method_exists($this, 'read') ) {
+            $this->read();
         }
 
         $this->halt( State::READING );
@@ -136,8 +136,8 @@ class Data extends Obj implements IData
         $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::SAVE)  );
         $this->perform( State::SAVING );
 
-        if ( method_exists($this, '_write') ) {
-            $this->_write();
+        if ( method_exists($this, 'write') ) {
+            $this->write();
         }
 
         $this->halt( State::SAVING );
@@ -156,8 +156,8 @@ class Data extends Obj implements IData
         $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::DELETE)  ) ;
         $this->perform( State::DELETING );
 
-        if ( method_exists($this, '_delete') ) {
-            $this->_delete();
+        if ( method_exists($this, 'delete') ) {
+            $this->delete();
         }
 
         $this->halt( State::DELETING );
@@ -173,8 +173,8 @@ class Data extends Obj implements IData
     public function contents($data = null): mixed
     {
         // method implementation
-        if ( method_exists($this, '_contents') ) {
-            $data = $this->_contents($data);
+        if ( method_exists($this, 'contents') ) {
+            $data = $this->contents($data);
         }
         
         return $data;
@@ -187,7 +187,7 @@ class Data extends Obj implements IData
      */
     public function data(): mixed
     {
-        return $this->_data->val();
+        return $this->data->val();
     }
     
     /**

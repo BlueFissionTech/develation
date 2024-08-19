@@ -8,7 +8,7 @@ use BlueFission\Net\HTTP;
 
 class OAuthAuthenticator extends Authenticator
 {
-    protected $_config = [
+    protected $config = [
         'oauth_table' => 'oauth',
         'provider_field' => 'provider',
         'access_token_field' => 'access_token',
@@ -22,14 +22,14 @@ class OAuthAuthenticator extends Authenticator
     public function authenticateWithOAuth(string $provider, string $accessToken)
     {
         if (empty($provider) || empty($accessToken)) {
-            $this->_status[] = "Provider and Access Token required";
+            $this->status[] = "Provider and Access Token required";
             return false;
         }
 
         $userInfo = $this->getUserByAccessToken($provider, $accessToken);
 
         if (!$userInfo) {
-            $this->_status[] = "User not found";
+            $this->status[] = "User not found";
             return false;
         }
 
@@ -41,7 +41,7 @@ class OAuthAuthenticator extends Authenticator
 
     private function getUserByAccessToken($provider, $accessToken)
     {
-        $oauth = $this->_datasource;
+        $oauth = $this->datasource;
         $oauth->reset();
         $oauth->clear();
         $oauth->config('name', $this->config('oauth_table'));

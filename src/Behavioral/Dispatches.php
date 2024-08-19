@@ -21,14 +21,14 @@ trait Dispatches {
 	 *
 	 * @var BehaviorCollection 
 	 */
-	protected $_behaviors;
+	protected $behaviors;
 	
 	/**
 	 * Holds a collection of handlers
 	 *
 	 * @var HandlerCollection 
 	 */
-	protected $_handlers;
+	protected $handlers;
 	
 	/**
 	 * Constructor of the Dispatches class
@@ -36,12 +36,12 @@ trait Dispatches {
 	 * @param HandlerCollection $handlers Optional collection of handlers to add to the Dispatches object
 	 */
 	public function __construct( HandlerCollection $handlers = null ) {
-		$this->_behaviors = new BehaviorCollection();
+		$this->behaviors = new BehaviorCollection();
 
 		if ($handlers)
-			$this->_handlers = $handlers;
+			$this->handlers = $handlers;
 		else
-			$this->_handlers = new HandlerCollection();
+			$this->handlers = new HandlerCollection();
 
 		$this->trigger(Event::LOAD);
 	}
@@ -50,7 +50,7 @@ trait Dispatches {
 	 * Destructor of the Dispatches class
 	 */
 	public function __destruct() {
-		if ( $this->_behaviors ) {
+		if ( $this->behaviors ) {
 			$this->trigger(Event::UNLOAD);
 		}
 	}
@@ -73,7 +73,7 @@ trait Dispatches {
 			throw new InvalidArgumentException("Invalid Behavior Type");
 		}
 			
-		$this->_behaviors->add( $behavior );
+		$this->behaviors->add( $behavior );
 
 		if ( $callback ) {
 			try {
@@ -128,8 +128,8 @@ trait Dispatches {
 	 */
 	public function handler($handler): IDispatcher
 	{
-		if ($this->_behaviors->has($handler->name())) {
-			$this->_handlers->add($handler);
+		if ($this->behaviors->has($handler->name())) {
+			$this->handlers->add($handler);
 		}
 
 		return $this;
@@ -166,8 +166,8 @@ trait Dispatches {
 		}
 
 		foreach ( $behaviors as $behavior ) {
-			if ( $this->_handlers != null ) {
-				$this->_handlers->raise($behavior, $this, $args);
+			if ( $this->handlers != null ) {
+				$this->handlers->raise($behavior, $this, $args);
 			}
 		}
 

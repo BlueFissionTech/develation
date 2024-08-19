@@ -16,22 +16,22 @@ namespace BlueFission;
 // `DevElation::subscribe($this, $eventOrBehavior);` now registers that item as a listener of that event through `Dispatches::trigger($eventName, $args);`
 
 class DevElation {
-    private static $_isActive = false;
-    private static $_config = [];
-    private static $_filters = [];
-    private static $_actions = [];
-    private static $_listeners = [];
+    private static $isActive = false;
+    private static $config = [];
+    private static $filters = [];
+    private static $actions = [];
+    private static $listeners = [];
 
     public static function up()
     {
         // Activate the class
-        self::$_isActive = true;
+        self::$isActive = true;
     }
 
     public static function down()
     {
         // Deactivate the class
-        self::$_isActive = false;
+        self::$isActive = false;
     }
 
     public static function config($key = null, $value = null)
@@ -42,28 +42,28 @@ class DevElation {
         }
 
         if ($value === null) {
-            return self::$_config[$key] ?? null;
+            return self::$config[$key] ?? null;
         } else {
-            self::$_config[$key] = $value;
+            self::$config[$key] = $value;
         }
     }
 
     public static function filter($name, callable $function, $priority = 10)
     {
-        if (!isset(self::$_filters[$name])) {
-            self::$_filters[$name] = [];
+        if (!isset(self::$filters[$name])) {
+            self::$filters[$name] = [];
         }
-        self::$_filters[$name][$priority][] = $function;
-        ksort(self::$_filters[$name]); // Sort by priority
+        self::$filters[$name][$priority][] = $function;
+        ksort(self::$filters[$name]); // Sort by priority
     }
 
     public static function apply($name = null, $value)
     {
     	$name = self::generateHookName($name);
-        if (!self::$_isActive || !isset(self::$_filters[$name])) {
+        if (!self::$isActive || !isset(self::$filters[$name])) {
             return $value;
         }
-        foreach (self::$_filters[$name] as $priority => $filters) {
+        foreach (self::$filters[$name] as $priority => $filters) {
             foreach ($filters as $filter) {
                 $value = $filter($value);
             }
@@ -73,20 +73,20 @@ class DevElation {
 
     public static function action($name, callable $function, $priority = 10)
     {
-        if (!isset(self::$_actions[$name])) {
-            self::$_actions[$name] = [];
+        if (!isset(self::$actions[$name])) {
+            self::$actions[$name] = [];
         }
-        self::$_actions[$name][$priority][] = $function;
-        ksort(self::$_actions[$name]); // Sort by priority
+        self::$actions[$name][$priority][] = $function;
+        ksort(self::$actions[$name]); // Sort by priority
     }
 
     public static function do($name = null, $args = [])
     {
     	$name = self::generateHookName($name);
-        if (!self::$_isActive || !isset(self::$_actions[$name])) {
+        if (!self::$isActive || !isset(self::$actions[$name])) {
             return;
         }
-        foreach (self::$_actions[$name] as $priority => $actions) {
+        foreach (self::$actions[$name] as $priority => $actions) {
             foreach ($actions as $action) {
                 call_user_func_array($action, $args);
             }
@@ -95,24 +95,24 @@ class DevElation {
 
     public static function listen($eventOrBehavior)
     {
-        if (!isset(self::$_listeners[$eventOrBehavior])) {
-            self::$_listeners[$eventOrBehavior] = [];
+        if (!isset(self::$listeners[$eventOrBehavior])) {
+            self::$listeners[$eventOrBehavior] = [];
         }
     }
 
     public static function subscribe($subscriber, $eventOrBehavior)
     {
-        if (isset(self::$_listeners[$eventOrBehavior]) && !in_array($subscriber, self::$_listeners[$eventOrBehavior])) {
-            self::$_listeners[$eventOrBehavior][] = $subscriber;
+        if (isset(self::$listeners[$eventOrBehavior]) && !in_array($subscriber, self::$listeners[$eventOrBehavior])) {
+            self::$listeners[$eventOrBehavior][] = $subscriber;
         }
     }
 
     public static function trigger($eventName, $args = [])
     {
-        if (!self::$_isActive || !isset(self::$_listeners[$eventName])) {
+        if (!self::$isActive || !isset(self::$listeners[$eventName])) {
             return;
         }
-        foreach (self::$_listeners[$eventName] as $listener) {
+        foreach (self::$listeners[$eventName] as $listener) {
             // Assuming $listener is callable or has a method to handle the event
             call_user_func_array($listener, $args);
         }

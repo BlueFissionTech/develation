@@ -27,12 +27,12 @@ class SQLiteLink extends Connection implements IConfigurable
     const UPDATE_SPECIFIED = 3;
 
     // protected property to store the database connection
-    protected static $_database;
-    private $_query;
-    private $_last_row;
+    protected static $database;
+    private $query;
+    private $lastRow;
     
     // property to store the configuration
-    protected $_config = [
+    protected $config = [
         'database'=>'',
         'table'=>'',
         'key'=>'_rowid',
@@ -50,10 +50,10 @@ class SQLiteLink extends Connection implements IConfigurable
     public function __construct( $config = null )
     {
         parent::__construct( $config );
-        if (Val::isNull(self::$_database)) {
-            self::$_database = [];
+        if (Val::isNull(self::$database)) {
+            self::$database = [];
         } else {
-            $this->_connection = end( self::$_database );
+            $this->connection = end( self::$database );
         }
         return $this;
     }
@@ -68,25 +68,25 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     protected function _open(): void
     {
-        if ( $this->_connection ) {
+        if ( $this->connection ) {
             return;
         }
 
         $database = $this->config('database');
         
-        $connection_id = Arr::size(self::$_database);
+        $connection_id = Arr::size(self::$database);
         
         if ( !class_exists('SQLite3') ) {
             throw new \Exception("SQLite3 not found");
         }
 
-        $db = $connection_id > 0 ? end(self::$_database) : new \SQLite3($database);
+        $db = $connection_id > 0 ? end(self::$database) : new \SQLite3($database);
         
         if ($db) {
-            self::$_database[$connection_id] = $this->_connection = $db;
+            self::$database[$connection_id] = $this->connection = $db;
             $status = self::STATUS_CONNECTED;
 
-            $this->perform($this->_connection 
+            $this->perform($this->connection 
                 ? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
         } else {    
             $status = self::STATUS_FAILED;
@@ -101,8 +101,8 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     protected function _close(): void
     {
-        if ($this->_connection) {
-            $this->_connection->close();
+        if ($this->connection) {
+            $this->connection->close();
         }
         $this->perform(State::DISCONNECTED);
     }
@@ -114,7 +114,7 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     public function stats()
     {
-        return ['query'=>$this->_query];
+        return ['query'=>$this->query];
     }
     
     /**
@@ -127,26 +127,26 @@ class SQLiteLink extends Connection implements IConfigurable
     {
         $this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
-        $db = $this->_connection;
+        $db = $this->connection;
     
         if ( $db )
         {
             
             if (Val::isNotNull($query))
             {
-                $this->_query = $query;
+                $this->query = $query;
 
                 if (Arr::isAssoc($query))
                 {
-                    $this->_data = $query; 
+                    $this->data = $query; 
                 }
                 else if (Str::is($query))
                 {
                     try {
-                        $this->_result = $db->query($query);
+                        $this->result = $db->query($query);
                         $this->status($db->lastErrorMsg() ? $db->lastErrorMsg() : self::STATUS_SUCCESS);
                     } catch ( \Exception $e ) {
-                        $this->_result = false;
+                        $this->result = false;
                         $this->status(self::STATUS_FAILED);
                     }
 
@@ -168,7 +168,7 @@ class SQLiteLink extends Connection implements IConfigurable
                 $where = $key ? "$keyField = $value" : '';
                 $update = true;
             }
-            $data = $this->_data;
+            $data = $this->data;
             $type = ($update) ? ($this->config('ignore_null') ? self::UPDATE_SPECIFIED : self::UPDATE) : self::INSERT;
             $this->post($table, $data, $where, $type);
         }
@@ -185,7 +185,7 @@ class SQLiteLink extends Connection implements IConfigurable
     private function _read(): void
     {
         $table = $this->config('table');
-        $data = $this->_data->val();
+        $data = $this->data->val();
         $this->find($table, $data);
     }
 
@@ -198,7 +198,7 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     private function find($table, $data): void
     {
-        $db = $this->_connection;
+        $db = $this->connection;
         $success = false;
 
         if ($db)
@@ -222,7 +222,7 @@ class SQLiteLink extends Connection implements IConfigurable
             
             $query = "SELECT * FROM `".$table."` WHERE ".$where_str;
             
-            $this->_query = $query;
+            $this->query = $query;
 
             $this->perform([State::SENDING, State::RECEIVING, State::PROCESSING, State::BUSY]);
             $result = $db->query($query);
@@ -232,12 +232,12 @@ class SQLiteLink extends Connection implements IConfigurable
             $this->halt([State::BUSY, State::SENDING, State::RECEIVING, State::PROCESSING]);
 
             $this->perform([Action::RECEIVE]);
-            $this->perform(Event::RECEIVED, new Meta(data: $this->_result));
+            $this->perform(Event::RECEIVED, new Meta(data: $this->result));
             
             $status = ($success) ? self::STATUS_SUCCESS : ($db->lastErrorMsg() ?? self::STATUS_FAILED);
 
             $this->perform(
-                $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+                $this->result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
                 new Meta(when: Action::PROCESS, info: $status)
             );
         }
@@ -266,7 +266,7 @@ class SQLiteLink extends Connection implements IConfigurable
 
         $status = self::STATUS_NOTCONNECTED;
         
-        $db = $this->_connection;
+        $db = $this->connection;
         $success = false;
 
         if ($db)
@@ -298,7 +298,7 @@ class SQLiteLink extends Connection implements IConfigurable
             
             $query = "INSERT INTO `".$table."`(`".$field_string."`) VALUES(".$value_string.")";
 
-            $this->_query = $query;
+            $this->query = $query;
 
             $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $insert));
             $this->perform([State::PROCESSING, State::BUSY]);
@@ -314,12 +314,12 @@ class SQLiteLink extends Connection implements IConfigurable
                 $success = false;
                 $this->status($e->getMessage());
             }
-            $this->_result = $success;
+            $this->result = $success;
             $this->halt([State::BUSY, State::SENDING, State::PROCESSING]);
 
             $this->perform(Event::SENT, new Meta(data: $data));
             $this->perform([Action::RECEIVE]);
-            $this->perform(Event::RECEIVED, new Meta(data: $this->_result));
+            $this->perform(Event::RECEIVED, new Meta(data: $this->result));
         }
         else
         {
@@ -351,7 +351,7 @@ class SQLiteLink extends Connection implements IConfigurable
     {
         $this->perform(State::UPDATING, new Meta(when: Action::PROCESS));
     
-        $db = $this->_connection;
+        $db = $this->connection;
         $success = false;
         $status = self::STATUS_NOTCONNECTED;
 
@@ -382,7 +382,7 @@ class SQLiteLink extends Connection implements IConfigurable
             
             $query = "UPDATE `".$table."` SET ".$update_string." WHERE ".$where;
 
-            $this->_query = $query;
+            $this->query = $query;
             
             $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $updates));
             $this->perform([State::PROCESSING, State::BUSY]);
@@ -400,13 +400,13 @@ class SQLiteLink extends Connection implements IConfigurable
                 $this->status($e->getMessage());
             }
             
-            $this->_result = $success;
+            $this->result = $success;
 
             $this->halt([State::BUSY, State::SENDING, State::PROCESSING]);
 
             $this->perform(Event::SENT, new Meta(data: $data));
             $this->perform([Action::RECEIVE]);
-            $this->perform(Event::RECEIVED, new Meta(data: $this->_result));
+            $this->perform(Event::RECEIVED, new Meta(data: $this->result));
         }
         else
         {
@@ -436,7 +436,7 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     private function post($table, $data, $where = null, $type = null): void
     {
-        $db = $this->_connection;
+        $db = $this->connection;
         $status = '';
         $success = false;
         $ignore_null = false;
@@ -505,11 +505,11 @@ class SQLiteLink extends Connection implements IConfigurable
         }
         
         $this->perform(
-            $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+            $this->result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
             new Meta(when: Action::PROCESS, info: $status)
         );
         
-        $this->_last_row = $last_row ? $last_row : $this->_last_row;
+        $this->lastRow = $last_row ? $last_row : $this->lastRow;
 
         return;
     }
@@ -536,7 +536,7 @@ class SQLiteLink extends Connection implements IConfigurable
      * @return integer The last row id
      */
     public function lastRow() {
-        return $this->_last_row;
+        return $this->lastRow;
     }
 
     /**
@@ -548,7 +548,7 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     public static function sanitize($string, $datetime = false) 
     {
-        $db = end ( self::$_database );
+        $db = end ( self::$database );
         $pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
         $replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', '' ];
         
@@ -603,7 +603,7 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     static function tableExists($table)
     {
-        $db = end( self::$_database );
+        $db = end( self::$database );
         if (!$db) {
             return false;
         }

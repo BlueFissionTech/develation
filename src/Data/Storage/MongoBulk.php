@@ -24,7 +24,7 @@ class MongoBulk extends Mongo implements IData {
 	 * 
 	 * @var Group
 	 */
-	private $_rows;
+	private $rows;
 
 	/**
 	 * Constructor for the MongoBulk class.
@@ -34,8 +34,8 @@ class MongoBulk extends Mongo implements IData {
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
-		$this->_rows = new Group();
-		$this->_rows->type('\BlueFission\Data\Storage\Mongo');
+		$this->rows = new Group();
+		$this->rows->type('\BlueFission\Data\Storage\Mongo');
 	}
 
 	/**
@@ -48,15 +48,15 @@ class MongoBulk extends Mongo implements IData {
 		parent::read();
 		$res = [];
 		if (method_exists('mysqli_result', 'fetch_all')) # Compatibility layer with PHP < 5.3
-			$res = $this->_result->fetch_all( MYSQLI_ASSOC );
+			$res = $this->result->fetch_all( MYSQLI_ASSOC );
 		else {
-			if ($this->_result) {
-				$res = $this->_result->toArray();
+			if ($this->result) {
+				$res = $this->result->toArray();
 			}
 		}
 
-		$this->_rows = new Group( $res );
-		$this->_rows->type('\BlueFission\Data\Storage\Mongo');
+		$this->rows = new Group( $res );
+		$this->rows->type('\BlueFission\Data\Storage\Mongo');
 
 		return $this;
 	}
@@ -68,18 +68,18 @@ class MongoBulk extends Mongo implements IData {
 	 */
 	public function write(): IObj
 	{
-		$db = $this->_source;
+		$db = $this->source;
 
 		if ($db) {
 			$collection = $this->config('name');
 
 			$db->config('collection', $collection);
 			// $db->config('ignore_null', $this->config('ignore_null'));
-			$success = $db->query($this->_rows->toArray());
+			$success = $db->query($this->rows->toArray());
 
 			if ($success) {
-				$affected_row = $db->last_row();
-				$this->_last_row_affected = $affected_row;
+				$affectedRow = $db->last_row();
+				$this->lastRowAffected = $affectedRow;
 			}
 
 			$status = $success ? self::STATUS_SUCCESS : ( $db->status() ? $db->status() : self::STATUS_FAILED );
@@ -96,7 +96,7 @@ class MongoBulk extends Mongo implements IData {
 	 */
 	public function result()
 	{
-		return $this->_rows;
+		return $this->rows;
 	}
 
 	/**
@@ -105,7 +105,7 @@ class MongoBulk extends Mongo implements IData {
 	 * @return mixed
 	 */
 	public function each() {
-	    return $this->_rows->each();
+	    return $this->rows->each();
 	}
 
 	/**
@@ -117,8 +117,8 @@ class MongoBulk extends Mongo implements IData {
 	 */
 	public function limit($start = 0, $end = ''): IObj
 	{
-	    $this->_row_start = $start;
-	    $this->_row_end = $end;
+	    $this->rowStart = $start;
+	    $this->rowEnd = $end;
 
 	    return $this;
 	}
@@ -132,9 +132,9 @@ class MongoBulk extends Mongo implements IData {
 	public function contents($data = null): mixed
 	{
 	    if ( Val::isNull($data)) {
-	        return $this->_rows->current() ? $this->_rows->current() : parent::contents();
+	        return $this->rows->current() ? $this->rows->current() : parent::contents();
 	    } elseif (is_array($data) && !Arr::isAssoc($data)) {
-	        $this->_rows = new Group( $data );
+	        $this->rows = new Group( $data );
 	    } elseif ( Arr::isAssoc($data) ) {
 	        parent::contents($data);
 	    }

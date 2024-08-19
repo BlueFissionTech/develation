@@ -26,17 +26,17 @@ class Storage extends Data implements IData
     /**
      * @var mixed The contents of the storage
      */
-	protected $_contents;
+	protected $contents;
 	
 	/**
 	 * @var mixed The source of the storage
 	 */
-	protected $_source;
+	protected $source;
 	
 	/**
 	 * @var array The configuration data for the storage
 	 */
-	protected $_config = [];
+	protected $config = [];
 
 	/**
 	 * @var string A constant string indicating a successful operation
@@ -104,9 +104,9 @@ class Storage extends Data implements IData
 	{
 		// If this class is an instance of Storage, not a child class, then instantiate source
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
-			$this->_source = null;
+			$this->source = null;
 		}
-		if ( Val::isNotNull($this->_source) ) {
+		if ( Val::isNotNull($this->source) ) {
 			$this->halt( State::DISCONNECTED );
 			$this->perform( [Event::ACTIVATED, State::CONNECTED ] );
 		} else {
@@ -122,7 +122,7 @@ class Storage extends Data implements IData
 	protected function _read(): void
 	{
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
-			$this->_contents = $this->_source;
+			$this->contents = $this->source;
 			$this->perform( Event::SUCCESS, new Meta(when: Action::READ));
 		}
 		
@@ -135,7 +135,7 @@ class Storage extends Data implements IData
 	protected function _write(): void
 	{
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
-			$this->_source = $this->_contents ?? HTTP::jsonEncode($this->_data);
+			$this->source = $this->contents ?? HTTP::jsonEncode($this->data);
 			$this->perform( Event::SUCCESS, new Meta(when: Action::SAVE));
 		}
 
@@ -155,7 +155,7 @@ class Storage extends Data implements IData
 	protected function _delete(): void
 	{
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
-			$this->_source = '';
+			$this->source = '';
 			$this->perform( Event::SUCCESS, new Meta(when: Action::DELETE));
 		}
 		
@@ -172,9 +172,9 @@ class Storage extends Data implements IData
 	 */
 	public function contents($data = null): mixed
 	{
-		if (Val::isNull($data)) return $this->_contents;
+		if (Val::isNull($data)) return $this->contents;
 		
-		$this->_contents = $data;
+		$this->contents = $data;
 		$this->perform( Event::CHANGE ); 
 
 		return null;
@@ -188,10 +188,10 @@ class Storage extends Data implements IData
     public function deactivate(): IObj {
         // Implement deactivation logic
         $this->perform( State::DISCONNECTING );
-        if ( method_exists($this, '_disconnect') ) {
-        	$this->_disconnect();
+        if ( method_exists($this, 'disconnect') ) {
+        	$this->disconnect();
         }
-        $this->_source = null;
+        $this->source = null;
         $this->halt([State::CONNECTED, State::DISCONNECTING ]);
         $this->perform( State::DISCONNECTED );
         return $this;

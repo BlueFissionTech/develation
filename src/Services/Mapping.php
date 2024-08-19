@@ -46,7 +46,7 @@ class Mapping {
 	 *
 	 * @var array
 	 */
-	private Array $_gateways = [];
+	private Array $gateways = [];
 
 	/**
 	 * Creates a new mapping with the specified parameters.
@@ -101,7 +101,7 @@ class Mapping {
 	public function gateway( $gateway )
 	{
 		if ( $gateway) {
-			$this->_gateways[] = $gateway;
+			$this->gateways[] = $gateway;
 		}
 
 		return $this;
@@ -114,7 +114,7 @@ class Mapping {
 	 */
 	public function gateways()
 	{
-		return $this->_gateways;
+		return $this->gateways;
 	}
 
 }

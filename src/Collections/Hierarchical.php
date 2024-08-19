@@ -8,21 +8,21 @@ class Hierarchical extends Collection implements ICollection
 	 *
 	 * @var object
 	 */
-	protected $_root;
+	protected $root;
 
 	/**
 	 * Parent object in the hierarchy
 	 *
 	 * @var object
 	 */
-	protected $_parent;
+	protected $parent;
 
 	/**
 	 * Label for the current object in the hierarchy
 	 *
 	 * @var string
 	 */
-	protected $_label;
+	protected $label;
 	
 	/**
 	 * Constant string used to separate elements of a hierarchy path
@@ -36,7 +36,7 @@ class Hierarchical extends Collection implements ICollection
 	 */
 	public function __construct( ) {
 		parent::__construct();
-		$this->_root = null;
+		$this->root = null;
 	}
 
 	/**
@@ -46,8 +46,8 @@ class Hierarchical extends Collection implements ICollection
 	 * @return string|null
 	 */
 	public function label( $label = null ) {
-		if ( is_scalar($label) ) $this->_label = $label;
-		return $this->_label;
+		if ( is_scalar($label) ) $this->label = $label;
+		return $this->label;
 	}
 
 	/**
@@ -59,9 +59,9 @@ class Hierarchical extends Collection implements ICollection
 	public function parent( $parent = null )
 	{
 		if ( $parent instanceof Hierarchical ) {
-			$this->_parent = $parent;
+			$this->parent = $parent;
 		}
-		return $this->_parent;
+		return $this->parent;
 	}
 
 	/**
@@ -84,7 +84,7 @@ class Hierarchical extends Collection implements ICollection
 	 * @return array
 	 */
 	public function path() {
-		$path = $this->_parent ? $this->_parent->path() : [];
+		$path = $this->parent ? $this->parent->path() : [];
 
 		$path[] = $this->label(); 
 		
@@ -98,7 +98,7 @@ class Hierarchical extends Collection implements ICollection
 	 */
 	public function contents()
 	{
-		return $this->_value->contents();
+		return $this->value->contents();
 	}
 
 }

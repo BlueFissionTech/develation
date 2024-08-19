@@ -23,7 +23,7 @@ class Cookie extends Storage implements IData
 	 *
 	 * @var array
 	 */
-	protected $_config = [ 'location'=>'',
+	protected $config = [ 'location'=>'',
 		'name'=>'storage',
 		'expire'=>'3600',
 		'secure'=>false,
@@ -52,15 +52,15 @@ class Cookie extends Storage implements IData
 		$name = $this->config('name') ? (string)$this->config('name') : Str::rand();
 		
 		if (isset($_COOKIE[$name])) {
-			$this->_contents = $_COOKIE[$name];
+			$this->contents = $_COOKIE[$name];
 		} else {
 			$_COOKIE[$name] = serialize([]);
-			$this->_contents = null;
+			$this->contents = null;
 		}
 
-		$this->_source = isset($_COOKIE[$name]) ? $name : null;
+		$this->source = isset($_COOKIE[$name]) ? $name : null;
 		
-		if ( !$this->_source ) 
+		if ( !$this->source ) 
 			$this->status( self::STATUS_FAILED_INIT );
 		else
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
@@ -75,8 +75,8 @@ class Cookie extends Storage implements IData
 	 */
 	public function write(): IObj
 	{	
-		$value = HTTP::jsonEncode( !empty($this->_data->val()) ? $this->_data->val() : $this->_contents);
-		$label = $this->_source;
+		$value = HTTP::jsonEncode( !empty($this->data->val()) ? $this->data->val() : $this->contents);
+		$label = $this->source;
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
 		$cookiesecure = $this->config('secure');
@@ -98,7 +98,7 @@ class Cookie extends Storage implements IData
 	 */
 	public function read(): IObj
 	{
-		$value = HTTP::cookie($this->_source);
+		$value = HTTP::cookie($this->source);
 		if ( function_exists('json_decode') && !empty($value) )
 		{
 			$value = json_decode($value);
@@ -116,7 +116,7 @@ class Cookie extends Storage implements IData
 	 */
 	public function delete(): IObj
 	{
-		$label = $this->_source;
+		$label = $this->source;
 		unset($_COOKIE[$label]);
 
 		return $this;

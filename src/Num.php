@@ -16,27 +16,27 @@ class Num extends Val implements IVal {
     /**
      * @var string $type The type of number, "integer" or "double"
      */
-    protected $_type = DataTypes::DOUBLE;
+    protected $type = DataTypes::DOUBLE;
 
     /**
-	 * @var string $_format The format of the number
+	 * @var string $format The format of the number
 	 */
-    protected $_format = "";
+    protected $format = "";
 
     /**
-     * @var string $_decimals The decimals of the number
+     * @var string $decimals The decimals of the number
      */
-    protected $_precision = 2;
+    protected $precision = 2;
 
     /**
-	 * @var string $_decimal The decimal separator
+	 * @var string $decimal The decimal separator
 	 */
-    protected $_decimal = ".";
+    protected $decimal = ".";
 
     /**
-     * @var string $_thousands The thousands separator
+     * @var string $thousands The thousands separator
      */
-    protected $_thousands = ",";
+    protected $thousands = ",";
 
     /**
      * Num constructor.
@@ -45,13 +45,13 @@ class Num extends Val implements IVal {
      */
     public function __construct( $value = null, bool $takeSnapshot = true, bool $cast = false  ) {
 
-        $this->_data = $value;
-        if ( $this->_type && ($this->_forceType == true || $cast) ) {
-            $clone = $this->_data;
-            settype($clone, $this->_type->value);
+        $this->data = $value;
+        if ( $this->type && ($this->forceType == true || $cast) ) {
+            $clone = $this->data;
+            settype($clone, $this->type->value);
             $remainder = $clone % 1;
-            $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
-            settype($this->_data, $this->_type->value);
+            $this->type = $remainder ? $this->type : DataTypes::INTEGER;
+            settype($this->data, $this->type->value);
         }
 
 		parent::__construct($value, $takeSnapshot);
@@ -64,12 +64,12 @@ class Num extends Val implements IVal {
 	 */
 	public function cast(): IVal
 	{
-		if ( $this->_type ) {
-            $clone = $this->_data;
-            settype($clone, $this->_type->value);
+		if ( $this->type ) {
+            $clone = $this->data;
+            settype($clone, $this->type->value);
             $remainder = $clone % 1;
-            $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
-            settype($this->_data, $this->_type->value);
+            $this->type = $remainder ? $this->type : DataTypes::INTEGER;
+            settype($this->data, $this->type->value);
 			$this->trigger(Event::CHANGE);
 
         }
@@ -86,7 +86,7 @@ class Num extends Val implements IVal {
      */
     public function _is(bool $allowZero = true): bool
     {
-        $number = $this->_data;
+        $number = $this->data;
         return (is_numeric($number) && ((Val::isNotEmpty($number) && $number != 0) || $allowZero));
     }    
 
@@ -99,7 +99,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _format(string $format): IVal 
 	{
-		$this->_format = $format;
+		$this->format = $format;
 
 		return $this;
 	}
@@ -114,7 +114,7 @@ class Num extends Val implements IVal {
 
 	public function _precision(int $precision): IVal 
 	{
-		$this->_precision = $precision;
+		$this->precision = $precision;
 
 		return $this;
 	}
@@ -129,7 +129,7 @@ class Num extends Val implements IVal {
 
 	public function _decimal(string $decimal): IVal
 	{
-		$this->_decimal = $decimal;
+		$this->decimal = $decimal;
 
 		return $this;
 	}
@@ -143,7 +143,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _thousands(string $thousands): IVal
 	{
-		$this->_thousands = $thousands;
+		$this->thousands = $thousands;
 
 		return $this;
 	}
@@ -158,7 +158,7 @@ class Num extends Val implements IVal {
     public function _add(): IVal
     {
     	$values = func_get_args();
-		$number = $this->_data;
+		$number = $this->data;
 		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
@@ -181,7 +181,7 @@ class Num extends Val implements IVal {
 	public function _sub(): IVal
 	{
 		$values = func_get_args();
-		$number = $this->_data;
+		$number = $this->data;
 		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
@@ -204,7 +204,7 @@ class Num extends Val implements IVal {
 	public function _multiply(): IVal
 	{
 		$values = func_get_args();
-		$number = $this->_data;
+		$number = $this->data;
 		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
@@ -227,7 +227,7 @@ class Num extends Val implements IVal {
 	public function _divide(): IVal
 	{
 		$values = func_get_args();
-		$number = $this->_data;
+		$number = $this->data;
 		if (!Num::isValid($number)) $number = 0;
 
 		foreach ($values as $value) {
@@ -253,7 +253,7 @@ class Num extends Val implements IVal {
 	public function _rand( $min = 0, $max = null ): IVal
 	{
 		if ( $max === null ) {
-			$max = $this->_data;
+			$max = $this->data;
 		}
 
 		$number = mt_rand($min, $max);
@@ -273,7 +273,7 @@ class Num extends Val implements IVal {
      */
     public function _percentage(float $part = 0, bool $percent = false): float
     {
-        $whole = $this->_data;
+        $whole = $this->data;
 
         if (!Num::isValid($part)) $part = 0;
         if (!Num::isValid($whole)) $whole = 1;
@@ -292,7 +292,7 @@ class Num extends Val implements IVal {
      */
     public function _round(int $precision = 0): IVal
     {
-        $value = round($this->_data, $precision);
+        $value = round($this->data, $precision);
 
         $this->alter($value);
 
@@ -306,7 +306,7 @@ class Num extends Val implements IVal {
      */
     public function _abs(): IVal
     {
-        $value = abs($this->_data);
+        $value = abs($this->data);
 
         $this->alter($value);
 
@@ -336,7 +336,7 @@ class Num extends Val implements IVal {
  	 */
  	public function _pow($power): IVal
  	{
-        $value = pow($this->_data, $power);
+        $value = pow($this->data, $power);
 
         $this->alter($value);
 
@@ -350,7 +350,7 @@ class Num extends Val implements IVal {
      */
     public function _sqrt(): IVal 
     {
-        $value = sqrt($this->_data);
+        $value = sqrt($this->data);
 
         $this->alter($value);
 
@@ -366,7 +366,7 @@ class Num extends Val implements IVal {
      */
     public function _log(float $base = M_E): IVal
     {
-        $value = log($this->_data, $base);
+        $value = log($this->data, $base);
 
         $this->alter($value);
 
@@ -380,7 +380,7 @@ class Num extends Val implements IVal {
      */
     public function _exp(): IVal
     {
-        $value = exp($this->_data);
+        $value = exp($this->data);
 
         $this->alter($value);
 
@@ -396,11 +396,11 @@ class Num extends Val implements IVal {
     {
     	$values = func_get_args();
     	if ( Arr::count($values) ) {
-    		$this->_data = $values[0];
+    		$this->data = $values[0];
     		return $this;
     	}
 
-    	return $this->_data;
+    	return $this->data;
     }
 
     /**
@@ -412,11 +412,11 @@ class Num extends Val implements IVal {
     {
     	$values = func_get_args();
     	if ( Arr::count($values) ) {
-			$this->_data = bindec($values[0]);
+			$this->data = bindec($values[0]);
 			return $this;
 		}
 
-    	return decbin($this->_data);
+    	return decbin($this->data);
 	}
 
 	/**
@@ -428,11 +428,11 @@ class Num extends Val implements IVal {
 	{
 		$values = func_get_args();
 		if ( Arr::count($values) ) {
-			$this->_data = hexdec($values[0]);
+			$this->data = hexdec($values[0]);
 			return $this;
 		}
 
-		return dechex($this->_data);
+		return dechex($this->data);
 	}
 
 	/**
@@ -444,11 +444,11 @@ class Num extends Val implements IVal {
 	{
 		$values = func_get_args();
 		if ( Arr::count($values) ) {
-			$this->_data = octdec($values[0]);
+			$this->data = octdec($values[0]);
 			return $this;
 		}
 
-		return decoct($this->_data);
+		return decoct($this->data);
 	}
 
 	/**
@@ -471,11 +471,11 @@ class Num extends Val implements IVal {
 	                $roman = substr($roman, strlen($key));
 	            }
 	        }
-	        $this->_data = $result;
+	        $this->data = $result;
 	        return $this;
 	    } else {
 	        // Convert int to Roman numeral
-	        $number = (int)$this->_data;
+	        $number = (int)$this->data;
 	        $result = '';
 	        foreach ($rules as $key => $value) {
 	            while ($number >= $value) {
@@ -495,7 +495,7 @@ class Num extends Val implements IVal {
      * @return float The minimum of the two numbers
      */
     public function _min(float $number): float {
-        return min($this->_data, $number);
+        return min($this->data, $number);
     }
 
     /**
@@ -506,17 +506,17 @@ class Num extends Val implements IVal {
      * @return float The maximum of the two numbers
      */
     public function _max(float $number): float {
-        return max($this->_data, $number);
+        return max($this->data, $number);
     }
 
     /**
-     * Return int value of the $_value
+     * Return int value of the $value
      *
-     * @return int The int value of the $_value
+     * @return int The int value of the $value
 	 *
      */
     public function _int(): int {
-		return (int)$this->_data;
+		return (int)$this->data;
 	}
 
 	/**
@@ -526,7 +526,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _increment(): IVal
 	{
-		$number = $this->_data;
+		$number = $this->data;
 		$number++;
 		$this->alter($number);
 
@@ -540,7 +540,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _decrement(): IVal
 	{
-		$number = $this->_data;
+		$number = $this->data;
 		$number--;
 		$this->alter($number);
 
@@ -552,12 +552,12 @@ class Num extends Val implements IVal {
 	 * @return string
 	 */
 	public function __toString(): string {
-		if ( $this->_format ) {
-			$output = sprintf($this->_format, $this->_data);
-		} elseif ($this->_precision) {
-			$output = number_format($this->_data, $this->_precision, $this->_decimal, $this->_thousands);
+		if ( $this->format ) {
+			$output = sprintf($this->format, $this->data);
+		} elseif ($this->precision) {
+			$output = number_format($this->data, $this->precision, $this->decimal, $this->thousands);
 		} else {
-			$output = (string)$this->_data;
+			$output = (string)$this->data;
 		}
 		return $output;
 	}

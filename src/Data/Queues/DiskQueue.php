@@ -30,13 +30,13 @@ class DiskQueue extends Queue implements IQueue {
 	 * The instance of the disk-based queue
 	 * @var string
 	 */
-	private static $_stack;
+	private static $stack;
 	
 	/**
 	 * The array of messages in the disk-based queue
 	 * @var array
 	 */
-	private static $_array;
+	private static $array;
 
 	private static $initialized = false;
 
@@ -45,8 +45,8 @@ class DiskQueue extends Queue implements IQueue {
 	 * @return string
 	 */
 	private static function instance() {
-		if(!self::$_stack) self::init();
-		return self::$_stack;
+		if(!self::$stack) self::init();
+		return self::$stack;
 	}
 	
 	/**
@@ -69,7 +69,7 @@ class DiskQueue extends Queue implements IQueue {
 		    	$fs->mkdir(self::DIRNAME);
 		    }
 		    
-		    self::$_stack = $stack;
+		    self::$stack = $stack;
 
             self::$initialized = true;
         }
@@ -109,7 +109,7 @@ class DiskQueue extends Queue implements IQueue {
 
 		if (  $array == false ) return false;
 
-		if ( self::$_mode == static::FILO ) {
+		if ( self::$mode == static::FILO ) {
 			$array = array_reverse($array);
 		}
 

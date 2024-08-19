@@ -11,17 +11,17 @@ class Handler
 	/**
 	 * @var Behavior
 	 */
-	private $_behavior;
+	private $behavior;
 
 	/**
 	 * @var callable
 	 */
-	private $_callback;
+	private $callback;
 
 	/**
 	 * @var int
 	 */
-	private $_priority;
+	private $priority;
 
 	/**
 	 * Handler constructor.
@@ -31,9 +31,9 @@ class Handler
 	 * @param int $priority
 	 */
 	public function __construct(Behavior $behavior, $callback, $priority = 0) {
-		$this->_behavior = $behavior;
-		$this->_callback = $this->prepare($callback);
-		$this->_priority = (int)$priority;
+		$this->behavior = $behavior;
+		$this->callback = $this->prepare($callback);
+		$this->priority = (int)$priority;
 	}
 
 	/**
@@ -42,7 +42,7 @@ class Handler
 	 * @return string
 	 */
 	public function name() {
-		return $this->_behavior->name();
+		return $this->behavior->name();
 	}
 
 	/**
@@ -52,13 +52,13 @@ class Handler
 	 * @param mixed $args
 	 */
 	public function raise(Behavior $behavior, $args) {
-		if ($this->_callback)
+		if ($this->callback)
 		{
 
 			$args = $args ?? null;
 						
-			if (is_callable($this->_callback)) {
-				call_user_func_array($this->_callback, [$behavior, $args]);
+			if (is_callable($this->callback)) {
+				call_user_func_array($this->callback, [$behavior, $args]);
 			}
 		}
 	}
@@ -100,9 +100,9 @@ class Handler
 	 */
 	public function priority( $int = null ) {
 		if ( $int )
-			$this->_priority = (int)$int;
+			$this->priority = (int)$int;
 
-		return $this->_priority;
+		return $this->priority;
 	}
 
 	/**
@@ -111,6 +111,6 @@ class Handler
 	 * @return mixed Callback for the handler
 	 */
 	public function callback() {
-		return $this->_callback;
+		return $this->callback;
 	}
 }

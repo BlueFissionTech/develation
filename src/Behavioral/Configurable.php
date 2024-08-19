@@ -28,29 +28,29 @@ trait Configurable {
     }
 
 	/**
-	 * @var array $_config The configuration for the object.
+	 * @var array $config The configuration for the object.
 	 */
-	// protected $_config;
+	// protected $config;
 
 	/**
-	 * @var array $_status The current status of the object.
+	 * @var array $status The current status of the object.
 	 */
-	protected $_status;
+	protected $status;
 	
 	/**
 	 * Constructor for the Configurable trait. Initializes the parent trait, and sets
-	 * the _config and _status properties to arrays if they are not already set. 
+	 * the config and status properties to arrays if they are not already set. 
 	 * Dispatches the State::NORMAL event.
 	 */
 	public function __construct( $config = null )
 	{
 		$this->__behavesConstruct( );
-		if (!Val::is($this->_config)) {
-			$this->_config = [];
+		if (!Val::is($this->config)) {
+			$this->config = [];
 		}
 		
-		if (!Val::is($this->_status)) {
-			$this->_status = [];
+		if (!Val::is($this->status)) {
+			$this->status = [];
 		}
 
 		$this->config($config);
@@ -72,18 +72,18 @@ trait Configurable {
 	public function config( $config = null, $value = null ): mixed
 	{
 		if (Val::isNull($config)) {
-			return $this->_config;
+			return $this->config;
 		} elseif (Str::is($config)) {
 			if (Val::isNull ($value)) {
-				return $this->_config[$config] ?? null;
+				return $this->config[$config] ?? null;
 			}
 						
 			$this->perform( State::CONFIGURING );
 			if ( !$this->is(State::READONLY) ) {
 				if ( $this->is(State::DRAFT) ) {
-					$this->_config[$config] = $value;
-				} elseif (Arr::hasKey($this->_config, $config)) {
-					$this->_config[$config] = $value; 
+					$this->config[$config] = $value;
+				} elseif (Arr::hasKey($this->config, $config)) {
+					$this->config[$config] = $value; 
 				}
 			}
 		} elseif (Arr::is($config) && !$this->is(State::READONLY)) {
@@ -91,11 +91,11 @@ trait Configurable {
 			$this->perform( State::BUSY );
 			if ( $this->is(State::DRAFT) ) {
 				foreach ( $config as $a=>$b ) {
-					$this->_config[$a] = $b;
+					$this->config[$a] = $b;
 				}
 			} else {
-				foreach ( $this->_config as $a=>$b ) {
-					if ( Val::is($config[$a] )) $this->_config[$a] = $config[$a];
+				foreach ( $this->config as $a=>$b ) {
+					if ( Val::is($config[$a] )) $this->config[$a] = $config[$a];
 				}
 			}
 			$this->halt( State::BUSY );
@@ -115,10 +115,10 @@ trait Configurable {
 	{
 		if (Val::isNull($message))
 		{
-			$message = end($this->_status);
+			$message = end($this->status);
 			return $message;
 		}
-		$this->_status[] = $message;
+		$this->status[] = $message;
 
 		$this->perform( Event::MESSAGE, new Meta(info: $message) );
 
@@ -150,7 +150,7 @@ trait Configurable {
 		{	
 			if ( $this->is( State::DRAFT ) ) {
 				parent::field($field, $value);
-			} elseif ( Arr::hasKey($this->_data, $field) ) {
+			} elseif ( Arr::hasKey($this->data, $field) ) {
 				parent::field($field, $value);
 			}
 			return $this;

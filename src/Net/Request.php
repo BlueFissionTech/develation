@@ -8,11 +8,11 @@ use Psr\Http\Message\UriInterface;
 
 class Request implements RequestInterface
 {
-    private $_method;
-    private $_uri;
-    private $_headers = [];
-    private $_body;
-    private $_protocolVersion;
+    private $method;
+    private $uri;
+    private $headers = [];
+    private $body;
+    private $protocolVersion;
 
     public function __construct(
         string $method,
@@ -21,77 +21,77 @@ class Request implements RequestInterface
         StreamInterface $body = null,
         string $protocolVersion = '1.1'
     ) {
-        $this->_method = $method;
-        $this->_uri = $uri;
-        $this->_headers = $headers;
-        $this->_body = $body;
-        $this->_protocolVersion = $protocolVersion;
+        $this->method = $method;
+        $this->uri = $uri;
+        $this->headers = $headers;
+        $this->body = $body;
+        $this->protocolVersion = $protocolVersion;
     }
 
     public function getRequestTarget(): string
     {
-        return $this->_uri->getPath();
+        return $this->uri->getPath();
     }
 
     public function withRequestTarget($requestTarget): self
     {
         $new = clone $this;
-        $new->_uri = $new->_uri->withPath($requestTarget);
+        $new->uri = $new->uri->withPath($requestTarget);
         return $new;
     }
 
     public function getMethod(): string
     {
-        return $this->_method;
+        return $this->method;
     }
 
     public function withMethod($method): self
     {
         $new = clone $this;
-        $new->_method = $method;
+        $new->method = $method;
         return $new;
     }
 
     public function getUri(): UriInterface
     {
-        return $this->_uri;
+        return $this->uri;
     }
 
     public function withUri(UriInterface $uri, $preserveHost = false): self
     {
         $new = clone $this;
-        $new->_uri = $uri;
+        $new->uri = $uri;
         if (!$preserveHost) {
-            $new->_headers['Host'] = [$uri->getHost()];
+            $new->headers['Host'] = [$uri->getHost()];
         }
         return $new;
     }
 
     public function getProtocolVersion(): string
     {
-        return $this->_protocolVersion;
+        return $this->protocolVersion;
     }
 
     public function withProtocolVersion($version): self
     {
         $new = clone $this;
-        $new->_protocolVersion = $version;
+        $new->protocolVersion = $version;
         return $new;
     }
 
     public function getHeaders(): array
     {
-        return $this->_headers;
+        return $this->headers;
     }
 
     public function hasHeader($name): bool
     {
-        return isset($this->_headers[$name]);
+        return isset($this->headers[$name]);
     }
 
     public function getHeader($name): array
     {
-        return $this->_headers[$name] ?? [];
+        return $this->headers[$name] ?? [];
     }
 
     public function getHeaderLine($name): string
@@ -102,7 +102,7 @@ class Request implements RequestInterface
     public function withHeader($name, $value): self
     {
         $new = clone $this;
-        $new->_headers[$name] = (array)$value;
+        $new->headers[$name] = (array)$value;
         return $new;
     }
 
@@ -110,9 +110,9 @@ class Request implements RequestInterface
     {
         $new = clone $this;
         if ($new->hasHeader($name)) {
-            $new->_headers[$name] = array_merge($new->_headers[$name], (array)$value);
+            $new->headers[$name] = array_merge($new->headers[$name], (array)$value);
         } else {
-            $new->_headers[$name] = (array)$value;
+            $new->headers[$name] = (array)$value;
         }
         return $new;
     }
@@ -120,19 +120,19 @@ class Request implements RequestInterface
     public function withoutHeader($name): self
     {
         $new = clone $this;
-        unset($new->_headers[$name]);
+        unset($new->headers[$name]);
         return $new;
     }
 
     public function getBody(): StreamInterface
     {
-        return $this->_body;
+        return $this->body;
     }
 
     public function withBody(StreamInterface $body): self
     {
         $new = clone $this;
-        $new->_body = $body;
+        $new->body = $body;
         return $new;
     }
 }

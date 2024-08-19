@@ -24,7 +24,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 *
 	 * @var null|string
 	 */
-	protected $_type = null;
+	protected $type = null;
 
 	/**
 	 * Get or set the type of objects stored in the group.
@@ -34,9 +34,9 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 */
 	public function type( $type = null ) {
 		if ( Val::isNull($type) ) {
-			return $this->_type;
+			return $this->type;
 		}
-		$this->_type = $type;
+		$this->type = $type;
 	}
 
 	/**
@@ -46,9 +46,9 @@ class Group extends Collection implements ICollection, ArrayAccess {
 	 * @return mixed
 	 */
 	private function cast( $value ) {
-		if ( $this->_type && !($value instanceof $this->_type) ) {
+		if ( $this->type && !($value instanceof $this->type) ) {
 			try {
-				$object = new $this->_type();
+				$object = new $this->type();
 			} catch ( Exception $e ) {
 				$object = null;
 			}
@@ -60,7 +60,7 @@ class Group extends Collection implements ICollection, ArrayAccess {
 				$object->assign($value);
 				$value = $object;
 			} elseif ( is_a($object, Val::class || is_subclass_of($object, Val::class) ) ) {
-				$value = new $this->_type($value);
+				$value = new $this->type($value);
 			}
 		}
 		return $value;

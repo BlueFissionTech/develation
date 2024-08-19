@@ -15,10 +15,10 @@ class Sock implements IDispatcher, IConfigurable {
         Configurable::__construct as private __configConstruct;
     }
 
-    private $_server;
-    private $_port;
+    private $server;
+    private $port;
 
-    protected $_config = [
+    protected $config = [
         'host' => 'localhost',
         'port' => '8080',
         'path' => null, // Optional: path where the WebSocket server should serve
@@ -29,7 +29,7 @@ class Sock implements IDispatcher, IConfigurable {
         
         $this->__configConstruct($config);
 
-        $this->_port = $port;
+        $this->port = $port;
         $this->config($config);
     }
 
@@ -43,15 +43,15 @@ class Sock implements IDispatcher, IConfigurable {
             $this->config('host')
         );
 
-        $this->_server = $server;
+        $this->server = $server;
         $this->perform(Event::INITIALIZED);
         $server->run();
     }
 
     public function stop() {
-        if ($this->_server) {
-            $this->_server->socket->close();
-            $this->_server = null;
+        if ($this->server) {
+            $this->server->socket->close();
+            $this->server = null;
             $this->perform(Event::FINALIZED);
             $this->status("WebSocket server stopped.");
         }

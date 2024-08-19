@@ -20,57 +20,57 @@ use BlueFission\Behavioral\Behaviors\Event;
  */
 class IP {
 
-	private static $_accessLog = 'access_log.txt';
-	private static $_ipFile = 'blocked_ips.txt';
-	private static $_storage = null;
-	private static $_status = "";
+	private static $accessLog = 'access_log.txt';
+	private static $ipFile = 'blocked_ips.txt';
+	private static $storage = null;
+	private static $status = "";
 
 	private static function setStatus($status)
 	{
-		self::$_status = $status;
+		self::$status = $status;
 	}
 
 	public static function status()
 	{
-		return self::$_status;
+		return self::$status;
 	}
 
 	public static function storage(IData $storage = null)
 	{
 		if (Val::isNull($storage)) {
-			return self::$_storage;
+			return self::$storage;
 		}
 
-		self::$_storage = $storage;
+		self::$storage = $storage;
 	}
 
 	private static function getStorage( $type = null )
 	{
-		if (Val::isNull(self::$_storage)) {
-			$file = $type == 'ip' ? self::$_ipFile : self::$_accessLog;
+		if (Val::isNull(self::$storage)) {
+			$file = $type == 'ip' ? self::$ipFile : self::$accessLog;
 
 			return (new FileSystem($file))->config('mode', 'rw');
 		}
 
-		return self::$_storage;
+		return self::$storage;
 	}
 
 	public static function accessLog($file = null)
 	{
 		if (Val::isNull($file)) {
-			return self::$_accessLog;
+			return self::$accessLog;
 		}
 
-		self::$_accessLog = $file;
+		self::$accessLog = $file;
 	}
 
 	public static function ipFile($file = null)
 	{
 		if (Val::isNull($file)) {
-			return self::$_ipFile;
+			return self::$ipFile;
 		}
 
-		self::$_ipFile = $file;
+		self::$ipFile = $file;
 	}
 
 
@@ -113,7 +113,7 @@ class IP {
 
 	private static function read()
 	{
-		$file = self::$_accessLog;
+		$file = self::$accessLog;
 
 		if (!file_exists($file)) {
 			return [];
@@ -142,7 +142,7 @@ class IP {
 	 * Block an IP address
 	 * 
 	 * @param string $ip         The IP address to be blocked
-	 * @param string $_ipFile    (Optional) File to store the blocked IP addresses
+	 * @param string $ipFile    (Optional) File to store the blocked IP addresses
 	 * 
 	 * @return string The status of the IP blocking process
 	 */
@@ -191,7 +191,7 @@ class IP {
 	 * Allow an IP address that was previously blocked
 	 * 
 	 * @param string $ip         The IP address to be allowed
-	 * @param string $_ipFile    (Optional) File to store the blocked IP addresses
+	 * @param string $ipFile    (Optional) File to store the blocked IP addresses
 	 * 
 	 * @return string The status of the IP allowing process
 	 */
@@ -257,7 +257,7 @@ class IP {
 		
 		$ip = ($ip == '') ? self::remote() : $ip;
 		
-		$ipList = file_get_contents(self::$_ipFile);
+		$ipList = file_get_contents(self::$ipFile);
 		$ips = explode("\n", $ipList);
 		$isBlocked = Arr::has($ips, $ip);
 		if ($isBlocked) {
@@ -346,7 +346,7 @@ class IP {
 	public static function block($ip)
 	{
 		$status = "Blocking IP address $ip";
-		$result = file_put_contents(self::$_ipFile, $ip . "\n", FILE_APPEND | LOCK_EX);
+		$result = file_put_contents(self::$ipFile, $ip . "\n", FILE_APPEND | LOCK_EX);
 		$status = ($result ? "IP Block Successful" : "IP Block Failed") . "for $ip";
 
 		self::setStatus($status);
@@ -360,7 +360,7 @@ class IP {
 		
 		$ip = $ip ?? self::remote();
 		
-		$ips = file(self::$_ipFile);
+		$ips = file(self::$ipFile);
 		$isBlocked = in_array($ip, $ips);
 		
 		return $isBlocked;

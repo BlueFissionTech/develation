@@ -12,42 +12,42 @@ class SQLiteField {
     /**
      * @var string The name of the field.
      */
-    private $_name;
+    private $name;
 
     /**
      * @var string The type of the field.
      */
-    private $_type;
+    private $type;
 
     /**
      * @var int The size of the field.
      */
-    private $_size;
+    private $size;
 
     /**
      * @var boolean If the field is a primary key.
      */
-    private $_primary;
+    private $primary;
 
     /**
      * @var boolean If the field is unique.
      */
-    private $_unique;
+    private $unique;
 
     /**
      * @var boolean If the field can be null.
      */
-    private $_null;
+    private $null;
 
     /**
      * @var mixed The default value of the field.
      */
-    private $_default;
+    private $default;
 
     /**
      * @var boolean If the field is auto-incremented.
      */
-    private $_autoincrement;
+    private $autoIncrement;
 
     /**
      * Constructor for the SQLiteField class.
@@ -58,7 +58,7 @@ class SQLiteField {
      */
     public function __construct($name)
     {
-        $this->_name = $name;
+        $this->name = $name;
 
         return $this;
     }
@@ -72,7 +72,7 @@ class SQLiteField {
      */
     public function type($type)
     {
-        $this->_type = $type;
+        $this->type = $type;
 
         return $this;
     }
@@ -86,7 +86,7 @@ class SQLiteField {
      */
     public function size($size)
     {
-        $this->_size = $size;
+        $this->size = $size;
 
         return $this;
     }
@@ -100,7 +100,7 @@ class SQLiteField {
      */
     public function primary( $isTrue = true)
     {
-        $this->_primary = $isTrue;
+        $this->primary = $isTrue;
 
         return $this;
     }
@@ -114,7 +114,7 @@ class SQLiteField {
      */
     public function autoincrement( $isTrue = true)
     {
-        $this->_autoincrement = $isTrue;
+        $this->autoIncrement = $isTrue;
 
         return $this;
     }
@@ -128,7 +128,7 @@ class SQLiteField {
      */
     public function unique( $isTrue = true)
     {
-        $this->_unique = $isTrue;
+        $this->unique = $isTrue;
 
 		return $this;
 	}
@@ -141,7 +141,7 @@ class SQLiteField {
 	 */
 	public function null( $isTrue = true)
 	{
-		$this->_null = $isTrue;
+		$this->null = $isTrue;
 
 		return $this;
 	}
@@ -154,7 +154,7 @@ class SQLiteField {
 	 */
 	public function default( mixed $value )
 	{
-		$this->_default = $value;
+		$this->default = $value;
 
 		return $this;
 	}
@@ -167,7 +167,7 @@ class SQLiteField {
 	 */
 	public function required( $isTrue = true)
 	{
-		$this->_null = !$isTrue;
+		$this->null = !$isTrue;
 
 		return $this;
 	}
@@ -179,9 +179,9 @@ class SQLiteField {
 	 */
 	public function definition()
 	{
-		$definition[] = "`{$this->_name}`";
+		$definition[] = "`{$this->name}`";
 		
-		switch ($this->_type) {
+		switch ($this->type) {
 			case 'datetime':
 			$definition[] = "DATETIME";
 			break;
@@ -208,17 +208,17 @@ class SQLiteField {
 			break;
 		}
 
-		if ($this->_default !== null) {
-			$definition[] = "DEFAULT " . SQLiteLink::sanitize((string)$this->_default);
+		if ($this->default !== null) {
+			$definition[] = "DEFAULT " . SQLiteLink::sanitize((string)$this->default);
 		}
 		
-		if (!$this->_null) {
+		if (!$this->null) {
 			$definition[] = "NOT";
 		}
 
 		$definition[] = "NULL";
 
-		if ($this->_autoincrement) {
+		if ($this->autoIncrement) {
 			$definition[] = "AUTOINCREMENT";
 		}
 
@@ -236,12 +236,12 @@ class SQLiteField {
 	{
 		$extras = [];
 
-		if ($this->_primary) {
-			$extras[] = "PRIMARY KEY (`{$this->_name}`)";
+		if ($this->primary) {
+			$extras[] = "PRIMARY KEY (`{$this->name}`)";
 		}
 
-		if ($this->_unique) {
-			$extras[] = "UNIQUE (`{$this->_name}`)";
+		if ($this->unique) {
+			$extras[] = "UNIQUE (`{$this->name}`)";
 		}
 
 		$extras_string = implode(",\n", $extras);

@@ -8,10 +8,10 @@ use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Async\Promise;
 
 class IO {
-    protected static $_filters = [];
-    protected static $_defaults = [];
-    protected static $_messages = [];
-    protected static $_listener = null;
+    protected static $filters = [];
+    protected static $defaults = [];
+    protected static $messages = [];
+    protected static $listener = null;
 
     public static function std($input = null, $config = []) {
         $stdio = new Stdio(array_merge(['target' => $input], $config));
@@ -78,15 +78,15 @@ class IO {
     }
 
     public static function setDefault($key, $value) {
-        self::$__defaults[$key] = $value;
+        self::$defaults[$key] = $value;
     }
 
     public static function addFilter(callable $filter) {
-        self::$_filters[] = $filter;
+        self::$filters[] = $filter;
     }
 
     protected static function applyFilters($data) {
-        foreach (self::$_filters as $filter) {
+        foreach (self::$filters as $filter) {
             $data = call_user_func($filter, $data);
         }
         return $data;
@@ -94,8 +94,8 @@ class IO {
 
     public static function messages( $input = null, $event = null )
     {
-        if ( static::$_messages === null ) {
-            static::$_messages = (new Arr())->constraint(function(&$val) {
+        if ( static::$messages === null ) {
+            static::$messages = (new Arr())->constraint(function(&$val) {
                 if (Arr::size($val) > 100) {
                     array_shift($val);
                 }
@@ -103,12 +103,12 @@ class IO {
         }
 
         if ( $input === null ) {
-            return static::$_messages->toArray();
+            return static::$messages->toArray();
         }
 
-        static::$_messages[] = $input;
+        static::$messages[] = $input;
 
-        $listener = static::$_listener;
+        $listener = static::$listener;
         if ( $listener && $listener instanceof IDispatcher ) {
             $listener->trigger( $event ?? Event::MESSAGE, new Meta(info: $input));
         }
@@ -116,6 +116,6 @@ class IO {
 
     public static function listener( $listener )
     {
-        static::$_listener = $listener;
+        static::$listener = $listener;
     }
 }

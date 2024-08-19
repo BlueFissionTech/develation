@@ -23,49 +23,49 @@ class Process implements IDispatcher {
      *
      * @var string
      */
-    protected $_command;
+    protected $command;
 
     /**
      * The working directory for the command to be executed in
      *
      * @var string
      */
-    protected $_cwd;
+    protected $cwd;
 
     /**
      * The environment variables for the command to be executed with
      *
      * @var array
      */
-    protected $_env;
+    protected $env;
 
     /**
      * The descriptorspec for the command to be executed with
      *
      * @var array
      */
-    protected $_descriptorspec;
+    protected $descriptorSpec;
 
     /**
      * The options for the command to be executed with
      *
      * @var array
      */
-    protected $_options;
+    protected $options;
 
     /**
      * An array of pipes for the command to be executed with
      *
      * @var array
      */
-    protected $_pipes = [];
+    protected $pipes = [];
 
     /**
 	 * Private variable that holds the default pipe specifications for the process.
 	 *
 	 * @var array
 	 */
-	private $_spec = [
+	private $spec = [
 		0 => ["pipe", "r"],  // stdin is a pipe that the child will read from
 		1 => ["pipe", "w"],  // stdout is a pipe that the child will write to
 		2 => ["pipe", "a"], // stderr is a file to write to
@@ -76,21 +76,21 @@ class Process implements IDispatcher {
      *
      * @var resource
      */
-    protected $_process;
+    protected $process;
 
     /**
      * The status of the process
      *
      * @var array
      */
-    protected $_status;
+    protected $status;
 
     /**
      * The output of the process
      *
      * @var string
      */
-    protected $_output;
+    protected $output;
 
     /**
      * Constructs a new instance of the Process class with the given command, cwd, env, descriptorspec, and options
@@ -103,11 +103,11 @@ class Process implements IDispatcher {
      */
     public function __construct($command, $cwd = null, $env = null, $descriptorspec = null, $options = []) {
         $this->__dConstruct();
-        $this->_command = $command;
-        $this->_cwd = $cwd ?? getcwd();
-        $this->_env = $env;
-        $this->_descriptorspec = $descriptorspec ?? $this->_spec;
-        $this->_options = $options;
+        $this->command = $command;
+        $this->cwd = $cwd ?? getcwd();
+        $this->env = $env;
+        $this->descriptorSpec = $descriptorspec ?? $this->spec;
+        $this->options = $options;
 
         $this->trigger(Event::LOAD);
     }
@@ -115,7 +115,7 @@ class Process implements IDispatcher {
     public function __get($name)
     {
         if ('process' == $name) {
-            return $this->_process;
+            return $this->process;
         }
 
         return null;
@@ -125,17 +125,17 @@ class Process implements IDispatcher {
      * Starts the process execution
      */
     public function start() {
-        $this->_process = proc_open($this->_command, $this->_descriptorspec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
+        $this->process = proc_open($this->command, $this->descriptorSpec, $this->pipes, $this->cwd, $this->env, $this->options);
         $this->trigger(Action::CONNECT);
         
-        if (is_resource($this->_process)) {
+        if (is_resource($this->process)) {
             $this->trigger(Event::STARTED);
             // Make the streams non-blocking
-            stream_set_blocking($this->_pipes[1], false);
-            stream_set_blocking($this->_pipes[2], false);
+            stream_set_blocking($this->pipes[1], false);
+            stream_set_blocking($this->pipes[2], false);
             $this->trigger(Event::CONNECTED);
         } else {
-            $message = "Error starting process: " . $this->_command;
+            $message = "Error starting process: " . $this->command;
             error_log($message);
             $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: $message));
         }
@@ -144,7 +144,7 @@ class Process implements IDispatcher {
     }
 
     public function pipes($index = 1) {
-        return $this->_pipes[$index];
+        return $this->pipes[$index];
     }
 
     /**
@@ -155,10 +155,10 @@ class Process implements IDispatcher {
     public function output() {
         $this->trigger(Action::READ);
         $this->trigger(State::READING);
-        $this->_output = stream_get_contents($this->_pipes[1]);
+        $this->output = stream_get_contents($this->pipes[1]);
         $this->trigger(Event::READ);
 
-        return $this->_output;
+        return $this->output;
     }
 
     /**
@@ -168,13 +168,13 @@ class Process implements IDispatcher {
 	 */
 	public function status()
 	{
-		$this->_status = proc_get_status($this->_process);
-		if ( $this->_status )
+		$this->status = proc_get_status($this->process);
+		if ( $this->status )
 		{
-			return $this->_status['running'];
+			return $this->status['running'];
 		}
 		else
-            return fread($this->_pipes[2], 2096);
+            return fread($this->pipes[2], 2096);
 	}
 
     /**
@@ -184,13 +184,13 @@ class Process implements IDispatcher {
     public function stop() {
         $this->trigger(Action::STOP);
 
-        foreach ($this->_pipes as $pipe) {
+        foreach ($this->pipes as $pipe) {
             if (is_resource($pipe)) {
                 fclose($pipe);
                 $this->trigger(Event::DISCONNECTED);
             }
         }
-        proc_close($this->_process);
+        proc_close($this->process);
         $this->trigger(Event::STOPPED);
         // return $status;
 
@@ -203,7 +203,7 @@ class Process implements IDispatcher {
      */
     public function close() {
         $this->trigger(Action::DISCONNECT);
-        $status = proc_close($this->_process);
+        $status = proc_close($this->process);
         $this->trigger(Event::DISCONNECTED);
 
         return $this;

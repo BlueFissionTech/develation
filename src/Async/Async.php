@@ -26,27 +26,27 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     /**
      * Singleton instance of the Async class.
      */
-    private static $_instance = null;
+    private static $instance = null;
 
     /**
      * Queue that holds all the tasks to be executed asynchronously.
      */
-    protected static $_tasks;
+    protected static $tasks;
 
     /**
      * Configuration settings
      */
-    protected static $_config = [];
+    protected static $config = [];
 
     /**
      * Queue implementation used for storing tasks.
      */
-    protected static $_queue;
+    protected static $queue;
 
-    protected static $_queueName = 'async_queue';
+    protected static $queueName = 'async_queue';
 
 
-    protected static $_time;
+    protected static $time;
 
     /**
      * Private constructor to prevent creating a new instance outside of the class.
@@ -62,8 +62,8 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         $this->behavior(new Event(Event::ERROR));
 
         // Initializing the task queue
-        self::$_tasks = self::getQueue();
-        self::$_config = self::getConfig();
+        self::$tasks = self::getQueue();
+        self::$config = self::getConfig();
     }
 
     /**
@@ -72,34 +72,34 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
      * @param IQueue $queueClass Instance of a queue class implementing the IQueue interface.
      */
     public static function setQueue(string $queueClass) {
-        self::$_queue = $queueClass;
+        self::$queue = $queueClass;
     }
 
     /**
      * Returns the task queue.
      */
     private function tasks() {
-        return self::$_tasks;
+        return self::$tasks;
     }
 
     /**
      * Returns the queue instance, initializing it if necessary.
      */
     protected static function getQueue(): string {
-        if (!self::$_queue) {
-            self::$_queue = SplPriorityQueue::class; // Default to SplPriorityQueue if no custom queue provided
+        if (!self::$queue) {
+            self::$queue = SplPriorityQueue::class; // Default to SplPriorityQueue if no custom queue provided
         }
-        return self::$_queue;
+        return self::$queue;
     }
 
     public static function setConfig(array $config)
     {
-        self::$_config = $config;
+        self::$config = $config;
     }
 
     protected static function getConfig(): array
     {
-        return Arr::merge(self::$_config, [
+        return Arr::merge(self::$config, [
             'max_concurrency' => 10,
             'default_timeout' => 30,
             'retry_strategy' => 'simple',
@@ -112,11 +112,11 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
      * Provides access to the singleton instance of the Async class.
      */
     protected static function instance() {
-        if (self::$_instance === null) {
-            self::$_instance = new static();
-            self::$_instance->perform(Event::INITIALIZED);
+        if (self::$instance === null) {
+            self::$instance = new static();
+            self::$instance->perform(Event::INITIALIZED);
         }
-        return self::$_instance;
+        return self::$instance;
     }
 
     /**
@@ -142,7 +142,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         $instance->tasks()::enqueue([
             'data'=>$instance->wrapPromise($promise), 
             'priority'=>$priority
-        ], self::$_queueName);
+        ], self::$queueName);
     }
 
     /**
@@ -200,12 +200,12 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
 
     protected function monitorStart($task) {
         // Logic to log or monitor the start of a task, could include timing.
-        self::$_time = time();
+        self::$time = time();
     }
 
     protected function monitorEnd($task) {
         // Logic to log or monitor the end of a task, could include timing and result status.
-        $time = time() - self::$_time;
+        $time = time() - self::$time;
     }
 
     protected function logError(\Exception $e) {
@@ -244,9 +244,9 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         $instance->perform(Event::STARTED);
         $instance->perform(State::RUNNING);
 
-        while (!$instance->tasks()::isEmpty(self::$_queueName)) {
+        while (!$instance->tasks()::isEmpty(self::$queueName)) {
 
-            $task = $instance->tasks()::dequeue(self::$_queueName);
+            $task = $instance->tasks()::dequeue(self::$queueName);
 
             $instance->monitorStart($task);
             $generator = $task();
