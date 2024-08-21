@@ -189,7 +189,7 @@ class Storage extends Data implements IData
         // Implement deactivation logic
         $this->perform( State::DISCONNECTING );
         if ( method_exists($this, 'disconnect') ) {
-        	$this->disconnect();
+        	$this->_disconnect();
         }
         $this->source = null;
         $this->halt([State::CONNECTED, State::DISCONNECTING ]);

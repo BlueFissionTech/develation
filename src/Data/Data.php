@@ -117,7 +117,7 @@ class Data extends Obj implements IData
         $this->perform( State::READING );
 
         if ( method_exists($this, 'read') ) {
-            $this->read();
+            $this->_read();
         }
 
         $this->halt( State::READING );
@@ -137,7 +137,7 @@ class Data extends Obj implements IData
         $this->perform( State::SAVING );
 
         if ( method_exists($this, 'write') ) {
-            $this->write();
+            $this->_write();
         }
 
         $this->halt( State::SAVING );

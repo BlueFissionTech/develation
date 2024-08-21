@@ -146,7 +146,7 @@ abstract class Connection extends Obj implements IConfigurable
         $this->perform( State::CONNECTING );
 
         if ( method_exists($this, 'open') ) {
-            $this->open();
+            $this->_open();
         }
 
         $this->halt(State::CONNECTING);
@@ -164,7 +164,7 @@ abstract class Connection extends Obj implements IConfigurable
 
         if ( method_exists($this, 'close') )
         {
-            $this->close();
+            $this->_close();
         }
         
         if ( $this->is(State::DISCONNECTED) )
