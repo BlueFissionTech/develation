@@ -157,7 +157,7 @@ class Data extends Obj implements IData
         $this->perform( State::DELETING );
 
         if ( method_exists($this, 'delete') ) {
-            $this->delete();
+            $this->_delete();
         }
 
         $this->halt( State::DELETING );
@@ -174,7 +174,7 @@ class Data extends Obj implements IData
     {
         // method implementation
         if ( method_exists($this, 'contents') ) {
-            $data = $this->contents($data);
+            $data = $this->_contents($data);
         }
         
         return $data;
