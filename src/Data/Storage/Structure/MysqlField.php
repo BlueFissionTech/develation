@@ -246,6 +246,10 @@ class MySQLField {
 			$definition[] = "LONGTEXT";
 			break;
 
+			case 'json':
+			$definition[] = "JSON";
+			break;
+
 			default:
 			case 'text':
 			if ($this->size > 255) {

@@ -85,6 +85,11 @@ class MySQLStructure extends Structure {
 	const LONGTEXT_FIELD = 'longtext';
 
 	/**
+	 * Constant for json field type
+	 */
+	const JSON_FIELD = 'json';
+
+	/**
 	 * Constant for date field type
 	 */
 	const DATE_FIELD = 'date';
@@ -235,6 +240,17 @@ class MySQLStructure extends Structure {
 	public function longtext($name, $size = null)
 	{
 		return $this->newField($name, self::LONGTEXT_FIELD, $size);
+	}
+
+	/**
+	 * Creates a new json field.
+	 *
+	 * @param string $name The name of the field.
+	 * @return object
+	 */
+	public function json($name)
+	{
+		return $this->newField($name, self::JSON_FIELD);
 	}
 
 	/**

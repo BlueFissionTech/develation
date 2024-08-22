@@ -138,7 +138,12 @@ class Authenticator extends Service {
 			};
 		}
 
-		return $this->verificationFunction($password, $savedpass);
+		if ( !is_callable($this->_verificationFunction) ) {
+			$this->_status[] = "Verification function is not callable";
+			return false;
+		}
+
+		return call_user_func($this->_verificationFunction, $password, $savedpass);
 	}
 
 	/**
