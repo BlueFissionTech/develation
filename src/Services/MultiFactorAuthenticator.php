@@ -7,7 +7,7 @@ use BlueFission\Data\Storage\Storage;
 
 class MultiFactorAuthenticator extends Authenticator
 {
-    protected $_config = [
+    protected $config = [
         'third_party_auth_table' => 'third_party_auth',
         'provider_field' => 'provider',
         'provider_id_field' => 'provider_id',
@@ -21,14 +21,14 @@ class MultiFactorAuthenticator extends Authenticator
     public function authenticateWithThirdParty(string $provider, string $providerId)
     {
         if (empty($provider) || empty($providerId)) {
-            $this->_status[] = "Provider and Provider ID required";
+            $this->status[] = "Provider and Provider ID required";
             return false;
         }
 
         $userInfo = $this->getUserByThirdParty($provider, $providerId);
 
         if (!$userInfo) {
-            $this->_status[] = "User not found";
+            $this->status[] = "User not found";
             return false;
         }
 
@@ -40,7 +40,7 @@ class MultiFactorAuthenticator extends Authenticator
 
     private function getUserByThirdParty($provider, $providerId)
     {
-        $thirdPartyAuth = $this->_datasource;
+        $thirdPartyAuth = $this->datasource;
         $thirdPartyAuth->reset();
         $thirdPartyAuth->clear();
         $thirdPartyAuth->config('name', $this->config('third_party_auth_table'));

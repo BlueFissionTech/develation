@@ -17,10 +17,10 @@ use BlueFission\Behavioral\Configurable;
  * 
  * @package BlueFission\HTML
  * 
- * @property string $_filename The filename of the XML file being parsed.
- * @property resource $_parser The XML parser being used.
- * @property array $_data The data obtained from parsing the XML file.
- * @property string $_status The status of the XML parsing operation.
+ * @property string $filename The filename of the XML file being parsed.
+ * @property resource $parser The XML parser being used.
+ * @property array $data The data obtained from parsing the XML file.
+ * @property string $status The status of the XML parsing operation.
  * 
  * @method void file($file = null) Gets or sets the filename of the XML file being parsed.
  * @method bool parseXML($file = null) Parses the XML file and returns the result.
@@ -34,11 +34,11 @@ class XML extends Obj {
 		Configurable::__construct as private __configConstruct;
 	}
 
-	private $_filename;
-	private $_parser;
-	protected $_data;
-	protected $_status;
-	protected $_config = [];
+	private $filename;
+	private $parser;
+	protected $data;
+	protected $status;
+	protected $config = [];
 
 	const STATUS_SUCCESS = 'Success';
 	const STATUS_FAILED = 'Failed';
@@ -55,11 +55,11 @@ class XML extends Obj {
 	public function __construct($file = null) 
 	{
 		$this->__configConstruct();
-		$this->_parser = \xml_parser_create();
-		\xml_parser_set_option($this->_parser, XML_OPTION_CASE_FOLDING, true);
-		\xml_set_object($this->_parser, $this);
-		\xml_set_element_handler($this->_parser, array($this, 'startHandler'), array($this, 'endHandler'));
-		\xml_set_character_data_handler($this->_parser, array($this, 'dataHandler'));
+		$this->parser = \xml_parser_create();
+		\xml_parser_set_option($this->parser, XML_OPTION_CASE_FOLDING, true);
+		\xml_set_object($this->parser, $this);
+		\xml_set_element_handler($this->parser, array($this, 'startHandler'), array($this, 'endHandler'));
+		\xml_set_character_data_handler($this->parser, array($this, 'dataHandler'));
 		if (Val::isNotNull($file)) {
 			$this->file($file);
 			$this->parseXML($file);
@@ -76,9 +76,9 @@ class XML extends Obj {
 	public function file($file = null) 
 	{
 		if (Val::isNull($file))
-			return $this->_filename;		
+			return $this->filename;		
 		
-		$this->_filename = $file;
+		$this->filename = $file;
 	}
 	
 	/**
@@ -100,8 +100,8 @@ class XML extends Obj {
 
 		if ( $stream = @fopen($file, 'r') ) {
 			while ( $data = fread($stream, 4096) ) {
-				if ( !xml_parse($this->_parser, $data, feof($stream)) ) {
-					$this->status(sprintf("XML error: %s at line %d", xml_error_string(xml_get_error_code($this->_parser)), xml_get_current_line_number($this->_parser)));
+				if ( !xml_parse($this->parser, $data, feof($stream)) ) {
+					$this->status(sprintf("XML error: %s at line %d", xml_error_string(xml_get_error_code($this->parser)), xml_get_current_line_number($this->parser)));
 					
 					return $this;
 				}
@@ -131,7 +131,7 @@ class XML extends Obj {
 	public function startHandler($parser, $name = null, $attributes = null) {
 		$data['name'] = $name;
 		if ($attributes) $data['attributes'] = $attributes;
-		$this->_data[] = $data;
+		$this->data[] = $data;
 	}
 
 	/**
@@ -146,9 +146,9 @@ class XML extends Obj {
 	 */
 	public function dataHandler($parser, $data = null) {
 		if ($data = trim($data)) {
-			$index = count($this->_data)-1;
-			if (!isset($this->_data[$index]['content'])) $this->_data[$index]['content'] = "";
-			$this->_data[$index]['content'] .= $data;
+			$index = count($this->data)-1;
+			if (!isset($this->data[$index]['content'])) $this->data[$index]['content'] = "";
+			$this->data[$index]['content'] .= $data;
 		}
 	}
 
@@ -163,10 +163,10 @@ class XML extends Obj {
 	 * @return void
 	 */
 	public function endHandler($parser, $name = null) {
-		if (count($this->_data) > 1) {
-			$data = array_pop($this->_data);
-			$index = count($this->_data)-1;
-			$this->_data[$index]['child'][] = $data;
+		if (count($this->data) > 1) {
+			$data = array_pop($this->data);
+			$index = count($this->data)-1;
+			$this->data[$index]['child'][] = $data;
 		}
 	}
 
@@ -205,8 +205,8 @@ class XML extends Obj {
 	public function status($status = null) 
 	{
 		if (Val::isNull($status))
-			return $this->_status;
-		$this->_status = $status;
+			return $this->status;
+		$this->status = $status;
 	}
 
 	/**
@@ -216,7 +216,7 @@ class XML extends Obj {
 	 */
 	public function data() 
 	{
-		return $this->_data;
+		return $this->data;
 	}
 
 	/**
@@ -228,7 +228,7 @@ class XML extends Obj {
 	{
 		header("Content-Type: XML");
 		$xml = 'No XML';
-		if (Val::isNull($data == '')) $data = $this->_data;
+		if (Val::isNull($data == '')) $data = $this->data;
 		$xml = $this->buildXML($data);
 		echo $xml;
 	}

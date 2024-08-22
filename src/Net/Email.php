@@ -27,7 +27,7 @@ class Email extends Obj implements IConfigurable, IEmail
      * 
      * @var array
      */
-    protected $_config = [
+    protected $config = [
         'sender' => '',
         'html'=>false,
         'eol' => "\r\n",
@@ -38,21 +38,21 @@ class Email extends Obj implements IConfigurable, IEmail
      * 
      * @var array
      */
-    private $_headers = [];
+    private $headers = [];
 
     /**
      * An array that stores the email attachments.
      * 
      * @var array
      */
-    private $_attachments = [];
+    private $attachments = [];
 
     /**
      * An array that stores the email recipients.
      * 
      * @var array
      */
-    private $_recipients = [];
+    private $recipients = [];
 
     /**
      * A constant to represent default recipients.
@@ -80,14 +80,14 @@ class Email extends Obj implements IConfigurable, IEmail
      * 
      * @var array
      */
-    protected $_data = [
+    protected $data = [
         'from'=>'',
         'message'=>'',
         'subject'=>'',
         'additional'=>''
     ];
 
-    protected $_types = [
+    protected $types = [
     	'from'=>DataTypes::STRING,
 		'message'=>DataTypes::STRING,
 		'subject'=>DataTypes::STRING,
@@ -137,19 +137,19 @@ class Email extends Obj implements IConfigurable, IEmail
      */
 	public function field(string $field, $value = null): mixed
 	{
-		if ( !$this->_data->hasKey($field) ) {
+		if ( !$this->data->hasKey($field) ) {
 			return null;
 		}
 
 		if ( Val::isNotNull($value) ) 
 		{
-			$this->_data[$field] = $value;
+			$this->data[$field] = $value;
 
 			return $this;
 		}
 		else 
 		{
-			$value = (isset($this->_data[$field])) ? $this->_data[$field] : null;
+			$value = (isset($this->data[$field])) ? $this->data[$field] : null;
 		}
 
 		return $value;
@@ -168,22 +168,22 @@ class Email extends Obj implements IConfigurable, IEmail
 		if (Str::is($input))
 		{
 			if (Val::isNull ($value))
-				return isset($this->_headers[$input]) ? $this->_headers[$input] : false;
+				return isset($this->headers[$input]) ? $this->headers[$input] : false;
 			
-			$this->_headers[$input] = self::sanitize($value); 
+			$this->headers[$input] = self::sanitize($value); 
 
 			return $this;
 		}
 		elseif (Arr::is($input))
 		{
 			foreach ($input as $a=>$b)
-				$this->_headers[self::sanitize($a)] = self::sanitize($b);
+				$this->headers[self::sanitize($a)] = self::sanitize($b);
 
 			return $this;
 		}
 
 		if ( Val::isNull($input) )
-			return $this->_headers;
+			return $this->headers;
 	}
 
 	/**
@@ -199,22 +199,22 @@ class Email extends Obj implements IConfigurable, IEmail
 		if ( Str::is($input) )
 		{
 			if ( Val::isNull ($value) )
-				return isset($this->_attachments[$input]) ? $this->_attachments[$input] : null;
+				return isset($this->attachments[$input]) ? $this->attachments[$input] : null;
 			
-			$this->_attachments[$input] = $value; 
+			$this->attachments[$input] = $value; 
 
 			return $this;
 		}
 		elseif ( Arr::is($input) )
 		{
 			foreach ($input as $a=>$b)
-				$this->_attachments[$a] = $b;
+				$this->attachments[$a] = $b;
 
 			return $this;
 		}
 
 		if ( Val::isNull($input) )
-			return $this->_attachments;
+			return $this->attachments;
 	}
 
 	/**
@@ -229,7 +229,7 @@ class Email extends Obj implements IConfigurable, IEmail
 	public function recipients($value = null, $name = null, $type = null)
 	{
 		if (Val::isNull($value)) {
-			return $this->_recipients;
+			return $this->recipients;
 		}
 
 		if ( !Arr::is($value) ) {
@@ -248,12 +248,12 @@ class Email extends Obj implements IConfigurable, IEmail
 			return $this;
 		}
 
-		$this->_recipients[$type] = $this->_recipients[$type] ?? [];
+		$this->recipients[$type] = $this->recipients[$type] ?? [];
 
-		$this->_recipients[$type] = ( Val::is($this->_recipients[$type]) && Arr::size( $this->_recipients[$type] ) > 0 ) 
-			? Arr::merge( $this->_recipients[$type], $value ) : $value;	
+		$this->recipients[$type] = ( Val::is($this->recipients[$type]) && Arr::size( $this->recipients[$type] ) > 0 ) 
+			? Arr::merge( $this->recipients[$type], $value ) : $value;	
 
-		$this->_recipients[$type] = Arr::iUnique($this->_recipients[$type]);
+		$this->recipients[$type] = Arr::iUnique($this->recipients[$type]);
 
 		return $this;
 	}
@@ -270,7 +270,7 @@ class Email extends Obj implements IConfigurable, IEmail
 	{
 	    $type = $type ?? Email::TO;
 
-	    $recipients = $this->_recipients[$type] ?? [];
+	    $recipients = $this->recipients[$type] ?? [];
 
 	    $isAssoc = Arr::isAssoc($recipients);
 
@@ -379,11 +379,11 @@ class Email extends Obj implements IConfigurable, IEmail
 	{
 	    if (Val::isNull($message))
 	    {
-	        $message = end($this->_status);
+	        $message = end($this->status);
 	        return $message;
 	    }
 
-	    $this->_status[] = $message;
+	    $this->status[] = $message;
 
 	    return $this;
 	}
@@ -476,42 +476,42 @@ class Email extends Obj implements IConfigurable, IEmail
 		$from = $this->from();
 		$subject = $this->subject();
 		
-		$attachments = $this->_attachments;
+		$attachments = $this->attachments;
 		
 		$eol = $this->config('eol');
 		$mime_boundary = md5(time());
 		
 		//Build Headers
-		$this->_headers = [];
-		if ( $this->_attachments ) 
+		$this->headers = [];
+		if ( $this->attachments ) 
 		{
-			$this->_headers['MIME-Version'] = "1.0";
-			$this->_headers['Content-Type'] = "multipart/mixed; boundary=\"mixed-{$mime_boundary}\"";
+			$this->headers['MIME-Version'] = "1.0";
+			$this->headers['Content-Type'] = "multipart/mixed; boundary=\"mixed-{$mime_boundary}\"";
 		}
 		elseif ($this->sendHTML()) 
 		{
-			$this->_headers['MIME-Version'] = "1.0";
-			$this->_headers['Content-Type'] = "multipart/related; boundary=\"mixed-{$mime_boundary}\"";
+			$this->headers['MIME-Version'] = "1.0";
+			$this->headers['Content-Type'] = "multipart/related; boundary=\"mixed-{$mime_boundary}\"";
 		}
 		else
 		{
-			$this->_headers['Content-Type'] = "text/plain; charset=iso-8859-1";
+			$this->headers['Content-Type'] = "text/plain; charset=iso-8859-1";
 		}
 		
 		if ($from != '' && self::validateAddress($this->from())) {
-			$this->_headers['From'] = "{$from}";
-	   		$this->_headers['Reply-To'] = "{$from}";
-	   		$this->_headers['Return-Path'] = "{$from}";
-	   		$this->_headers['Message-ID'] = "<".time()."-{$from}>";
+			$this->headers['From'] = "{$from}";
+	   		$this->headers['Reply-To'] = "{$from}";
+	   		$this->headers['Return-Path'] = "{$from}";
+	   		$this->headers['Message-ID'] = "<".time()."-{$from}>";
 		}
 
 		$recipients = $this->getRecipients();
 		$cc = $this->getRecipients(self::CC) ?? [];
 		$bcc = $this->getRecipients(self::BCC) ?? [];
 		
-		if (count($cc) > 0) $this->_headers["Cc"] = implode(', ', $cc);
-		if (count($bcc) > 0) $this->_headers["Bcc"] = implode(', ', $bcc);
-		$this->_headers['X-Mailer'] = "PHP/" . phpversion();
+		if (count($cc) > 0) $this->headers["Cc"] = implode(', ', $cc);
+		if (count($bcc) > 0) $this->headers["Bcc"] = implode(', ', $bcc);
+		$this->headers['X-Mailer'] = "PHP/" . phpversion();
 		
 		//Compile mail data
 
@@ -519,7 +519,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		{
 			$headers = "{$a}: $b";
 		}
-		$header_info = implode($eol, $this->_headers);
+		$header_info = implode($eol, $this->headers);
 		$message = $this->body();
 		$message = wordwrap($message, 70);
 		

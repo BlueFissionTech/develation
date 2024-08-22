@@ -21,7 +21,7 @@ class Request extends Obj {
 	{
 		parent::__construct();
 
-		$this->_data = $this->all();
+		$this->data = $this->all();
 	}
 
 	/**

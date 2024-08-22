@@ -27,31 +27,31 @@ trait Programmable
 	/**
 	 * An array of tasks that can be performed by the object.
 	 * 
-	 * @var array $_tasks
+	 * @var array $tasks
 	 */
-	protected $_tasks;
+	protected $tasks;
 
 	/**
 	 * Programmable constructor.
 	 * 
-	 * Calls the parent constructor and initializes the `$_tasks` array.
+	 * Calls the parent constructor and initializes the `$tasks` array.
 	 */
 	public function __construct( )
 	{
 		$this->__configConstruct();
-		$this->_tasks = new Arr();
-		$this->echo($this->_tasks, [Event::CHANGE]);
+		$this->tasks = new Arr();
+		$this->echo($this->tasks, [Event::CHANGE]);
 	}
 
 	/**
 	 * Overrides the default behavior of calling a method on an object.
 	 * 
-	 * If the called method exists within the object, it will be executed. If the method does not exist, but it is defined in the `$_tasks` array, it will be executed. Otherwise, a `RuntimeException` is thrown.
+	 * If the called method exists within the object, it will be executed. If the method does not exist, but it is defined in the `$tasks` array, it will be executed. Otherwise, a `RuntimeException` is thrown.
 	 * 
 	 * @param string $name The name of the method being called.
 	 * @param array $args An array of arguments to pass to the method.
 	 * 
-	 * @throws \RuntimeException if the method does not exist in the object or in the `$_tasks` array.
+	 * @throws \RuntimeException if the method does not exist in the object or in the `$tasks` array.
 	 * 
 	 * @return mixed The result of the method call.
 	 */
@@ -62,9 +62,9 @@ trait Programmable
 			return call_user_func_array([$this, $name, $args]);
 		}
 
-		if (Val::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
+		if (Val::is($this->tasks[$name]) && is_callable($this->tasks[$name]))
 		{
-			$result = call_user_func_array($this->_tasks[$name], $args);
+			$result = call_user_func_array($this->tasks[$name], $args);
 			$this->perform('On'.$name);
 			return $result;
 		}
@@ -111,14 +111,14 @@ trait Programmable
 	public function learn($task, $function, $behavior = null ): IDispatcher
 	{
 		if ( is_callable($function)
-			&& !$this->_tasks->hasKey($task)
+			&& !$this->tasks->hasKey($task)
 			&& $this->is( State::DRAFT ) )
 		{
-			$this->_tasks[$task] = $function->bindTo($this, $this);
+			$this->tasks[$task] = $function->bindTo($this, $this);
 
 			if ($behavior)
 			{
-				$this->behavior($behavior, $this->_tasks[$task]);
+				$this->behavior($behavior, $this->tasks[$task]);
 			}
 
 			$this->behavior( 'On'.$task );
@@ -135,8 +135,8 @@ trait Programmable
 	 */
 	public function forget($task): IDispatcher
 	{
-		if ( $this->is( State::DRAFT ) && Val::is( $this->_tasks[$task] ) ) {
-			unset( $this->_tasks[$task] );
+		if ( $this->is( State::DRAFT ) && Val::is( $this->tasks[$task] ) ) {
+			unset( $this->tasks[$task] );
 			$this->perform( Event::CHANGE );
 		}
 

@@ -38,42 +38,42 @@ class MongoLink extends Connection
 	 * 
 	 * @var array
 	 */
-	protected static $_database;
+	protected static $database;
 
 	/**
 	 * Current instance variable
 	 * 
 	 * @var mixed
 	 */
-	protected $_current;
+	protected $current;
 
 	/**
 	 * Query instance variable
 	 * 
 	 * @var mixed
 	 */
-	private static $_query;
+	private static $query;
 	
 	/**
 	 * Last row instance variable
 	 * 
 	 * @var mixed
 	 */
-	private static $_last_row;
+	private static $lastRow;
 
 	/**
 	 * Dataset instance variable
 	 * 
 	 * @var mixed
 	 */
-	private $_dataset;
+	private $dataset;
 	
 	/**
 	 * Configuration array
 	 * 
 	 * @var array
 	 */
-	protected $_config = array( 'target'=>'localhost',
+	protected $config = array( 'target'=>'localhost',
 		'username'=>'',
 		'password'=>'',
 		'database'=>'',
@@ -91,10 +91,10 @@ class MongoLink extends Connection
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
-		if (Val::isNull(self::$_database))
-			self::$_database = array();
+		if (Val::isNull(self::$database))
+			self::$database = array();
 		else
-			$this->_current = end ( self::$_database );
+			$this->current = end ( self::$database );
 
 		return $this;
 	}
@@ -111,7 +111,7 @@ class MongoLink extends Connection
 		$password = $this->config('password');
 		$database = $this->config('database');
 		
-		$connection_id = count(self::$_database);
+		$connection_id = count(self::$database);
 
 		if ( !class_exists('MongoDB\Client') ) {
 			throw new \Exception("MongoDB\Client not found");
@@ -119,17 +119,17 @@ class MongoLink extends Connection
 
 		try {
 			$mongo = new Client("mongodb://{$username}:{$password}@{$host}:27017");
-			self::$_database[$connection_id] = $mongo;
-			$this->_connection = ($this->config('database') ? $mongo->{$this->config('database')} : null);
-			$this->_current = $mongo;
+			self::$database[$connection_id] = $mongo;
+			$this->connection = ($this->config('database') ? $mongo->{$this->config('database')} : null);
+			$this->current = $mongo;
 		} catch (Exception $e) {
 			$error = ($e->getMessage() ?? $this->error()) ?? self::STATUS_FAILED;
 
 		}
 
-        $status = $this->_connection ? self::STATUS_CONNECTED : ($error ?? self::STATUS_NOTCONNECTED);
+        $status = $this->connection ? self::STATUS_CONNECTED : ($error ?? self::STATUS_NOTCONNECTED);
 
-        $this->perform( $this->_connection 
+        $this->perform( $this->connection 
 			? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
 
 		$this->status( $status );
@@ -154,27 +154,27 @@ class MongoLink extends Connection
 	{
 		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
-		$db = $this->_connection;
+		$db = $this->connection;
 
 		if ( $db )
 		{
 			if (Val::isNotNull($query))
 			{
-				$this->_query = $query;
+				$this->query = $query;
 
 				if (Arr::isAssoc($query))
 				{
-					$this->_dataset = null;
-					$this->_data = $query;
+					$this->dataset = null;
+					$this->data = $query;
 				}
 				else if ( Arr::is($query) && !Arr::isAssoc($query) )
 				{
-					$this->_dataset = $query;
-					$this->_data = $query[0];
+					$this->dataset = $query;
+					$this->data = $query[0];
 				}
 				else if (Str::is($query))
 				{
-					$this->_result = $db->command(json_decode($query));
+					$this->result = $db->command(json_decode($query));
 					$this->status( $this->error() ? $this->error() : self::STATUS_SUCCESS );
 
 					return $this;
@@ -193,7 +193,7 @@ class MongoLink extends Connection
 				$update = true;
 			}
 
-			$data = $this->_dataset ? $this->_dataset : $this->_data;
+			$data = $this->dataset ? $this->dataset : $this->data;
 			$type = ($update) ? ($this->config('replace') ? self::REPLACE : self::UPDATE) : self::INSERT;
 			$result = false;
 
@@ -201,7 +201,7 @@ class MongoLink extends Connection
 				$this->post($collection, $data, $filter, $type);	
 			} catch( Exception $e ) {
 				$error = $e->getMessage();
-				$this->_result = false;
+				$this->result = false;
 				$this->status( $error ?? self::STATUS_FAILED );
 			}
 		}
@@ -225,13 +225,13 @@ class MongoLink extends Connection
 	{
 		$status = self::STATUS_NOTCONNECTED;
 		
-		$db = $this->_connection;
+		$db = $this->connection;
 		$success = false;
 
 		if ( Val::isNotNull($db) ) {				
 			$document = $db->{$collection}->find($data);
 
-			$this->_result = $document;
+			$this->result = $document;
 		} else {
 			$this->status( $status );
 			return $this;
@@ -254,12 +254,12 @@ class MongoLink extends Connection
 	{
 		$status = self::STATUS_NOTCONNECTED;
 		
-		$db = $this->_connection;
+		$db = $this->connection;
 		$success = false;
 
 		if ($db)
 		{						
-			if ( count($this->_dataset) > 0) {
+			if ( count($this->dataset) > 0) {
 				foreach (array_chunk($data, 500) as $smallbatch) {
 					$success = ( $db->{$collection}->insertMany($smallbatch) ) ? true : false;
 				}
@@ -267,9 +267,9 @@ class MongoLink extends Connection
 			else
 				$success = ( $db->{$collection}->insertOne($data) ) ? true : false;
 
-			$this->_last_row = isset($data[$this->config('key')]) ? $data[$this->config('key')] : $this->_last_row;
+			$this->lastRow = isset($data[$this->config('key')]) ? $data[$this->config('key')] : $this->lastRow;
 
-			$this->_result = $success;
+			$this->result = $success;
 		}
 		else
 		{
@@ -296,7 +296,7 @@ class MongoLink extends Connection
 	{
 		$status = self::STATUS_NOTCONNECTED;
 
-		$db = $this->_connection;
+		$db = $this->connection;
 		$success = false;
 
 		if (Val::isNotNull($db)) {
@@ -306,9 +306,9 @@ class MongoLink extends Connection
 				$success = ( $db->{$collection}->updateMany($filter, $data) ) ? true : false;
 			}
 
-			$this->_last_row = isset($data[$this->config('key')]) ? $data[$this->config('key')] : $this->_last_row;
+			$this->lastRow = isset($data[$this->config('key')]) ? $data[$this->config('key')] : $this->lastRow;
 
-			$this->_result = $success;
+			$this->result = $success;
 			
 			$status = ($success) ? $this->error() : self::STATUS_SUCCESS;
 		} else {
@@ -332,7 +332,7 @@ class MongoLink extends Connection
 	 */
 	private function post($collection, $data, $filter = null, $type = null): IObj
 	{
-		$db = $this->_connection;
+		$db = $this->connection;
 		$status = '';
 		$success = false;
 		$replace = false;
@@ -400,7 +400,7 @@ class MongoLink extends Connection
 		
 		$this->status($status);
 		
-		$this->_last_row = $last_row ? $last_row : $this->_last_row;
+		$this->lastRow = $last_row ? $last_row : $this->lastRow;
 
 		return $this;
 	}
@@ -416,13 +416,13 @@ class MongoLink extends Connection
 	{
 		$status = self::STATUS_NOTCONNECTED;
 
-		$db = $this->_connection;
+		$db = $this->connection;
 		$success = false;
 
 		if ($db) {
 			$success = ( $db->{$collection}->deleteMany($data) ) ? true : false;
 
-			$this->_result = $success;
+			$this->result = $success;
 			
 			$status = ($success) ? $this->error() : self::STATUS_SUCCESS;
 		} else {
@@ -446,7 +446,7 @@ class MongoLink extends Connection
 	 */
 	public function mapReduce( $map, $reduce, $output, $action = 'replace' )
 	{
-		$db = $this->_connection;
+		$db = $this->connection;
 
 		// construct map and reduce functions
 		$map = new Javascript($map);
@@ -457,7 +457,7 @@ class MongoLink extends Connection
 		    "mapreduce" => $collection, 
 		    "map" => $map,
 		    "reduce" => $reduce,
-		    "query" => $this->_data,
+		    "query" => $this->data,
 		    "out" => array($action => $output)
 		];
 		    // "out" => array("reduce" => $output)));
@@ -474,7 +474,7 @@ class MongoLink extends Connection
 	 */
 	public function connection()
 	{
-		return $this->_current;
+		return $this->current;
 	}
 
 	/**
@@ -484,7 +484,7 @@ class MongoLink extends Connection
 	 */
 	public function result( )
 	{
-		return $this->_result;
+		return $this->result;
 	}
 
 	/**
@@ -493,8 +493,8 @@ class MongoLink extends Connection
 	 * @return mixed Error of the last operation
 	 */
 	public function error() {
-		if ($this->_connection instanceof \MongoDB\Collection) {
-	    	return $this->_connection->command(['getlasterror' => 1]);
+		if ($this->connection instanceof \MongoDB\Collection) {
+	    	return $this->connection->command(['getlasterror' => 1]);
 		} else {
 	    	return $this->status();
 		}
@@ -515,7 +515,7 @@ class MongoLink extends Connection
 		// $this->close();
 		$this->config('database', $database);
 		// $this->open();
-		$this->_connection = ($this->config('database') ? $this->_current->{$this->config('database')} : null);
+		$this->connection = ($this->config('database') ? $this->current->{$this->config('database')} : null);
 	}
 
 	/**
@@ -524,7 +524,7 @@ class MongoLink extends Connection
 	 * @return mixed The last row of data.
 	 */
 	public function lastRow() {
-		return $this->_last_row;
+		return $this->lastRow;
 	}
 	
 	/**

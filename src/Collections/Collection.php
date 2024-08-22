@@ -23,21 +23,21 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 *
 	 * @var ArrayObject
 	 */
-	protected $_value;
+	protected $value;
 	
 	/**
 	 * The type of values in the collection.
 	 *
 	 * @var string
 	 */
-	protected $_type = "";
+	protected $type = "";
 
 	/**
 	 * Iterator for the collection.
 	 *
 	 * @var ArrayIterator
 	 */
-	protected $_iterator;
+	protected $iterator;
 
 	/**
 	 * Constructs a new Collection object.
@@ -47,14 +47,14 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	public function __construct( $value = null ) {
 		if ( empty( $value ) )
 		{
-			$this->_value = new ArrayObject( );
+			$this->value = new ArrayObject( );
 		}
 		else
 		{
-			$this->_value = new ArrayObject( (is_array($value)) ? $value : [$value] );
+			$this->value = new ArrayObject( (is_array($value)) ? $value : [$value] );
 		}
 
-		$this->_iterator = new ArrayIterator($this->_value);	
+		$this->iterator = new ArrayIterator($this->value);	
 	}
 
 	/**
@@ -71,7 +71,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
 		if ($this->has( $key )) {
-			return $this->_value[$key];
+			return $this->value[$key];
 		} else {
 			return null;		
 		}
@@ -86,7 +86,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 */
 	public function search( $object ): mixed
 	{
-		$found = array_search( $object, $this->_value->getArrayCopy() );
+		$found = array_search( $object, $this->value->getArrayCopy() );
 		return $found;
 	}
 
@@ -98,7 +98,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return array Array representation of the collection.
 	 */
 	public function toArray( bool $allow_empty = false ) {
-		$value = $this->_value->getArrayCopy();
+		$value = $this->value->getArrayCopy();
 		return $value;
 	}
 
@@ -115,8 +115,8 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
-		// return is_object($this->_value) ? property_exists( $this->_value, $key ) : array_key_exists( $key, $this->_value );
-		return $this->_value->offsetExists($key);
+		// return is_object($this->value) ? property_exists( $this->value, $key ) : array_key_exists( $key, $this->value );
+		return $this->value->offsetExists($key);
 	}
 
 	/**
@@ -132,7 +132,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
-		$this->_value[$key] = $object;
+		$this->value[$key] = $object;
 
 		return $this;
 	}
@@ -152,7 +152,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
 		if ( !$this->has( $key ) ) {
-			$this->_value[$key] = $object;
+			$this->value[$key] = $object;
 		}
 
 		return $this;
@@ -172,7 +172,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
 		if ( !$this->contains( $object ) ) {
-			$this->_value[$key] = $object;
+			$this->value[$key] = $object;
 		}
 
 		return $this;
@@ -184,7 +184,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return mixed The first object in the collection.
 	 */
 	public function first()	{
-		$array = $this->_value->getArrayCopy();
+		$array = $this->value->getArrayCopy();
 		$array = array_reverse ( $array );
 		return end ( $array );
 	}
@@ -195,7 +195,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return mixed The last object in the collection.
 	 */
 	public function last() {
-		$value = $this->_value->getArrayCopy();
+		$value = $this->value->getArrayCopy();
 		return end( $value );
 	}
 
@@ -205,7 +205,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return array An array of the objects in the collection.
 	 */
 	public function contents() {
-		return $this->_value->getArrayCopy();
+		return $this->value->getArrayCopy();
 	}
 
 	/**
@@ -220,8 +220,8 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		if (!is_scalar($key) && !is_null($key)) {
 			throw new InvalidArgumentException('Label must be scalar');
 		}
-		if ( isset($this->_value[$key]) )
-			unset( $this->_value[$key]);
+		if ( isset($this->value[$key]) )
+			unset( $this->value[$key]);
 
 		return $this;
 	}
@@ -231,8 +231,8 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 */
 	public function clear(): ICollection
 	{
-		unset( $this->_value );
-		$this->_value = new ArrayObject();
+		unset( $this->value );
+		$this->value = new ArrayObject();
 
 		return $this;
 	}
@@ -243,7 +243,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return int The number of objects in the collection.
 	 */
 	public function count() {
-		return $this->_value->count();
+		return $this->value->count();
 	}
 
 	/**
@@ -284,7 +284,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return bool
 	 */
 	public function walk( callable $callback ) {
-		return array_walk( $this->_data, $callback );
+		return array_walk( $this->data, $callback );
 	}
 
 	/**
@@ -351,7 +351,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return string A serialized string of the collection.
 	 */
 	public function serialize() {
-	    return serialize($this->_value);
+	    return serialize($this->value);
 	}
 
 	/**
@@ -360,7 +360,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @param string $data The serialized string.
 	 */
 	public function unserialize($data) {
-	    $this->_value = unserialize($data);
+	    $this->value = unserialize($data);
 	}
 
 	/**
@@ -422,7 +422,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * Rewind the iterator to the first element.
 	 */
 	public function rewind() {
-		$this->_iterator->rewind();
+		$this->iterator->rewind();
 	}
 
 	/**
@@ -431,7 +431,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return mixed The current element in the iterator.
 	 */
 	public function current() {
-		return $this->get( $this->_iterator->key() );
+		return $this->get( $this->iterator->key() );
 	}
 
 	/**
@@ -440,14 +440,14 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return int|string The key of the current element in the iterator.
 	 */
 	public function key() {
-		return $this->_iterator->key();
+		return $this->iterator->key();
 	}
 
 	/**
 	 * Move the iterator to the next element.
 	 */
 	public function tick() {
-		return $this->_iterator->next();
+		return $this->iterator->next();
 	}
 
 	/**
@@ -456,7 +456,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return bool True if the current iterator position is valid, false otherwise.
 	 */
 	public function valid() {
-		return $this->has( $this->_iterator->key() );
+		return $this->has( $this->iterator->key() );
 	}
 
 	/**
@@ -465,8 +465,8 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return ArrayIterator The iterator for the collection.
 	 */
 	public function getIterator() : ArrayIterator {
-		$this->_iterator = $this->_iterator ?? new ArrayIterator( $this->_value );
-		return $this->_iterator;
+		$this->iterator = $this->iterator ?? new ArrayIterator( $this->value );
+		return $this->iterator;
 	}
 
 	/**
@@ -476,7 +476,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return bool True if the collection contains the specified value, false otherwise.
 	 */
 	public function contains($value) {
-		return in_array( $value, $this->_value->getArrayCopy() );
+		return in_array( $value, $this->value->getArrayCopy() );
 	}
 
     /**
@@ -488,15 +488,15 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
  		// Doesn't work for associative key based arrays
     	// $rand = 0;
     	// if ( function_exists('mt_rand') ) {
-    	// 	$rand = mt_rand(0, $this->_value->count() - 1)];
+    	// 	$rand = mt_rand(0, $this->value->count() - 1)];
     	// } else {
-    	// 	$rand = array_rand( $this->_value->getArrayCopy() );
+    	// 	$rand = array_rand( $this->value->getArrayCopy() );
     	// }
-		if (count($this->_value) == 0) {
+		if (count($this->value) == 0) {
     		return null;
     	}
-    	$rand = array_rand( $this->_value->getArrayCopy() );
+    	$rand = array_rand( $this->value->getArrayCopy() );
 
-    	return $this->_value[$rand];
+    	return $this->value[$rand];
     }
 }

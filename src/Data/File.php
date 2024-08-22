@@ -18,9 +18,9 @@ class File extends Hierarchical implements IDispatcher
         Dispatches::__construct as private __dispatchesConstruct;
     }
     /**
-     * @var string $_contents Store the contents of the file
+     * @var string $contents Store the contents of the file
      */
-    private $_contents;
+    private $contents;
 
     /**
      * Constant for path separator
@@ -46,10 +46,10 @@ class File extends Hierarchical implements IDispatcher
     public function contents($data = null): mixed
     {
         if (Val::isNull($data)) {
-            return $this->_contents;
+            return $this->contents;
         }
 
-        $this->_contents = $data;
+        $this->contents = $data;
 
         return $this;
     }
@@ -61,20 +61,20 @@ class File extends Hierarchical implements IDispatcher
      */
     public function append($data): ICollection
     {
-        $this->_contents .= $data;
+        $this->contents .= $data;
 
         return $this;
     }
 
     public function read(): ICollection
     {
-        if ( method_exists($this->_root, 'read') ) // or is callable?
+        if ( method_exists($this->root, 'read') ) // or is callable?
         {
-            $storage = new ReflectionClass( get_class( $this->_root ) );
+            $storage = new ReflectionClass( get_class( $this->root ) );
 
-            $this->_label = $this->_root->config( $storage->getStaticPropertyValue('NAME_FIELD') );
-            $this->path( explode( $storage->getStaticPropertyValue('PATH_SEPARATOR'), $this->_root->config( $storage->getStaticPropertyValue('PATH_FIELD') ) ) );
-            $this->contents( $this->_root->contents() );
+            $this->label = $this->root->config( $storage->getStaticPropertyValue('NAME_FIELD') );
+            $this->path( explode( $storage->getStaticPropertyValue('PATH_SEPARATOR'), $this->root->config( $storage->getStaticPropertyValue('PATH_FIELD') ) ) );
+            $this->contents( $this->root->contents() );
         }
 
         return $this;
@@ -85,14 +85,14 @@ class File extends Hierarchical implements IDispatcher
      */
     public function write(): ICollection
     {
-        if ( method_exists($this->_root, 'write') ) // or is callable?
+        if ( method_exists($this->root, 'write') ) // or is callable?
         {
-            $storage = new ReflectionClass( get_class( $this->_root ) );
+            $storage = new ReflectionClass( get_class( $this->root ) );
 
-            $this->_root->config( $storage->getStaticPropertyValue('NAME_FIELD'), $this->_label );
-            $this->_root->config( $storage->getStaticPropertyValue('PATH_FIELD'), implode( $storage->getStaticPropertyValue('PATH_SEPARATOR'), $this->path() ) );
-            $this->_root->contents( $this->contents() );
-            $this->_root->write();
+            $this->root->config( $storage->getStaticPropertyValue('NAME_FIELD'), $this->label );
+            $this->root->config( $storage->getStaticPropertyValue('PATH_FIELD'), implode( $storage->getStaticPropertyValue('PATH_SEPARATOR'), $this->path() ) );
+            $this->root->contents( $this->contents() );
+            $this->root->write();
         }
 
         return $this;

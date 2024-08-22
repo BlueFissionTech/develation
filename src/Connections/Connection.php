@@ -26,14 +26,14 @@ abstract class Connection extends Obj implements IConfigurable
      *
      * @var resource|null
      */
-	protected $_connection = null;
+	protected $connection = null;
 
     /**
      * Query result
      *
      * @var mixed|null
      */
-	protected $_result = null;
+	protected $result = null;
 	
     /**
      * Constant for connected status
@@ -145,7 +145,7 @@ abstract class Connection extends Obj implements IConfigurable
         $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::CONNECT)  ) ;
         $this->perform( State::CONNECTING );
 
-        if ( method_exists($this, '_open') ) {
+        if ( method_exists($this, 'open') ) {
             $this->_open();
         }
 
@@ -162,14 +162,14 @@ abstract class Connection extends Obj implements IConfigurable
         $this->perform( State::PERFORMING_ACTION, new Meta(when: Action::DISCONNECT)  ) ;
         $this->perform( State::DISCONNECTING );
 
-        if ( method_exists($this, '_close') )
+        if ( method_exists($this, 'close') )
         {
             $this->_close();
         }
         
         if ( $this->is(State::DISCONNECTED) )
         {
-	        $this->_connection = null;
+	        $this->connection = null;
             $this->status( self::STATUS_NOTCONNECTED );
         }
 
@@ -193,11 +193,11 @@ abstract class Connection extends Obj implements IConfigurable
      */
 	public function result( )
 	{
-		return $this->_result;
+		return $this->result;
 	}
 
     public function connection()
     {
-        return $this->_connection;
+        return $this->connection;
     }
 }

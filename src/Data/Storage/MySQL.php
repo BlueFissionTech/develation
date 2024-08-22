@@ -18,24 +18,24 @@ use BlueFission\Data\Storage\Behaviors\StorageAction;
  *
  * @package BlueFission\Data\Storage
  * 
- * @property-read array $_config An array that contains the configuration options for the Mysql class.
- * @property-read int $_last_row_affected The last number of rows affected by the previous database query.
- * @property-read mixed $_result The result of the previous database query.
- * @property-read array $_tables An array that contains all tables for the database.
- * @property-read array $_fields An array that contains all the fields for the tables in the database.
- * @property-read array $_relations An array that contains the relationships between tables in the database.
- * @property-read array $_conditions An array that contains conditions for database queries.
- * @property-read array $_order An array that contains the order for database queries.
- * @property-read array $_aggregate An array that contains aggregate functions for database queries.
- * @property-read array $_distinctions An array that contains distinctions options for database queries.
- * @property-read string $_query The last executed database query.
- * @property int $_row_start The starting row for the database query result.
- * @property int $_row_end The ending row for the database query result.
+ * @property-read array $config An array that contains the configuration options for the Mysql class.
+ * @property-read int $lastRowAffected The last number of rows affected by the previous database query.
+ * @property-read mixed $result The result of the previous database query.
+ * @property-read array $tables An array that contains all tables for the database.
+ * @property-read array $fields An array that contains all the fields for the tables in the database.
+ * @property-read array $relations An array that contains the relationships between tables in the database.
+ * @property-read array $conditions An array that contains conditions for database queries.
+ * @property-read array $order An array that contains the order for database queries.
+ * @property-read array $aggregate An array that contains aggregate functions for database queries.
+ * @property-read array $distinctions An array that contains distinctions options for database queries.
+ * @property-read string $query The last executed database query.
+ * @property int $rowStart The starting row for the database query result.
+ * @property int $rowEnd The ending row for the database query result.
  * 
  */
 class MySQL extends Storage implements IData
 {
-	protected $_config = [
+	protected $config = [
 		'location'=>null,
 		'name'=>'',
 		'fields'=>'',
@@ -47,21 +47,21 @@ class MySQL extends Storage implements IData
 		'key'=>'',
 	];
 
-	private $_last_row_affected;
-	protected $_result;
+	private $lastRowAffected;
+	protected $result;
 		
 	//declare query parts
-	private $_tables = [];
-	private $_fields = [];
-	private $_relations = [];
-	private $_conditions = [];
-	private $_order = [];
-	private $_aggregate = [];
-	private $_distinctions = [];
-	private $_query;
+	private $tables = [];
+	private $fields = [];
+	private $relations = [];
+	private $conditions = [];
+	private $order = [];
+	private $aggregate = [];
+	private $distinctions = [];
+	private $query;
 
-	protected $_row_start = 0;
-	protected $_row_end = 1;
+	protected $rowStart = 0;
+	protected $rowEnd = 1;
 	
 	/**
 	 * Mysql constructor.
@@ -80,12 +80,12 @@ class MySQL extends Storage implements IData
 	 */
 	public function activate(): IObj
 	{
-		$this->_source = new MySQLLink( );
-		$this->_source->database( $this->config('location') );
+		$this->source = new MySQLLink( );
+		$this->source->database( $this->config('location') );
 		// load object fields and related data
 		$this->fields();
 		
-		if (!$this->_source) 
+		if (!$this->source) 
 			$this->status(self::STATUS_FAILED_INIT);
 
 		return $this;
@@ -98,7 +98,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function query()
 	{
-		return $this->_query;
+		return $this->query;
 	}
 
 	/**
@@ -136,7 +136,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function write(): IObj
 	{
-		$db = $this->_source;
+		$db = $this->source;
 		$status = self::STATUS_FAILED;
 		$keys = [];
 		$success = true;
@@ -172,7 +172,7 @@ class MySQL extends Storage implements IData
 			}
 		}
 		
-		$affected_row = null;
+		$affectedRow = null;
 		$tables = $this->config('save_related_tables') ? $this->tables() : [$this->tables()[0]];
 		// while ( ( $table = each($tables) ) && $success )
 		foreach ( $tables as $key=>$value )
@@ -189,7 +189,7 @@ class MySQL extends Storage implements IData
 			$db->config('ignore_null', $this->config('ignore_null'));
 
 			$data = [];
-			$fields = $this->_fields[$table] ?? $this->_data;
+			$fields = $this->fields[$table] ?? $this->data;
 
 			foreach ($fields as $column) {
 				$field = $column['Field'];
@@ -203,13 +203,13 @@ class MySQL extends Storage implements IData
 
 			$success = $db->query($data);
 
-			$this->_query = $db->stats()['query'];
+			$this->query = $db->stats()['query'];
 
 			//$status = $success ? self::STATUS_FAILED : self::STATUS_SUCCESS;
 
-			if (!$affected_row && $success && $key) {
-				$affected_row = Val::isNotNull($this->_data[$key]) ? $this->_data[$key] : $db->lastRow();
-				$this->_last_row_affected = $affected_row;
+			if (!$affectedRow && $success && $key) {
+				$affectedRow = Val::isNotNull($this->data[$key]) ? $this->data[$key] : $db->lastRow();
+				$this->lastRowAffected = $affectedRow;
 			}
 
 			$status = $success ? self::STATUS_SUCCESS : $db->status();
@@ -229,7 +229,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function lastRow()
 	{
-		return $this->_last_row_affected;
+		return $this->lastRowAffected;
 	}
 
 	/**
@@ -247,10 +247,10 @@ class MySQL extends Storage implements IData
 		$table = $tables[0];
 		$fields = [];
 		$data = $this->data();
-		$active_fields = $this->config('fields') != '' ? Arr::toArray( $this->config('fields') ) : [];
-		$field_info = $this->fields();
+		$activeFields = $this->config('fields') != '' ? Arr::toArray( $this->config('fields') ) : [];
+		$fieldInfo = $this->fields();
 		
-		$relations = $this->_relations;
+		$relations = $this->relations;
 		$using = [];
 		$join = [];
 		$on = [];
@@ -268,7 +268,7 @@ class MySQL extends Storage implements IData
 		}
 
 		// Use Ordered Sort Cases
-		foreach ( $this->_order as $a=>$b )
+		foreach ( $this->order as $a=>$b )
 		{
 			if ( $this->exists($a) )
 			{
@@ -294,7 +294,7 @@ class MySQL extends Storage implements IData
 						$field = $this->arrayKeyIntersect($this->table($table), $join);
 						foreach ($field as $b=>$c) 
 						{
-							if (in_array($b, $active_fields) || Val::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
+							if (in_array($b, $activeFields) || Val::isEmpty($activeFields)) $on[] = $table . ".$b  = $a.$b";
 						}
 					}
 					if (count($relations) > 0) 
@@ -353,7 +353,7 @@ class MySQL extends Storage implements IData
 			$left_join .= "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
 		
 		$select = [];
-		foreach($active_fields as $a) 
+		foreach($activeFields as $a) 
 		{
 			if ($this->exists($a)){
 				$select[] = ($this->aggregateCase($table, $a)) ? $this->aggregateCase($table, $a) : $this->fieldTable($a).'.'.$a;
@@ -362,7 +362,7 @@ class MySQL extends Storage implements IData
 		if (count($select) <= 0) 
 		{
 			$select[] = '*';
-			foreach($this->_aggregate as $a=>$b) 
+			foreach($this->aggregate as $a=>$b) 
 			{
 				if ($this->exists($a))
 					$select[] = ($this->aggregateCase($table, $a)) ? $this->aggregateCase($table, $a) : $table.'.'.$a;
@@ -393,29 +393,29 @@ class MySQL extends Storage implements IData
 	 */
 	public function run( $query = null ): IObj
 	{
-		$db = $this->_source;
+		$db = $this->source;
 		
 		if ( !$query ) {
-			$query = $this->_query;
+			$query = $this->query;
 		}
 
 		if ($db) {
 			$db->query($query);
-			$this->_query = $db->stats()['query'];
+			$this->query = $db->stats()['query'];
 
 			$result = $db->result();
 		}
 		$this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 
-		$this->_result = $result;
+		$this->result = $result;
 
-		if ($this->_result && is_object($this->_result))	
+		if ($this->result && is_object($this->result))	
 		{
-			$data = $this->_result->fetch_assoc();
+			$data = $this->result->fetch_assoc();
 			if ( $data )
 			{
 				$this->assign( $data );
-				$this->_result->data_seek(0);
+				$this->result->data_seek(0);
 			}
 		}
 
@@ -429,16 +429,16 @@ class MySQL extends Storage implements IData
 	 */
 	public function delete(): IObj
 	{
-		$db = $this->_source;
+		$db = $this->source;
 		
 		$tables = $this->tables();
 		$table = $tables[0];
 		$fields = [];
 		$data = $this->data();
-		$active_fields = Arr::toArray( $this->config('fields') );
-		$field_info = $this->fields();
+		$activeFields = Arr::toArray( $this->config('fields') );
+		$fieldInfo = $this->fields();
 		
-		$relations = $this->_relations;
+		$relations = $this->relations;
 		$using = [];
 		$join = [];
 		$on = [];
@@ -456,7 +456,7 @@ class MySQL extends Storage implements IData
 		}
 		
 		// Use Ordered Sort Cases
-		foreach ( $this->_order as $a=>$b )
+		foreach ( $this->order as $a=>$b )
 		{
 			if ( $this->exists($a) )
 			{
@@ -478,7 +478,7 @@ class MySQL extends Storage implements IData
 					$field = $this->arrayKeyIntersect($this->table($table), $join);
 					foreach ($field as $b=>$c) 
 					{ 
-						if (Arr::has($active_fields, $b) || Val::isEmpty($active_fields)) $on[] = $table . ".$b  = $a.$b";
+						if (Arr::has($activeFields, $b) || Val::isEmpty($activeFields)) $on[] = $table . ".$b  = $a.$b";
 					}
 	
 					if (count($relations) > 0) 
@@ -528,7 +528,7 @@ class MySQL extends Storage implements IData
 		$left_join = "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
 		
 		// $select = []
-		// foreach($active_fields as $a) if ($this->exists($a)) $select[] = $field_info[$a]['Table'].'.'.$a;
+		// foreach($activeFields as $a) if ($this->exists($a)) $select[] = $fieldInfo[$a]['Table'].'.'.$a;
 		// if (count($select) <= 0) $select_r[] = '*';
 
 		// Build query		
@@ -544,7 +544,7 @@ class MySQL extends Storage implements IData
 		//$query .= ((Val::isNotNull($start)) ? " LIMIT " . $this->start() . ((Val::isNotNull($end)) ? ", " . $this->end() : '') : '');
 
 		$db->query($query);
-		$this->_query =$db->stats()['query'];
+		$this->query =$db->stats()['query'];
 		$result = $db->result();
 		$this->status( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 		
@@ -562,7 +562,7 @@ class MySQL extends Storage implements IData
 	 */
 	private function create(): IObj
 	{
-		$db = $this->_source;
+		$db = $this->source;
 		//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
 		$tables = Arr::toArray( $this->config(self::NAME_FIELD) );
 		$this->config(self::NAME_FIELD, $tables);
@@ -572,7 +572,7 @@ class MySQL extends Storage implements IData
 		
 		$types = [];
 		$key = '';
-		foreach ($this->_data as $a=>$b)
+		foreach ($this->data as $a=>$b)
 		{
 			$type = '';
 			if ($b)
@@ -660,10 +660,10 @@ class MySQL extends Storage implements IData
 		$query = rtrim($query, ",");
 		$query .= ")";
 		$db->query($query);
-		$this->_query = $db->stats()['query'];
+		$this->query = $db->stats()['query'];
 		$result = $db->result();
 		
-		$this->_config[self::NAME_FIELD] = $this->tables() ? $this->tables() : $this->_config[self::NAME_FIELD];
+		$this->config[self::NAME_FIELD] = $this->tables() ? $this->tables() : $this->config[self::NAME_FIELD];
 
 		$status = ( $result ? self::STATUS_SUCCESS : self::STATUS_FAILED );
 		$this->status($status);
@@ -680,7 +680,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function contents( $data = null ): mixed
 	{
-		$data = ($this->_result) ? $this->_result : $this->data();
+		$data = ($this->result) ? $this->result : $this->data();
 
 		return $data;
 	}
@@ -692,17 +692,17 @@ class MySQL extends Storage implements IData
 	 */
 	public function fields()
 	{
-		$db = $this->_source;
+		$db = $this->source;
 		// var_dump($this->config('name'));
-		//if (!$this->_fields || count( $this->config(self::NAME_FIELD) ) > 0 )
+		//if (!$this->fields || count( $this->config(self::NAME_FIELD) ) > 0 )
 		
 		$tableDiff = array_merge(Arr::diff($this->tables(), Arr::toArray($this->config('name'))), Arr::diff(Arr::toArray($this->config('name')), $this->tables()));
 		if ( Arr::size($tableDiff) > 0 ) {
-			$this->_fields = [];
+			$this->fields = [];
 		}
 		
 		// TODO make sure this works as expected and it actually compares the arrays
-		if ( Arr::size($this->_fields) <= 0 )
+		if ( Arr::size($this->fields) <= 0 )
 		{
 			$data = [];
 			//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
@@ -713,7 +713,7 @@ class MySQL extends Storage implements IData
 				//return []
 			
 			$this->perform( State::DRAFT );
-			$active_fields = Arr::toArray( $this->config('fields') );
+			$activeFields = Arr::toArray( $this->config('fields') );
 
 			foreach ($tables as $table)
 			{
@@ -721,7 +721,7 @@ class MySQL extends Storage implements IData
 				$result = false;
 				if ($db) {
 					$db->query($query);
-					$this->_query = $db->stats()['query'];
+					$this->query = $db->stats()['query'];
 					$result = $db->result();
 				}
 				if ($result)
@@ -729,44 +729,44 @@ class MySQL extends Storage implements IData
 					while ($column = $result->fetch_assoc()) 
 					{
 						$fields[$column['Field']] = $column;
-						if ( Arr::has($active_fields, $column['Field']) || $this->is(State::DRAFT) ) {
-							$this->_data[$column['Field']] = Val::is( $this->_data[$column['Field']] ) ? $this->_data[$column['Field']] : $column['Default'];
+						if ( Arr::has($activeFields, $column['Field']) || $this->is(State::DRAFT) ) {
+							$this->data[$column['Field']] = Val::is( $this->data[$column['Field']] ) ? $this->data[$column['Field']] : $column['Default'];
 						}
 					}
-					$this->_fields[$table] = $fields;
+					$this->fields[$table] = $fields;
 				}
 				$fields = null;
 			}
 			
-			// $this->_config[self::NAME_FIELD] = null;
+			// $this->config[self::NAME_FIELD] = null;
 			$this->halt( State::DRAFT );
 			$this->perform( Event::CHANGE );
 		}
 		$fields = [];
 
-		reset($this->_fields);
-		// while ($table = each($this->_fields))
-		// for ($i = 0; $i < count($this->_fields); $i++)
-		foreach ( $this->_fields as $key=>$value )
+		reset($this->fields);
+		// while ($table = each($this->fields))
+		// for ($i = 0; $i < count($this->fields); $i++)
+		foreach ( $this->fields as $key=>$value )
 		{
 			$table = $value;
-			// $table = $this->_fields[$i]['value'];
+			// $table = $this->fields[$i]['value'];
 			$fields = array_merge($fields, $table);
 		}
-		reset($this->_fields);
+		reset($this->fields);
 
 		return $fields;
 	}
 	
 	/**
-	 * Returns a list of tables in `$this->_fields`.
+	 * Returns a list of tables in `$this->fields`.
 	 * 
 	 * @return array List of table names
 	 */
 	private function tables()
 	{
 		$tables = [];
-		foreach ( $this->_fields as $table=>$fields)
+		foreach ( $this->fields as $table=>$fields)
 		{
 			$tables[] = $table;
 		}
@@ -782,7 +782,7 @@ class MySQL extends Storage implements IData
 	 */
 	private function table( $name )
 	{
-		$table = isset( $this->_fields[$name] ) ? $this->_fields[$name] : [];
+		$table = isset( $this->fields[$name] ) ? $this->fields[$name] : [];
 		return $table;
 	}
 	
@@ -891,21 +891,21 @@ class MySQL extends Storage implements IData
 	/**
 	 * Retrieve the value of row start
 	 * 
-	 * @return integer The value of _row_start
+	 * @return integer The value of rowStart
 	 */
 	private function start () 
 	{
-		return $this->_row_start;
+		return $this->rowStart;
 	}
 	
 	/**
 	 * Retrieve the value of row end
 	 * 
-	 * @return integer The value of _row_end
+	 * @return integer The value of rowEnd
 	 */
 	private function end () 
 	{
-		return $this->_row_end;
+		return $this->rowEnd;
 	}
 	
 	/**
@@ -923,7 +923,7 @@ class MySQL extends Storage implements IData
 		$values = ['=', '<=>', '>', '<', '>=', '<=', '<>', 'IS', 'IS NOT', 'LIKE', 'NOT LIKE'];
 		if ( Val::isNull($condition) && Val::isNull($value) )
 		{
-			foreach ($this->_conditions as $a=>$b) {
+			foreach ($this->conditions as $a=>$b) {
 				foreach (explode(',', $a) as $c) {
 					if (Str::trim($c) == $member) return $b;
 				}
@@ -937,7 +937,7 @@ class MySQL extends Storage implements IData
 			if ( !Arr::is($condition) && !Arr::has($values, Str::upper($condition)))  {
 				return null;
 			}
-			$this->_conditions[$member] = $condition;
+			$this->conditions[$member] = $condition;
 			if (strpos($member, ',')) 
 			{
 				$member_r = explode(',', $member);
@@ -964,7 +964,7 @@ class MySQL extends Storage implements IData
 		$values = array('ASC', 'DESC');
 		if (Val::isNull($order))
 		{
-			foreach ($this->_order as $a=>$b) {
+			foreach ($this->order as $a=>$b) {
 				foreach (explode(',', $a) as $c) {
 					if (trim($c) == $member) return $b;
 				}
@@ -974,7 +974,7 @@ class MySQL extends Storage implements IData
 		}
 		if ( !in_array(strtoupper($order), $values)) return false;
 
-		$this->_order[$member] = $order;
+		$this->order[$member] = $order;
 		return $this;
 	}
 	
@@ -994,11 +994,11 @@ class MySQL extends Storage implements IData
 
 		if (Val::isNull($function))
 		{
-			return $this->_aggregate[$member];
+			return $this->aggregate[$member];
 		}
 
 		if ( in_array(strtoupper($function), $values)) {
-			$this->_aggregate[$member] = $function;
+			$this->aggregate[$member] = $function;
 		}
 
 		return $this;
@@ -1017,10 +1017,10 @@ class MySQL extends Storage implements IData
 		//if (!$this->exists($member)) return false;
 		
 		if (Val::isNull($field)) {
-			return $this->_relations[$member];
+			return $this->relations[$member];
 		}
 		
-		$this->_relations[$field] = $member;
+		$this->relations[$field] = $member;
 
 		return $this;
 	}
@@ -1034,7 +1034,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function distinction($member): IObj
 	{
-		$this->_distinctions[] = $member;
+		$this->distinctions[] = $member;
 
 		return $this;
 	}
@@ -1050,7 +1050,7 @@ class MySQL extends Storage implements IData
 	{
 		if (!$this->exists($member)) return false;
 		
-		foreach ($this->_conditions as $a=>$b) {
+		foreach ($this->conditions as $a=>$b) {
 			foreach (explode(',', $a) as $c) {
 				if (trim($c) == $member) return $a;
 			}
@@ -1095,7 +1095,7 @@ class MySQL extends Storage implements IData
 					}
 					$match_str = implode(', ', $match_r);
 				} 
-				elseif ( array_key_exists( $member, $this->_conditions ) ) 
+				elseif ( array_key_exists( $member, $this->conditions ) ) 
 				{
 					$match_str = "$table.$member";
 				}
@@ -1123,14 +1123,14 @@ class MySQL extends Storage implements IData
 					{
 						if ( Val::isNotNull( $a ) ) 
 						{
-							$where_r[] = $table . ".$member " . ((array_key_exists($member, $this->_conditions)) ? "$condition ": "= ") . $a;
+							$where_r[] = $table . ".$member " . ((array_key_exists($member, $this->conditions)) ? "$condition ": "= ") . $a;
 						}
 						$where = implode( ' OR ', $where_r );
 					}
 				} 
 				else 
 				{
-					$where = $table . ".$member " . ((array_key_exists($member, $this->_conditions)) ? $condition : " = ") . "( $value )";
+					$where = $table . ".$member " . ((array_key_exists($member, $this->conditions)) ? $condition : " = ") . "( $value )";
 				}
 			} 
 			elseif ( strtoupper( $condition_str ) == 'NOT IN' ) 
@@ -1141,14 +1141,14 @@ class MySQL extends Storage implements IData
 					{
 						if ( Val::isNotNull( $a ) ) 
 						{
-							$where_r[] = $table . ".$member " . ((array_key_exists($member, $this->_conditions)) ? "$condition ": "= ") . $a;
+							$where_r[] = $table . ".$member " . ((array_key_exists($member, $this->conditions)) ? "$condition ": "= ") . $a;
 						}
 						$where = implode( ' OR ', $where_r );
 					}
 				} 
 				else 
 				{
-					$where = $table . ".$member " . ((array_key_exists($member, $this->_conditions)) ? $condition : " = ") . "( $value )";
+					$where = $table . ".$member " . ((array_key_exists($member, $this->conditions)) ? $condition : " = ") . "( $value )";
 				}
 			} 
 			else 
@@ -1161,7 +1161,7 @@ class MySQL extends Storage implements IData
 						if ( Val::isNotNull( $a ) ) 
 						{
 							$temp_where = '';
-							$condition_str = ((array_key_exists($member, $this->_conditions)) ? ((Arr::is($condition)) ? $condition[$count] : $condition) : " = ");
+							$condition_str = ((array_key_exists($member, $this->conditions)) ? ((Arr::is($condition)) ? $condition[$count] : $condition) : " = ");
 							
 							if ( $condition_str == 'Like' || $condition_str == '^' ) 
 							{
@@ -1199,7 +1199,7 @@ class MySQL extends Storage implements IData
 				} 
 				else 
 				{
-					//$where = $table . ".$member " . ( ( array_key_exists( $member, $this->_conditions ) ) ? $condition : " = " );
+					//$where = $table . ".$member " . ( ( array_key_exists( $member, $this->conditions ) ) ? $condition : " = " );
 					$where = $table . ".$member " . ($condition ? $condition : ' = ');
 					if ( $condition_str == 'Like' ) 
 					{
@@ -1241,7 +1241,7 @@ class MySQL extends Storage implements IData
 		$sort = null;
 		$members = $this->table($table);
 		
-		if (array_key_exists($member, $this->_order) && array_key_exists($member, $members) ) 
+		if (array_key_exists($member, $this->order) && array_key_exists($member, $members) ) 
 		{
 			$order = $this->order($member);
 			if (strtoupper($order) == 'RAND()') $sort = " " . $order;
@@ -1266,7 +1266,7 @@ class MySQL extends Storage implements IData
 		$agg = null;
 		$members = $this->table($table);
 		
-		if (array_key_exists($member, $this->_aggregate) && array_key_exists($member, $members) ) 
+		if (array_key_exists($member, $this->aggregate) && array_key_exists($member, $members) ) 
 		{
 			$agg = $this->aggregate($member) . "(" . $table . ".$member " . ")";
 		}
@@ -1287,7 +1287,7 @@ class MySQL extends Storage implements IData
 		$tables = $this->tables();
 		$table = (Val::isNull($table)) ? $tables[0] : $table;
 		$distinct = '';
-		if (in_array($member, $this->_distinctions)) 
+		if (in_array($member, $this->distinctions)) 
 		{
 			$distinct = ' ' . $table . ".$member ";
 		}
@@ -1320,13 +1320,13 @@ class MySQL extends Storage implements IData
 	 */
 	public function reset(): IObj
 	{
-		$this->_conditions = [];
-		$this->_distinctions = [];
-		$this->_aggregate = [];
-		$this->_row_start = 0;
-		$this->_row_end = 1;
-		$this->_order = [];
-		$this->_query = null;
+		$this->conditions = [];
+		$this->distinctions = [];
+		$this->aggregate = [];
+		$this->rowStart = 0;
+		$this->rowEnd = 1;
+		$this->order = [];
+		$this->query = null;
 
 		return $this;
 	}
@@ -1341,10 +1341,10 @@ class MySQL extends Storage implements IData
 	public function exists($var) 
 	{
 		$fields = $this->fields();
-		$active_fields = $this->config('fields');
+		$activeFields = $this->config('fields');
 		if ($var != '' && Arr::hasKey( $fields, $var ) ) 
 		{
-			if (Val::isEmpty($active_fields) || Arr::has($active_fields, $var)) 
+			if (Val::isEmpty($activeFields) || Arr::has($activeFields, $var)) 
 			{
 				return true;
 			}	
@@ -1369,7 +1369,7 @@ class MySQL extends Storage implements IData
 	 * @return string The table name for the field, or an empty string if not found
 	 */
 	public function fieldTable( $field ) {
-		foreach ( $this->_fields as $table=>$fields ) {
+		foreach ( $this->fields as $table=>$fields ) {
 			if ( Arr::hasKey($fields, $field) ) {
 				return $table;
 			}
@@ -1384,7 +1384,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function error()
 	{
-		$db = $this->_source;
+		$db = $this->source;
 		if ($db) {
 			return $db->status();
 		}

@@ -24,7 +24,7 @@ class Authenticator extends Service {
 	 *
 	 * @var array
 	 */
-	protected $_config = [ 
+	protected $config = [ 
 		'session'=>'login',
 		'users_table'=>'users',
 		'login_attempts_table'=>'login_attempts',
@@ -42,7 +42,7 @@ class Authenticator extends Service {
 	 *
 	 * @var array
 	 */
-	protected $_data = [
+	protected $data = [
 		'id'=>'',
 		'username'=>'',
 		'displayname'=>'',
@@ -54,21 +54,21 @@ class Authenticator extends Service {
 	 *
 	 * @var Storage
 	 */
-	protected $_datasource;
+	protected $dataSource;
 
 	/**
 	 * The session object
 	 *
 	 * @var Storage
 	 */
-	protected $_session;
+	protected $session;
 
 	/**
 	 * The password verification function
 	 *
 	 * @var callable
 	 */
-	protected $_verificationFunction;
+	protected $verificationFunction;
 
 	/**
 	 * The Authenticator constructor
@@ -82,11 +82,11 @@ class Authenticator extends Service {
 		// if (is_array($config)) {
 		// 	$this->config($config);
         // }
-        $this->_datasource = $datasource;
+        $this->dataSource = $datasource;
 
         $session->config('name', $this->config('session'));
         $session->activate();
-		$this->_session = $session;
+		$this->session = $session;
 	}
 
 	/**
@@ -102,26 +102,26 @@ class Authenticator extends Service {
 		// $users->
 
 		if (isset($_SERVER['REMOTE_ADDR']) && !$this->confirmIPAddress($_SERVER['REMOTE_ADDR']) ) {
-			$this->_status[] = 'Too many failures';
+			$this->status[] = 'Too many failures';
 			return false;
 		}
 
 		if ( "" == $username || "" == $password ) {
-			$this->_status[] = "Username and password required";
+			$this->status[] = "Username and password required";
 			return false;
 		}
 		
 		$userinfo = $this->getUser($username);
 
 		if ( !$userinfo ) {
-			$this->_status[] = "User not found";
+			$this->status[] = "User not found";
 			return false;
 		}
 		
 		$savedpass = $userinfo[$this->config('password_field')];
 
 		if ( empty($savedpass) || !$this->verifyPassword($password, $savedpass) ) {
-			$this->_status[] = "Username or password incorrect";
+			$this->status[] = "Username or password incorrect";
 			return false;
 		}
 
@@ -132,8 +132,8 @@ class Authenticator extends Service {
 	}
 
 	private function verifyPassword($password, $savedpass) {
-		if (! $this->_verificationFunction ) {
-			$this->_verificationFunction = function($password, $savedpass) {
+		if (! $this->verificationFunction ) {
+			$this->verificationFunction = function($password, $savedpass) {
 				return password_verify($password, $savedpass);
 			};
 		}
@@ -154,8 +154,8 @@ class Authenticator extends Service {
 	 * @return bool Returns true if user is authenticated, false otherwise
 	 */
 	public function isAuthenticated() {
-		$this->_session->read();
-		$data = $this->_session->data();
+		$this->session->read();
+		$data = $this->session->data();
 		if ( Val::isNotEmpty( $data ) ) {
 			$this->assign($data);
 		}
@@ -182,7 +182,7 @@ class Authenticator extends Service {
 	private function confirmIPAddress($value) 
 	{ 
 		// $attempts = new Mysql('dash_login_attempts'); // TODO fix this with dependency injection
-		$attempts = $this->_datasource;
+		$attempts = $this->dataSource;
 		$attempts->config('name', $this->config('login_attempts_table'));
 		$attempts->activate();
 		$last = [];
@@ -220,7 +220,7 @@ class Authenticator extends Service {
 	private function blockIPAddress() 
 	{ 
 		// $attempts = new Mysql('dash_login_attempts');
-		$attempts = $this->_datasource;
+		$attempts = $this->dataSource;
 		$attempts->config('name', $this->config('login_attempts_table'));
 		$attempts->activate();
 		$last = [];
@@ -245,7 +245,7 @@ class Authenticator extends Service {
 	 */
 	private function clearIPAddress() 
 	{ 
-		$attempts = $this->_datasource;
+		$attempts = $this->dataSource;
 		$attempts->clear();
 		$attempts->config('name', $this->config('login_attempts_table'));
 		$attempts->activate();
@@ -265,9 +265,9 @@ class Authenticator extends Service {
 	 */
 	public function destroySession() {
 		$this->setAuthCookie([], -3600);
-		$this->_session->clear();
-		$this->_session->write();
-		$this->_session->delete();
+		$this->session->clear();
+		$this->session->write();
+		$this->session->delete();
 
 		$this->displayname = '';
 		$this->username = '';
@@ -282,7 +282,7 @@ class Authenticator extends Service {
 	 * @return mixed The user data if the user was found, otherwise false.
 	 */
 	private function getUser($username){
-		$user = $this->_datasource;
+		$user = $this->dataSource;
 		$user->reset();
 		$user->clear();
 		$user->config('name', $this->config('credentials_table'));
@@ -303,15 +303,15 @@ class Authenticator extends Service {
 	 * @return bool True if the session was successfully set, otherwise false.
 	 */
 	public function setSession() {
-		// $this->_session->read();
-		// $data = $this->_session->data();
+		// $this->session->read();
+		// $data = $this->session->data();
 		// die(var_dump($_SESSION));
 
 		if ( isset( $_COOKIE[$this->config('session')] ) ) {
 			if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')]))) {
 				return true;
 			} else {
-				$this->_status[] = "Could not save session";
+				$this->status[] = "Could not save session";
 				return false;
 			}
 		}
@@ -328,7 +328,7 @@ class Authenticator extends Service {
 		if ($this->setAuthCookie($loginData, $loginData['duration'])) {
 			return true;
 		} else {
-			$this->_status[] = "Could not save session";
+			$this->status[] = "Could not save session";
 			return false;
 		}
 	}
@@ -365,11 +365,11 @@ class Authenticator extends Service {
 		$var = $this->config('session');
 		*/
 	
-		$this->_session->clear();
-		$this->_session->username = $value['username'];
-		$this->_session->id = $value['id'];
+		$this->session->clear();
+		$this->session->username = $value['username'];
+		$this->session->id = $value['id'];
 
-		$this->_session->write();
+		$this->session->write();
 
 		return true;
 	}

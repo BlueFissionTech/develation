@@ -10,9 +10,9 @@ use BlueFission\Behavioral\Behaviors\Event;
 class Flag extends Val implements IVal {
 	
 	/**
-	* @var string $_type The type of the value stored in the object, in this case "boolean"
+	* @var string $type The type of the value stored in the object, in this case "boolean"
 	*/
-	protected $_type = DataTypes::BOOLEAN;
+	protected $type = DataTypes::BOOLEAN;
 
 	/**
 	* Constructor for Flag class
@@ -22,7 +22,7 @@ class Flag extends Val implements IVal {
 	* @return void
 	*/
 	public function __construct( $value = null, $snapshot = true, $cast = false ) {
-		if ( $this->_forceType || $cast ) {
+		if ( $this->forceType || $cast ) {
 			$value = $value ? true : false;
 		}
 		parent::__construct( $value, $snapshot );
@@ -35,8 +35,8 @@ class Flag extends Val implements IVal {
 	 */
 	public function cast(): IVal
 	{
-		if ( $this->_type ) {
-			$this->_data = (bool)$this->_data;
+		if ( $this->type ) {
+			$this->data = (bool)$this->data;
 			$this->trigger(Event::CHANGE);
 		}
 
@@ -50,9 +50,9 @@ class Flag extends Val implements IVal {
 	*/
 	public function _flip(): IVal
 	{
-		$bool = $this->_data;
+		$bool = $this->data;
 	    $bool = !$bool;
-	    $this->_data = $bool;
+	    $this->data = $bool;
 	    
 	    return $this;
 	}
@@ -63,7 +63,7 @@ class Flag extends Val implements IVal {
 	 * @return bool If the boolean value is true
 	 */
 	public function _isTrue(): bool {
-	    return $this->_data === true;
+	    return $this->data === true;
 	}
 
 	/**
@@ -72,7 +72,7 @@ class Flag extends Val implements IVal {
 	 * @return bool If the boolean value is false
 	 */
 	public function _isFalse(): bool {
-	    return $this->_data === false;
+	    return $this->data === false;
 	}
 
 	/**
@@ -91,7 +91,7 @@ class Flag extends Val implements IVal {
 	 * @return bool True if the stored value is empty, false otherwise
 	 */
 	public function _isEmpty(): bool {
-	    return !isset($this->_data);
+	    return !isset($this->data);
 	}
 
 	/**
@@ -100,7 +100,7 @@ class Flag extends Val implements IVal {
 	 * @return int The stored boolean value as an integer (1 for true, 0 for false)
 	 */
 	public function _toInt(): int {
-	    return (int) $this->_data;
+	    return (int) $this->data;
 	}
 
 	/**
@@ -109,6 +109,6 @@ class Flag extends Val implements IVal {
 	 * @return string The stored boolean value as a string ("true" for true, "false" for false)
 	 */
 	public function __toString(): string {
-	    return $this->_data ? "true" : "false";
+	    return $this->data ? "true" : "false";
 	}
 }

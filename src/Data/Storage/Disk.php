@@ -18,7 +18,7 @@ class Disk extends Storage implements IData
 	 * 
 	 * @var array 
 	 */
-	protected $_config = [ 
+	protected $config = [ 
 		'location'=>null, 
 		'name'=>null 
 	];
@@ -56,7 +56,7 @@ class Disk extends Storage implements IData
 		$filesystem->filename = $name;
 		$filesystem
 		->when(Event::CONNECTED, (function ($b, $m) use ($filesystem) {
-			$this->_source = $filesystem;
+			$this->source = $filesystem;
 
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
 		})->bindTo($this, $this))
@@ -86,14 +86,14 @@ class Disk extends Storage implements IData
 	 */
 	protected function _write(): void
 	{
-		$source = $this->_source;
+		$source = $this->source;
 		$status = self::STATUS_FAILED;
 		if (!$source) {
 			$this->status( $status );
 			return;
 		}
 
-		$data = Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents;
+		$data = Val::isEmpty($this->contents) ? HTTP::jsonEncode($this->data->val()) : $this->contents;
 
 		$source->flush()->contents( $data )->write();
 		
@@ -109,7 +109,7 @@ class Disk extends Storage implements IData
 	 */
 	protected function _read(): void
 	{	
-		$source = $this->_source;
+		$source = $this->source;
 		if (!$source) {
 			$status = self::STATUS_FAILED;
 			$this->status( $status );
@@ -134,7 +134,7 @@ class Disk extends Storage implements IData
 	 */
 	protected function _delete(): void
 	{
-		$source = $this->_source;
+		$source = $this->source;
 		if (!$source) {
 			$status = self::STATUS_FAILED;
 			$this->status( $status );
@@ -145,8 +145,8 @@ class Disk extends Storage implements IData
 	}
 
 	private function _disconnect() {
-        if (Val::is($this->_source)) {
-            $this->_source->close();
+        if (Val::is($this->source)) {
+            $this->source->close();
         }
     }
 
@@ -156,8 +156,8 @@ class Disk extends Storage implements IData
 	 * @return void
 	 */
 	public function __destruct() {
-		if (Val::is($this->_source)) {
-			$this->_source->close();
+		if (Val::is($this->source)) {
+			$this->source->close();
 		}
 		parent::__destruct();
 	}

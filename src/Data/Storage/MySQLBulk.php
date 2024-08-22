@@ -20,20 +20,20 @@ class MySQLBulk extends MySQL implements IData
      * 
      * @var \BlueFission\Collections\Group
      */
-	private $_rows;
+	private $rows;
 
 	/**
 	 * The constructor method.
 	 * 
-	 * It calls the parent constructor and initializes the `$_rows` property as a new Group object.
+	 * It calls the parent constructor and initializes the `$rows` property as a new Group object.
 	 * 
 	 * @param null|array $config The database configuration options.
 	 */
 	public function __construct( $config = null )
 	{
 		parent::__construct( $config );
-		$this->_rows = new Group();
-		$this->_rows->type('\BlueFission\Data\Storage\Mysql');
+		$this->rows = new Group();
+		$this->rows->type('\BlueFission\Data\Storage\Mysql');
 		$this->limit(0, 1000);
 	}
 	
@@ -41,7 +41,7 @@ class MySQLBulk extends MySQL implements IData
 	 * The `run` method.
 	 * 
 	 * It calls the parent `run` method and retrieves the result set into an array.
-	 * Then it sets the `$_rows` property to a new Group object with the result set as data.
+	 * Then it sets the `$rows` property to a new Group object with the result set as data.
 	 * 
 	 * @param string $query The SQL query to run.
 	 */
@@ -50,15 +50,15 @@ class MySQLBulk extends MySQL implements IData
 		parent::run($query);
 		$res = [];
 		if (method_exists('mysqli_result', 'fetch_all')) # Compatibility layer with PHP < 5.3
-			if ($this->_result)
-				$res = $this->_result->fetch_all( MYSQLI_ASSOC );
+			if ($this->result)
+				$res = $this->result->fetch_all( MYSQLI_ASSOC );
 		else {
-			if ($this->_result)
-				for ($res = array(); $tmp = $this->_result->fetch_assoc();) $res[] = $tmp;
+			if ($this->result)
+				for ($res = array(); $tmp = $this->result->fetch_assoc();) $res[] = $tmp;
 		}
 
-		$this->_rows = new Group( $res );
-		$this->_rows->type('\BlueFission\Data\Storage\Mysql');
+		$this->rows = new Group( $res );
+		$this->rows->type('\BlueFission\Data\Storage\Mysql');
 
 		return $this;
 	}
@@ -66,24 +66,24 @@ class MySQLBulk extends MySQL implements IData
 	/**
 	 * The `result` method.
 	 * 
-	 * It returns the value of the `$_rows` property.
+	 * It returns the value of the `$rows` property.
 	 * 
 	 * @return \BlueFission\Collections\Group The stored data as an array of rows.
 	 */
 	public function result()
 	{
-		return $this->_rows;
+		return $this->rows;
 	}
 
 	/**
 	 * The `each` method.
 	 * 
-	 * It returns the `each` method of the `$_rows` property.
+	 * It returns the `each` method of the `$rows` property.
 	 * 
 	 * @return \Generator An iterator for the stored data.
 	 */
 	public function each() {
-		return $this->_rows->each();
+		return $this->rows->each();
 	}
 
 	/**
@@ -96,8 +96,8 @@ class MySQLBulk extends MySQL implements IData
 	 */
 	public function limit($start = 0, $end = ''): IObj
 	{
-		$this->_row_start = $start;
-		$this->_row_end = $end;
+		$this->rowStart = $start;
+		$this->rowEnd = $end;
 
 		return $this;
 	}
@@ -112,6 +112,6 @@ class MySQLBulk extends MySQL implements IData
 	 */
 	public function contents($data = null): mixed
 	{
-		return $this->_rows->current();
+		return $this->rows->current();
 	}
 }

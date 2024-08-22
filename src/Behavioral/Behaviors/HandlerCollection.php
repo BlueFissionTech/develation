@@ -21,7 +21,7 @@ class HandlerCollection extends Collection
 	public function add($handler, $priority = null): ICollection
 	{
 		$handler->priority($priority);
-		$this->_value->append($handler);
+		$this->value->append($handler);
 		$this->prioritize();
 
 		return $this;
@@ -35,7 +35,7 @@ class HandlerCollection extends Collection
 	 */
 	public function has( $behaviorName )
 	{
-		foreach ($this->_value as $c)
+		foreach ($this->value as $c)
 		{
 			if ($c->name() == $behaviorName)
 				return true;
@@ -52,7 +52,7 @@ class HandlerCollection extends Collection
 	public function get( $behaviorName )
 	{
 		$handlers = [];
-		foreach ($this->_value as $c)
+		foreach ($this->value as $c)
 		{
 			if ($c->name() == $behaviorName)
 				$handlers[] = $c;
@@ -75,7 +75,7 @@ class HandlerCollection extends Collection
 
 		$behavior->target = $behavior->target ?? $sender;
 
-		foreach ($this->_value as $c)
+		foreach ($this->value as $c)
 		{
 			if ($c->name() == $behavior->name())
 			{
@@ -93,7 +93,7 @@ class HandlerCollection extends Collection
 	 */
 	private function prioritize()
 	{
-		$compare = $this->_value->uasort( function( $a, $b ) {
+		$compare = $this->value->uasort( function( $a, $b ) {
 			if ( !($a instanceof Handler) || !($b instanceof Handler ) )
 				return -1;
 

@@ -25,7 +25,7 @@ class Credentials extends Obj {
      *
      * @var array
      */
-	protected $_data = [
+	protected $data = [
 		'username'=>'',
 		'password'=>'',
 	];

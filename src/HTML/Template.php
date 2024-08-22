@@ -28,31 +28,31 @@ class Template extends Obj {
 	}
 
     /**
-     * @var string $_template The contents of the template file
+     * @var string $template The contents of the template file
      */
-    private $_template;
+    private $template;
     /**
-     * @var bool $_cached Whether the template is cached
+     * @var bool $cached Whether the template is cached
      */
-    private $_cached;
+    private $cached;
     /**
-     * @var FileSystem $_file An object to represent the file system
+     * @var FileSystem $file An object to represent the file system
      */
-    private $_file;
+    private $file;
 
     /**
-     * $_placeholders full text for the template placeholder tags
+     * $placeholders full text for the template placeholder tags
      * @var array
      */
-    private $_placeholders;
+    private $placeholders;
 
-    private $_placeholderNames;
+    private $placeholderNames;
 
-    private $_conditions;
+    private $conditions;
     /**
-     * @var array $_config Default configuration for the Template class
+     * @var array $config Default configuration for the Template class
      */
-    protected $_config = array(
+    protected $config = array(
         'file'=>'',
         'template_directory'=>'',
         'cache'=>true,
@@ -82,13 +82,13 @@ class Template extends Obj {
     	$this->__configConstruct($config);
     	$this->load();
         
-        $this->_cached = false;
+        $this->cached = false;
 
         $this->dispatch( State::DRAFT );
     }
 
     /**
-     * Loads the contents of a file into the `$_template` property.
+     * Loads the contents of a file into the `$template` property.
      *
      * @param null|string $file The file to load
      */
@@ -117,8 +117,8 @@ class Template extends Obj {
     	$path = implode(DIRECTORY_SEPARATOR, $path_r);
 
         if ( Val::isNotNull($file)) {
-            $this->_file = (new FileSystem(['root'=>$path]))->open($file);
-            $this->_template = $this->_file->read()->contents();
+            $this->file = (new FileSystem(['root'=>$path]))->open($file);
+            $this->template = $this->file->read()->contents();
             $this->perform( Event::READ, new Meta(info: 'File loaded', src: $this, when: State::READING ) );
         }
 
@@ -128,16 +128,16 @@ class Template extends Obj {
     }
 
     /**
-     * Gets or sets the contents of the `$_template` property.
+     * Gets or sets the contents of the `$template` property.
      *
-     * @param null|string $data The new value for `$_template`
-     * @return string The contents of `$_template`
+     * @param null|string $data The new value for `$template`
+     * @return string The contents of `$template`
      */
 	public function contents($data = null)
 	{
-		if (Val::isNull($data)) return $this->_template;
+		if (Val::isNull($data)) return $this->template;
 		
-		$this->_template = $data;
+		$this->template = $data;
 	}
 	
 	/**
@@ -243,7 +243,7 @@ class Template extends Obj {
 			}
 
 			if ( Str::is($content) ) {
-				$this->_template = str_replace( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
+				$this->template = str_replace( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->template, $repetitions );
 			} elseif ( is_object( $content ) || Arr::isAssoc( $content ) )	{
 				foreach ($content as $a=>$b) 
 				{
@@ -347,13 +347,13 @@ class Template extends Obj {
 	{
 		$file = $this->config('cache_directory').DIRECTORY_SEPARATOR.$_SERVER['REQUEST_URI'];
 		if (file_exists($file) && filectime($file) <= strtotime("-{$time} minutes")) {
-			$this->_cached = true;
+			$this->cached = true;
 			$this->load ( $file );
 		}
 		else
 		{
 			$copy = new Disk( array('name'=>$file) );
-			$copy->contents($this->_template);
+			$copy->contents($this->template);
 			$copy->write();
 		}
 	}
@@ -368,20 +368,20 @@ class Template extends Obj {
 	private function cached ( $value ) 
 	{
 		if (Val::isNull($value))
-			return $this->_cached;
-		$this->_cached = ($value == true);
+			return $this->cached;
+		$this->cached = ($value == true);
 	}
 
 	private function extractPlaceholders()
     {
         // Extract placeholders
-        if(preg_match_all("/\{=(.*?)\}/", $this->_template, $matches)) {
+        if(preg_match_all("/\{=(.*?)\}/", $this->template, $matches)) {
             foreach($matches[1] as $placeholder){
                 // Extract placeholder options
                 preg_match("/([^[\s]+)(?:\[(.*?)\])?/", $placeholder, $optionMatches);
                 if (!empty($optionMatches)) {
-                    $this->_placeholderNames[] = $optionMatches[1];
-                    $this->_placeholders[] = $placeholder;
+                    $this->placeholderNames[] = $optionMatches[1];
+                    $this->placeholders[] = $placeholder;
                 }
             }
         }
@@ -389,22 +389,22 @@ class Template extends Obj {
 
     private function handleVariables()
     {
-        if(preg_match_all("/\{#var (.*?) = (.*?)\}/", $this->_template, $matches)) {
+        if(preg_match_all("/\{#var (.*?) = (.*?)\}/", $this->template, $matches)) {
             $vars = array_combine($matches[1], $matches[2]);
-            $this->_template = preg_replace("/\{#var (.*?) = (.*?)\}/", "", $this->_template);
+            $this->template = preg_replace("/\{#var (.*?) = (.*?)\}/", "", $this->template);
         }
 
         $this->assign($vars);
 
         // Process variables, conditions, and loops directly within the run method
-        foreach($this->_data as $var => $value) {
+        foreach($this->data as $var => $value) {
             // Handle array variables
             if (Arr::is($value)) {
                 $value = implode(", ", $value);
             }
 
             // Also replace variables in conditions and loops
-            foreach($this->_conditions as &$condition) {
+            foreach($this->conditions as &$condition) {
                 $condition['condition'] = str_replace($var, $value, $condition['condition']);
                 $condition['value'] = str_replace($var, $value, $condition['value']);
                 $condition['content'] = str_replace($var, $value, $condition['content']);
@@ -414,7 +414,7 @@ class Template extends Obj {
 
     private function handleConditions()
     {
-        if(preg_match_all("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $this->_template, $matches)) {
+        if(preg_match_all("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $this->template, $matches)) {
             $this->conditions = array_map(function($condition, $operator, $value, $content) {
                 return ['condition' => $condition, 'operator' => $operator, 'value' => $value, 'content' => $content];
             }, $matches[1], $matches[2], $matches[3], $matches[4]);
@@ -423,18 +423,18 @@ class Template extends Obj {
             $value = $matches[3][0];
 
             if (strpos($condition, "'") === false && strpos($condition, "\"") === false) {
-                $condition = $this->_data[$condition] ?? null;
+                $condition = $this->data[$condition] ?? null;
             }
 
             if (strpos($value, "'") === false && strpos($value, "\"") === false) {
-                $value = $this->_data[$value] ?? null;
+                $value = $this->data[$value] ?? null;
             }
 
             $condition = trim($condition, "'\"");
             $value = trim($value, "'\"");
 
             if ( !$this->parseCondition($condition, $value, $operator) ) {
-                // $this->_data[$placeholderName] = "";
+                // $this->data[$placeholderName] = "";
                 // $i++;
                 // continue;
             }
@@ -443,21 +443,21 @@ class Template extends Obj {
 
 
         foreach ($this->conditions as $condition) {
-            $conditionValue = $this->_data[$condition['condition']] ?? null;
+            $conditionValue = $this->data[$condition['condition']] ?? null;
 
             $conditionValue = trim($conditionValue, "'\"");
             $condition['value'] = trim($condition['value'], "'\"");
             if ( $this->parseCondition($conditionValue, $condition['value'], $condition['operator']) ) {
-                $this->_template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $condition['content'], $this->_template);
+                $this->template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $condition['content'], $this->template);
             } else {
-                $this->_template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", "", $this->_template);
+                $this->template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", "", $this->template);
             }
         }
     }
 
 	protected function handleLoops()
 	{
-        if(preg_match_all("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $this->_template, $matches)) {
+        if(preg_match_all("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $this->template, $matches)) {
         	$rules = $matches[1][0];
             $iteratedContent ??= $matches[2][0];
             $iteratedData = null;
@@ -509,10 +509,10 @@ class Template extends Obj {
 	            }
 
 	            // $chunk = preg_replace("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)$/s", $render, $chunk);
-	            $this->_template = str_replace($iteratedContent, $render, $this->_template);
+	            $this->template = str_replace($iteratedContent, $render, $this->template);
 	        }
         	
-        	preg_replace("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $matches[2][0], $this_template);
+        	preg_replace("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $matches[2][0], $thisTemplate);
 		}
 	}
 
@@ -523,7 +523,7 @@ class Template extends Obj {
 	 */
 	public function commit( $formatted = null ): IObj
 	{
-		$this->set( $this->_data->val(), $formatted );
+		$this->set( $this->data->val(), $formatted );
 
 		return $this;
 	}
@@ -564,9 +564,9 @@ class Template extends Obj {
 		$this->commit( $this->config('format') );
 		ob_start();
 		if ($this->config('eval'))
-			eval ( ' ?> ' . $this->_template . ' <?php ' );
+			eval ( ' ?> ' . $this->template . ' <?php ' );
 		else
-			echo $this->_template;
+			echo $this->template;
 			
 		return ob_get_clean();
 	}
@@ -584,22 +584,22 @@ class Template extends Obj {
 	 */
 	private function executeModules(): IObj
 	{
-		if ( $this->_template == null ) {
+		if ( $this->template == null ) {
 			return $this;
 		}
 
 		$pattern = "/@".$this->config('module_token')."\('(.*)'\)/";
 
-		preg_match_all( $pattern, $this->_template, $matches );
+		preg_match_all( $pattern, $this->template, $matches );
 
 		for ($i = 0; $i < count($matches[0]); $i++) {
 			$match = $matches[0][$i];
 			$file = $matches[1][$i];
 			$template = new Template();
 			$template->load( $this->config('module_directory').DIRECTORY_SEPARATOR.$file);
-			$template->set( $this->_data->val() );
+			$template->set( $this->data->val() );
 			$content = $template->render();
-			$this->_template = str_replace($match, $content, $this->_template);
+			$this->template = str_replace($match, $content, $this->template);
 		}
 
 		return $this;
@@ -607,17 +607,17 @@ class Template extends Obj {
 
 	private function applyTemplate(): IObj
 	{
-		if ( $this->_template == null ) {
+		if ( $this->template == null ) {
 			return $this;
 		}
 
 		// if a `@template('path-to-template.html')` tag is found, load the template
-		// load that content as the `$_template`
-		if (preg_match("/@template\('(.*)'\)/", $this->_template, $matches)) {
-			$content = $this->_template;
+		// load that content as the `$template`
+		if (preg_match("/@template\('(.*)'\)/", $this->template, $matches)) {
+			$content = $this->template;
 			$template = new Template($this->config());
 			$template->load($matches[1]);
-			$this->_template = $template->render();
+			$this->template = $template->render();
 
 			// if any content is wrapped in a `@section('section-name')...@endsection` tag,
 			// replace that content with the content of the section from the template wherever 
@@ -625,7 +625,7 @@ class Template extends Obj {
 			if (preg_match_all("/@section\('(.*)'\)(.*?)@endsection/s", $content, $sectionMatches)) {
 				foreach ($sectionMatches[1] as $i => $sectionName) {
 					$sectionContent = $sectionMatches[2][$i];
-					$this->_template = str_replace("@output('$sectionName')", $sectionContent, $this->_template);
+					$this->template = str_replace("@output('$sectionName')", $sectionContent, $this->template);
 				}
 			}
 		}

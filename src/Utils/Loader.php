@@ -15,20 +15,20 @@ use BlueFission\Arr;
  */
 class Loader
 {
-    private static $_instance;
+    private static $instance;
 
-    private $_paths;
-    private $_config = ['default_extension'=>'php','default_path'=>'', 'full_stop'=>'.'];
+    private $paths;
+    private $config = ['default_extension'=>'php','default_path'=>'', 'full_stop'=>'.'];
 
     /**
      * Constructor for the class
      *
-     * It sets the _paths property to an array containing the current directory
+     * It sets the paths property to an array containing the current directory
      */
     private function __construct()
     {
-        $this->_paths = [];
-        $this->_paths[] = realpath( dirname( __FILE__ ) );
+        $this->paths = [];
+        $this->paths[] = realpath( dirname( __FILE__ ) );
     }
 
     /**
@@ -38,12 +38,12 @@ class Loader
      */
     static function instance( )
     {
-        if (!Val::is(self::$_instance)) {
+        if (!Val::is(self::$instance)) {
             $class = __CLASS__;
-            self::$_instance = new $class;
+            self::$instance = new $class;
         }
 
-        return self::$_instance;
+        return self::$instance;
     }
 
     /**
@@ -57,23 +57,23 @@ class Loader
     public function config( $config = null, $value = null )
     {
         if (!Val::is ($config))
-            return $this->_config;
+            return $this->config;
         elseif (Str::is($config))
         {
             if (!Val::is ($value))
-                return Val::is($this->_config[$config]) ? $this->_config[$config] : null;
-            if (Arr::hasKey($this->_config, $config))
-                $this->_config[$config] = $value; 
+                return Val::is($this->config[$config]) ? $this->config[$config] : null;
+            if (Arr::hasKey($this->config, $config))
+                $this->config[$config] = $value; 
         }
         elseif (Arr::is($config))
         {
             foreach ($this->config as $a=>$b)
-                $this->_config[$a] = $config[$a];
+                $this->config[$a] = $config[$a];
         }
     }
 
     /**
-     * This function adds a path to the _paths property
+     * This function adds a path to the paths property
      *
      * @param string $path The path to add
      *
@@ -81,7 +81,7 @@ class Loader
      */
     public function addPath( $path )
     {
-        $this->_paths[] = $path;
+        $this->paths[] = $path;
     }
 
     /**
@@ -141,7 +141,7 @@ class Loader
 	    if( $isWildcardMatch )
 	    {
 	        $wildcardMatches = [];
-	        foreach( $this->_paths as $path )
+	        foreach( $this->paths as $path )
 	        {
 	            $testPath = $path . DIRECTORY_SEPARATOR . $filePath;
 	            if( is_dir( $testPath ) )
@@ -150,7 +150,7 @@ class Loader
 	                while(false !== ( $entry = $directory->read() ) )
 	                {
 	                    if( $entry != "." && $entry != ".." && 
-	                        Str::rpos( $entry, ".".$this->_config['default_extension'] ) !== false )
+	                        Str::rpos( $entry, ".".$this->config['default_extension'] ) !== false )
 	                    {
 	                        $wildcardMatches[] = $testPath . $entry;
 	                    }
@@ -162,7 +162,7 @@ class Loader
 	    }
 
 	    // Check for file in the paths
-	    foreach( $this->_paths as $path )
+	    foreach( $this->paths as $path )
 	    {
 	        $testPath = $path . DIRECTORY_SEPARATOR . $filePath;
 	        if( file_exists( $testPath ) )

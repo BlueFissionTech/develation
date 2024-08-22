@@ -25,7 +25,7 @@ class Stdio extends Connection implements IConfigurable
      *
      * @var array
      */
-    protected $_config = [
+    protected $config = [
         'target' => null,
         'output' => null,
     ];
@@ -53,21 +53,21 @@ class Stdio extends Connection implements IConfigurable
     {
         $this->close();
 
-        $this->_connection;
-        $this->_connection = [
+        $this->connection;
+        $this->connection = [
             'in' => $this->config('target') ? fopen($this->config('target'), 'r') : (defined('STDIN') ? STDIN : fopen('php://input', 'r')),
             'out' => $this->config('output') ? fopen($this->config('output'), 'w') : (defined('STDOUT') ? STDOUT : fopen('php://output', 'w'))
         ];
 
-        $status = $this->_connection['in'] && $this->_connection['out'] ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
+        $status = $this->connection['in'] && $this->connection['out'] ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 
         $this->perform( 
-            $this->_connection['in'] && $this->_connection['out'] 
+            $this->connection['in'] && $this->connection['out'] 
             ? [Event::SUCCESS, Event::CONNECTED, State::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
 
 
-        if ( $this->_connection['in'] ) {
-            stream_set_blocking($this->_connection['in'], false);
+        if ( $this->connection['in'] ) {
+            stream_set_blocking($this->connection['in'], false);
         }
 
         $this->status($status);
@@ -82,7 +82,7 @@ class Stdio extends Connection implements IConfigurable
     {
         // $this->perform(State::BUSY);
 
-        $readStreams = [$this->_connection['in']];
+        $readStreams = [$this->connection['in']];
         $writeStreams = null;
         $exceptStreams = null;
         $timeout = 0; // No timeout, return immediately
@@ -90,7 +90,7 @@ class Stdio extends Connection implements IConfigurable
 
         $numChangedStreams = @stream_select($readStreams, $writeStreams, $exceptStreams, $timeout);
 
-        $this->_result = '';
+        $this->result = '';
 
         if ($numChangedStreams === false) {
             // Error occurred during stream_select
@@ -99,10 +99,10 @@ class Stdio extends Connection implements IConfigurable
             $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $error));
         } elseif ($numChangedStreams > 0) {
             // Data is available for reading
-            $data = fgets($this->_connection['in']);
+            $data = fgets($this->connection['in']);
 
             if ($data !== false) {
-                $this->_result .= $data;
+                $this->result .= $data;
                 $this->dispatch(Event::RECEIVED, new Meta(data: $data)); // Emit success with data
                 $captured = true;
             } else {
@@ -125,7 +125,7 @@ class Stdio extends Connection implements IConfigurable
     public function send($data)
     {
         $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
-        if (fwrite($this->_connection['out'], $data) !== false) {
+        if (fwrite($this->connection['out'], $data) !== false) {
             $this->perform(Event::SENT, new Meta(data: $data)); // Emit success with data
         } else {
             $this->perform(Event::ERROR, new Meta(info: 'Failed to write data')); // Emit failure
@@ -142,11 +142,11 @@ class Stdio extends Connection implements IConfigurable
      */
     protected function _close(): void
     {
-        if (isset($this->_connection['in']) && is_resource($this->_connection['in'])) {
-            fclose($this->_connection['in']);
+        if (isset($this->connection['in']) && is_resource($this->connection['in'])) {
+            fclose($this->connection['in']);
         }
-        if (isset($this->_connection['out']) && is_resource($this->_connection['out'])) {
-            fclose($this->_connection['out']);
+        if (isset($this->connection['out']) && is_resource($this->connection['out'])) {
+            fclose($this->connection['out']);
         }
         $this->perform(Event::DISCONNECTED); // Signal that the stream has been unloaded
     }
@@ -166,10 +166,10 @@ class Stdio extends Connection implements IConfigurable
         $this->perform(State::PROCESSING);
         $this->listen();
 
-        $status = ( $this->_result ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+        $status = ( $this->result ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
 
         $this->perform( 
-            $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
+            $this->result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
             new Meta(when: Action::PROCESS, info: $status ) 
         );
 

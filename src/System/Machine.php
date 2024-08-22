@@ -17,9 +17,9 @@ class Machine {
     /**
      * Private instance of System class
      *
-     * @var System $_system
+     * @var System $system
      */
-    private $_system;
+    private $system;
 
     /**
      * Machine constructor.
@@ -27,7 +27,7 @@ class Machine {
      * Initializes an instance of the System class.
      */
     public function __construct() {
-        $this->_system = new System();
+        $this->system = new System();
     }
 
     /**
@@ -66,8 +66,8 @@ class Machine {
         if ($this->getOS() == 'Windows') {
             // Windows does not have a built-in, easy way to fetch uptime from CLI
             // Fallback to systeminfo command, parse output for uptime
-            $this->_system->run('systeminfo | find "System Boot Time:"');
-            $boottime = $this->_system->response();
+            $this->system->run('systeminfo | find "System Boot Time:"');
+            $boottime = $this->system->response();
             
             // extract the date from the line
             $boottimeParts = explode(":", $boottime);
@@ -90,8 +90,8 @@ class Machine {
     public function getCPUUsage() {
         if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting CPU usage
-            $this->_system->run("WMIC CPU GET LoadPercentage");
-            $response = $this->_system->response();
+            $this->system->run("WMIC CPU GET LoadPercentage");
+            $response = $this->system->response();
 
             //extract the numerical value from the response
             $cpuUsage = preg_replace("/[^0-9]/", "", $response);
@@ -112,8 +112,8 @@ class Machine {
         $temperature = "";
         if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting temperature
-            $this->_system->run("WMIC /Namespace:\\\\root\\WMI PATH MSAcpi_ThermalZoneTemperature GET CurrentTemperature");
-            $temperature = $this->_system->response();
+            $this->system->run("WMIC /Namespace:\\\\root\\WMI PATH MSAcpi_ThermalZoneTemperature GET CurrentTemperature");
+            $temperature = $this->system->response();
         } else {
             // Linux command for getting temperature
             $possiblePaths = [
@@ -128,8 +128,8 @@ class Machine {
             foreach ($possiblePaths as $path) {
                 $matches = glob($path);
                 if (!Val::isEmpty($matches)) {
-                    $this->_system->run("cat {$matches[0]}");
-                    $temperature = $this->_system->response();
+                    $this->system->run("cat {$matches[0]}");
+                    $temperature = $this->system->response();
                     break;
                 }
             }
@@ -146,8 +146,8 @@ class Machine {
         $fanSpeed = "";
         if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting fan speed
-            $this->_system->run("WMIC /Node:localhost PATH Win32_Fan GET Descriptions, VariableSpeed");
-            $fanSpeed = $this->_system->response();
+            $this->system->run("WMIC /Node:localhost PATH Win32_Fan GET Descriptions, VariableSpeed");
+            $fanSpeed = $this->system->response();
         } else {
             // Linux command for getting fan speed
             $possiblePaths = [
@@ -162,8 +162,8 @@ class Machine {
             foreach ($possiblePaths as $path) {
                 $matches = glob($path);
                 if (!Val::isEmpty($matches)) {
-                    $this->_system->run("cat {$matches[0]}");
-                    $fanSpeed = $this->_system->response();
+                    $this->system->run("cat {$matches[0]}");
+                    $fanSpeed = $this->system->response();
                     break;
                 }
             }
@@ -186,8 +186,8 @@ class Machine {
         $powerConsumption = "";
         if (Str::sub(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting power consumption
-            $this->_system->run("WMIC /Node:localhost PATH Win32_PerfFormattedData_PerfOS_System GET ProcessorQueueLength");
-            $powerConsumption = $this->_system->response();
+            $this->system->run("WMIC /Node:localhost PATH Win32_PerfFormattedData_PerfOS_System GET ProcessorQueueLength");
+            $powerConsumption = $this->system->response();
         } else {
             // Linux command for getting power consumption
             $potentialPaths = [
@@ -200,8 +200,8 @@ class Machine {
             foreach ($potentialPaths as $path) {
                 $matches = glob($path);
                 if (!Val::isEmpty($matches)) {
-                    $this->_system->run("cat {$matches[0]}");
-                    $powerConsumption = $this->_system->response();
+                    $this->system->run("cat {$matches[0]}");
+                    $powerConsumption = $this->system->response();
                     break;
                 }
             }

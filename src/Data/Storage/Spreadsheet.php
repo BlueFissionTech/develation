@@ -14,16 +14,16 @@ use BlueFission\IObj;
  */
 class Spreadsheet extends Storage implements IData {
 	/**
-	 * @var int $_index The current index of the spreadsheet data.
+	 * @var int $index The current index of the spreadsheet data.
 	 */
-	private $_index;
+	private $index;
 
 	/**
-	 * @var array $_config The configuration of the spreadsheet.
+	 * @var array $config The configuration of the spreadsheet.
 	 * @property string 'location' The location of the spreadsheet.
 	 * @property string 'name' The name of the spreadsheet.
 	 */
-	protected $_config = [
+	protected $config = [
 		'location'=>'', 
 		'name'=>'' 
 	];
@@ -50,11 +50,11 @@ class Spreadsheet extends Storage implements IData {
 			foreach ( $data as $row ) {
 				$spreadsheet[] = str_getcsv( $row );
 			}
-			$this->_source = $spreadsheet;
-			$this->_index = 0;
+			$this->source = $spreadsheet;
+			$this->index = 0;
 		}
 
-		if ( !$this->_source ) 
+		if ( !$this->source ) 
 			$this->status( self::STATUS_FAILED_INIT );
 		else
 			$this->status( self::STATUS_SUCCESSFUL_INIT );
@@ -69,9 +69,9 @@ class Spreadsheet extends Storage implements IData {
 	 */
 	public function write(): IObj
 	{
-		$source = $this->_source;
+		$source = $this->source;
 		$status = self::STATUS_FAILED;
-		$data = Val::isNull($this->_contents) ? HTTP::jsonEncode($this->_fields) : $this->_contents; 
+		$data = Val::isNull($this->contents) ? HTTP::jsonEncode($this->fields) : $this->contents; 
 		
 		$source->empty();
 		$source->contents( $data );
@@ -91,8 +91,8 @@ class Spreadsheet extends Storage implements IData {
 	 */
 	public function read(): IObj
 	{	
-		if ( $this->_index ) {
-			$row = $this->_source[ $this->_index ];
+		if ( $this->index ) {
+			$row = $this->source[ $this->index ];
 			$this->loadArray( $row );
 		}
 
@@ -106,7 +106,7 @@ class Spreadsheet extends Storage implements IData {
 	 */
 	public function delete(): IObj
 	{
-		unset ( $this->_source[ $this->_index] );
+		unset ( $this->source[ $this->index] );
 
 		return $this;
 	}
@@ -121,10 +121,10 @@ class Spreadsheet extends Storage implements IData {
 	public function index( $index = null )
 	{
 		if ( $index && $this->inbounds() ) {
-			$this->_index = $index;
+			$this->index = $index;
 		}
 		
-		return $this->_index;
+		return $this->index;
 	}
 
 	/**
@@ -133,7 +133,7 @@ class Spreadsheet extends Storage implements IData {
 	 * @return bool  True if within bounds, false otherwise
 	 */
 	private function inbounds() {
-		return ( $this->_index <= count( $this->_source ) && $this->_index >= 0 );
+		return ( $this->index <= count( $this->source ) && $this->index >= 0 );
 	}
 
 	/**
@@ -143,7 +143,7 @@ class Spreadsheet extends Storage implements IData {
 	 */
 	public function next() {
 		if ( $this->inbounds() )
-			$this->_index++;
+			$this->index++;
 	}
 
 	/**
@@ -153,6 +153,6 @@ class Spreadsheet extends Storage implements IData {
 	 */
 	public function previous() {
 		if ( $this->inbounds() )
-			$this->_index--;
+			$this->index--;
 	}
 }

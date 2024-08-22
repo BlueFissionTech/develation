@@ -8,7 +8,7 @@ class DBQueue extends Queue implements IQueue {
     /**
      * @var Storage $storage Static storage handler.
      */
-    private static $_storage;
+    private static $storage;
 
     /**
      * Set the storage handler for the queue.
@@ -17,17 +17,17 @@ class DBQueue extends Queue implements IQueue {
      * @param Storage $storage A storage instance that implements the Storage interface.
      */
     public static function setStorage(Storage $storage) {
-        self::$_storage = $storage;
-        self::$_storage->activate(); // Ensure storage is activated and ready to use.
+        self::$storage = $storage;
+        self::$storage->activate(); // Ensure storage is activated and ready to use.
     }
 
     private static function storage()
     {
-        if ( self::$_storage && is_a(self::$_storage, 'BlueFission\Data\Storage\Storage') ) {
-            return self::$_storage;
+        if ( self::$storage && is_a(self::$storage, 'BlueFission\Data\Storage\Storage') ) {
+            return self::$storage;
         }
 
-        self::$_storage = new MySql([
+        self::$storage = new MySql([
             'location'=>null,
             'name'=>'queue_'.uniqid(),
             'fields'=>['message_id', 'channel', 'message'],
@@ -38,9 +38,9 @@ class DBQueue extends Queue implements IQueue {
             'set_defaults'=>false,
             'key'=>'message_id',
         ]);
-        self::$_storage->activate(); // Ensure storage is activated and ready to use.
+        self::$storage->activate(); // Ensure storage is activated and ready to use.
 
-        return self::$_storage;
+        return self::$storage;
     }
 
     /**

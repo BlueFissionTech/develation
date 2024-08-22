@@ -12,42 +12,42 @@ class MySQLStructure extends Structure {
 	 *
 	 * @var array
 	 */
-	protected $_fields = [];
+	protected $fields = [];
 
 	/**
 	 * Comment of the table
 	 *
 	 * @var string
 	 */
-	protected $_comment;
+	protected $comment;
 
 	/**
 	 * Query for creating the table
 	 *
 	 * @var array
 	 */
-	protected $_query = [];
+	protected $query = [];
 
 	/**
 	 * Definitions of the fields
 	 *
 	 * @var array
 	 */
-	protected $_definitions = [];
+	protected $definitions = [];
 
 	/**
 	 * Additional field properties
 	 *
 	 * @var array
 	 */
-	protected $_extras = [];
+	protected $extras = [];
 
 	/**
 	 * Additional table properties
 	 *
 	 * @var array
 	 */
-	protected $_additions = [];
+	protected $additions = [];
 
 	/**
 	 * Constant for numeric field type
@@ -106,7 +106,7 @@ class MySQLStructure extends Structure {
 	 */
 	public function __construct($name)
 	{
-		$this->_query[] = "CREATE TABLE `{$name}`";
+		$this->query[] = "CREATE TABLE `{$name}`";
 	}
 
 	/**
@@ -122,7 +122,7 @@ class MySQLStructure extends Structure {
 	{
 		$field = new MySQLField($name);
 		$field->type($type)->size($size);
-		$this->_fields[$name] = $field;
+		$this->fields[$name] = $field;
 
 		return $field;
 	}
@@ -133,7 +133,7 @@ class MySQLStructure extends Structure {
 	 * @param string $text Comment for the table
 	 */
 	public function comment($text) {
-		$this->_comment = $text;
+		$this->comment = $text;
 	}
 
 	/**
@@ -293,31 +293,31 @@ class MySQLStructure extends Structure {
 	 */
 	public function build()
 	{
-		foreach ($this->_fields as $field) {
-			$this->_definitions[] = $field->definition();
+		foreach ($this->fields as $field) {
+			$this->definitions[] = $field->definition();
 			
 			$extras = $field->extras();
 			if ( $extras ) {
-				$this->_extras[] = $extras;
+				$this->extras[] = $extras;
 			}
 			
 			$additions = $field->additions();
 			if ( $additions ) {
-				$this->_additions[] = $additions;
+				$this->additions[] = $additions;
 			}
 		}
 
-		if ( $this->_comment ) {
-			$this->_additions[] = "COMMENT='".addslashes($this->_comment)."'";
+		if ( $this->comment ) {
+			$this->additions[] = "COMMENT='".addslashes($this->comment)."'";
 		}
 
-		$definitions = array_merge($this->_definitions, $this->_extras);
+		$definitions = array_merge($this->definitions, $this->extras);
 
-		$this->_query[] = "(". implode(",\n", $definitions) . ")";
+		$this->query[] = "(". implode(",\n", $definitions) . ")";
 
-		$this->_query = array_merge($this->_query, $this->_additions);
+		$this->query = array_merge($this->query, $this->additions);
 		
-		$query = implode("\n", $this->_query);
+		$query = implode("\n", $this->query);
 
 		$query .= ';';
 

@@ -35,21 +35,21 @@ trait Behaves
      *
      * @var Collection
      */
-    protected $_history;
+    protected $history;
 
     /**
      * Collection to store the current state of the object.
      *
      * @var Collection
      */
-    protected $_state;
+    protected $state;
 
     /**
      * Determines whether the object can have multiple states at once.
      *
      * @var bool
      */
-    protected $_multistate = true;
+    protected $multistate = true;
 
     /**
      * Behavioral constructor.
@@ -58,8 +58,8 @@ trait Behaves
     {
         $this->__dispatchesConstruct();
 
-        $this->_history = new Collection();
-        $this->_state = new Collection();
+        $this->history = new Collection();
+        $this->state = new Collection();
 
         $this->init();
 
@@ -112,7 +112,7 @@ trait Behaves
 
         if ( $this->can( $behaviorName ) )
         {
-            $behavior = ($behavior instanceof Behavior) ? $behavior : $this->_behaviors->get($behaviorName);
+            $behavior = ($behavior instanceof Behavior) ? $behavior : $this->behaviors->get($behaviorName);
 
             if (!$behavior) {
             	return $this;
@@ -126,16 +126,16 @@ trait Behaves
                 $behavior->context = $args;
             }
 
-            $this->_history->add($behaviorName, $behaviorName);
+            $this->history->add($behaviorName, $behaviorName);
 
             // Handle States
-            if ( $this->_behaviors->has( $behaviorName ) && $this->_behaviors->get( $behaviorName )->is_persistent() )
+            if ( $this->behaviors->has( $behaviorName ) && $this->behaviors->get( $behaviorName )->is_persistent() )
             {
             	$this->dispatch( State::STATE_CHANGING );
-                if ( !$this->_multistate ) {
-                    $this->_state->clear();
+                if ( !$this->multistate ) {
+                    $this->state->clear();
                 }
-                $this->_state->add($behaviorName, $behaviorName);
+                $this->state->add($behaviorName, $behaviorName);
                 $this->dispatch( Event::STATE_CHANGED );
             }
 
@@ -147,10 +147,10 @@ trait Behaves
             $this->dispatch( $behavior, $args );
 
             // Handle Actions
-            if ( $this->_behaviors->has( $behaviorName ) && !$this->_behaviors->get( $behaviorName )->is_passive() )
+            if ( $this->behaviors->has( $behaviorName ) && !$this->behaviors->get( $behaviorName )->is_passive() )
             {
         		// Check if this action has a function in the handler
-        		if ( $this->_handlers->has( $behaviorName ) ) {
+        		if ( $this->handlers->has( $behaviorName ) ) {
         			$this->trigger( Event::ACTION_PERFORMED );
         		}
             }
@@ -193,7 +193,7 @@ trait Behaves
 	 */
 	public function can( $behaviorName )
 	{
-		$can = ( ( $this->_behaviors->has( $behaviorName ) || $this->is( State::DRAFT ) ) && !$this->is( State::BUSY ) );
+		$can = ( ( $this->behaviors->has( $behaviorName ) || $this->is( State::DRAFT ) ) && !$this->is( State::BUSY ) );
 		return $can;
 	}
 
@@ -209,9 +209,9 @@ trait Behaves
 	public function is( $behaviorName = null )
 	{
 		if ( $behaviorName ) {
-			return $this->_state->has( $behaviorName );
+			return $this->state->has( $behaviorName );
 		} else {
-			return $this->_state->last();
+			return $this->state->last();
 		}
 	}
 
@@ -227,7 +227,7 @@ trait Behaves
 		}
 
 		foreach ($behaviorName as $behavior) {
-			$this->_state->remove( $behavior );
+			$this->state->remove( $behavior );
 		}
 
 		return $this;

@@ -7,41 +7,56 @@ use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\System\Process;
 
 /**
- * Class Shell for managing shell commands asynchronously.
- * This class extends the Async abstract class and provides specific implementations for executing shell commands.
- */
+ * Class Shell
+ * 
+ * This class manages the asynchronous execution of shell commands. 
+ * It extends the Async class to support the execution of system-level commands 
+ * while integrating with the event-driven architecture of the Async framework.
+*/
 class Shell extends Async {
 
     /**
-     * Executes a shell command asynchronously.
-     * 
-     * @param string $command The shell command to execute.
-     * @param int $priority The priority of the task; higher values are processed earlier.
-     * @return Shell The instance of the Shell class.
-     */
-    public static function do($command, $priority = 10) {
-        $function = function() use ($command) {
-            $process = new Process($command);
-            $process->start();
-            while ($status = $process->status()) {
-                if (!$status) {
-                    // If process is no longer running, break the loop
+	 * Executes a shell command asynchronously.
+	 *
+	 * This method launches a shell command in a new process and continuously monitors
+	 * its status, yielding output as it is received. It automatically handles the process
+	 * completion and cleanup.
+	 *
+	 * @param string $command The shell command to execute.
+	 * @param int $priority The priority of the task in the queue; higher values are processed first.
+	 * @return Shell Returns the Shell instance to allow method chaining.
+	*/
+    public static function do( $command, $priority = 10 ) {
+        // Define the asynchronous function that will handle the shell command execution
+        $function = function() use ( $command ) {
+            // Create a new process instance for the shell command
+            $process = new Process( $command );
+            $process->start(); // Start the process
+
+            // Continuously check the process status
+            while ( $status = $process->status() ) {
+                if ( !$status ) {
+                    // If the process has completed, exit the loop
                     break;
                 }
-                // Here you could add code to process any output as it's received
-                $output = $process->output();
-                yield $output;
+
+                // Optionally, capture and yield output from the process as it is generated
+                $output = $process->output(); // Get the current output
+                yield $output; // Yield the output to the caller
             }
-            // Optionally handle any final output or cleanup
-            $output = $process->output(); // Get any remaining output
-            $process->close();
-            yield $output;
+
+            // Capture any remaining output after the process has completed
+            $output = $process->output(); // Fetch the final output
+            $process->close(); // Close the process resources
+
+            yield $output; // Yield the final output
         };
 
-        return static::exec($function, $priority);
+        // Execute the asynchronous function with the specified priority
+        return static::exec( $function, $priority );
     }
 
     /**
-     * Optional: Implement additional methods to handle process outputs, errors, or specific shell functionalities.
-     */
+	 * Optionally, additional methods could be added here to handle process-specific behaviors, such as processing errors, managing input, or handling specific shell functionalities.
+	*/
 }

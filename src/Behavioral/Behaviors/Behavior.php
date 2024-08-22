@@ -9,24 +9,24 @@ namespace BlueFission\Behavioral\Behaviors;
 class Behavior
 {
 	/**
-	 * @var string $_name The name of the behavior.
+	 * @var string $name The name of the behavior.
 	 */
-	private $_name;
+	private $name;
 
 	/**
-	 * @var bool $_persistent A flag to indicate whether the behavior should persist or not.
+	 * @var bool $persistent A flag to indicate whether the behavior should persist or not.
 	 */
-	protected $_persistent;
+	protected $persistent;
 	
 	/**
-	 * @var bool $_passive A flag to indicate whether the behavior should be passive or not.
+	 * @var bool $passive A flag to indicate whether the behavior should be passive or not.
 	 */
-	protected $_passive;
+	protected $passive;
 	
 	/**
-	 * @var int $_priority The priority of the behavior, used to determine the order in which behaviors are executed.
+	 * @var int $priority The priority of the behavior, used to determine the order in which behaviors are executed.
 	 */
-	protected $_priority;
+	protected $priority;
 	
 	/**
 	 * @var object $target The object on which the behavior is being defined.
@@ -48,10 +48,10 @@ class Behavior
 	 */
 	public function __construct($name, $priority = 0, $passive = true, $persistent = true)
 	{
-		$this->_name = $name;
-		$this->_persistent = $persistent;
-		$this->_passive = $passive;
-		$this->_priority = $priority;
+		$this->name = $name;
+		$this->persistent = $persistent;
+		$this->passive = $passive;
+		$this->priority = $priority;
 		$this->target = null;
 	}	
 	
@@ -62,7 +62,7 @@ class Behavior
 	 */
 	public function name(): string
 	{
-		return $this->_name;
+		return $this->name;
 	}
 
 	/**
@@ -72,7 +72,7 @@ class Behavior
 	 */
 	public function is_persistent(): bool
 	{
-		return $this->_persistent;
+		return $this->persistent;
 	}
 
 	/**
@@ -82,7 +82,7 @@ class Behavior
 	 */
 	public function is_passive(): bool
 	{
-		return $this->_passive;
+		return $this->passive;
 	}
 
 	/**
@@ -92,7 +92,7 @@ class Behavior
 	 */
 	public function priority(): int
 	{
-		return $this->_priority;
+		return $this->priority;
 	}
 
 	/**

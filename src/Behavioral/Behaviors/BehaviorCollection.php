@@ -32,7 +32,7 @@ class BehaviorCollection extends Collection {
      * @return Behavior|null The behavior with the given name, or null if it doesn't exist in the collection.
      */
     public function get( $behaviorName ) {
-        foreach ($this->_value as $c) {
+        foreach ($this->value as $c) {
             if ($c->name() == $behaviorName)
                 return $c;
         }
@@ -45,7 +45,7 @@ class BehaviorCollection extends Collection {
      * @return bool True if a behavior with the given name exists, false otherwise.
      */
     public function has( $behaviorName ) {
-        foreach ($this->_value as $c) {
+        foreach ($this->value as $c) {
             if ($c->name() == $behaviorName)
                 return true;
         }

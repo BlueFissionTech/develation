@@ -7,59 +7,59 @@ use Psr\Http\Message\StreamInterface;
 
 class Response implements ResponseInterface
 {
-    private $_statusCode;
-    private $_headers;
-    private $_body;
-    private $_protocolVersion;
-    private $_reasonPhrase;
+    private $statusCode;
+    private $headers;
+    private $body;
+    private $protocolVersion;
+    private $reasonPhrase;
 
     public function __construct($statusCode = 200, $headers = [], $body = null, $protocolVersion = '1.1', $reasonPhrase = '')
     {
-        $this->_statusCode = $statusCode;
-        $this->_headers = $headers;
-        $this->_body = $body;
-        $this->_protocolVersion = $protocolVersion;
-        $this->_reasonPhrase = $reasonPhrase;
+        $this->statusCode = $statusCode;
+        $this->headers = $headers;
+        $this->body = $body;
+        $this->protocolVersion = $protocolVersion;
+        $this->reasonPhrase = $reasonPhrase;
     }
 
     public function getStatusCode(): int
     {
-        return $this->_statusCode;
+        return $this->statusCode;
     }
 
     public function withStatus($code, $reasonPhrase = ''): self
     {
         $new = clone $this;
-        $new->_statusCode = $code;
-        $new->_reasonPhrase = $reasonPhrase;
+        $new->statusCode = $code;
+        $new->reasonPhrase = $reasonPhrase;
         return $new;
     }
 
     public function getReasonPhrase(): string
     {
-        return $this->_reasonPhrase;
+        return $this->reasonPhrase;
     }
 
     public function getProtocolVersion(): string
     {
-        return $this->_protocolVersion;
+        return $this->protocolVersion;
     }
 
     public function withProtocolVersion($version): self
     {
         $new = clone $this;
-        $new->_protocolVersion = $version;
+        $new->protocolVersion = $version;
         return $new;
     }
 
     public function getHeaders(): array
     {
-        return $this->_headers;
+        return $this->headers;
     }
 
     public function hasHeader($name): bool
     {
-        return isset($this->_headers[$name]);
+        return isset($this->headers[$name]);
     }
 
     public function getHeader($name): array
@@ -67,7 +67,7 @@ class Response implements ResponseInterface
         if (!$this->hasHeader($name)) {
             return [];
         }
-        return $this->_headers[$name];
+        return $this->headers[$name];
     }
 
     public function getHeaderLine($name): string
@@ -78,7 +78,7 @@ class Response implements ResponseInterface
     public function withHeader($name, $value): self
     {
         $new = clone $this;
-        $new->_headers[$name] = (array)$value;
+        $new->headers[$name] = (array)$value;
         return $new;
     }
 
@@ -86,9 +86,9 @@ class Response implements ResponseInterface
     {
         $new = clone $this;
         if ($new->hasHeader($name)) {
-            $new->_headers[$name] = array_merge($new->_headers[$name], (array)$value);
+            $new->headers[$name] = array_merge($new->headers[$name], (array)$value);
         } else {
-            $new->_headers[$name] = (array)$value;
+            $new->headers[$name] = (array)$value;
         }
         return $new;
     }
@@ -96,19 +96,19 @@ class Response implements ResponseInterface
     public function withoutHeader($name): self
     {
         $new = clone $this;
-        unset($new->_headers[$name]);
+        unset($new->headers[$name]);
         return $new;
     }
 
     public function getBody(): StreamInterface
     {
-        return $this->_body;
+        return $this->body;
     }
 
     public function withBody(StreamInterface $body): self
     {
         $new = clone $this;
-        $new->_body = $body;
+        $new->body = $body;
         return $new;
     }
 }

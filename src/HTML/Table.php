@@ -20,14 +20,14 @@ class Table extends Obj {
 
 
 	/**
-	 * @var array $_content Stores the content of the table
+	 * @var array $content Stores the content of the table
 	 */
-	protected $_content;
+	protected $content;
 
 	/**
-	 * @var array $_config The default configuration options for the table
+	 * @var array $config The default configuration options for the table
 	 */
-	protected $_config = [
+	protected $config = [
 		'columns'=>'',
 		'href'=>'',
 		'query'=>'',
@@ -61,9 +61,9 @@ class Table extends Obj {
 	public function content( $content = null ) {
 		if (Val::isNotNull($content)) {
 			$content = Arr::toArray($content);
-			$this->_content = $content;
+			$this->content = $content;
 		}
-		return $this->_content;
+		return $this->content;
 	}
 
 	/**
@@ -82,7 +82,7 @@ class Table extends Obj {
 		$query_r = $this->config('query');
 		$content_r = $this->content();
 
-		extract($this->_config);
+		extract($this->config);
 		$hori = 0;
 		$output = '<table class="dev_table"' . (($header === false) ? '' : ' id="anyid"') . '>';
 		

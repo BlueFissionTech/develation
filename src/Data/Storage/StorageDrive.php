@@ -20,13 +20,13 @@ class StorageDrive implements IConfigurable {
 	 *
 	 * @var array
 	 */
-	protected $_bays = [];
+	protected $bays = [];
 	/**
 	 * The active bay in the drive
 	 *
 	 * @var
 	 */
-	protected $_active_bay;
+	protected $activeBay;
 
 	/**
 	 * Add a storage device to the drive
@@ -37,7 +37,7 @@ class StorageDrive implements IConfigurable {
 	public function add( Storage $device, $name = null ): IObj
 	{
 		$device->activate();
-		$this->_bays[$name] = $device;
+		$this->bays[$name] = $device;
 
 		return $this;
 	}
@@ -49,7 +49,7 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function eject( $name ): IObj
 	{
-		unset($this->_bays[$name]);
+		unset($this->bays[$name]);
 
 		return $this;
 	} 
@@ -62,7 +62,7 @@ class StorageDrive implements IConfigurable {
 	public function all(): array
 	{
 		$devices = [];
-		foreach ( $this->_bays as $name => $device ) {
+		foreach ( $this->bays as $name => $device ) {
 			$devices[$name] = get_class($device);
 		}
 		return $devices;
@@ -75,7 +75,7 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function use( $bay ): IObj
 	{
-		$this->_active_bay = $bay;
+		$this->activeBay = $bay;
 
 		return $this;
 	}
@@ -85,7 +85,7 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function create(): IObj
 	{
-		$this->_bays[$this->_active_bay]->create();
+		$this->bays[$this->activeBay]->create();
 
 		return $this;
 	}
@@ -95,7 +95,7 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function read(): IObj
 	{
-		$this->_bays[$this->_active_bay]->read();
+		$this->bays[$this->activeBay]->read();
 
 		return $this;
 	}
@@ -105,7 +105,7 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function update(): IObj
 	{
-		$this->_bays[$this->_active_bay]->update();
+		$this->bays[$this->activeBay]->update();
 
 		return $this;
 	}
@@ -115,7 +115,7 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function delete(): IObj
 	{
-		$this->_bays[$this->_active_bay]->delete();
+		$this->bays[$this->activeBay]->delete();
 
 		return $this;
 	}
@@ -125,7 +125,7 @@ class StorageDrive implements IConfigurable {
 	 */
 	public function clear(): IObj
 	{
-		$this->_bays[$this->_active_bay]->clear();
+		$this->bays[$this->activeBay]->clear();
 
 		return $this;
 	}

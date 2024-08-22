@@ -9,7 +9,7 @@ class Func extends Val implements IVal {
 	 *
 	 * @var string $type is used to store the data type of the object
 	 */
-	protected $_type = DataTypes::CALLABLE;
+	protected $type = DataTypes::CALLABLE;
 
 	/**
 	 * Constructor to initialize value of the class
@@ -17,7 +17,7 @@ class Func extends Val implements IVal {
 	 * @param mixed $value
 	 */
 	public function __construct( $value = null, $snapshot = true, $cast = false ) {
-		$value = is_callable( $value, true ) ? $value : ( ( ( $cast || $this->_forceType ) && !is_null($value)) ? \Closure::fromCallable($value) : $value );
+		$value = is_callable( $value, true ) ? $value : ( ( ( $cast || $this->forceType ) && !is_null($value)) ? \Closure::fromCallable($value) : $value );
 		parent::__construct($value);
 	}
 
@@ -27,7 +27,7 @@ class Func extends Val implements IVal {
 	 */
 	public function _isCallable(): bool
 	{
-		return is_callable($this->_data);
+		return is_callable($this->data);
 	}
 
 	/**
@@ -37,13 +37,13 @@ class Func extends Val implements IVal {
 	 */
 	public function cast(): IVal
 	{
-		// force $_data to be a callback
-		if ( $this->_type ) {
-			if ( !is_callable($this->_data) ) {
-				$this->_data = function() { return null; };
+		// force $data to be a callback
+		if ( $this->type ) {
+			if ( !is_callable($this->data) ) {
+				$this->data = function() { return null; };
 			}
 		} else {
-			$this->_data = Closure::fromCallable($this->_data);
+			$this->data = Closure::fromCallable($this->data);
 		}
 		$this->trigger(Event::CHANGE);
 
@@ -57,7 +57,7 @@ class Func extends Val implements IVal {
 	 */
 	public function bind( $object, $scope = null ): IVal
 	{
-		$this->_data = $this->_data->bindTo($object, $scope);
+		$this->data = $this->data->bindTo($object, $scope);
 
 		return $this;
 	}
@@ -68,12 +68,12 @@ class Func extends Val implements IVal {
 	 */
 	public function expects(): array
 	{
-		if ( is_string($this->_data) || is_array($this->_data) ) {
-			$this->_data = \Closure::fromCallable($this->_data);
+		if ( is_string($this->data) || is_array($this->data) ) {
+			$this->data = \Closure::fromCallable($this->data);
 		}
 
 		try {
-			$reflector = new \ReflectionFunction($this->_data);
+			$reflector = new \ReflectionFunction($this->data);
 			return $reflector->getParameters();
 		} catch (Exception $e) {
 			return [];
@@ -87,7 +87,7 @@ class Func extends Val implements IVal {
 	public function returns(): mixed
 	{
 		try {
-			$reflector = new \ReflectionFunction($this->_data);
+			$reflector = new \ReflectionFunction($this->data);
 			return $reflector->getReturnType();
 		} catch (Exception $e) {
 			return null;
@@ -98,7 +98,7 @@ class Func extends Val implements IVal {
 	{
 		$args = func_get_args();
 		
-		if ( !is_callable($this->_data) ) {
+		if ( !is_callable($this->data) ) {
 			$this->trigger(Event::EXCEPTION);
 			throw new \Exception("The value is not callable");
 		}
@@ -110,7 +110,7 @@ class Func extends Val implements IVal {
 		}
 
 		// call the function
-		return call_user_func_array($this->_data, $ref_args);
+		return call_user_func_array($this->data, $ref_args);
 	}
 
 	public function __invoke( $value = null )

@@ -19,16 +19,16 @@ class Datasource extends Data implements IData {
 	/**
 	 * The current index in the collection of data.
 	 *
-	 * @var int $_index
+	 * @var int $index
 	 */
-	private $_index;
+	private $index;
 	
 	/**
 	 * The collection of data being managed by the Datasource.
 	 *
-	 * @var array $_collection
+	 * @var array $collection
 	 */
-	private $_collection;
+	private $collection;
 
 	/**
 	 * Datasource constructor.
@@ -37,7 +37,7 @@ class Datasource extends Data implements IData {
 	 */
 	public function __construct( $config = null ) {
 		parent::__construct( $config = null );
-		$_index = -1;
+		$index = -1;
 	}
 
 	/**
@@ -47,7 +47,7 @@ class Datasource extends Data implements IData {
 	 */
 	public function read(): IObj
 	{
-		$this->assign( $this->_collection[ $this->_index ] );
+		$this->assign( $this->collection[ $this->index ] );
 
 		return $this;
 	}
@@ -59,7 +59,7 @@ class Datasource extends Data implements IData {
 	 */
 	public function write(): IObj
 	{
-		$this->_collection[ $this->_index ] = $this->_data;
+		$this->collection[ $this->index ] = $this->data;
 
 		return $this;
 	}
@@ -71,7 +71,7 @@ class Datasource extends Data implements IData {
 	 */
 	public function delete(): IObj
 	{
-		unset ( $this->_collection[ $this->_index ] );
+		unset ( $this->collection[ $this->index ] );
 
 		return $this;
 	}
@@ -82,7 +82,7 @@ class Datasource extends Data implements IData {
 	 * @return string
 	 */
 	public function contents() {
-		return serialize( $this->_data );
+		return serialize( $this->data );
 	}
 
 	/**
@@ -93,9 +93,9 @@ class Datasource extends Data implements IData {
 	 */
 	public function index( $index = 0 ) {
 		if ( $index && $this->inbounds( $index ) ) {
-			$this->_index = $index;
+			$this->index = $index;
 		}
-		return $this->_index;
+		return $this->index;
 	}
 
 	/**
@@ -105,8 +105,8 @@ class Datasource extends Data implements IData {
 	 * @return bool
 	 */
 	private function inbounds( $index = null ) {
-		$index = Num::isValid($index) ? $index : $this->_index;
-		return ( $index <= count( $this->_collection ) && $index >= 0 );
+		$index = Num::isValid($index) ? $index : $this->index;
+		return ( $index <= count( $this->collection ) && $index >= 0 );
 	}
 
 	/**
@@ -116,7 +116,7 @@ class Datasource extends Data implements IData {
 	 */
 	public function next() {
 		if ( $this->inbounds() )
-			$this->_index++;
+			$this->index++;
 	}
 	
 	/**
@@ -126,6 +126,6 @@ class Datasource extends Data implements IData {
 	 */
 	public function previous() {
 		if ( $this->inbounds() )
-			$this->_index--;
+			$this->index--;
 	}
 }

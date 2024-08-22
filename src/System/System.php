@@ -18,35 +18,35 @@ class System implements IDispatcher {
 	use Dispatches;
 	
 	/**
-	 * @var string $_response The output of the command
+	 * @var string $response The output of the command
 	 */
-	protected $_response;
+	protected $response;
 	/**
-	 * @var string $_status
+	 * @var string $status
 	 */
-	protected $_status;
+	protected $status;
 	/**
-	 * @var Process $_process The process information of the command
+	 * @var Process $process The process information of the command
 	 */
-	protected $_processes = [];
+	protected $processes = [];
 	/**
-	 * @var int $_timeout The maximum execution time of the command in seconds
+	 * @var int $timeout The maximum execution time of the command in seconds
 	 */
-	protected $_timeout = 60;
+	protected $timeout = 60;
 	/**
-	 * @var string $_cwd The current working directory of the command
+	 * @var string $cwd The current working directory of the command
 	 */
-	protected $_cwd;
+	protected $cwd;
 	/**
-	 * @var string $_output_file The file to write the command output to
+	 * @var string $outputFile The file to write the command output to
 	 */
-	protected $_output_file;
+	protected $outputFile;
 
-	protected $_command;
+	protected $command;
 
-	protected $_process;
+	protected $process;
 
-	protected $_read_streams;
+	protected $readStreams;
 
 	/**
 	 * Check if the command is valid before running it
@@ -103,7 +103,7 @@ class System implements IDispatcher {
 			}
 		}
 
-		$this->_command = $command;
+		$this->command = $command;
 
 		$descriptorspec = [
 			0 => ["pipe", "r"],
@@ -111,27 +111,27 @@ class System implements IDispatcher {
 			2 => ["pipe", "w"]
 		];
 
-		if (Val::is($this->_output_file)) {
-			$descriptorspec[1] = ["file", $this->_output_file, "a"];
+		if (Val::is($this->outputFile)) {
+			$descriptorspec[1] = ["file", $this->outputFile, "a"];
 		}
 
 		$options = [
-			'timeout' => $this->_timeout,
-			'cwd' => $this->_cwd
+			'timeout' => $this->timeout,
+			'cwd' => $this->cwd
 		];
 
-		$process = new Process($command, $this->_cwd, null, $descriptorspec, $options);
+		$process = new Process($command, $this->cwd, null, $descriptorspec, $options);
         $this->echo($process, [Event::STARTED, Event::STOPPED, Event::ERROR]);
 
         // Listen to process completion to handle cleanup or additional tasks
         $process->when(Event::COMPLETE, function($event, $args) {
-            $this->_status = "Process completed with output: " . $args['output'];
+            $this->status = "Process completed with output: " . $args['output'];
         });
 
-		$this->_processes[] = $process;
-		end($this->_processes)->start();
+		$this->processes[] = $process;
+		end($this->processes)->start();
 
-		$this->_response = end($this->_processes)->output();
+		$this->response = end($this->processes)->output();
 
 		return $process;
 	}
@@ -151,7 +151,7 @@ class System implements IDispatcher {
             }
         }
 
-        $this->_command = $command;
+        $this->command = $command;
 
         $descriptorspec = [
             0 => ["pipe", "r"],
@@ -159,52 +159,52 @@ class System implements IDispatcher {
             2 => ["pipe", "w"]
         ];
 
-        if (isset($this->_output_file)) {
-            $descriptorspec[1] = ["file", $this->_output_file, "a"];
+        if (isset($this->outputFile)) {
+            $descriptorspec[1] = ["file", $this->outputFile, "a"];
         }
 
         $options = [
-            'timeout' => $this->_timeout,
-            'cwd' => $this->_cwd
+            'timeout' => $this->timeout,
+            'cwd' => $this->cwd
         ];
 
-        $process = new Process($command, $this->_cwd, null, $descriptorspec, $options);
+        $process = new Process($command, $this->cwd, null, $descriptorspec, $options);
 
         // Echo process events
         $this->echo($process, [Event::STARTED, Event::STOPPED, Event::ERROR]);
 
         // Setup listening to completion
         $process->when(Event::COMPLETE, function($event, $args) {
-            $this->_status = "Process completed with output: " . $args['output'];
+            $this->status = "Process completed with output: " . $args['output'];
         });
 
         $processId = uniqid('process_');
-    	$this->_processes[$processId] = $process;
-        end($this->_processes)->start();
+    	$this->processes[$processId] = $process;
+        end($this->processes)->start();
 
         // Make the streams non-blocking
-        // stream_set_blocking(end($this->_processes)->pipes(1), false);
-        // stream_set_blocking(end($this->_processes)->pipes(2), false);
+        // stream_set_blocking(end($this->processes)->pipes(1), false);
+        // stream_set_blocking(end($this->processes)->pipes(2), false);
 
-        // Add the streams to _read_streams
-        $this->_read_streams[] = end($this->_processes)->pipes(1);
-        $this->_read_streams[] = end($this->_processes)->pipes(2);
+        // Add the streams to readStreams
+        $this->readStreams[] = end($this->processes)->pipes(1);
+        $this->readStreams[] = end($this->processes)->pipes(2);
 
-        $this->_response = '';
+        $this->response = '';
 
         return $processId;
     }
 
     public function stop($processId) {
-    	if (isset($this->_processes[$processId])) {
-    		$this->_processes[$processId]->stop();
+    	if (isset($this->processes[$processId])) {
+    		$this->processes[$processId]->stop();
     		$this->trigger(Event::STOPPED);
     	}
     }
 
     public function readAvailableOutput($processId) {
-	    if (isset($this->_processes[$processId])) {
-	        $read_streams = [$this->_processes[$processId]->pipes(1), $this->_processes[$processId]->pipes(2)];
+	    if (isset($this->processes[$processId])) {
+	        $read_streams = [$this->processes[$processId]->pipes(1), $this->processes[$processId]->pipes(2)];
 	        $write_streams = null;
 	        $except_streams = null;
 	        $output = '';
@@ -222,15 +222,15 @@ class System implements IDispatcher {
 
 
 	public function writeInput($processId, $input) {
-	    if (isset($this->_processes[$processId])) {
-	        $process = $this->_processes[$processId];//['process'];
+	    if (isset($this->processes[$processId])) {
+	        $process = $this->processes[$processId];//['process'];
 	        fwrite($process->pipes(0), $input);
 	    }
 	}
 
 	public function readOutput($processId) {
-	    if (isset($this->_processes[$processId])) {
-	        $process = $this->_processes[$processId];//['process'];
+	    if (isset($this->processes[$processId])) {
+	        $process = $this->processes[$processId];//['process'];
 	        return stream_get_contents($process->pipes(1));
 	    }
 	    return false;
@@ -238,7 +238,7 @@ class System implements IDispatcher {
 
 	public function isOutputAvailable(int $processId): bool
 	{
-	    $process = $this->_processes[$processId] ?? null;
+	    $process = $this->processes[$processId] ?? null;
 
 	    if (!$process) {
 	        return false;
@@ -254,7 +254,7 @@ class System implements IDispatcher {
 	 * @return Process
 	 */
 	public function process() {
-		return array_pop( $this->_processes );
+		return array_pop( $this->processes );
 	}
 
 	/**
@@ -264,7 +264,7 @@ class System implements IDispatcher {
 	*/
 	public function getCommand()
 	{
-		return $this->_command;
+		return $this->command;
 	}
 
 	/**
@@ -275,10 +275,10 @@ class System implements IDispatcher {
 	public function cwd($cwd = null)
 	{
 		if ( $cwd ) {
-	    	$this->_cwd = $cwd;
+	    	$this->cwd = $cwd;
 		}
 
-		return $this->_cwd;
+		return $this->cwd;
 	}
 
 	/**
@@ -289,10 +289,10 @@ class System implements IDispatcher {
 	public function timeout($timeout)
 	{
 		if ( $timeout ) {
-			$this->_timeout = $timeout;
+			$this->timeout = $timeout;
 		}
 
-		return $this->_timeout;
+		return $this->timeout;
 	}
 
 	/**
@@ -303,9 +303,9 @@ class System implements IDispatcher {
 	public function outputFile($output_file)
 	{
 		if ( $output_file ) {
-			$this->_output_file = $output_file;
+			$this->outputFile = $output_file;
 		}
-		return $this->_output_file;
+		return $this->outputFile;
 	}
 
 	/**
@@ -314,8 +314,8 @@ class System implements IDispatcher {
 	* @return mixed string|boolean response of the command or false if command was run in background
 	*/
 	public function response() {
-		if ($this->_response) {
-			return $this->_response;
+		if ($this->response) {
+			return $this->response;
 		}
 		return false;
 	}
@@ -326,6 +326,6 @@ class System implements IDispatcher {
 	* @return string message
 	*/
 	public function status() {
-		return $this->_status;
+		return $this->status;
 	}
 }

@@ -18,36 +18,36 @@ class Val implements IVal, IDispatcher {
     }
 
 	/**
-	 * @var mixed $_data
+	 * @var mixed $data
 	 */
-	protected $_data;
+	protected $data;
 
 	/**
-	 * @var $_constraints
+	 * @var $constraints
 	 */
-	protected $_constraints = [];
+	protected $constraints = [];
 
 	/**
 	 * Capture the value of the var at a specific time
 	 * @var null
 	 */
-	protected $_snapshot = null;
+	protected $snapshot = null;
 
 	/**
-	 * @var string $_forceType
+	 * @var string $forceType
 	 */
-	protected $_forceType = false;
+	protected $forceType = false;
 
 	/**
 	 * @var string $type
 	 */
-	protected $_type = DataTypes::GENERIC;
+	protected $type = DataTypes::GENERIC;
 
-	private static $_instances = null;
+	private static $instances = null;
 
-	private static $_last = null;
+	private static $last = null;
 
-	private static $_slots = [];
+	private static $slots = [];
 
 	/**
 	 * @var string PRIVATE_PREFIX
@@ -66,9 +66,9 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $value;
-		if ( $this->_type && $this->_forceType || $cast ) {
-			settype($this->_data, $this->_type->value);
+		$this->data = $value;
+		if ( $this->type && $this->forceType || $cast ) {
+			settype($this->data, $this->type->value);
 		}
 
 		if ( $takeSnapshot ) {
@@ -95,9 +95,9 @@ class Val implements IVal, IDispatcher {
 			} elseif ( is_string($function) && method_exists($this, '_'.$function) ) {
 				$valid = $this->{'_'.$function}();
 			} elseif ( is_string($function) && function_exists($function) ) {
-				$valid = $function($this->_data);
+				$valid = $function($this->data);
 			} elseif ( is_callable($function) ) {
-				$valid = call_user_func($function, $this->_data);
+				$valid = call_user_func($function, $this->data);
 			} else {
 				$valid = false;
 			}
@@ -118,13 +118,13 @@ class Val implements IVal, IDispatcher {
 	public function cast(): IVal
 	{
 		try {
-			if ( $this->_type && DataTypes::GENERIC !== $this->_type ) {
-				settype($this->_data, $this->_type->value);
+			if ( $this->type && DataTypes::GENERIC !== $this->type ) {
+				settype($this->data, $this->type->value);
 				$this->trigger(Event::CHANGE);
 			}
 		} catch (Exception $e) {
 			$this->trigger(Event::ERROR);
-			error_log("Can't cast value to type '{$this->_type->value}'");
+			error_log("Can't cast value to type '{$this->type->value}'");
 		}
 
 		return $this;
@@ -136,7 +136,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function getType(): string
 	{
-		return $this->_type->value;
+		return $this->type->value;
 	}
 
 	/**
@@ -161,7 +161,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public static function grab(): mixed
 	{
-		$value = self::$_last;
+		$value = self::$last;
 
 		return $value;
 	}
@@ -185,7 +185,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public static function slot(string $name, callable $callable): IVal
 	{
-		$this->_slots[$name] = $callable->bindTo($this, $this);
+		$this->slots[$name] = $callable->bindTo($this, $this);
 	}
 
 	/**
@@ -200,15 +200,15 @@ class Val implements IVal, IDispatcher {
 			$tag = $group . '.' . $tag;
 		}
 
-		if ( !self::$_instances ) {
-			self::$_instances = new Collection();
+		if ( !self::$instances ) {
+			self::$instances = new Collection();
 		}
 
-		if ( !isset(self::$_instances[$tag]) ) {
-			self::$_instances[$tag] = new Collection();
+		if ( !isset(self::$instances[$tag]) ) {
+			self::$instances[$tag] = new Collection();
 		}
 
-		self::$_instances[$tag]->addDistinct($this);
+		self::$instances[$tag]->addDistinct($this);
 
 		return $this;
 	}
@@ -225,13 +225,13 @@ class Val implements IVal, IDispatcher {
 			$tag = $group . '.' . $tag;
 		}
 
-		if ( !self::$_instances ) {
-			self::$_instances = new Collection();
+		if ( !self::$instances ) {
+			self::$instances = new Collection();
 		}
 
-		if ( isset(self::$_instances[$tag]) ) {
-			$key = self::$_instances[$tag]->search($this);
-			self::$_instances[$tag]->remove($key);
+		if ( isset(self::$instances[$tag]) ) {
+			$key = self::$instances[$tag]->search($this);
+			self::$instances[$tag]->remove($key);
 		}
 
 		return $this;
@@ -254,15 +254,15 @@ class Val implements IVal, IDispatcher {
 			$tag = $group . '.' . $tag;
 		}
 
-		if ( !self::$_instances ) {
-			self::$_instances = new Collection();
+		if ( !self::$instances ) {
+			self::$instances = new Collection();
 		}
 
-		if ( !isset(self::$_instances[$tag]) ) {
-			self::$_instances[$tag] = new Collection();
+		if ( !isset(self::$instances[$tag]) ) {
+			self::$instances[$tag] = new Collection();
 		}
 
-		return self::$_instances[$tag];
+		return self::$instances[$tag];
 	}
 
 	///
@@ -276,19 +276,19 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function _is( ): bool
 	{
-		return isset($this->_data);
+		return isset($this->data);
 	}
 	
 	/**
-	 * Check if var is a valid instance of $_type
+	 * Check if var is a valid instance of $type
 	 *
 	 * @return bool
 	 */
 	public function _isValid( $value = null ): bool
 	{
-		$var = $value ?? $this->_data;
-		if ( $this->_type ) {
-			switch ($this->_type) {
+		$var = $value ?? $this->data;
+		if ( $this->type ) {
+			switch ($this->type) {
 				case DataTypes::GENERIC: // redundant catch for no type set
 					return true;
 					break;
@@ -356,7 +356,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function _isNull( ): bool
 	{
-		return is_null( $this->_data );
+		return is_null( $this->data );
 	}
 
 	/**
@@ -376,7 +376,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function _isEmpty( ): bool
 	{
-		return empty($this->_data) && !is_numeric( $this->_data );
+		return empty($this->data) && !is_numeric( $this->data );
 	}
 
 	/**
@@ -397,7 +397,7 @@ class Val implements IVal, IDispatcher {
 	 * @return IVal The instance of the Flag class
 	 */
 	public function then( $callback ) {
-		if ( $this->_data ) {
+		if ( $this->data ) {
 			$callback( $this );
 		}
 
@@ -412,7 +412,7 @@ class Val implements IVal, IDispatcher {
 	 * @return IVal The instance of the Flag class
 	 */
 	public function otherwise( $callback ) {
-		if ( !$this->_data ) {
+		if ( !$this->data ) {
 			$callback( $this );
 		}
 
@@ -431,7 +431,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data && $value;
+		$this->data = $this->data && $value;
 		return $this;
 	}
 
@@ -447,7 +447,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data || $value;
+		$this->data = $this->data || $value;
 		return $this;
 	}
 
@@ -457,7 +457,7 @@ class Val implements IVal, IDispatcher {
 	 * @return IVal The instance of the Flag class
 	 */
 	public function not() {
-		$this->_data = !$this->_data;
+		$this->data = !$this->data;
 		return $this;
 	}
 
@@ -473,7 +473,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data xor $value;
+		$this->data = $this->data xor $value;
 		return $this;
 	}
 
@@ -489,7 +489,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = !($this->_data || $value);
+		$this->data = !($this->data || $value);
 		return $this;
 	}
 
@@ -500,7 +500,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function _isTruthy(): bool
 	{
-		return (bool)$this->_data;
+		return (bool)$this->data;
 	}
 
 	/**
@@ -511,9 +511,9 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function _constraint( $callable, $priority = 10 ): IVal
 	{
-		$this->_constraints[$priority] = $this->_constraints[$priority] ?? [];
-		$this->_constraints[$priority][] = $callable;
-		ksort($this->_constraints);
+		$this->constraints[$priority] = $this->constraints[$priority] ?? [];
+		$this->constraints[$priority][] = $callable;
+		ksort($this->constraints);
 		
 		return $this;
 	}
@@ -523,7 +523,7 @@ class Val implements IVal, IDispatcher {
 	 *
 	 * @param mixed $value
 	 *
-	 * @return mixed The value of the data member `_data`
+	 * @return mixed The value of the data member `data`
 	 */
 	public function val($value = null): mixed
 	{
@@ -531,15 +531,15 @@ class Val implements IVal, IDispatcher {
 		if ( !is_null($value) ) {
     		if (!Val::isValid($value)) {
     			$this->trigger(Event::EXCEPTION);
-    			throw new \Exception("Value is not a valid type '{$this->_type->value}'", 1);
+    			throw new \Exception("Value is not a valid type '{$this->type->value}'", 1);
     		}
     		$this->alter($value);
 
     		return $this;
 		} else {
 			// Always return a constrained value
-			$value = $this->_data;
-			foreach ($this->_constraints as $constraint) {
+			$value = $this->data;
+			foreach ($this->constraints as $constraint) {
 				foreach ($constraint as $callable) {
 					call_user_func_array($callable, [&$value]);
 				}
@@ -550,7 +550,7 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
-	 * pass the value as a reference bound to $_data
+	 * pass the value as a reference bound to $data
 	 *
 	 * @param mixed $value
 	 * @return IVal
@@ -559,9 +559,9 @@ class Val implements IVal, IDispatcher {
 	{
 		$this->alter($value);
 
-		$value = $this->_data;
+		$value = $this->data;
 
-		$this->_data = &$value;
+		$this->data = &$value;
 
 		return $this;
 	}
@@ -573,7 +573,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function snapshot(): IVal
 	{
-		$this->_snapshot = $this->_data;
+		$this->snapshot = $this->data;
 
 		return $this;
 	}
@@ -584,7 +584,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function clearSnapshot(): IVal
 	{
-		$this->_snapshot = null;
+		$this->snapshot = null;
 
 		return $this;
 	}
@@ -596,7 +596,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function reset(): IVal
 	{
-		$this->_data = $this->_snapshot;
+		$this->data = $this->snapshot;
 		$this->trigger(Event::CHANGE);
 
 		return $this;
@@ -609,7 +609,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function delta()
 	{
-		return $this->_data - $this->_snapshot;
+		return $this->data - $this->snapshot;
 	}
 
 	/**
@@ -644,29 +644,29 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function clear(): IVal
 	{
-		$this->_data = null;
+		$this->data = null;
 		$this->trigger([Event::CLEAR_DATA, Event::CHANGE]);
 
 		return $this;
 	}
 
 	/**
-	 * Alter the value of $_data
+	 * Alter the value of $data
 	 *
 	 * @param mixed $value
 	 * @return void
 	 */
 	protected function alter($value)
 	{
-		foreach ($this->_constraints as $constraint) {
+		foreach ($this->constraints as $constraint) {
 			foreach ($constraint as $callable) {
 				call_user_func_array($callable, [&$value]);
 			}
 		}
-		if ($this->_data != $value) {
+		if ($this->data != $value) {
 			$this->trigger(Event::CHANGE);
 		}
-		$this->_data = $value;
+		$this->data = $value;
 	}
 
 	/**
@@ -686,9 +686,9 @@ class Val implements IVal, IDispatcher {
 			
 			return $output;
 		} else {
-			if ( in_array($method, $this->_slots) ) {
+			if ( in_array($method, $this->slots) ) {
 				$this->trigger(Event::ACTION_PERFORMED);
-				return call_user_func_array($this->_slots[$method], $args);
+				return call_user_func_array($this->slots[$method], $args);
 			}
 
 			// throw new Exception("Method {$method} not defined", 1);
@@ -731,7 +731,7 @@ class Val implements IVal, IDispatcher {
 		if ( method_exists($class, self::PRIVATE_PREFIX.$method) ) {
 			$value = array_shift( $args );
 
-			self::$_last = $value;
+			self::$last = $value;
 			
 			$object = new $class( $value, false, false );
 			$output = call_user_func_array([$object, self::PRIVATE_PREFIX.$method], $args);

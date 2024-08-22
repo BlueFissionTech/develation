@@ -12,57 +12,57 @@ class MySQLField {
     /**
      * @var string The name of the field.
      */
-    private $_name;
+    private $name;
 
     /**
      * @var string The type of the field.
      */
-    private $_type;
+    private $type;
 
     /**
      * @var int The size of the field.
      */
-    private $_size;
+    private $size;
 
     /**
      * @var boolean If the field is a primary key.
      */
-    private $_primary;
+    private $primary;
 
     /**
      * @var boolean If the field is unique.
      */
-    private $_unique;
+    private $unique;
 
     /**
      * @var boolean If the field can be null.
      */
-    private $_null;
+    private $null;
 
     /**
      * @var mixed The default value of the field.
      */
-    private $_default;
+    private $default;
 
     /**
      * @var boolean If the field is a binary.
      */
-    private $_binary;
+    private $binary;
 
     /**
      * @var array Contains the foreign key information for the field.
      */
-    private $_foreign = [];
+    private $foreign = [];
 
     /**
      * @var boolean If the field is auto-incremented.
      */
-    private $_autoincrement;
+    private $autoIncrement;
 
     /**
      * @var MySQLLink a connection to the target database.
      */
-    private $_link;
+    private $link;
 
     /**
      * Constructor for the MySQLField class.
@@ -73,8 +73,8 @@ class MySQLField {
      */
     public function __construct($name)
     {
-        $this->_name = $name;
-        $this->_link = new MySQLLink();
+        $this->name = $name;
+        $this->link = new MySQLLink();
 
         return $this;
     }
@@ -88,7 +88,7 @@ class MySQLField {
      */
     public function type($type)
     {
-        $this->_type = $type;
+        $this->type = $type;
 
         return $this;
     }
@@ -102,7 +102,7 @@ class MySQLField {
      */
     public function size($size)
     {
-        $this->_size = $size;
+        $this->size = $size;
 
         return $this;
     }
@@ -116,7 +116,7 @@ class MySQLField {
      */
     public function primary( $isTrue = true)
     {
-        $this->_primary = $isTrue;
+        $this->primary = $isTrue;
 
         return $this;
     }
@@ -130,7 +130,7 @@ class MySQLField {
      */
     public function autoincrement( $isTrue = true)
     {
-        $this->_autoincrement = $isTrue;
+        $this->autoIncrement = $isTrue;
 
         return $this;
     }
@@ -144,7 +144,7 @@ class MySQLField {
      */
     public function unique( $isTrue = true)
     {
-        $this->_unique = $isTrue;
+        $this->unique = $isTrue;
 
 		return $this;
 	}
@@ -157,7 +157,7 @@ class MySQLField {
 	 */
 	public function null( $isTrue = true)
 	{
-		$this->_null = $isTrue;
+		$this->null = $isTrue;
 
 		return $this;
 	}
@@ -170,7 +170,7 @@ class MySQLField {
 	 */
 	public function default( mixed $value )
 	{
-		$this->_default = $value;
+		$this->default = $value;
 
 		return $this;
 	}
@@ -183,7 +183,7 @@ class MySQLField {
 	 */
 	public function required( $isTrue = true)
 	{
-		$this->_null = !$isTrue;
+		$this->null = !$isTrue;
 
 		return $this;
 	}
@@ -199,7 +199,7 @@ class MySQLField {
 	 */
 	public function foreign( $entity, $onField = 'id', $updateAction = '', $deleteAction = '' )
 	{
-		$this->_foreign[$entity] = ['on'=>$onField, 'update'=>$updateAction, 'delete'=>$deleteAction];
+		$this->foreign[$entity] = ['on'=>$onField, 'update'=>$updateAction, 'delete'=>$deleteAction];
 
 		return $this;
 	}
@@ -211,9 +211,9 @@ class MySQLField {
 	 */
 	public function definition()
 	{
-		$definition[] = "`{$this->_name}`";
+		$definition[] = "`{$this->name}`";
 		
-		switch ($this->_type) {
+		switch ($this->type) {
 			case 'datetime':
 			$definition[] = "DATETIME";
 			break;
@@ -252,7 +252,7 @@ class MySQLField {
 
 			default:
 			case 'text':
-			if ($this->_size > 255) {
+			if ($this->size > 255) {
 				$definition[] = "TEXT";
 			} else {
 				$definition[] = "VARCHAR";
@@ -260,21 +260,21 @@ class MySQLField {
 			break;
 		}
 
-		if ( $this->_size ) {
-			$definition[] = "({$this->_size})";
+		if ( $this->size ) {
+			$definition[] = "({$this->size})";
 		}
 
-		if ( $this->_default !== null ) {
-			$definition[] = "DEFAULT ".$this->_link->sanitize((string)$this->_default);
+		if ( $this->default !== null ) {
+			$definition[] = "DEFAULT ".$this->link->sanitize((string)$this->default);
 		}
 		
-		if ( !$this->_null ) {
+		if ( !$this->null ) {
 			$definition[] = "NOT";
 		}
 
 		$definition[] = "NULL";
 
-		if ( $this->_autoincrement ) {
+		if ( $this->autoIncrement ) {
 			$definition[] = "AUTO_INCREMENT";
 		}
 
@@ -292,19 +292,19 @@ class MySQLField {
 	{
 		$extras = [];
 
-		if ( $this->_primary ) {
-			$extras[] = "PRIMARY KEY (`{$this->_name}`)";
+		if ( $this->primary ) {
+			$extras[] = "PRIMARY KEY (`{$this->name}`)";
 		}
 
-		if ( $this->_unique ) {
-			$extras[] = "UNIQUE INDEX `{$this->_name}_UNIQUE` (`{$this->_name}` ASC) VISIBLE";
+		if ( $this->unique ) {
+			$extras[] = "UNIQUE INDEX `{$this->name}_UNIQUE` (`{$this->name}` ASC) VISIBLE";
 		}
 
-		if ( count($this->_foreign) > 0 ) {
-			foreach ( $this->_foreign as $entity => $values ) {
-				$extras[] = "INDEX `{$this->_name}_idx` (`{$this->_name}` ASC) VISIBLE";
-				$foreign = "CONSTRAINT `{$this->_name}_".Str::rand(null, 4)."`\n".
-				    "FOREIGN KEY (`{$this->_name}`)\n".
+		if ( count($this->foreign) > 0 ) {
+			foreach ( $this->foreign as $entity => $values ) {
+				$extras[] = "INDEX `{$this->name}_idx` (`{$this->name}` ASC) VISIBLE";
+				$foreign = "CONSTRAINT `{$this->name}_".Str::rand(null, 4)."`\n".
+				    "FOREIGN KEY (`{$this->name}`)\n".
 				    "REFERENCES `$entity` (`{$values['on']}`)\n";
 
 				    if ( $values['delete'] ) {

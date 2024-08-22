@@ -18,10 +18,10 @@ The `Date` class is an extension of the `Val` class within the BlueFission frame
 
 ## Properties
 
-- `$_type`: Fixed to "datetime".
-- `$_format`: The format of the date. Default is ISO 8601 (`"c"`).
-- `$_timezone`: The timezone of the date. Default is `"UTC"`.
-- `$_datetime`: A `DateTime` object managing most date operations.
+- `$type`: Fixed to "datetime".
+- `$format`: The format of the date. Default is ISO 8601 (`"c"`).
+- `$timezone`: The timezone of the date. Default is `"UTC"`.
+- `$datetime`: A `DateTime` object managing most date operations.
 
 ## Constructor
 
@@ -38,7 +38,7 @@ public function __construct($value = null, $timezone = null)
 ```php
 public function value($value = null): mixed
 ```
-Overrides the parent `value` method to set or get the current date value formatted according to `$_format`.
+Overrides the parent `value` method to set or get the current date value formatted according to `$format`.
 
 ### is
 

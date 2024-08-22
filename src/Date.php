@@ -9,28 +9,28 @@ use \DateTime;
 
 class Date extends Val implements IVal
 {
-	protected $_type = DataTypes::DATETIME;
+	protected $type = DataTypes::DATETIME;
 
     /**
-	 * @var string $_format The format of the date
+	 * @var string $format The format of the date
 	 */
-    protected $_format = "c"; //"Y-m-d H:i:s";
+    protected $format = "c"; //"Y-m-d H:i:s";
 
     /**
-	 * @var string $_timezone The timezone of the date
+	 * @var string $timezone The timezone of the date
 	 */
-    protected $_timezone = "UTC";
+    protected $timezone = "UTC";
 
     /**
-	 * @var DateTime $_datetime the DateTime object containing the date and managing most date operations
+	 * @var DateTime $dateTime the DateTime object containing the date and managing most date operations
 	 */
-    protected $_datetime;
+    protected $dateTime;
 
     /**
-     * @var mixed $_value The value of the date
+     * @var mixed $value The value of the date
      * @var null
      */
-    protected $_value = null;
+    protected $value = null;
 
 	/**
      * Date constructor.
@@ -40,16 +40,16 @@ class Date extends Val implements IVal
     public function __construct( $value = null, $timezone = null ) {
 		parent::__construct($value);
 
-    	$this->_value = $this->_data;
+    	$this->value = $this->data;
 
  		$this->setValue($value, $timezone);
 		// Register date Array changes as changes to Date object
-        $this->_data->behavior(new Event( Event::CHANGE ), function($behavior) {
-        	$this->_datetime = new DateTime( $this->timestamp() );
-        	$this->_timezone = $this->_datetime->getTimezone()->getName();
-        	$this->_value = $this->val();
+        $this->data->behavior(new Event( Event::CHANGE ), function($behavior) {
+        	$this->dateTime = new DateTime( $this->timestamp() );
+        	$this->timezone = $this->dateTime->getTimezone()->getName();
+        	$this->value = $this->val();
         });
-        $this->echo($this->_data, [Event::CHANGE]);
+        $this->echo($this->data, [Event::CHANGE]);
     }
 
     private function setValue($value = null, $timezone = null): void
@@ -58,24 +58,24 @@ class Date extends Val implements IVal
     		$value = date('Y-m-d H:i:s', (int)$value);
 		}
 
-        $this->_datetime = ($value instanceof DateTime) ? $value : new DateTime($value ?? 'now');
-        $this->_timezone = $timezone ?? $this->_datetime->getTimezone()->getName();
+        $this->dateTime = ($value instanceof DateTime) ? $value : new DateTime($value ?? 'now');
+        $this->timezone = $timezone ?? $this->dateTime->getTimezone()->getName();
 
-        $this->_data = new Arr([
-	        'second'=>$this->_datetime->format('s'), 
-	        'minute'=>$this->_datetime->format('i'), 
-	        'hour'=>$this->_datetime->format('G'), 
-	        'day'=>$this->_datetime->format('j'), 
-	        'month'=>$this->_datetime->format('n'), 
-	        'year'=>$this->_datetime->format('Y'), 
-	        'timezone'=>$this->_datetime->format('e'), 
-	        'offset'=>$this->_datetime->format('Z')
+        $this->data = new Arr([
+	        'second'=>$this->dateTime->format('s'), 
+	        'minute'=>$this->dateTime->format('i'), 
+	        'hour'=>$this->dateTime->format('G'), 
+	        'day'=>$this->dateTime->format('j'), 
+	        'month'=>$this->dateTime->format('n'), 
+	        'year'=>$this->dateTime->format('Y'), 
+	        'timezone'=>$this->dateTime->format('e'), 
+	        'offset'=>$this->dateTime->format('Z')
 	    ]);
     }
 
     public function __get($name) {
     	if ($name === 'datetime') {
-    		return $this->_datetime;
+    		return $this->dateTime;
     	}
     }
 
@@ -85,22 +85,22 @@ class Date extends Val implements IVal
 
     		parent::val($value);
 
-   	    	$this->_value = $this->_data;
+   	    	$this->value = $this->data;
 
     		$this->setValue($value);
 
     		return $this;
     	}
 
-    	$this->setValue($this->_value);
+    	$this->setValue($this->value);
 
-    	return $this->_datetime->format($this->_format);
+    	return $this->dateTime->format($this->format);
     }
 
     public function cast(): IVal
 	{
 		if ($this->val()) {
-			$this->_value = $this->val();
+			$this->value = $this->val();
 			$this->trigger(Event::CHANGE);
 		}
 
@@ -111,10 +111,10 @@ class Date extends Val implements IVal
 	{
 		parent::clear();
 
-		$this->_value = 0;
+		$this->value = 0;
 
 		// Set a default time of the beginning of the epoch
-		$this->setValue($this->_value);
+		$this->setValue($this->value);
 
 		return $this;
 	}
@@ -123,26 +123,26 @@ class Date extends Val implements IVal
 	{
 		$this->alter($value);
 
-    	$this->_value = &$value;
-		$this->_value = $this->val();
+    	$this->value = &$value;
+		$this->value = $this->val();
 
-		$this->setValue($this->_value);
+		$this->setValue($this->value);
 
 		return $this;
 	}
 
 	public function snapshot(): IVal
 	{
-		$this->_snapshot = $this->_value;
+		$this->snapshot = $this->value;
 
 		return $this;
 	}
 
 	public function reset(): IVal
 	{
-		$this->_value = $this->_snapshot ?? 0;
+		$this->value = $this->snapshot ?? 0;
 
-		$this->setValue($this->_value);
+		$this->setValue($this->value);
 
 		return $this;
 
@@ -182,7 +182,7 @@ class Date extends Val implements IVal
 	public function _timestamp( $data = null ): int|null
 	{		
 	    if ( is_null($data) ) {
-	        $timestamp = mktime ((int)$this->_data['hour'], (int)$this->_data['minute'], (int)$this->_data['second'], (int)$this->_data['month'], (int)$this->_data['day'], (int)$this->_data['year']);
+	        $timestamp = mktime ((int)$this->data['hour'], (int)$this->data['minute'], (int)$this->data['second'], (int)$this->data['month'], (int)$this->data['day'], (int)$this->data['year']);
 	    } elseif ( Num::is($data) ) {
 	        $timestamp = $this->isValidTimestamp($data) ? $data : null;
 	    } elseif ( $data instanceof DateTime ) {
@@ -220,10 +220,10 @@ class Date extends Val implements IVal
 			$timestamp = $this->timestamp(func_get_arg(0));
 		break;
 		case 2:
-			$timestamp = mktime (func_get_arg(0), func_get_arg(1), 0, $this->_data['month'], $this->_data['day'], $this->_data['year']);
+			$timestamp = mktime (func_get_arg(0), func_get_arg(1), 0, $this->data['month'], $this->data['day'], $this->data['year']);
 		break;
 		case 3:
-			$timestamp = mktime (func_get_arg(0), func_get_arg(1), func_get_arg(2), $this->_data['month'], $this->_data['day'], $this->_data['year']);
+			$timestamp = mktime (func_get_arg(0), func_get_arg(1), func_get_arg(2), $this->data['month'], $this->data['day'], $this->data['year']);
 		break;
 		}
 
@@ -248,10 +248,10 @@ class Date extends Val implements IVal
 	public function format( string $format = null ): IVal | string
 	{
 		if ( Val::isNull($format) ) {
-			return $this->_format;
+			return $this->format;
 		}
 
-		$this->_format = $format;
+		$this->format = $format;
 		
 		return $this;
 	}
@@ -263,7 +263,7 @@ class Date extends Val implements IVal
 	 */
 	public function delta()
 	{
-		return Date::diff($this->_snapshot, $this->_data);
+		return Date::diff($this->snapshot, $this->data);
 
 		return $this;
 	}

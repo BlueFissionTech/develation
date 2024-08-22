@@ -18,12 +18,12 @@ class MemQueue extends Queue implements IQueue
      *
      * @var Memcached|null
      */
-    private static $_stack = NULL;
+    private static $stack = NULL;
 
     /**
      * The default pool to be used for Memcached
      */
-    private static $_memq_pool = 'localhost:11211';
+    private static $memqPool = 'localhost:11211';
 
     /**
      * The default time-to-live value for items in the queue
@@ -46,8 +46,8 @@ class MemQueue extends Queue implements IQueue
      * @return Memcached
      */
     private static function instance() {
-        if (!self::$_stack) self::init();
-        return self::$_stack;
+        if (!self::$stack) self::init();
+        return self::$stack;
     }
 
     /**
@@ -56,7 +56,7 @@ class MemQueue extends Queue implements IQueue
      * @param string $pool The address of the Memcached pool
      */
     public function setPool($pool) {
-        self::$_memq_pool = $pool;
+        self::$memqPool = $pool;
     }
     
     /**
@@ -65,13 +65,13 @@ class MemQueue extends Queue implements IQueue
      * @return void
      */
     private static function init() {
-        $_stack = new Memcached;
-        $servers = explode(",", static::$_memq_pool);
+        $stack = new Memcached;
+        $servers = explode(",", static::$memqPool);
         foreach ($servers as $server) {
             list($host, $port) = explode(":", $server);
-            $_stack->addServer($host, $port);
+            $stack->addServer($host, $port);
         }
-        self::$_stack = $_stack;
+        self::$stack = $stack;
     }
     
     /**
@@ -104,7 +104,7 @@ class MemQueue extends Queue implements IQueue
         $stack = self::instance();
 
         if ($after === false && $until === false) {
-            if (self::$_mode == static::FIFO) {
+            if (self::$mode == static::FIFO) {
                 $tail = $stack->get($queue . "_tail");
 
                 if (($id = $stack->increment($queue . "_head")) === false) {
@@ -119,7 +119,7 @@ class MemQueue extends Queue implements IQueue
                     $stack->decrement($queue . "_head");
                     return false;
                 }
-            } elseif (self::$_mode == static::FILO) {
+            } elseif (self::$mode == static::FILO) {
                 $head = $stack->get($queue . "_head");
 
                 if (($id = $stack->decrement($queue . "_tail")) === false) {

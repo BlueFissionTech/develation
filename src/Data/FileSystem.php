@@ -17,30 +17,30 @@ class FileSystem extends Data implements IData {
 	/**
 	 * The file handle for the file being processed
 	 *
-	 * @var resource $_handle
+	 * @var resource $handle
 	 */
-	private $_handle;
+	private $handle;
 
 	/**
 	 * The contents of the file being processed
 	 *
-	 * @var string $_contents
+	 * @var string $contents
 	 */
-	private $_contents;
+	private $contents;
 
 	/**
 	 * Indicates whether the file is locked or not
 	 *
-	 * @var bool $_isLocked
+	 * @var bool $isLocked
 	 */
-	private $_isLocked = false;
+	private $isLocked = false;
 
 	/**
 	 * The configuration options for the FileSystem class
 	 *
-	 * @var array $_config
+	 * @var array $config
 	 */
-	protected $_config = [
+	protected $config = [
 		'mode'=>'r', 
 		'filter'=>['..','.htm','.html','.pl','.txt'], 
 		'root'=>'', 
@@ -51,9 +51,9 @@ class FileSystem extends Data implements IData {
 	/**
 	 * The data stored for the file being processed
 	 *
-	 * @var array $_data
+	 * @var array $data
 	 */
-	protected $_data = [
+	protected $data = [
 		'filename'=>'',
 		'basename'=>'',
 		'extension'=>'',
@@ -63,9 +63,9 @@ class FileSystem extends Data implements IData {
 	/**
 	 * They datatypes for local properties
 	 *
-	 * @var array $_types
+	 * @var array $types
 	 */
-	protected $_types = [
+	protected $types = [
 		'filename'=>DataTypes::STRING,
 		'basename'=>DataTypes::STRING,
 		'extension'=>DataTypes::STRING,
@@ -104,7 +104,7 @@ class FileSystem extends Data implements IData {
 	 */
 	public function isLocked(): bool
 	{
-		return $this->_isLocked;
+		return $this->isLocked;
 	}
 
 	/**
@@ -122,7 +122,7 @@ class FileSystem extends Data implements IData {
 			$this->loadInfo( $file );
 		}
 
-// if (Str::pos($file, 'default') !== false) die(var_dump($this->_config));
+// if (Str::pos($file, 'default') !== false) die(var_dump($this->config));
 
 			
 		// if ($file && Str::pos($file, 'default') !== false) $this->config('root', 'lfjsjs');
@@ -163,14 +163,14 @@ class FileSystem extends Data implements IData {
 				$this->perform( Event::FAILURE, new Meta(info: $status) );
 			} else {
 				if ($this->config('lock') && flock($handle, LOCK_EX)) {
-					$this->_isLocked = true;
-					$this->_handle = $handle;
+					$this->isLocked = true;
+					$this->handle = $handle;
 					$this->perform( Event::CONNECTED );
 				} elseif (!$this->config('lock')) {
-					$this->_handle = $handle;
+					$this->handle = $handle;
 					$this->perform( Event::CONNECTED );
 				} else {
-					$this->_isLocked = false;
+					$this->isLocked = false;
 					$status = "Couldn't acquire lock on file {$filepath}.";
 					$this->perform( Event::CONNECTED );
 					$this->perform(Event::ERROR, new Meta(when: Action::OPEN, info: $status));
@@ -192,11 +192,11 @@ class FileSystem extends Data implements IData {
 	public function close(): IObj
 	{
 		$this->perform( new State(State::DISCONNECTING) );
-		if ($this->_handle) {
-			fclose ( $this->_handle );
+		if ($this->handle) {
+			fclose ( $this->handle );
 		}
-		$this->_handle = null;
-		$this->_isLocked = false;
+		$this->handle = null;
+		$this->isLocked = false;
 
 		$this->trigger(Event::DISCONNECTED);
 
@@ -209,8 +209,8 @@ class FileSystem extends Data implements IData {
 		$root = '/';
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 			$root = '';
-			// We check if there's an existing drive letter at the beginning of $this->_info['dirname'] and use that if so
-			if (preg_match('/^[A-Z]:/', $this->_info['dirname'], $matches)) {
+			// We check if there's an existing drive letter at the beginning of $this->info['dirname'] and use that if so
+			if (preg_match('/^[A-Z]:/', $this->info['dirname'], $matches)) {
 				$root = $matches[0];
 			} else {
 				// If not, we check the __DIR__ constant
@@ -331,9 +331,9 @@ class FileSystem extends Data implements IData {
 			$this->trigger([Event::SUCCESS, Event::READ], new Meta(when: Action::READ, info: $this->status()));
 			return;
 		}
-		elseif ( $this->_handle )
+		elseif ( $this->handle )
 		{
-			$this->contents( fread( $this->_handle, filesize($filepath) ) );
+			$this->contents( fread( $this->handle, filesize($filepath) ) );
 			if ( $this->contents() === false )
 			{
 				$this->status( "File $file could not be read" );
@@ -414,8 +414,8 @@ class FileSystem extends Data implements IData {
 			} else {
 				$status = "The file '$file' is not writable";
 			}
-		} elseif ($this->_handle) {
-			if ( fwrite($this->_handle, $content) !== false) 
+		} elseif ($this->handle) {
+			if ( fwrite($this->handle, $content) !== false) 
 			{
 				$status = "Successfully wrote to file '$file'";
 				$this->status($status);
@@ -459,8 +459,8 @@ class FileSystem extends Data implements IData {
 		$content = (!empty($this->contents()) && Str::is($this->contents()) ) ? stripslashes($this->contents()) : $this->contents();
 		$status = '';
 
-		if ($this->_handle) {
-			if ( ftruncate($this->_handle, 0) !== false) {
+		if ($this->handle) {
+			if ( ftruncate($this->handle, 0) !== false) {
 				$status = "Successfully emptied '$file'";
 				$this->status($status);
 				$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
@@ -731,9 +731,9 @@ class FileSystem extends Data implements IData {
 	 */
 	public function contents($data = null): mixed
 	{
-		if (Val::isNull($data)) return $this->_contents;
+		if (Val::isNull($data)) return $this->contents;
 		
-		$this->_contents = $data;
+		$this->contents = $data;
 
 		return $this;
 	}

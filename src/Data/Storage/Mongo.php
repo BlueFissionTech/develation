@@ -13,14 +13,14 @@ use BlueFission\Connections\Database\MongoLink;
 class Mongo extends Storage {
 
 	/**
-	 * @var string $_collection The name of the collection in the MongoDB database.
+	 * @var string $collection The name of the collection in the MongoDB database.
 	 */
-	private $_collection;
+	private $collection;
 
 	/**
-	 * @var array $_config The configuration options for the Mongo storage class.
+	 * @var array $config The configuration options for the Mongo storage class.
 	 */
-	protected $_config = [
+	protected $config = [
 		'location'=>'',
 		'name'=>'',
 	];
@@ -40,14 +40,14 @@ class Mongo extends Storage {
 	 */
 	public function activate( ): IObj
 	{
-		$this->_source = new MongoLink();
+		$this->source = new MongoLink();
 		if ($this->config('location'))
-			$this->_source->database( $this->config('location') );
+			$this->source->database( $this->config('location') );
 
 		if ($this->config('name'))
-			$this->_collection = $this->config('name');
+			$this->collection = $this->config('name');
 
-		if ( !$this->_source ) 
+		if ( !$this->source ) 
 			$this->status( self::STATUS_FAILED_INIT );
 
 		return $this;
@@ -58,16 +58,16 @@ class Mongo extends Storage {
 	 */
 	public function read(): IObj
 	{
-		$db = $this->_source;
+		$db = $this->source;
 
 		if ($db) {
 			$collection = $this->config('name');
 
 			$db->config('collection', $collection);
 
-			$success = $db->find($collection, $this->_data);
+			$success = $db->find($collection, $this->data);
 
-			$this->_result = $success;
+			$this->result = $success;
 
 			$this->assign($success->toArray()[0]);
 
@@ -83,16 +83,16 @@ class Mongo extends Storage {
 	 */
 	public function delete(): IObj
 	{
-		$db = $this->_source;
+		$db = $this->source;
 
 		if ($db) {
 			$collection = $this->config('name');
 
 			$db->config('collection', $collection);
 
-			$success = $db->delete($collection, $this->_data);
+			$success = $db->delete($collection, $this->data);
 
-			$this->_result = $success;
+			$this->result = $success;
 
 			$status = $success ? self::STATUS_SUCCESS : ( $db->status() ? $db->status : self::STATUS_FAILED );
 			$this->status( $status );
@@ -107,18 +107,18 @@ class Mongo extends Storage {
 	public function write(): IObj
 	{
 	
-		$db = $this->_source;
+		$db = $this->source;
 
 		if ($db) {
 			$collection = $this->config('name');
 
 			$db->config('collection', $collection);
 			// $db->config('ignore_null', $this->config('ignore_null'));
-			$success = $db->query($this->_data);
+			$success = $db->query($this->data);
 
 			if ($success) {
 				$affected_row = $db->last_row();
-				$this->_last_row_affected = $affected_row;
+				$this->lastRowAffected = $affected_row;
 			}
 
 			$status = $success ? self::STATUS_SUCCESS : ( $db->status() ? $db->status : self::STATUS_FAILED );
@@ -139,7 +139,7 @@ class Mongo extends Storage {
 	 * @return mixed Result of the map-reduce operation.
 	 */
 	public function mapReduce($map, $reduce, $output, $action = null) {
-		$db = $this->_source;
+		$db = $this->source;
 
 		return $db->mapReduce($map, $reduce, $output, $action );
 	}
@@ -155,7 +155,7 @@ class Mongo extends Storage {
 	{
 		$data = parent::contents($data);
 		if ( $data ) { // if something was assigned
-			$data = ($this->_result) ? $this->_result : $this->data();
+			$data = ($this->result) ? $this->result : $this->data();
 
 			return $data;
 		}

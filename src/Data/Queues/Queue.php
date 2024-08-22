@@ -10,14 +10,14 @@ use BlueFission\Collections\Collection;
 class Queue implements IQueue {
 
 	/**
-	 * @var ArrayObject $_stack stores the queue data.
+	 * @var ArrayObject $stack stores the queue data.
 	 */
-	private static $_stack;
+	private static $stack;
 
 	/**
-	 * @var int $_mode stores the queue mode (FILO or FIFO).
+	 * @var int $mode stores the queue mode (FILO or FIFO).
 	 */
-	public static $_mode;
+	public static $mode;
 
 	/**
 	 * FILO constant for last in, first out mode.
@@ -42,11 +42,11 @@ class Queue implements IQueue {
 	/**
 	 * Method to get an instance of the class.
 	 *
-	 * @return ArrayObject $_stack the instance of the queue.
+	 * @return ArrayObject $stack the instance of the queue.
 	 */
 	private static function instance() {
-		if(!self::$_stack) self::init();
-		return self::$_stack;
+		if(!self::$stack) self::init();
+		return self::$stack;
 	}
 
 	/**
@@ -54,7 +54,7 @@ class Queue implements IQueue {
 	 */
 	private static function init() {
 		$stack = new \ArrayObject;
-		self::$_stack = $stack;
+		self::$stack = $stack;
 	}
 
 	/**
@@ -82,9 +82,9 @@ class Queue implements IQueue {
 	public static function dequeue($queue, $after_id=false, $till_id=false) {
 		$stack = self::instance();
 		if($after_id === false && $till_id === false) {
-			if ( self::$_mode == static::FIFO ) {
+			if ( self::$mode == static::FIFO ) {
 				$item = array_shift( $stack[$queue] );
-			} elseif ( self::$_mode == static::FILO ) {
+			} elseif ( self::$mode == static::FILO ) {
 				$item = array_pop( $stack[$queue] );
 			}
 			return $item;
@@ -116,7 +116,7 @@ class Queue implements IQueue {
 	 * @return void
 	 */
 	public static function setMode( $mode ) {
-		self::$_mode = $mode;
+		self::$mode = $mode;
 	}
 
 }

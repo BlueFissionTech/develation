@@ -8,7 +8,7 @@ class Str extends Val implements IVal {
 	 *
 	 * @var string $type is used to store the data type of the object
 	 */
-	protected $_type = DataTypes::STRING;
+	protected $type = DataTypes::STRING;
 
 	/**
      * @var string MD5 hash algorithm
@@ -26,7 +26,7 @@ class Str extends Val implements IVal {
 	 * @param mixed $value
 	 */
 	public function __construct( $value = null, $snapshot = true, $cast = false ) {
-		$value = is_string( $value ) ? $value : ( ( ( $cast || $this->_forceType ) && $value != null) ? (string)$value : $value );
+		$value = is_string( $value ) ? $value : ( ( ( $cast || $this->forceType ) && $value != null) ? (string)$value : $value );
 		parent::__construct($value);
 	}
 
@@ -37,15 +37,15 @@ class Str extends Val implements IVal {
 	 */
 	public function cast(): IVal
 	{
-		if ( $this->_type ) {
-			if (is_array($this->_data)) {
-				$maybeString = implode('', $this->_data);
+		if ( $this->type ) {
+			if (is_array($this->data)) {
+				$maybeString = implode('', $this->data);
 				if (is_string($maybeString)) {
-					$this->_data = $maybeString;
+					$this->data = $maybeString;
 				}
 				$this->trigger(Event::CHANGE);
 			} else {
-				$this->_data = (string)$this->_data;
+				$this->data = (string)$this->data;
 				$this->trigger(Event::CHANGE);
 			}
 		}
@@ -62,12 +62,12 @@ class Str extends Val implements IVal {
      */
     public function _is( ): bool
     {
-    	return is_string($this->_data);
+    	return is_string($this->data);
 	}
 
 	public function _split( $delimiter = ' ' ): Arr
 	{
-		$string = $this->_data;
+		$string = $this->data;
 		$split = explode($delimiter, $string);
 		$arr = new Arr($split);
 		return $arr;
@@ -85,12 +85,12 @@ class Str extends Val implements IVal {
 		$alphanum = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		if ($symbols) $alphanum .= "~!@#\$%^&*()_+=";
 
-		if ( $this->_data == "" ) {
-			$this->_data = $alphanum;
+		if ( $this->data == "" ) {
+			$this->data = $alphanum;
 		}
 		$rand_string = '';
 		for($i=0; $i<$length; $i++) {
-			$rand_string .= $this->_data[rand(0, strlen($this->_data)-1)];
+			$rand_string .= $this->data[rand(0, strlen($this->data)-1)];
 		}
 
 		$this->alter($rand_string);
@@ -110,7 +110,7 @@ class Str extends Val implements IVal {
 	    if (!function_exists('random_bytes')) {
             throw new Exception('Function random_bytes does not exist');
         }
-	    $data = $this->_data ?? random_bytes(16);
+	    $data = $this->data ?? random_bytes(16);
 	    assert(strlen($data) == 16);
 
 	    // Set version to 0100
@@ -134,7 +134,7 @@ class Str extends Val implements IVal {
 	 */
 	public function _truncate(int $limit = 40): IVal
 	{
-		$string = trim( $this->_data );
+		$string = trim( $this->data );
 		$string_r = explode(' ', $string, ($limit+1));
 		if (count($string_r) >= $limit && $limit > 0) array_pop($string_r);
 		$string = implode (' ', $string_r);
@@ -153,7 +153,7 @@ class Str extends Val implements IVal {
 	 */
 	public function _match(string $str2): bool
 	{
-		$str1 = $this->_data;
+		$str1 = $this->data;
 		return ($str1 == $str2);
 	}
 
@@ -164,7 +164,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _encrypt(string $mode = null): IVal {
-		$string = $this->_data;
+		$string = $this->data;
 		switch ($mode) {
 		default:
 		case 'md5':
@@ -188,7 +188,7 @@ class Str extends Val implements IVal {
 	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
 	 */
 	public function _pos(string $needle): int|bool {
-		return strpos($this->_data, $needle);
+		return strpos($this->data, $needle);
 	}
 
 	/**
@@ -199,7 +199,7 @@ class Str extends Val implements IVal {
 	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
 	 */
 	public function _ipos(string $needle): int {
-		return stripos($this->_data, $needle);
+		return stripos($this->data, $needle);
 	}
 
 	// Reverse strpos
@@ -211,7 +211,7 @@ class Str extends Val implements IVal {
      * @return int
      */
 	public function _rpos(string $needle): int {
-		$haystack = $this->_data;
+		$haystack = $this->data;
 		$i = strlen($haystack);
 		while ( substr( $haystack, $i, strlen( $needle ) ) != $needle ) 
 		{
@@ -227,10 +227,10 @@ class Str extends Val implements IVal {
 	 * @return int The length of the string
 	 */
 	public function _len(): int {
-		if ( !is_string($this->_data) ) {
+		if ( !is_string($this->data) ) {
 			return 0;
 		}
-		return strlen($this->_data);
+		return strlen($this->data);
 	}
 
 	/**
@@ -239,7 +239,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _lower(): IVal {
-		$string = strtolower($this->_data);
+		$string = strtolower($this->data);
 		$this->alter($string);
 
 		return $this;
@@ -251,7 +251,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _upper(): IVal {
-		$string = strtoupper($this->_data);
+		$string = strtoupper($this->data);
 		$this->alter($string);
 
 		return $this;
@@ -263,7 +263,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _capitalize(): IVal {
-		$string = ucwords($this->_data);
+		$string = ucwords($this->data);
 		$this->alter($string);
 
 		return $this;
@@ -277,7 +277,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _repeat(int $times): IVal {
-		$string = str_repeat($this->_data, $times);
+		$string = str_repeat($this->data, $times);
 
 		$this->alter($string);
 
@@ -293,7 +293,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _replace(string $search, string $replace): IVal {
-		$string = str_replace($search, $replace, $this->_data);
+		$string = str_replace($search, $replace, $this->data);
 
 		$this->alter($string);
 
@@ -309,7 +309,7 @@ class Str extends Val implements IVal {
 	 * @return string The substring
 	 */
 	public function _sub(int $start, int $length = null): string {
-		return substr($this->_data, $start, $length);
+		return substr($this->data, $start, $length);
 	}
 
 	/**
@@ -322,7 +322,7 @@ class Str extends Val implements IVal {
 	 * 
 	 */
 	public function _replaceSub(int $start, int $length, string $replacement, bool $preserveLength = false): IVal {
-		$string = $this->_data;
+		$string = $this->data;
 		$replacementLength = strlen($replacement);
 
 		if ($preserveLength) {
@@ -342,7 +342,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _trim(): IVal {
-		$string = trim($this->_data);
+		$string = trim($this->data);
 
 		$this->alter($string);
 
@@ -355,7 +355,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _snake(): IVal {
-		$string = $this->_data;
+		$string = $this->data;
 		$string = preg_replace('/\s+/', '_', $string);
 		$string = preg_replace('/[^a-zA-Z0-9_]/', '', $string);
 		$string = strtolower($string);
@@ -371,7 +371,7 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _camel(): IVal {
-		$string = $this->_data;
+		$string = $this->data;
 		$string = preg_replace('/\s+/', '', $string);
 		$string = preg_replace('/[^a-zA-Z0-9_]/', '', $string);
 		$string = ucwords($string);
@@ -391,7 +391,7 @@ class Str extends Val implements IVal {
 	 * @return boolean True if the needle is found in the haystack, false otherwise
 	 */
 	public function _has(string $needle): bool {
-		$haystack = $this->_data;
+		$haystack = $this->data;
 
 		return str_contains($haystack, $needle);
 	}
@@ -406,7 +406,7 @@ class Str extends Val implements IVal {
 	public function _similarityTo(string $string): float {
 
 		// via vasyl at vasyltech dot com from https://secure.php.net/manual/en/function.similar-text.php
-		$string1 = $this->_data;
+		$string1 = $this->data;
 		$string2 = $string;
 
 		if (empty($string1) || empty($string2)) {
@@ -446,7 +446,7 @@ class Str extends Val implements IVal {
 	 * @return int Returns < 0 if the current string is less than the input string, > 0 if the current string is greater than the input string, and 0 if the two strings are equal
 	 */
 	public function _compare(string $string): int {
-		return strcmp($this->_data, $string);
+		return strcmp($this->data, $string);
 	}
 
 	/**
@@ -456,9 +456,9 @@ class Str extends Val implements IVal {
 	 */
 	public function delta(): float
 	{	
-		if ( $this->_snapshot !== $this->_data ) {
+		if ( $this->snapshot !== $this->data ) {
 			// Get absolute value
-			return abs(Str::compare($this->_snapshot, $this->_data));
+			return abs(Str::compare($this->snapshot, $this->data));
 		}
 
 		return 0;
@@ -467,7 +467,7 @@ class Str extends Val implements IVal {
 	public function _slugify(): string
 	{
 	    // Replace non-alphanumeric characters with hyphens
-	    $slug = preg_replace('/[^A-Za-z0-9-]+/', '-', $this->_data);
+	    $slug = preg_replace('/[^A-Za-z0-9-]+/', '-', $this->data);
 	    
 	    // Convert the string to lowercase
 	    $slug = strtolower($slug);
@@ -489,7 +489,7 @@ class Str extends Val implements IVal {
 			'news', 'fish', 'sheep', 'moose', 'swine', 'buffalo', 'shrimp', 'trout'
 		];
 
-		$string = $this->_data;
+		$string = $this->data;
 
 		if ( in_array($string, $identicals) ) {
 			$plural = $string;
@@ -523,6 +523,6 @@ class Str extends Val implements IVal {
 	 * @return string
 	 */
 	public function __toString(): string {
-		return $this->_data;
+		return $this->data;
 	}
 }

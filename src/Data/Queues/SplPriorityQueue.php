@@ -9,23 +9,23 @@ use BlueFission\Collections\Collection;
 use SplPriorityQueue as BaseSplPriorityQueue;
 
 class SplPriorityQueue extends Queue implements IQueue {
-    private static $_queues = [];
-    private static $_counter = 0; // Global counter to maintain insertion order
+    private static $queues = [];
+    private static $counter = 0; // Global counter to maintain insertion order
 
     private function __construct() {}
 
     private static function instance($channel = 'default')
     {
-        if (!Arr::hasKey(self::$_queues, $channel)) {
-            self::$_queues[$channel] = new BaseSplPriorityQueue();
-            self::$_queues[$channel]->setExtractFlags(BaseSplPriorityQueue::EXTR_DATA);
+        if (!Arr::hasKey(self::$queues, $channel)) {
+            self::$queues[$channel] = new BaseSplPriorityQueue();
+            self::$queues[$channel]->setExtractFlags(BaseSplPriorityQueue::EXTR_DATA);
         }
-        return self::$_queues[$channel];
+        return self::$queues[$channel];
     }
 
     public static function setMode($mode)
     {
-        self::$_mode = $mode;
+        self::$mode = $mode;
     }
     
     public static function isEmpty($queue) {
@@ -71,11 +71,11 @@ class SplPriorityQueue extends Queue implements IQueue {
 
     public static function enqueue($item, $queue) {
         $queues = self::instance($queue);
-        $priority = self::$_counter++;
+        $priority = self::$counter++;
         if (Arr::is($item) && Val::is($item['priority'])) {
             $priority = $item['priority'];
         }
-        $priority = self::$_mode == self::FILO ? -$priority : $priority; // Invert priority for FILO
+        $priority = self::$mode == self::FILO ? -$priority : $priority; // Invert priority for FILO
 
         $queues->insert($item, $priority);
     }

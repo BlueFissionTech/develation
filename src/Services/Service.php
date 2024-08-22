@@ -19,22 +19,22 @@ class Service extends Obj {
 	/**
 	 * @var array $registrations
 	 */
-	protected $_registrations;
+	protected $registrations;
 
 	/**
 	 * @var array $routes
 	 */
-	protected $_routes;
+	protected $routes;
 
 	/**
 	 * @var object $parent
 	 */
-	protected $_parent;
+	protected $parent;
 
 	/**
 	 * @var string $response
 	 */
-	protected $_response;
+	protected $response;
 
 	/**
 	 * @var int $LOCAL_LEVEL
@@ -49,7 +49,7 @@ class Service extends Obj {
 	/**
 	 * @var array $data
 	 */
-	protected $_data = [
+	protected $data = [
 		'name'=>'',
 		'arguments'=>'',
 		'instance'=>'',
@@ -63,7 +63,7 @@ class Service extends Obj {
 	public function __construct() 
 	{
 		parent::__construct();
-		$this->_registrations = [];
+		$this->registrations = [];
 		$this->scope = $this;
 	}
 
@@ -81,7 +81,7 @@ class Service extends Obj {
 			$args = Arr::toArray( $this->arguments );
     		$this->instance = $reflection_class->getConstructor() ? $reflection_class->newInstanceArgs( $args ) : $reflection_class->newInstanceWithoutConstructor();
 
-			foreach ($this->_registrations as $name=>$registrations) {
+			foreach ($this->registrations as $name=>$registrations) {
 				usort($registrations, function ($a, $b) {
 					if ($a['priority'] == $b['priority']) {
 						return 0;
@@ -115,10 +115,10 @@ class Service extends Obj {
 	public function parent($object = null) 
 	{
 	    if (Val::isNotNull($object)) {
-	        $this->_parent = $object;
+	        $this->parent = $object;
 	    }
 
-	    return $this->_parent;
+	    return $this->parent;
 	}
 
 	/**
@@ -168,11 +168,11 @@ class Service extends Obj {
 	        $instance->dispatch($behavior, $args);
 	        if ($callback) {
 	        	if (is_callable($callback)) {
-	        		$this->_response = call_user_func_array($callback, $args);
+	        		$this->response = call_user_func_array($callback, $args);
 	        	}
 	        }
 	    } else {
-	        $this->_response = $this->call($callback ?? $behavior, $args);
+	        $this->response = $this->call($callback ?? $behavior, $args);
 	    }
 	}
 
@@ -204,7 +204,7 @@ class Service extends Obj {
 	public function register($name, $handler, $level = self::LOCAL_LEVEL, $priority = 0)
 	{
 	    $registration = ['handler' => $handler, 'level' => $level, 'priority' => $priority];
-	    $this->_registrations[$name][] = $registration;
+	    $this->registrations[$name][] = $registration;
 	    
 	    if (isset($this->instance) && $this->instance instanceof $this->type) {
 	        $this->apply($registration);
@@ -270,7 +270,7 @@ class Service extends Obj {
 	}
 
 	public function response(): ?string {
-		return $this->_response;
+		return $this->response;
 	}
 	// public function dispatch( $behavior, $args = null ) {
 	// 	// echo "{$behavior}\n";

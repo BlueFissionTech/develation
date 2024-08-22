@@ -19,11 +19,11 @@ The `Obj` class is part of the BlueFission framework, designed to encapsulate co
 
 ## Key Properties
 
-- `_data`: An instance of `Arr` that stores the object's fields and their values.
-- `_types`: An array defining the types for the dynamic fields.
-- `_type`: The class name, used primarily for identification.
-- `_exposeValueObject`: Determines whether to expose the value object directly or its value.
-- `_lockDataType`: Locks the data type of fields to prevent type changes.
+- `data`: An instance of `Arr` that stores the object's fields and their values.
+- `types`: An array defining the types for the dynamic fields.
+- `type`: The class name, used primarily for identification.
+- `exposeValueObject`: Determines whether to expose the value object directly or its value.
+- `lockDataType`: Locks the data type of fields to prevent type changes.
 
 ## Constructor
 
@@ -155,13 +155,13 @@ The `Obj` class can be extended to add custom functionality or behavior, making 
 ```php
 class CustomObj extends BlueFission\Obj {
 
-    protected $_data = [
+    protected $data = [
         'customField1' => null,
         'customField2' => null,
         'customField3' => 'value'
     ];
 
-    protected $_types = [
+    protected $types = [
         'customField1' => BlueFission\DataTypes::STRING
         'customField2' => BlueFission\DataTypes::INTEGER
         'customField3' => BlueFission\DataTypes::STRING
@@ -174,13 +174,13 @@ class CustomObj extends BlueFission\Obj {
 }
 ```
 
-#### The `$_data` Property
+#### The `$data` Property
 
-The `$_data` property defines the initial fields of the object and their default values. It can be overridden in subclasses to provide a custom set of fields.
+The `$data` property defines the initial fields of the object and their default values. It can be overridden in subclasses to provide a custom set of fields.
 
 ```php
 class Person extends \BlueFission\Obj {
-    protected $_data = [
+    protected $data = [
         'name' => null,
         'age' => null
     ];
@@ -191,25 +191,25 @@ $obj->name = 'John Doe';
 $obj->age = 30;
 ```
 
-#### The `$_types` Property
+#### The `$types` Property
 
-The `$_types` property defines the data types for the fields, ensuring that the fields adhere to specific types. This property can be customized in subclasses to enforce stricter data type checks. When setting types for fields, those fields are then cast as `BlueFission\Val` [datatypes](datatypes.md) allowing their features and methods to be available to the field. Whether or not the field is locked to a datatype can be set with the `_lockDataType` property. Further, the `exposeValueObject` method can be used to expose the `Val` object directly, or just the value of the object.
+The `$types` property defines the data types for the fields, ensuring that the fields adhere to specific types. This property can be customized in subclasses to enforce stricter data type checks. When setting types for fields, those fields are then cast as `BlueFission\Val` [datatypes](datatypes.md) allowing their features and methods to be available to the field. Whether or not the field is locked to a datatype can be set with the `lockDataType` property. Further, the `exposeValueObject` method can be used to expose the `Val` object directly, or just the value of the object.
 
 ```php
 class Person extends \BlueFission\Obj {
-    protected $_data = [
+    protected $data = [
         'name' => null,
         'age' => null
     ];
 
-    protected $_types = [
+    protected $types = [
         'name' => \BlueFission\DataTypes::STRING,
         'age' => \BlueFission\DataTypes::INTEGER
     ];
 
-    protected $_lockDataType = true;
+    protected $lockDataType = true;
 
-    protected $_exposeValueObject = true;
+    protected $exposeValueObject = true;
 }
 
 $obj = new Person();
@@ -251,19 +251,19 @@ This can also be accomplished directly through typed fields.
 
 ```php
 class Person extends \BlueFission\Obj {
-    protected $_data = [
+    protected $data = [
         'name' => null,
         'age' => null
     ];
 
-    protected $_types = [
+    protected $types = [
         'name' => \BlueFission\DataTypes::STRING,
         'age' => \BlueFission\DataTypes::INTEGER
     ];
 
-    protected $_lockDataType = true;
+    protected $lockDataType = true;
 
-    protected $_exposeValueObject = true;
+    protected $exposeValueObject = true;
 
     public function __construct() {
         parent::__construct();

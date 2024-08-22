@@ -15,18 +15,18 @@ use BlueFission\Net\HTTP;
 class Session extends Storage implements IData
 {
 	/**
-	 * @var string $_id The unique identifier for the session.
+	 * @var string $id The unique identifier for the session.
 	 */
-	protected static $_id;
+	protected static $id;
 	
 	/**
-	 * @var array $_config An array of configuration options for the session.
+	 * @var array $config An array of configuration options for the session.
 	 * 'location': the path to the session.
 	 * 'name': the name of the session.
 	 * 'expire': the time in seconds for the session to expire.
 	 * 'secure': a boolean indicating if the session should be secure.
 	 */
-	protected $_config = [
+	protected $config = [
 		'location'=>'',
 		'name'=>'',
 		'expire'=>'3600',
@@ -52,7 +52,7 @@ class Session extends Storage implements IData
 		$name = $this->config('name') ? (string)$this->config('name') : Str::rand();
 		$expire = (int)$this->config('expire');
 		$secure = $this->config('secure');
-		$this->_source = $name;
+		$this->source = $name;
 		$id = session_id( );
 		if ($id == "") 
 		{
@@ -62,13 +62,13 @@ class Session extends Storage implements IData
 			$secure = (bool)$secure;
 			
 			session_set_cookie_params($cookiedie, $dir, $domain, $secure);
-			session_start( $this->_source );
+			session_start( $this->source );
 			
 			if ( session_id( ) )
-				$this->_source = $name;
+				$this->source = $name;
 		}
 		
-		if ( !$this->_source ) 
+		if ( !$this->source ) 
 			$this->status( self::STATUS_FAILED_INIT );
 
 		return $this;
@@ -79,8 +79,8 @@ class Session extends Storage implements IData
 	 */
 	public function write(): IObj
 	{			
-		$value = HTTP::jsonEncode( $this->_data->size() > 0 ? $this->_data->val() : $this->_contents);
-		$label = $this->_source;
+		$value = HTTP::jsonEncode( $this->data->size() > 0 ? $this->data->val() : $this->contents);
+		$label = $this->source;
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
 		$secure = $this->config('secure');
@@ -102,7 +102,7 @@ class Session extends Storage implements IData
 	 */
 	public function read(): IObj
 	{	
-		$value = HTTP::session( $this->_source );
+		$value = HTTP::session( $this->source );
 
 		if ( $value && function_exists('json_decode'))
 		{
@@ -121,7 +121,7 @@ class Session extends Storage implements IData
 	 */
 	public function delete(): IObj
 	{
-		$label = $this->_source;
+		$label = $this->source;
 		unset($_SESSION[$label]);
 
 		return $this;
