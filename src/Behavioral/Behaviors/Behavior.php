@@ -24,9 +24,9 @@ class Behavior
 	protected $passive;
 	
 	/**
-	 * @var int $_priority The priority of the behavior, used to determine the order in which behaviors are executed.
+	 * @var int $priority The priority of the behavior, used to determine the order in which behaviors are executed.
 	 */
-	protected $_priority;
+	protected $priority;
 	
 	/**
 	 * @var object $target The object on which the behavior is being defined.
