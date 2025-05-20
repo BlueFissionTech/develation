@@ -36,7 +36,8 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.1@dev"
+        "phpunit/phpunit": "^11.1@dev",
+        "phpstan/phpstan": "2.1.x-dev"
     },
     "config": {
         "allow-plugins": {

@@ -203,7 +203,11 @@ class FileSystem extends Data implements IData {
 		return $this;
 	}
 
-	// Determines the root directory of the system whether it is Windows or Unix
+	/**
+ * Determines the root directory of the file system depending on the OS (Windows or Unix).
+ *
+ * @return string The system root directory path.
+ */
 	private function getSystemRoot(): string
 	{
 		$root = '/';
@@ -663,11 +667,12 @@ class FileSystem extends Data implements IData {
 	}
 
 	/**
-	 * Get the regular expression pattern for the filter type
-	 * 
-	 * @return string (regex pattern)
-	 */
-	private function filter_regex (): string
+ * Build a regular expression based on the file extension filter list.
+ *
+ * @return string Regex pattern for filtering file types.
+ */
+private function filter_regex (): string
+
 	{
 		$type = $this->config('filter');
 		$pattern = '';
