@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests;
 
 use BlueFission\Utils\Util;
@@ -6,8 +7,10 @@ use BlueFission\Val;
 use BlueFission\Net\HTTP;
 use BlueFission\Net\Email;
 
-class UtilTest extends \PHPUnit\Framework\TestCase {
-    public function testEmailAdmin() {
+class UtilTest extends \PHPUnit\Framework\TestCase
+{
+    public function testEmailAdmin()
+    {
         //Test sending email with all default values
         $status = Util::emailAdmin();
         $this->assertTrue($status);
@@ -22,7 +25,8 @@ class UtilTest extends \PHPUnit\Framework\TestCase {
         $this->assertTrue($status);
     }
 
-    public function testParachute() {
+    public function testParachute()
+    {
         //Test exceeding max count and exiting with log and alert
         $count = 500;
         $max = 400;
@@ -34,13 +38,15 @@ class UtilTest extends \PHPUnit\Framework\TestCase {
         Util::parachute($count, $max, $redirect, $log, $alert);
     }
 
-    public function testCsrfToken() {
+    public function testCsrfToken()
+    {
         //Test generating csrf token
         $token = Util::csrf_token();
         $this->assertTrue(is_string($token));
     }
 
-    public function testValue() {
+    public function testValue()
+    {
         //Test getting value from cookie, post or get with all defaults
         $_COOKIE['test'] = 'cookie_value';
         $_GET['test'] = 'get_value';

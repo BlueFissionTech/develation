@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Services;
 
 use BlueFission\Services\Request;
@@ -11,23 +12,25 @@ use BlueFission\Services\IGateway;
  *
  * @package BlueFission\Services
  */
-class Gateway implements IGateway {
+class Gateway implements IGateway
+{
+    /**
+     * Gateway constructor.
+     */
+    public function __construct()
+    {
+    }
 
-	/**
-	 * Gateway constructor.
-	 */
-	public function __construct() {}
-	
-	/**
-	 * Process the Request and update the arguments.
-	 *
-	 * @param Request $request The request to process.
-	 * @param mixed $arguments The arguments to be updated.
-	 *
-	 * @return void
-	 */
-	public function process( Request $request, &$arguments )
-	{
-		// Do Something
-	}
+    /**
+     * Process the Request and update the arguments.
+     *
+     * @param Request $request The request to process.
+     * @param mixed $arguments The arguments to be updated.
+     *
+     * @return void
+     */
+    public function process(Request $request, &$arguments)
+    {
+        // Do Something
+    }
 }

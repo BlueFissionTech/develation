@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Test\Services;
 
 use PHPUnit\Framework\TestCase;
@@ -6,9 +7,9 @@ use BlueFission\Net\IP;
 
 class IPTest extends TestCase
 {
-    static $testdirectory = 'testdirectory';
-    static $accessLog = 'access.log';
-    static $ipFile = 'ipblock.txt';
+    public static $testdirectory = 'testdirectory';
+    public static $accessLog = 'access.log';
+    public static $ipFile = 'ipblock.txt';
 
     public function setUp(): void
     {
@@ -34,7 +35,7 @@ class IPTest extends TestCase
     {
         $this->assertEquals($_SERVER['REMOTE_ADDR'], IP::remote());
     }
- 
+
     /**
      * Test deny() method returns the status of IP blocking process
      */
@@ -45,7 +46,7 @@ class IPTest extends TestCase
         $this->assertTrue(IP::deny($ipAddress));
         $this->assertEquals($expected, IP::status());
     }
- 
+
     /**
      * Test allow() method returns the status of IP allowing process
      */
@@ -56,7 +57,7 @@ class IPTest extends TestCase
         $this->assertTrue(IP::allow($ipAddress));
         $this->assertEquals($expected, IP::status());
     }
- 
+
     /**
      * Test handle() method returns the status of IP handling process
      */
@@ -76,7 +77,7 @@ class IPTest extends TestCase
 
         IP::allow($ipAddress);
     }
- 
+
     /**
      * Test log() method returns the status of the log
      */

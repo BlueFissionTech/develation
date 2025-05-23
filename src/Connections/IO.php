@@ -26,10 +26,10 @@ class IO
     {
         $stdio = new Stdio(array_merge(['target' => $input], $config));
         $stdio
-            ->when(new Event(Event::CONNECTED), fn($b) => self::messages("Connected to stdio", $b))
-            ->when(new Event(Event::COMPLETE), fn($b) => self::messages("Communication complete", $b))
-            ->when(new Event(Event::FAILURE), fn($b) => self::messages("Communication failed", $b))
-            ->when(new Event(Event::ERROR), fn($b) => self::messages("Communication error", $b))
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stdio", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Communication complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Communication failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Communication error", $b))
             ->open();
 
         $result = $stdio->query()->result();
@@ -45,10 +45,10 @@ class IO
     {
         $curl = new Curl(array_merge(['target' => $url], $config));
         $curl
-            ->when(new Event(Event::CONNECTED), fn($b) => self::messages("Connected to remote", $b))
-            ->when(new Event(Event::COMPLETE), fn($b) => self::messages("Read complete", $b))
-            ->when(new Event(Event::FAILURE), fn($b) => self::messages("Read failed", $b))
-            ->when(new Event(Event::ERROR), fn($b) => self::messages("Read error", $b))
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to remote", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Read failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Read error", $b))
             ->open();
 
         $result = $curl->query()->result();
@@ -64,10 +64,10 @@ class IO
     {
         $stream = new Stream(array_merge(['target' => $url], $config));
         $stream
-            ->when(new Event(Event::CONNECTED), fn($b) => self::messages("Connected to stream", $b))
-            ->when(new Event(Event::COMPLETE), fn($b) => self::messages("Read complete", $b))
-            ->when(new Event(Event::FAILURE), fn($b) => self::messages("Read failed", $b))
-            ->when(new Event(Event::ERROR), fn($b) => self::messages("Read error", $b))
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stream", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Read failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Read error", $b))
             ->open();
 
         $result = $stream->query()->result();
@@ -83,10 +83,10 @@ class IO
     {
         $socket = new Socket(array_merge(['target' => $url], $config));
         $socket
-            ->when(new Event(Event::CONNECTED), fn($b) => self::messages("Connected to socket", $b))
-            ->when(new Event(Event::COMPLETE), fn($b) => self::messages("Read complete", $b))
-            ->when(new Event(Event::FAILURE), fn($b) => self::messages("Read failed", $b))
-            ->when(new Event(Event::ERROR), fn($b) => self::messages("Read error", $b))
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to socket", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Read failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Read error", $b))
             ->open();
 
         $result = $socket->query()->result();

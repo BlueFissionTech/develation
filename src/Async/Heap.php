@@ -10,8 +10,8 @@ use BlueFission\Async\Promise;
  * Class Heap for managing a stack of tasks.
  * Designed for sequential async task execution (LIFO behavior).
  */
-class Heap extends Async {
-
+class Heap extends Async
+{
     /**
      * Adds a task to the stack and returns its Promise.
      *
@@ -19,7 +19,8 @@ class Heap extends Async {
      * @param int $priority Priority of the task; higher values execute earlier.
      * @return Promise
      */
-    public static function do($function, $priority = 10): Promise {
+    public static function do($function, $priority = 10): Promise
+    {
         return static::exec($function, $priority);
     }
 

@@ -6,16 +6,19 @@ use PHPUnit\Framework\TestCase;
 use BlueFission\Async\Shell;
 use BlueFission\System\Process;
 
-class ShellTest extends TestCase {
+class ShellTest extends TestCase
+{
     private $processMock;
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         parent::setUp();
         // Create a mock of the Process class
         // $this->processMock = $this->createMock(Process::class);
     }
 
-    public function testShellCommandExecution() {
+    public function testShellCommandExecution()
+    {
         $command = 'echo "Hello, World!"';
         $expectedOutput = "Hello, World!\n";
 

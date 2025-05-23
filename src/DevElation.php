@@ -8,14 +8,15 @@ namespace BlueFission;
 // any work. It can also be memory intensive in large projects where the developer might prefer a custom solution to those problems. It will also have the ability
 // to register hooks, actions, and filters throughout the code. for instance, there might be a hook to filter all outgoing data with a prefix or as a JSON object.
 // That would be done through `DevElation::filter('filter_name', $filterFunction, $priority);` where filter names are mostly all dynamic but predictable.
-// Imagine that, for instance, adding `$output = DevElation::apply('filter_name', $input);` applies the filter 'filter_name', but 
+// Imagine that, for instance, adding `$output = DevElation::apply('filter_name', $input);` applies the filter 'filter_name', but
 // `$output = DevElation::apply(null, $input);` instead, because the name is null, would automatically generate a filter name based on the class and method, so
 // `Builder::makeItem();` would have a filter name of 'builder.make_item'. Actions would work the same way, which won't produce an output, just trigger some action through
 // `DevElation::do('action_name', $input);` and `DevElation::action('action_name', function( $input ) {}, $priority);`. There would also be the ability to subscribe to
-// events through this class. For example, from the originating class `DevElation::listen($eventOrBehavior);` and in the target class 
+// events through this class. For example, from the originating class `DevElation::listen($eventOrBehavior);` and in the target class
 // `DevElation::subscribe($this, $eventOrBehavior);` now registers that item as a listener of that event through `Dispatches::trigger($eventName, $args);`
 
-class DevElation {
+class DevElation
+{
     private static $_isActive = false;
     private static $_config = [];
     private static $_filters = [];
@@ -34,20 +35,20 @@ class DevElation {
         self::$_isActive = false;
     }
 
-  
-    public static function config($key = null, $value = null)
-{
-    if (func_num_args() == 0) {
-        $key = self::getCallerClassName();
-    }
 
-    if ($value === null) {
-        return self::$_config[$key] ?? null;
-    } else {
-        self::$_config[$key] = $value;
-        return $value;
+    public static function config($key = null, $value = null)
+    {
+        if (func_num_args() == 0) {
+            $key = self::getCallerClassName();
+        }
+
+        if ($value === null) {
+            return self::$_config[$key] ?? null;
+        } else {
+            self::$_config[$key] = $value;
+            return $value;
+        }
     }
-}
 
 
 
@@ -64,16 +65,16 @@ class DevElation {
 
 
 
-/**
- * Applies all registered filters to the given value.
- *
- * @param string|null $name Filter name. If null, auto-generated.
- * @param mixed $value The value to filter.
- * @return mixed
- */
-public static function apply($name = null, $value)
+    /**
+     * Applies all registered filters to the given value.
+     *
+     * @param string|null $name Filter name. If null, auto-generated.
+     * @param mixed $value The value to filter.
+     * @return mixed
+     */
+    public static function apply($name = null, $value)
     {
-    	$name = self::generateHookName($name);
+        $name = self::generateHookName($name);
         if (!self::$_isActive || !isset(self::$_filters[$name])) {
             return $value;
         }
@@ -96,7 +97,7 @@ public static function apply($name = null, $value)
 
     public static function do($name = null, $args = [])
     {
-    	$name = self::generateHookName($name);
+        $name = self::generateHookName($name);
         if (!self::$_isActive || !isset(self::$_actions[$name])) {
             return;
         }
@@ -137,7 +138,7 @@ public static function apply($name = null, $value)
         if ($name) {
             return $name;
         }
-        
+
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         $caller = $backtrace[1] ?? null;
 

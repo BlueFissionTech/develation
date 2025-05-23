@@ -5,17 +5,21 @@ namespace BlueFission\Tests\Data\Queues;
 use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\SplQueue;
 
-class SplQueueTest extends TestCase {
+class SplQueueTest extends TestCase
+{
     private $queue;
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
     }
 
-    public function testQueueIsEmptyInitially() {
+    public function testQueueIsEmptyInitially()
+    {
         $this->assertTrue(SplQueue::isEmpty('testChannel'), "Queue should be empty initially.");
     }
 
-    public function testEnqueueDequeueItems() {
+    public function testEnqueueDequeueItems()
+    {
         SplQueue::enqueue('item1', 'testChannel');
         SplQueue::enqueue('item2', 'testChannel');
         $this->assertFalse(SplQueue::isEmpty('testChannel'), "Queue should not be empty after enqueueing items.");
@@ -28,7 +32,8 @@ class SplQueueTest extends TestCase {
         $this->assertTrue(SplQueue::isEmpty('testChannel'), "Queue should be empty after dequeuing all items.");
     }
 
-    public function testDifferentChannelsAreIndependent() {
+    public function testDifferentChannelsAreIndependent()
+    {
         SplQueue::enqueue('channel1Item', 'channel1');
         SplQueue::enqueue('channel2Item', 'channel2');
 

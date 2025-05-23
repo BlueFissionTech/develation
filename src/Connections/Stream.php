@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Connections;
 
 use BlueFission\Val;
@@ -14,161 +15,158 @@ use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
  * Class Stream
- * 
+ *
  * This class provides a stream connection for sending and receiving data over HTTP.
- * 
+ *
  * @package BlueFission\Connections
  * @implements IConfigurable
  */
 class Stream extends Connection implements IConfigurable
 {
-	/**
-	 * @var array $_config Configuration options for the stream connection
-	 */
-	protected $_config = [
-		'target' => '',  // target URL for the stream connection
-		'wrapper' => 'http', // wrapper for the stream context
-		'method' => 'GET',  // HTTP method for the stream connection
-		'header' => "Content-type: application/x-www-form-urlencoded\r\n", // header for the stream connection
-	];
+    /**
+     * @var array $_config Configuration options for the stream connection
+     */
+    protected $_config = [
+        'target' => '',  // target URL for the stream connection
+        'wrapper' => 'http', // wrapper for the stream context
+        'method' => 'GET',  // HTTP method for the stream connection
+        'header' => "Content-type: application/x-www-form-urlencoded\r\n", // header for the stream connection
+    ];
 
-	/**
-	 * The Resource handle
-	 * @var null
-	 */
-	private $_handle = null;
-	
-	/**
-	 * Stream constructor.
-	 *
-	 * @param mixed|null $config Configuration options for the stream connection
-	 */
-	public function __construct( $config = null )
-	{
-		parent::__construct($config);		
-	}
-	
-	/**
-	 * Opens a stream connection.
-	 *
-	 * @return void
-	 */
-	protected function _open(): void
-	{
-		if ($this->_connection) {
-			$this->close();
-		}
+    /**
+     * The Resource handle
+     * @var null
+     */
+    private $_handle = null;
 
-		$target = $this->config('target') ?? HTTP::domain();
-		$method = $this->config('method');
-		$header = $this->config('header'); 
-		$wrapper = $this->config('wrapper');
-		
-		// Check if target URL exists
-		if ( HTTP::urlExists($target) )
-		{
-			$this->config('target', $target);
-			// Create a stream context with the options provided in the config
-			$options = [
-				$wrapper => [
-					'header'	=>	$header,
-					'method'	=>	$method,
-				],
-			];
-			$this->_connection = stream_context_create($options);
-			// Set the connection status
-			$status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
+    /**
+     * Stream constructor.
+     *
+     * @param mixed|null $config Configuration options for the stream connection
+     */
+    public function __construct($config = null)
+    {
+        parent::__construct($config);
+    }
 
-			$this->perform( $this->_connection ? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
-		}
-		else
-		{
-			$status = self::STATUS_FAILED;
-			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
-		}
+    /**
+     * Opens a stream connection.
+     *
+     * @return void
+     */
+    protected function _open(): void
+    {
+        if ($this->_connection) {
+            $this->close();
+        }
 
-		$this->status($status);
-	}
+        $target = $this->config('target') ?? HTTP::domain();
+        $method = $this->config('method');
+        $header = $this->config('header');
+        $wrapper = $this->config('wrapper');
 
-	protected function _close(): void
-	{
-		if ($this->_handle) {
-			fclose($this->_handle);
-		}
-		$this->perform(State::DISCONNECTED);
-	}
+        // Check if target URL exists
+        if (HTTP::urlExists($target)) {
+            $this->config('target', $target);
+            // Create a stream context with the options provided in the config
+            $options = [
+                $wrapper => [
+                    'header'	=>	$header,
+                    'method'	=>	$method,
+                ],
+            ];
+            $this->_connection = stream_context_create($options);
+            // Set the connection status
+            $status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 
-	
-	/**
-	 * Sends a query to the target URL and retrieves the result.
-	 *
-	 * @param mixed|null $query Query to be sent to the target URL
-	 * @return IObj
-	 */
-	public function query ( $query = null ): IObj
-	{ 
-		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
+            $this->perform($this->_connection ? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
+        } else {
+            $status = self::STATUS_FAILED;
+            $this->perform([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
+        }
 
-		// Set the connection status as not connected
-		$status = self::STATUS_NOTCONNECTED;
-		$context = $this->_connection;
-		$wrapper = $this->config('wrapper');
-		$target = $this->config('target');
+        $this->status($status);
+    }
 
-		$this->_result = false;
-		
-		// If the stream context exists
-		if ($context) {
-			// If a query is not null
-			if (Val::isNotNull($query)) {
-				if (Arr::isAssoc($query)) {
-					$this->assign($query); 
-				} elseif (Str::is($query)) {
-					$data = urlencode($query);
-				}
-			}
-			
-			$data = $data ?? HTTP::query( $this->_data );
+    protected function _close(): void
+    {
+        if ($this->_handle) {
+            fclose($this->_handle);
+        }
+        $this->perform(State::DISCONNECTED);
+    }
 
-			if (!Val::isEmpty($data) || Arr::size($data) > 0) {
-				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
-			}
-			
-			stream_context_set_option ( $context, $wrapper, 'content', $data );
-			if ( !$this->_handle ) {
-				$this->_handle = fopen($target, 'r', false, $context);
-				$this->halt(State::SENDING);
-				$this->perform(Event::SENT, new Meta(data: $data));
-			}
 
-			if ($this->_handle) {
-				$this->perform([Action::RECEIVE, State::RECEIVING, State::PROCESSING, State::BUSY]);
-			    while (!feof($this->_handle)) {
-			    	$chunk = fread($this->_handle, 8192);
-					$this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
+    /**
+     * Sends a query to the target URL and retrieves the result.
+     *
+     * @param mixed|null $query Query to be sent to the target URL
+     * @return IObj
+     */
+    public function query($query = null): IObj
+    {
+        $this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
-					$this->_result .= $chunk;
-			    }
-				$this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
-			} else {
-				$this->perform(Event::ERROR, new Meta(when: Action::RECEIVE, info: "Failed to open stream") );
-			}
+        // Set the connection status as not connected
+        $status = self::STATUS_NOTCONNECTED;
+        $context = $this->_connection;
+        $wrapper = $this->config('wrapper');
+        $target = $this->config('target');
 
-			$this->status( $this->_result !== false ? self::STATUS_SUCCESS : self::STATUS_FAILED );
+        $this->_result = false;
 
-			$this->perform( 
-				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
-				new Meta(when: Action::PROCESS, info: $status ) 
-			);
+        // If the stream context exists
+        if ($context) {
+            // If a query is not null
+            if (Val::isNotNull($query)) {
+                if (Arr::isAssoc($query)) {
+                    $this->assign($query);
+                } elseif (Str::is($query)) {
+                    $data = urlencode($query);
+                }
+            }
 
-		} else {
-			$status = self::STATUS_NOTCONNECTED;
-			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
-		}
+            $data = $data ?? HTTP::query($this->_data);
 
-		$this->halt(State::PERFORMING_ACTION);
-		$this->status($status);
+            if (!Val::isEmpty($data) || Arr::size($data) > 0) {
+                $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
+            }
 
-		return $this;
-	}
+            stream_context_set_option($context, $wrapper, 'content', $data);
+            if (!$this->_handle) {
+                $this->_handle = fopen($target, 'r', false, $context);
+                $this->halt(State::SENDING);
+                $this->perform(Event::SENT, new Meta(data: $data));
+            }
+
+            if ($this->_handle) {
+                $this->perform([Action::RECEIVE, State::RECEIVING, State::PROCESSING, State::BUSY]);
+                while (!feof($this->_handle)) {
+                    $chunk = fread($this->_handle, 8192);
+                    $this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
+
+                    $this->_result .= $chunk;
+                }
+                $this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
+            } else {
+                $this->perform(Event::ERROR, new Meta(when: Action::RECEIVE, info: "Failed to open stream"));
+            }
+
+            $this->status($this->_result !== false ? self::STATUS_SUCCESS : self::STATUS_FAILED);
+
+            $this->perform(
+                $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(when: Action::PROCESS, info: $status)
+            );
+
+        } else {
+            $status = self::STATUS_NOTCONNECTED;
+            $this->perform([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status));
+        }
+
+        $this->halt(State::PERFORMING_ACTION);
+        $this->status($status);
+
+        return $this;
+    }
 }

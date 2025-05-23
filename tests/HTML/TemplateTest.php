@@ -1,18 +1,19 @@
 <?php
+
 namespace BlueFission\Tests\HTML;
 
 use BlueFission\HTML\Template;
 use PHPUnit\Framework\TestCase;
 
-class TemplateTest extends TestCase {
+class TemplateTest extends TestCase
+{
+    public static $testdirectory = '../../testdirectory';
 
-    static $testdirectory = '../../testdirectory';
+    public static $classname = 'BlueFission\HTML\Template';
 
-    static $classname = 'BlueFission\HTML\Template';
+    public static $file = 'sample.txt';
 
-    static $file = 'sample.txt';
-
-    static $configuration = [
+    public static $configuration = [
         'file' => 'sample.txt',
         'template_directory' => '../../testdirectory',
         'cache' => true,
@@ -29,7 +30,8 @@ class TemplateTest extends TestCase {
 
     protected $object;
 
-    public function setUp() :void {
+    public function setUp(): void
+    {
         chdir(__DIR__);
 
         touch(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
@@ -41,7 +43,8 @@ class TemplateTest extends TestCase {
         $this->object = new static::$classname(static::$configuration);
     }
 
-    public function tearDown() :void {
+    public function tearDown(): void
+    {
         $testfiles = [
             static::$file,
             'cache'.DIRECTORY_SEPARATOR.static::$file,
@@ -59,15 +62,18 @@ class TemplateTest extends TestCase {
         }
     }
 
-    public function testConstructor() {
+    public function testConstructor()
+    {
         $this->assertInstanceOf(Template::class, $this->object);
     }
 
-    public function testLoad() {
+    public function testLoad()
+    {
         $this->assertTrue(is_string($this->object->contents()));
     }
 
-    public function testContents() {
+    public function testContents()
+    {
         $expected = 'This is a sample text file';
         $this->object->contents($expected);
         $this->assertEquals($expected, $this->object->contents());
@@ -75,8 +81,9 @@ class TemplateTest extends TestCase {
         $actual = $this->object->contents();
         $this->assertEquals($expected, $actual);
     }
-    
-    public function testReset() {
+
+    public function testReset()
+    {
         $expected = 'This is a sample text file';
         $this->object->contents($expected);
         $this->assertEquals($expected, $this->object->contents());
@@ -88,7 +95,8 @@ class TemplateTest extends TestCase {
         $this->assertEquals($expected, $this->object->contents());
     }
 
-    public function testSet() {
+    public function testSet()
+    {
         $this->object->contents('This should alter {test_var}.');
         $var = 'test_var';
         $content = 'This is a test';
@@ -96,7 +104,7 @@ class TemplateTest extends TestCase {
         $repetitions = 3;
 
         $this->object->set($var, $content, $formatted, $repetitions);
-        
+
         $this->assertTrue(strpos($this->object->contents(), $content) !== false);
     }
 }
