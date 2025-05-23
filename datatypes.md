@@ -260,3 +260,118 @@ echo $myNumber->val(); // Outputs: 100
 ## Extending the Classes
 
 Users can extend these classes to create more specialized data type wrappers or add additional functionalities specific to their applications. The design allows for easy extension while maintaining a consistent interface across different data types.
+
+# 🛍️ E-Commerce Example with BlueFission Data Type Wrappers
+
+This example shows how to use BlueFission's smart data wrappers (`Num`, `Str`, `Arr`, `Flag`) to power a simple eCommerce platform with clean, reusable, and dynamic logic.
+
+---
+
+## ✅ 1. Validate Prices on the Fly
+
+```php
+use BlueFission\Num;
+
+// Create a price
+$price = Num::make(150);
+
+// Add a constraint: max price should be 100
+$price->constraint(function (&$value) {
+    $value = $value > 100 ? 100 : $value;
+});
+
+echo $price(); // Outputs: 100
+```
+
+## 🧼 2. Clean Up Product Names
+
+```php
+use BlueFission\Str;
+
+// Format a messy product title
+$productName = Str::make("  Baby Shark Plush  ");
+$productName->trim()->capitalize();
+
+echo $productName(); // Outputs: "Baby shark plush"
+```
+
+## 🛒 3. Manage a Shopping Cart with Arr
+
+```php
+use BlueFission\Arr;
+
+$cart = Arr::make(['lego_set', 'board_game']);
+
+// Add new item
+$cart->push('stuffed_animal');
+
+// Check if an item is in the cart
+if ($cart->has('lego_set')) {
+    echo "Lego is already in your cart!";
+}
+```
+
+## 🏷️ 4. Tag and Group Sale Items
+
+```php
+use BlueFission\Num;
+
+Num::make(9.99)->tag('sale');
+Num::make(14.99)->tag('sale');
+Num::make(29.99); // Not tagged
+
+$saleItems = Num::grp('sale');
+
+// Loop through sale items
+foreach ($saleItems as $item) {
+    echo $item(), "\n"; // 9.99, 14.99
+}
+
+// Calculate total sale price
+$total = 0;
+$saleItems->walk(function($value) use (&$total) {
+    $total += $value;
+});
+
+echo "Total: $total"; // Outputs: Total: 24.98
+```
+
+## 🧠 5. Add Custom Methods with slot()
+
+```php
+use BlueFission\Str;
+
+// Add a method to prefix product names
+Str::slot('label', function() {
+    return strtoupper($this->val()) . " - ON SALE!";
+});
+
+$label = Str::make("plush unicorn");
+
+echo $label->label(); // Outputs: PLUSH UNICORN - ON SALE!
+```
+
+## 🎮 6. Work with Data Like a Function
+
+```php
+use BlueFission\Num;
+
+$quantity = Num::make(2);
+
+echo $quantity(); // Outputs: 2
+
+$quantity(5); // Set new value
+echo $quantity(); // Outputs: 5
+```
+
+## 📦 Summary
+
+BlueFission Data Wrappers let you:
+
+ Validate and constrain values  
+ Format and clean strings  
+ Build flexible shopping carts  
+ Group and filter tagged data  
+ Add dynamic methods at runtime  
+ Use values like variables or functions
+
