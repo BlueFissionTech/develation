@@ -1,56 +1,57 @@
 <?php
+
 namespace BlueFission\Tests\Collections;
 
 use BlueFission\Collections\Group;
 use BlueFission\Collections\Collection;
- 
-class GroupTest extends \PHPUnit\Framework\TestCase {
- 
- 	static $classname = 'BlueFission\Collections\Group';
- 	protected $object;
 
-	public function setUp(): void
-	{
-		$array = [
-			'entry1'=>[
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			],
-			'entry2'=>[
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			],
-			'entry3'=>[
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			],
-			'entry4'=>[
-				'item1'=>1,
-				'item2'=>2,
-				'item3'=>3,
-			],
-		];
+class GroupTest extends \PHPUnit\Framework\TestCase
+{
+    public static $classname = 'BlueFission\Collections\Group';
+    protected $object;
 
-		$this->object = new static::$classname($array);
-	}
+    public function setUp(): void
+    {
+        $array = [
+            'entry1' => [
+                'item1' => 1,
+                'item2' => 2,
+                'item3' => 3,
+            ],
+            'entry2' => [
+                'item1' => 1,
+                'item2' => 2,
+                'item3' => 3,
+            ],
+            'entry3' => [
+                'item1' => 1,
+                'item2' => 2,
+                'item3' => 3,
+            ],
+            'entry4' => [
+                'item1' => 1,
+                'item2' => 2,
+                'item3' => 3,
+            ],
+        ];
 
-	public function testConversionOfAddedItems()
-	{
-		$group = $this->object;
+        $this->object = new static::$classname($array);
+    }
 
-		if (!($group instanceof Collection)) {
-			$this->fail("Group is not an instance of Collection");
-		}
+    public function testConversionOfAddedItems()
+    {
+        $group = $this->object;
 
-		$group->type('BlueFission\Obj');
+        if (!($group instanceof Collection)) {
+            $this->fail("Group is not an instance of Collection");
+        }
 
-		$object = $group->get('entry2');
+        $group->type('BlueFission\Obj');
 
-		$this->assertEquals('BlueFission\Obj', get_class($object));
+        $object = $group->get('entry2');
 
-		$this->assertEquals(2, $object->item2);
-	}
+        $this->assertEquals('BlueFission\Obj', get_class($object));
+
+        $this->assertEquals(2, $object->item2);
+    }
 }

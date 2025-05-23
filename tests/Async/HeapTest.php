@@ -6,17 +6,19 @@ use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\SplPriorityQueue;
 use BlueFission\Async\Heap;
 
-class HeapTest extends TestCase {
-    public function testAddingAndExecutingTasks() {
+class HeapTest extends TestCase
+{
+    public function testAddingAndExecutingTasks()
+    {
         // Clear Heap tasks before each test
         Heap::setQueue(SplPriorityQueue::class);
 
         $result = [];
 
         // Define some tasks
-        $task1 = function() use (&$result) { $result[] = 'task1'; };
-        $task2 = function() use (&$result) { $result[] = 'task2'; };
-        $task3 = function() use (&$result) { $result[] = 'task3'; };
+        $task1 = function () use (&$result) { $result[] = 'task1'; };
+        $task2 = function () use (&$result) { $result[] = 'task2'; };
+        $task3 = function () use (&$result) { $result[] = 'task3'; };
 
         // Add tasks to the heap with different priorities
         Heap::do($task3, 1); // Lower priority

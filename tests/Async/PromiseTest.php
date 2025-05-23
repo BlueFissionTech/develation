@@ -9,10 +9,12 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Obj;
 
-class PromiseTest extends TestCase {
+class PromiseTest extends TestCase
+{
     private $asyncInstance;
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         // $this->asyncInstance = $this->createMock(Obj::class);
         // Create a mock of IAsync interface
         $this->asyncInstance = $this->createMock(Async::class);
@@ -24,7 +26,8 @@ class PromiseTest extends TestCase {
         });
     }
 
-    public function testPromiseResolution() {
+    public function testPromiseResolution()
+    {
         $expectedResult = "Success!";
         $wasCalled = false;
         $eventFired = false;
@@ -38,10 +41,10 @@ class PromiseTest extends TestCase {
             $this->assertEquals($expectedResult, $result);
         });
 
-        $this->asyncInstance->when(Event::SUCCESS, function($behavior, $args) use (&$eventFired) {
+        $this->asyncInstance->when(Event::SUCCESS, function ($behavior, $args) use (&$eventFired) {
             $eventFired = true;
         });
-        
+
         $promise->try();
 
         $this->assertTrue($wasCalled, "The fulfillment callback should have been called.");
@@ -50,7 +53,8 @@ class PromiseTest extends TestCase {
         // $this->asyncInstance->expects($this->once())->method('perform')->with($this->equalTo(Event::SUCCESS));
     }
 
-    public function testPromiseRejection() {
+    public function testPromiseRejection()
+    {
         $expectedReason = new \Exception("Error!");
         $wasCalled = false;
         $eventFired = false;
@@ -59,12 +63,12 @@ class PromiseTest extends TestCase {
             $reject($expectedReason);
         }, $this->asyncInstance);
 
-        $promise->then(function($result) {}, function ($reason) use (&$wasCalled, $expectedReason) {
+        $promise->then(function ($result) {}, function ($reason) use (&$wasCalled, $expectedReason) {
             $wasCalled = true;
             $this->assertSame($expectedReason, $reason);
         });
 
-        $this->asyncInstance->when(Event::FAILURE, function($behavior, $args) use (&$eventFired) {
+        $this->asyncInstance->when(Event::FAILURE, function ($behavior, $args) use (&$eventFired) {
             $eventFired = true;
         });
 
@@ -72,7 +76,7 @@ class PromiseTest extends TestCase {
 
         $this->assertTrue($wasCalled, "The rejection callback should have been called.");
         // $this->assertTrue($eventFired, "The success event should have been fired.");
-        
+
         // $this->asyncInstance->expects($this->once())->method('perform')->with($this->equalTo(Event::FAILURE));
     }
 }

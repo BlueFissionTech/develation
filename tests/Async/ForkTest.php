@@ -6,8 +6,10 @@ use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\SplPriorityQueue;
 use BlueFission\Async\Fork;
 
-class ForkTest extends TestCase {
-    public function testProcessForking() {
+class ForkTest extends TestCase
+{
+    public function testProcessForking()
+    {
         if (!function_exists('pcntl_fork')) {
             $this->markTestSkipped('The pcntl extension is not available');
         }
@@ -17,7 +19,7 @@ class ForkTest extends TestCase {
         $result = [];
 
         // Mock task that modifies an array
-        $task = function() use (&$result) {
+        $task = function () use (&$result) {
             $result[] = 'executed';
         };
 

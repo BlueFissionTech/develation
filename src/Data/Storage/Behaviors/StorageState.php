@@ -1,10 +1,11 @@
 <?php
+
 /**
  * Class StorageState
- * 
+ *
  * @package BlueFission\Data\Storage\Behaviors
  *
- * Extends the Behavior's State class to define a set of constants 
+ * Extends the Behavior's State class to define a set of constants
  * that represent the state of a storage system.
  */
 class StorageState extends State
@@ -14,5 +15,5 @@ class StorageState extends State
      *
      * @var string
      */
-    const BUSY = 'IsStorageBusy';
+    public const BUSY = 'IsStorageBusy';
 }

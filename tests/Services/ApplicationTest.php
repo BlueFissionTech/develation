@@ -1,12 +1,13 @@
 <?php
+
 namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Application;
 use BlueFission\Behavioral\Behaviors\Event;
 
-class ApplicationTest extends \PHPUnit\Framework\TestCase {
-
-    static $classname = 'BlueFission\Services\Application';
+class ApplicationTest extends \PHPUnit\Framework\TestCase
+{
+    public static $classname = 'BlueFission\Services\Application';
     protected $object;
 
     public function setUp(): void
@@ -46,11 +47,11 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase {
     {
         $this->expectOutputString('Test Output');
 
-        $this->object->register('service1', 'OnEventOne', function($behavior, $args) {
+        $this->object->register('service1', 'OnEventOne', function ($behavior, $args) {
             echo 'Test ';
         });
 
-        $this->object->register('service2', 'DoEventTwo', function($behavior, $args) {
+        $this->object->register('service2', 'DoEventTwo', function ($behavior, $args) {
             echo 'Output';
         });
 
@@ -61,7 +62,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase {
 
     public function testMessageIsCompleteOnSend()
     {
-        $this->object->register('service', 'SendEvent', function($behavior, $args) {
+        $this->object->register('service', 'SendEvent', function ($behavior, $args) {
             echo 'Message Sent';
         });
 
@@ -71,11 +72,11 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase {
 
     public function testServicesMessagesArentGlobal()
     {
-        $this->object->register('service1', 'LocalEvent', function($behavior, $args) {
+        $this->object->register('service1', 'LocalEvent', function ($behavior, $args) {
             echo 'Local ';
         });
 
-        $this->object->register('service2', 'LocalEvent', function($behavior, $args) {
+        $this->object->register('service2', 'LocalEvent', function ($behavior, $args) {
             echo 'Event';
         });
 
@@ -85,15 +86,15 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase {
 
     public function testMessageIsCompleteAfterMultipleRelays()
     {
-        $this->object->register('relay1', 'StartEvent', function($behavior, $args) {
+        $this->object->register('relay1', 'StartEvent', function ($behavior, $args) {
             echo 'Start ';
         });
 
-        $this->object->register('relay2', 'ContinueEvent', function($behavior, $args) {
+        $this->object->register('relay2', 'ContinueEvent', function ($behavior, $args) {
             echo 'Continue ';
         });
 
-        $this->object->register('relay3', 'EndEvent', function($behavior, $args) {
+        $this->object->register('relay3', 'EndEvent', function ($behavior, $args) {
             echo 'End';
         });
 

@@ -5,14 +5,16 @@ namespace BlueFission\Data\Queues;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Collections\Collection;
-
 use SplPriorityQueue as BaseSplPriorityQueue;
 
-class SplPriorityQueue extends Queue implements IQueue {
+class SplPriorityQueue extends Queue implements IQueue
+{
     private static $_queues = [];
     private static $_counter = 0; // Global counter to maintain insertion order
 
-    private function __construct() {}
+    private function __construct()
+    {
+    }
 
     private static function instance($channel = 'default')
     {
@@ -27,13 +29,15 @@ class SplPriorityQueue extends Queue implements IQueue {
     {
         self::$_mode = $mode;
     }
-    
-    public static function isEmpty($queue) {
+
+    public static function isEmpty($queue)
+    {
         $queues = self::instance($queue);
         return $queues->count() == 0;
     }
 
-    public static function dequeue($queue, $after = false, $until = false) {
+    public static function dequeue($queue, $after = false, $until = false)
+    {
         $queues = self::instance($queue);
         if (!$queues->count()) {
             return null;
@@ -69,7 +73,8 @@ class SplPriorityQueue extends Queue implements IQueue {
         return new Collection($items);
     }
 
-    public static function enqueue($item, $queue) {
+    public static function enqueue($item, $queue)
+    {
         $queues = self::instance($queue);
         $priority = self::$_counter++;
         if (Arr::is($item) && Val::is($item['priority'])) {

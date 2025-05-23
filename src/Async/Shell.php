@@ -10,17 +10,18 @@ use BlueFission\System\Process;
  * Class Shell for managing shell commands asynchronously.
  * This class extends the Async abstract class and provides specific implementations for executing shell commands.
  */
-class Shell extends Async {
-
+class Shell extends Async
+{
     /**
      * Executes a shell command asynchronously.
-     * 
+     *
      * @param string $command The shell command to execute.
      * @param int $priority The priority of the task; higher values are processed earlier.
      * @return Shell The instance of the Shell class.
      */
-    public static function do($command, $priority = 10) {
-        $function = function() use ($command) {
+    public static function do($command, $priority = 10)
+    {
+        $function = function () use ($command) {
             $process = new Process($command);
             $process->start();
             while ($status = $process->status()) {

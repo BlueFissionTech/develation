@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Data\Storage\Behaviors;
 
 use BlueFission\Behavioral\Behaviors\Event;
@@ -12,12 +13,12 @@ use BlueFission\Behavioral\Behaviors\Event;
  */
 class StorageEvent extends Event
 {
-	/**
-	 * Const ACTIVATED
-	 *
-	 * @var string OnStorageActivated
-	 *
-	 * This constant holds the value for an event triggered when the storage is activated.
-	 */
-	const ACTIVATED = 'OnStorageActivated';
+    /**
+     * Const ACTIVATED
+     *
+     * @var string OnStorageActivated
+     *
+     * This constant holds the value for an event triggered when the storage is activated.
+     */
+    public const ACTIVATED = 'OnStorageActivated';
 }

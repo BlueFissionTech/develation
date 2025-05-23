@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\System;
 
 use BlueFission\Val;
@@ -12,8 +13,8 @@ use BlueFission\Date;
  *
  * @package BlueFission\System
  */
-class Machine {
-
+class Machine
+{
     /**
      * Private instance of System class
      *
@@ -26,7 +27,8 @@ class Machine {
      *
      * Initializes an instance of the System class.
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->_system = new System();
     }
 
@@ -35,7 +37,8 @@ class Machine {
      *
      * @return string The operating system name
      */
-    public function getOS() {
+    public function getOS()
+    {
         return PHP_OS_FAMILY;  // More standardized way of getting OS type
     }
 
@@ -44,8 +47,9 @@ class Machine {
      *
      * @return int The current memory usage in bytes
      */
-    public function getMemoryUsage() {
-      return memory_get_usage(true);
+    public function getMemoryUsage()
+    {
+        return memory_get_usage(true);
     }
 
     /**
@@ -53,7 +57,8 @@ class Machine {
      *
      * @return int The peak memory usage in bytes
      */
-    public function getMemoryPeakUsage() {
+    public function getMemoryPeakUsage()
+    {
         return memory_get_peak_usage(true);
     }
 
@@ -62,13 +67,14 @@ class Machine {
      *
      * @return int The uptime in seconds
      */
-    public function getUptime() {
+    public function getUptime()
+    {
         if ($this->getOS() == 'Windows') {
             // Windows does not have a built-in, easy way to fetch uptime from CLI
             // Fallback to systeminfo command, parse output for uptime
             $this->_system->run('systeminfo | find "System Boot Time:"');
             $boottime = $this->_system->response();
-            
+
             // extract the date from the line
             $boottimeParts = explode(":", $boottime);
             $boottime = Str::trim($boottimeParts[1] . ":" . $boottimeParts[2] . ":" . $boottimeParts[3]);
@@ -87,8 +93,9 @@ class Machine {
      *
      * @return float The CPU usage as a decimal
      */
-    public function getCPUUsage() {
-        if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
+    public function getCPUUsage()
+    {
+        if (Str::sub(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting CPU usage
             $this->_system->run("WMIC CPU GET LoadPercentage");
             $response = $this->_system->response();
@@ -108,9 +115,10 @@ class Machine {
      *
      * @return string The temperature information
      */
-    public function getTemperature() {
+    public function getTemperature()
+    {
         $temperature = "";
-        if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
+        if (Str::sub(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting temperature
             $this->_system->run("WMIC /Namespace:\\\\root\\WMI PATH MSAcpi_ThermalZoneTemperature GET CurrentTemperature");
             $temperature = $this->_system->response();
@@ -142,9 +150,10 @@ class Machine {
      *
      * @return string The fan speed information
      */
-    public function getFanSpeed() {
+    public function getFanSpeed()
+    {
         $fanSpeed = "";
-        if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
+        if (Str::sub(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting fan speed
             $this->_system->run("WMIC /Node:localhost PATH Win32_Fan GET Descriptions, VariableSpeed");
             $fanSpeed = $this->_system->response();
@@ -173,16 +182,17 @@ class Machine {
 
     /**
      * Get the power consumption of the system.
-     * 
+     *
      * This method returns the power consumption of the system by executing
      * the relevant command for the operating system. If the system is running
      * on Windows, it uses the WMIC command to get the ProcessorQueueLength.
      * If the system is running on Linux, it uses the "cat" command to get the
      * power_now value from the BAT0 power supply.
-     * 
+     *
      * @return string The power consumption of the system.
      */
-    public function getPowerConsumption() {
+    public function getPowerConsumption()
+    {
         $powerConsumption = "";
         if (Str::sub(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting power consumption

@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests\HTML;
 
 use BlueFission\HTML\HTML;
@@ -6,7 +7,7 @@ use BlueFission\HTML\HTML;
 class HTMLTest extends \PHPUnit\Framework\TestCase
 {
     public function testHrefMethod()
-    {   
+    {
         $expected = 'http://localhost';
         $result = HTML::href();
         $this->assertEquals($expected, $result);

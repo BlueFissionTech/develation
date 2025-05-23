@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Async;
 
 use BlueFission\Behavioral\Behaviors\Meta;
@@ -18,7 +19,8 @@ use BlueFission\Arr;
  * The Async class provides a framework for executing asynchronous tasks using a behavioral pattern.
  * It allows tasks to be queued and executed without blocking the main thread of execution.
  */
-abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
+abstract class Async extends Obj implements IAsync, IObj, IBehavioral
+{
     use Behaves {
         Behaves::__construct as private __behavesConstruct;
     }
@@ -51,7 +53,8 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     /**
      * Private constructor to prevent creating a new instance outside of the class.
      */
-    private function __construct() {
+    private function __construct()
+    {
         parent::__construct();
         $this->__behavesConstruct(); // Initialize behavioral traits
 
@@ -68,31 +71,43 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
 
     /**
      * Sets the queue implementation to be used for task management.
-     * 
+     *
      * @param IQueue $queueClass Instance of a queue class implementing the IQueue interface.
      */
-    public static function setQueue(string $queueClass) {
+    public static function setQueue(string $queueClass)
+    {
         self::$_queue = $queueClass;
     }
 
     /**
-     * Returns the task queue.
-     */
-    private function tasks() {
+ * Returns the queue instance containing all async tasks.
+ *
+ * @return IQueue
+ */
+    private function tasks(): IQueue
+    {
+
         return self::$_tasks;
     }
 
     /**
      * Returns the queue instance, initializing it if necessary.
      */
-    protected static function getQueue(): string {
+    protected static function getQueue(): string
+    {
         if (!self::$_queue) {
             self::$_queue = SplPriorityQueue::class; // Default to SplPriorityQueue if no custom queue provided
         }
         return self::$_queue;
     }
 
-    public static function setConfig(array $config)
+    /**
+     * Set configuration options for Async runtime.
+     *
+     * @param array $config Associative array of configuration settings
+     * @return void
+     */
+    public static function setConfig(array $config): void
     {
         self::$_config = $config;
     }
@@ -111,7 +126,8 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     /**
      * Provides access to the singleton instance of the Async class.
      */
-    protected static function instance() {
+    protected static function instance()
+    {
         if (self::$_instance === null) {
             self::$_instance = new static();
             self::$_instance->perform(Event::INITIALIZED);
@@ -121,11 +137,12 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
 
     /**
      * Executes a function asynchronously.
-     * 
+     *
      * @param callable $function The function to execute.
      * @return Async The instance of the Async class.
      */
-    public static function exec($function, $priority = 10) {
+    public static function exec($function, $priority = 10)
+    {
         $instance = self::instance();
         $instance->perform(State::PROCESSING);
         $promise = new Promise($function, $instance);
@@ -135,24 +152,26 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         return $promise;
     }
 
-    public static function keep( $promise, $priority = 10 )
+    public static function keep($promise, $priority = 10)
     {
         $instance = self::instance();
 
         $instance->tasks()::enqueue([
-            'data'=>$instance->wrapPromise($promise), 
-            'priority'=>$priority
+            'data' => $instance->wrapPromise($promise),
+            'priority' => $priority
         ], self::$_queueName);
     }
 
     /**
-     * Wraps a function within a generator to manage execution flow.
-     * 
-     * @param callable $function The function to wrap.
-     * @return callable A generator function.
-     */
-    protected function wrapPromise($promise) {
-        return function() use ($promise) {
+ * Wraps a promise into a generator-compatible function.
+ *
+ * @param Promise $promise
+ * @return callable
+ */
+    protected function wrapPromise($promise): callable
+    {
+
+        return function () use ($promise) {
             $result = $this->executePromise($promise);
             foreach ($result as $value) {
                 yield $value;
@@ -166,7 +185,8 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
      * @param callable $function The function to execute.
      * @return \Generator Yields the function's result, handles success or failure internally.
      */
-    protected function executePromise($promise) {
+    protected function executePromise($promise)
+    {
         try {
             $result = $promise->try();
             if (!($result instanceof \Generator)) {
@@ -186,41 +206,54 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         }
     }
 
-    protected function retry( $function )
+    protected function retry($function)
     {
         $function();
     }
 
-    protected function handleError(\Exception $e) {
+    /**
+     * Handles errors that occur during task execution.
+     *
+     * @param \Exception $e
+     * @return mixed|null
+     */
+    protected function handleError(\Exception $e): mixed
+    {
         $this->logError($e); // Log the error or perform other error reporting.
-        $this->perform([Event::Error, Event::FAILURE], new Meta(info: $e->getMessage()));
+        $this->perform([Event::ERROR, Event::FAILURE], new Meta(info: $e->getMessage()));
 
         return null;
     }
 
-    protected function monitorStart($task) {
+    protected function monitorStart($task)
+    {
         // Logic to log or monitor the start of a task, could include timing.
         self::$_time = time();
     }
 
-    protected function monitorEnd($task) {
+    protected function monitorEnd($task)
+    {
         // Logic to log or monitor the end of a task, could include timing and result status.
         $time = time() - self::$_time;
     }
 
-    protected function logError(\Exception $e) {
+    protected function logError(\Exception $e)
+    {
         // Log the error using a logging system or error reporting service.
         error_log($e);
     }
 
-    protected function checkTimeout($task) {
+    protected function checkTimeout($task)
+    {
         // Implement timeout check
-        if (time() - $task['start_time'] > self::getConfig()['task_timeout']) {
+        if (time() - $task['start_time'] > self::getConfig()['timeout']) {
+
             throw new TimeoutException("Task timed out");
         }
     }
 
-    protected function notifyCompletion($data) {
+    protected function notifyCompletion($data)
+    {
         $context = stream_context_create([
             'http' => [
                 'method' => 'POST',
@@ -233,13 +266,18 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     }
 
     /**
-     * Runs all queued tasks.
-     */
-    public static function run() {
+ * Run all queued tasks in the background and monitor their lifecycle.
+ *
+ * @return void
+ */
+    public static function run(): void
+    {
+
         $instance = self::instance();
 
-        if ($instance->is(State::RUNNING))
+        if ($instance->is(State::RUNNING)) {
             return;
+        }
 
         $instance->perform(Event::STARTED);
         $instance->perform(State::RUNNING);
@@ -271,7 +309,8 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
     /**
      * Destructor method to ensure all tasks are run and resources are cleaned up.
      */
-    public function __destruct() {
+    public function __destruct()
+    {
         try {
             $this->perform(State::FINALIZING);
             self::run();

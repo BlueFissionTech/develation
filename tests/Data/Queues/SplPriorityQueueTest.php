@@ -5,17 +5,21 @@ namespace BlueFission\Tests\Data\Queues;
 use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\SplPriorityQueue;
 
-class SplPriorityQueueTest extends TestCase {
+class SplPriorityQueueTest extends TestCase
+{
     private $queue;
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
     }
 
-    public function testQueueIsEmptyInitially() {
+    public function testQueueIsEmptyInitially()
+    {
         $this->assertTrue(SplPriorityQueue::isEmpty('testChannel'), "Queue should be empty initially.");
     }
 
-    public function testEnqueueDequeueItems() {
+    public function testEnqueueDequeueItems()
+    {
         SplPriorityQueue::enqueue(['data' => 'lowPriority', 'priority' => 1], 'testChannel');
         SplPriorityQueue::enqueue(['data' => 'highPriority', 'priority' => 10], 'testChannel');
 
@@ -28,7 +32,8 @@ class SplPriorityQueueTest extends TestCase {
         $this->assertEquals('lowPriority', $lowPriorityItem, "The second dequeued item should be 'lowPriority'.");
     }
 
-    public function testDifferentChannelsAreIndependent() {
+    public function testDifferentChannelsAreIndependent()
+    {
         SplPriorityQueue::enqueue(['data' => 'channel1Item', 'priority' => 5], 'channel1');
         SplPriorityQueue::enqueue(['data' => 'channel2Item', 'priority' => 5], 'channel2');
 

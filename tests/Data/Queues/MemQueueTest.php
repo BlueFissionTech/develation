@@ -5,25 +5,30 @@ namespace BlueFission\Tests\Data\Queues;
 use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\MemQueue;
 
-class MemQueueTest extends TestCase {
+class MemQueueTest extends TestCase
+{
     private static $testQueueName = 'testQueue';
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         MemQueue::setMode(MemQueue::FIFO); // Default to FIFO for consistency in testing
     }
 
-    protected function tearDown(): void {
+    protected function tearDown(): void
+    {
         // Clean up the queue keys in Memcached after each test to prevent residue data affecting other tests
         while (!MemQueue::isEmpty(self::$testQueueName)) {
             MemQueue::dequeue(self::$testQueueName);
         }
     }
 
-    public function testQueueIsEmptyInitially() {
+    public function testQueueIsEmptyInitially()
+    {
         $this->assertTrue(MemQueue::isEmpty(self::$testQueueName), "Queue should be empty initially.");
     }
 
-    public function testEnqueueAndDequeueItems() {
+    public function testEnqueueAndDequeueItems()
+    {
         MemQueue::enqueue(self::$testQueueName, 'firstItem');
         MemQueue::enqueue(self::$testQueueName, 'secondItem');
 
@@ -36,7 +41,8 @@ class MemQueueTest extends TestCase {
         $this->assertEquals('secondItem', $secondDequeued, "The second dequeued item should be 'secondItem'.");
     }
 
-    public function testQueueSupportsFILOMode() {
+    public function testQueueSupportsFILOMode()
+    {
         MemQueue::setMode(MemQueue::FILO);
         MemQueue::enqueue(self::$testQueueName, 'firstItem');
         MemQueue::enqueue(self::$testQueueName, 'secondItem');
@@ -45,7 +51,8 @@ class MemQueueTest extends TestCase {
         $this->assertEquals('secondItem', $dequeued, "The dequeued item should be 'secondItem' when in FILO mode.");
     }
 
-    public function testDequeueWithLimits() {
+    public function testDequeueWithLimits()
+    {
         MemQueue::enqueue(self::$testQueueName, 'firstItem');
         MemQueue::enqueue(self::$testQueueName, 'secondItem');
         MemQueue::enqueue(self::$testQueueName, 'thirdItem');
@@ -56,7 +63,8 @@ class MemQueueTest extends TestCase {
         $this->assertCount(1, $limitedItems, "Only one item should be dequeued.");
     }
 
-    public function testQueueIsEmptyAfterClearing() {
+    public function testQueueIsEmptyAfterClearing()
+    {
         MemQueue::enqueue(self::$testQueueName, 'item');
         MemQueue::dequeue(self::$testQueueName);
         $this->assertTrue(MemQueue::isEmpty(self::$testQueueName), "Queue should be empty after removing all items.");

@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests\HTML;
 
 use PHPUnit\Framework\TestCase;
@@ -7,14 +8,14 @@ use BlueFission\Arr;
 
 class XMLTest extends TestCase
 {
-    static $testdirectory = '../../testdirectory';
-    static $file = 'test.xml';
+    public static $testdirectory = '../../testdirectory';
+    public static $file = 'test.xml';
 
-    static $classname = 'BlueFission\HTML\XML';
+    public static $classname = 'BlueFission\HTML\XML';
 
     protected $object;
 
-    public function setUp() :void
+    public function setUp(): void
     {
         chdir(__DIR__);
 

@@ -5,9 +5,10 @@ namespace BlueFission\Tests\Data\Queues;
 use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\Queue;
 
-class QueueTest extends TestCase {
-
-    protected function setUp(): void {
+class QueueTest extends TestCase
+{
+    protected function setUp(): void
+    {
         Queue::setMode(Queue::FIFO); // Default to FIFO for most tests
 
         while (!Queue::isEmpty('testQueue')) {
@@ -15,11 +16,13 @@ class QueueTest extends TestCase {
         }
     }
 
-    public function testQueueIsEmptyInitially() {
+    public function testQueueIsEmptyInitially()
+    {
         $this->assertTrue(Queue::isEmpty('testQueue'), "Queue should be empty initially.");
     }
 
-    public function testEnqueueAndDequeueItems() {
+    public function testEnqueueAndDequeueItems()
+    {
         Queue::enqueue('testQueue', 'firstItem');
         Queue::enqueue('testQueue', 'secondItem');
 
@@ -32,7 +35,8 @@ class QueueTest extends TestCase {
         $this->assertEquals('secondItem', $secondDequeued, "The second dequeued item should be 'secondItem'.");
     }
 
-    public function testQueueSupportsFILOMode() {
+    public function testQueueSupportsFILOMode()
+    {
         Queue::setMode(Queue::FILO);
         Queue::enqueue('testQueue', 'firstItem');
         Queue::enqueue('testQueue', 'secondItem');
@@ -41,7 +45,8 @@ class QueueTest extends TestCase {
         $this->assertEquals('secondItem', $dequeued, "The dequeued item should be 'secondItem' when in FILO mode.");
     }
 
-    public function testDequeueWithLimits() {
+    public function testDequeueWithLimits()
+    {
         Queue::enqueue('testQueue', 'firstItem');
         Queue::enqueue('testQueue', 'secondItem');
         Queue::enqueue('testQueue', 'thirdItem');
@@ -54,7 +59,8 @@ class QueueTest extends TestCase {
         $this->assertCount(2, $limitedItems, "Only two items should be dequeued.");
     }
 
-    public function testQueueIsEmptyAfterClearing() {
+    public function testQueueIsEmptyAfterClearing()
+    {
         Queue::enqueue('testQueue', 'item');
         Queue::dequeue('testQueue');
         $this->assertTrue(Queue::isEmpty('testQueue'), "Queue should be empty after removing all items.");

@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Response;

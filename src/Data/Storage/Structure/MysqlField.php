@@ -1,14 +1,16 @@
 <?php
+
 namespace BlueFission\Data\Storage\Structure;
 
 use BlueFission\Connections\Database\MySQLLink;
 use BlueFission\Str;
 
 /**
- * Class MySQLField 
- * Represents a field in a MySQL table. 
+ * Class MySQLField
+ * Represents a field in a MySQL table.
  */
-class MySQLField {
+class MySQLField
+{
     /**
      * @var string The name of the field.
      */
@@ -69,7 +71,7 @@ class MySQLField {
      *
      * @param string $name The name of the field.
      *
-     * @return MySQLField 
+     * @return MySQLField
      */
     public function __construct($name)
     {
@@ -84,7 +86,7 @@ class MySQLField {
      *
      * @param string $type The type of the field.
      *
-     * @return MySQLField 
+     * @return MySQLField
      */
     public function type($type)
     {
@@ -98,7 +100,7 @@ class MySQLField {
      *
      * @param int $size The size of the field.
      *
-     * @return MySQLField 
+     * @return MySQLField
      */
     public function size($size)
     {
@@ -112,9 +114,9 @@ class MySQLField {
      *
      * @param boolean $isTrue If the field is a primary key.
      *
-     * @return MySQLField 
+     * @return MySQLField
      */
-    public function primary( $isTrue = true)
+    public function primary($isTrue = true)
     {
         $this->_primary = $isTrue;
 
@@ -126,9 +128,9 @@ class MySQLField {
      *
      * @param boolean $isTrue If the field is auto-incremented.
      *
-     * @return MySQLField 
+     * @return MySQLField
      */
-    public function autoincrement( $isTrue = true)
+    public function autoincrement($isTrue = true)
     {
         $this->_autoincrement = $isTrue;
 
@@ -140,202 +142,202 @@ class MySQLField {
      *
      * @param boolean $isTrue If the field is unique.
      *
-     * @return MySQLField 
+     * @return MySQLField
      */
-    public function unique( $isTrue = true)
+    public function unique($isTrue = true)
     {
         $this->_unique = $isTrue;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the null property of the field
-	 * 
-	 * @param bool $isTrue Whether the field should be set to null
-	 * @return object Returns the instance of the class
-	 */
-	public function null( $isTrue = true)
-	{
-		$this->_null = $isTrue;
+    /**
+     * Set the null property of the field
+     *
+     * @param bool $isTrue Whether the field should be set to null
+     * @return object Returns the instance of the class
+     */
+    public function null($isTrue = true)
+    {
+        $this->_null = $isTrue;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the default value of the field
-	 * 
-	 * @param mixed $value the default value of the field
-	 * @return object Returns the instance of the class
-	 */
-	public function default( mixed $value )
-	{
-		$this->_default = $value;
+    /**
+     * Set the default value of the field
+     *
+     * @param mixed $value the default value of the field
+     * @return object Returns the instance of the class
+     */
+    public function default(mixed $value)
+    {
+        $this->_default = $value;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the required property of the field
-	 * 
-	 * @param bool $isTrue Whether the field is required
-	 * @return object Returns the instance of the class
-	 */
-	public function required( $isTrue = true)
-	{
-		$this->_null = !$isTrue;
+    /**
+     * Set the required property of the field
+     *
+     * @param bool $isTrue Whether the field is required
+     * @return object Returns the instance of the class
+     */
+    public function required($isTrue = true)
+    {
+        $this->_null = !$isTrue;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the foreign property of the field
-	 * 
-	 * @param string $entity The entity referenced by the foreign key
-	 * @param string $onField The field referenced in the foreign entity
-	 * @param string $updateAction The action to be taken on update of the foreign field
-	 * @param string $deleteAction The action to be taken on delete of the foreign field
-	 * @return object Returns the instance of the class
-	 */
-	public function foreign( $entity, $onField = 'id', $updateAction = '', $deleteAction = '' )
-	{
-		$this->_foreign[$entity] = ['on'=>$onField, 'update'=>$updateAction, 'delete'=>$deleteAction];
+    /**
+     * Set the foreign property of the field
+     *
+     * @param string $entity The entity referenced by the foreign key
+     * @param string $onField The field referenced in the foreign entity
+     * @param string $updateAction The action to be taken on update of the foreign field
+     * @param string $deleteAction The action to be taken on delete of the foreign field
+     * @return object Returns the instance of the class
+     */
+    public function foreign($entity, $onField = 'id', $updateAction = '', $deleteAction = '')
+    {
+        $this->_foreign[$entity] = ['on' => $onField, 'update' => $updateAction, 'delete' => $deleteAction];
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Get the definition string of the field
-	 * 
-	 * @return string The definition string of the field
-	 */
-	public function definition()
-	{
-		$definition[] = "`{$this->_name}`";
-		
-		switch ($this->_type) {
-			case 'datetime':
-			$definition[] = "DATETIME";
-			break;
+    /**
+     * Get the definition string of the field
+     *
+     * @return string The definition string of the field
+     */
+    public function definition()
+    {
+        $definition[] = "`{$this->_name}`";
 
-			case 'date':
-			$definition[] = "DATE";
-			break;
+        switch ($this->_type) {
+            case 'datetime':
+                $definition[] = "DATETIME";
+                break;
 
-			case 'boolean':
-			$definition[] = "TINYINT";
-			break; 
+            case 'date':
+                $definition[] = "DATE";
+                break;
 
-			case 'numeric':
-			$definition[] = "INT";
-			break;
+            case 'boolean':
+                $definition[] = "TINYINT";
+                break;
 
-			case 'decimal':
-			$definition[] = "DECIMAL";
-			break;
+            case 'numeric':
+                $definition[] = "INT";
+                break;
 
-			case 'tinytext':
-			$definition[] = "TINYTEXT";
-			break;
+            case 'decimal':
+                $definition[] = "DECIMAL";
+                break;
 
-			case 'mediumtext':
-			$definition[] = "MEDIUMTEXT";
-			break;
+            case 'tinytext':
+                $definition[] = "TINYTEXT";
+                break;
 
-			case 'longtext':
-			$definition[] = "LONGTEXT";
-			break;
+            case 'mediumtext':
+                $definition[] = "MEDIUMTEXT";
+                break;
 
-			case 'json':
-			$definition[] = "JSON";
-			break;
+            case 'longtext':
+                $definition[] = "LONGTEXT";
+                break;
 
-			default:
-			case 'text':
-			if ($this->_size > 255) {
-				$definition[] = "TEXT";
-			} else {
-				$definition[] = "VARCHAR";
-			}
-			break;
-		}
+            case 'json':
+                $definition[] = "JSON";
+                break;
 
-		if ( $this->_size ) {
-			$definition[] = "({$this->_size})";
-		}
+            default:
+            case 'text':
+                if ($this->_size > 255) {
+                    $definition[] = "TEXT";
+                } else {
+                    $definition[] = "VARCHAR";
+                }
+                break;
+        }
 
-		if ( $this->_default !== null ) {
-			$definition[] = "DEFAULT ".$this->_link->sanitize((string)$this->_default);
-		}
-		
-		if ( !$this->_null ) {
-			$definition[] = "NOT";
-		}
+        if ($this->_size) {
+            $definition[] = "({$this->_size})";
+        }
 
-		$definition[] = "NULL";
+        if ($this->_default !== null) {
+            $definition[] = "DEFAULT ".$this->_link->sanitize((string)$this->_default);
+        }
 
-		if ( $this->_autoincrement ) {
-			$definition[] = "AUTO_INCREMENT";
-		}
+        if (!$this->_null) {
+            $definition[] = "NOT";
+        }
 
-		$definition_string = implode(' ', $definition);
+        $definition[] = "NULL";
 
-		return $definition_string;
-	}
+        if ($this->_autoincrement) {
+            $definition[] = "AUTO_INCREMENT";
+        }
 
-	/**
-	 * Get the extras string of the field
-	 * 
-	 * @return string The extras string of the field
-	 */
-	public function extras()
-	{
-		$extras = [];
+        $definition_string = implode(' ', $definition);
 
-		if ( $this->_primary ) {
-			$extras[] = "PRIMARY KEY (`{$this->_name}`)";
-		}
+        return $definition_string;
+    }
 
-		if ( $this->_unique ) {
-			$extras[] = "UNIQUE INDEX `{$this->_name}_UNIQUE` (`{$this->_name}` ASC) VISIBLE";
-		}
+    /**
+     * Get the extras string of the field
+     *
+     * @return string The extras string of the field
+     */
+    public function extras()
+    {
+        $extras = [];
 
-		if ( count($this->_foreign) > 0 ) {
-			foreach ( $this->_foreign as $entity => $values ) {
-				$extras[] = "INDEX `{$this->_name}_idx` (`{$this->_name}` ASC) VISIBLE";
-				$foreign = "CONSTRAINT `{$this->_name}_".Str::rand(null, 4)."`\n".
-				    "FOREIGN KEY (`{$this->_name}`)\n".
-				    "REFERENCES `$entity` (`{$values['on']}`)\n";
+        if ($this->_primary) {
+            $extras[] = "PRIMARY KEY (`{$this->_name}`)";
+        }
 
-				    if ( $values['delete'] ) {
-				    	$foreign .= " ON DELETE CASCADE\n";
-				    }
+        if ($this->_unique) {
+            $extras[] = "UNIQUE INDEX `{$this->_name}_UNIQUE` (`{$this->_name}` ASC) VISIBLE";
+        }
 
-				    if ( $values['update'] ) {
-				    	$foreign .= " ON UPDATE CASCADE\n";
-				    }
+        if (count($this->_foreign) > 0) {
+            foreach ($this->_foreign as $entity => $values) {
+                $extras[] = "INDEX `{$this->_name}_idx` (`{$this->_name}` ASC) VISIBLE";
+                $foreign = "CONSTRAINT `{$this->_name}_".Str::rand(null, 4)."`\n".
+                    "FOREIGN KEY (`{$this->_name}`)\n".
+                    "REFERENCES `$entity` (`{$values['on']}`)\n";
 
-				$extras[] = $foreign;
-			}
-		}
+                if ($values['delete']) {
+                    $foreign .= " ON DELETE CASCADE\n";
+                }
+
+                if ($values['update']) {
+                    $foreign .= " ON UPDATE CASCADE\n";
+                }
+
+                $extras[] = $foreign;
+            }
+        }
 
 
-		$extras_string = implode(",\n", $extras);
+        $extras_string = implode(",\n", $extras);
 
-		return $extras_string;
-	}
+        return $extras_string;
+    }
 
-	/**
-	 * Adds any additional properties to the table definition.
-	 * 
-	 * @return string The string representation of the additional properties to be added to the table definition.
-	 */
-	public function additions()
-		{
-			$additions = [];
+    /**
+     * Adds any additional properties to the table definition.
+     *
+     * @return string The string representation of the additional properties to be added to the table definition.
+     */
+    public function additions()
+    {
+        $additions = [];
 
-			$addition_string = implode(",\n", $additions);
+        $addition_string = implode(",\n", $additions);
 
-			return $addition_string;
-		}
+        return $addition_string;
+    }
 }

@@ -4,27 +4,31 @@ namespace BlueFission\Async;
 
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Async\Promise;
 
 /**
  * Class Heap for managing a stack of tasks.
- * This class extends the Async abstract class to provide specific implementations for task stacking.
+ * Designed for sequential async task execution (LIFO behavior).
  */
-class Heap extends Async {
-
+class Heap extends Async
+{
     /**
-     * Adds a task to the stack.
-     * 
-     * @param callable $function The function that represents the task to be executed.
-     * @param int $priority The priority of the task; higher values are processed earlier.
-     * @return Heap The instance of the Heap class.
+     * Adds a task to the stack and returns its Promise.
+     *
+     * @param callable $function The function representing the task.
+     * @param int $priority Priority of the task; higher values execute earlier.
+     * @return Promise
      */
-    public static function do($function, $priority = 10) {
+    public static function do($function, $priority = 10): Promise
+    {
         return static::exec($function, $priority);
     }
 
     /**
-     * Optional: Implement additional stack-specific methods like task dependency management, delay between tasks, etc.
+     * Optional: Implement additional stack-specific methods
+     * like:
+     *  - delaying between executions
+     *  - managing dependencies
+     *  - task throttling
      */
-
-    // Additional methods can be implemented here
 }

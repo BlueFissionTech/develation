@@ -1,49 +1,58 @@
 <?php
+
 namespace BlueFission\System\Tests;
 
 use BlueFission\System\Machine;
 use PHPUnit\Framework\TestCase;
 
-class MachineTest extends TestCase {
+class MachineTest extends TestCase
+{
+    public function testGetOS()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsString($machine->getOS());
+    }
 
-  public function testGetOS() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsString($machine->getOS());
-  }
+    public function testGetMemoryUsage()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsInt($machine->getMemoryUsage());
+    }
 
-  public function testGetMemoryUsage() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsInt($machine->getMemoryUsage());
-  }
+    public function testGetMemoryPeakUsage()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsInt($machine->getMemoryPeakUsage());
+    }
 
-  public function testGetMemoryPeakUsage() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsInt($machine->getMemoryPeakUsage());
-  }
+    public function testGetUptime()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsFloat($machine->getUptime());
+    }
 
-  public function testGetUptime() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsFloat($machine->getUptime());
-  }
+    public function testGetCPUUsage()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsNumeric($machine->getCPUUsage());
+    }
 
-  public function testGetCPUUsage() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsNumeric($machine->getCPUUsage());
-  }
+    public function testGetTemperature()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsString($machine->getTemperature());
+    }
 
-  public function testGetTemperature() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsString($machine->getTemperature());
-  }
+    public function testGetFanSpeed()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsString($machine->getFanSpeed());
+    }
 
-  public function testGetFanSpeed() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsString($machine->getFanSpeed());
-  }
-
-  public function testGetPowerConsumption() {
-    $machine = new \BlueFission\System\Machine();
-    $this->assertIsString($machine->getPowerConsumption());
-  }
+    public function testGetPowerConsumption()
+    {
+        $machine = new \BlueFission\System\Machine();
+        $this->assertIsString($machine->getPowerConsumption());
+    }
 
 }

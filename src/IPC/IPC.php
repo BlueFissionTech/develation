@@ -6,16 +6,19 @@ use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Event;
 
-class IPC {
+class IPC
+{
     protected $_storage;
     protected $_maxRetries;
 
-    public function __construct(Storage $storage, int $maxRetries = 5) {
+    public function __construct(Storage $storage, int $maxRetries = 5)
+    {
         $this->_storage = $storage;
         $this->_maxRetries = $maxRetries;
     }
 
-    public function write($channel, $message) {
+    public function write($channel, $message)
+    {
         if ($this->retryConnection()) {
             $data = $this->_storage->read() ?? [];
             $data[$channel][] = $message;
@@ -27,7 +30,8 @@ class IPC {
         }
     }
 
-    public function read($channel) {
+    public function read($channel)
+    {
         if ($this->retryConnection()) {
             $data = $this->_storage->read() ?? [];
             $messages = $data[$channel] ?? [];
@@ -38,7 +42,8 @@ class IPC {
         }
     }
 
-    public function clear($channel) {
+    public function clear($channel)
+    {
         if ($this->retryConnection()) {
             $data = $this->_storage->read() ?? [];
             unset($data[$channel]);
@@ -50,7 +55,8 @@ class IPC {
         }
     }
 
-    protected function retryConnection(): bool {
+    protected function retryConnection(): bool
+    {
         $retries = 0;
         while ($retries < $this->_maxRetries) {
             $this->_storage->activate();

@@ -7,11 +7,13 @@ use BlueFission\Utils\Mem;
 
 class MemTest extends TestCase
 {
-    public function setUp(): void {
+    public function setUp(): void
+    {
         Mem::flush(); // Ensure a clean slate before each test
     }
 
-    public function testRegisterAndGet() {
+    public function testRegisterAndGet()
+    {
         $object = new \stdClass();
         $object->name = "TestObject";
         $id = spl_object_hash($object);
@@ -22,7 +24,8 @@ class MemTest extends TestCase
         $this->assertSame($object, $retrieved, "The object retrieved should be the same as the object registered.");
     }
 
-    public function testFlushRemovesUnusedObjects() {
+    public function testFlushRemovesUnusedObjects()
+    {
         $object = new \stdClass();
         $id = spl_object_hash($object);
         Mem::threshold(1); // Set threshold to 1 second
@@ -35,7 +38,8 @@ class MemTest extends TestCase
         $this->assertNull(Mem::get($id), "The object should be flushed from memory after being unused.");
     }
 
-    public function testAuditReportsUnusedObjects() {
+    public function testAuditReportsUnusedObjects()
+    {
         $object = new \stdClass();
         $id = spl_object_hash($object);
         Mem::register($object, $id);
@@ -48,8 +52,9 @@ class MemTest extends TestCase
         $this->assertArrayNotHasKey($id, $unusedAfterUse, "The object should no longer be reported as unused after use.");
     }
 
-    public function testWakeupAndSleep() {
-        chdir(__DIR__); // Change to current directory (since Mem uses relative paths to save audit 
+    public function testWakeupAndSleep()
+    {
+        chdir(__DIR__); // Change to current directory (since Mem uses relative paths to save audit
 
         $object = new \stdClass();
         $id = spl_object_hash($object);

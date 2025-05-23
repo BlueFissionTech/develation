@@ -13,13 +13,12 @@ use BlueFission\IObj;
 
 /**
  * Class Stdio
- * 
+ *
  * This class is designed to handle standard input/output operations extending
  * the Connection class functionality to stdio.
  */
 class Stdio extends Connection implements IConfigurable
 {
-
     /**
      * Configuration data for the STDIO connection.
      *
@@ -35,7 +34,7 @@ class Stdio extends Connection implements IConfigurable
      *
      * @param array|null $config Configuration data.
      */
-    public function __construct( $config = null )
+    public function __construct($config = null)
     {
         parent::__construct();
         if (Arr::is($config)) {
@@ -45,7 +44,7 @@ class Stdio extends Connection implements IConfigurable
 
     /**
      * Opens the standard input or output as a stream.
-     * 
+     *
      * @param string $mode 'input' for stdin, 'output' for stdout
      * @return void
      */
@@ -61,12 +60,14 @@ class Stdio extends Connection implements IConfigurable
 
         $status = $this->_connection['in'] && $this->_connection['out'] ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 
-        $this->perform( 
-            $this->_connection['in'] && $this->_connection['out'] 
-            ? [Event::SUCCESS, Event::CONNECTED, State::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+        $this->perform(
+            $this->_connection['in'] && $this->_connection['out']
+            ? [Event::SUCCESS, Event::CONNECTED, State::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE],
+            new Meta(when: Action::CONNECT, info: $status)
+        );
 
 
-        if ( $this->_connection['in'] ) {
+        if ($this->_connection['in']) {
             stream_set_blocking($this->_connection['in'], false);
         }
 
@@ -75,7 +76,7 @@ class Stdio extends Connection implements IConfigurable
 
     /**
      * Continuously reads data from standard input in a non-blocking way.
-     * 
+     *
      * @return void
      */
     protected function listen()
@@ -118,7 +119,7 @@ class Stdio extends Connection implements IConfigurable
 
     /**
      * Writes data to standard output.
-     * 
+     *
      * @param string $data Data to write
      * @return $this
      */
@@ -137,7 +138,7 @@ class Stdio extends Connection implements IConfigurable
 
     /**
      * Close the connection (STDIN or STDOUT)
-     * 
+     *
      * @return void
      */
     protected function _close(): void
@@ -153,24 +154,24 @@ class Stdio extends Connection implements IConfigurable
 
     /**
      * Helper method to run a query (mainly for sending data).
-     * 
+     *
      * @param string|null $query Optional data for write
      */
     public function query($query = null)
     {
         $this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
-        if ( $this->is(State::BUSY) ) {
+        if ($this->is(State::BUSY)) {
             return;
         }
 
         $this->perform(State::PROCESSING);
         $this->listen();
 
-        $status = ( $this->_result ) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+        $status = ($this->_result) ? self::STATUS_SUCCESS : self::STATUS_FAILED;
 
-        $this->perform( 
-            $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
-            new Meta(when: Action::PROCESS, info: $status ) 
+        $this->perform(
+            $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE],
+            new Meta(when: Action::PROCESS, info: $status)
         );
 
         $this->status($status);
