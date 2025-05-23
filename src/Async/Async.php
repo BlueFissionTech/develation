@@ -75,10 +75,13 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         self::$_queue = $queueClass;
     }
 
-    /**
-     * Returns the task queue.
-     */
-    private function tasks() {
+  /**
+ * Returns the queue instance containing all async tasks.
+ *
+ * @return IQueue
+ */
+private function tasks(): IQueue {
+
         return self::$_tasks;
     }
 
@@ -92,7 +95,13 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         return self::$_queue;
     }
 
-    public static function setConfig(array $config)
+/**
+ * Set configuration options for Async runtime.
+ *
+ * @param array $config Associative array of configuration settings
+ * @return void
+ */
+public static function setConfig(array $config): void
     {
         self::$_config = $config;
     }
@@ -145,13 +154,14 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         ], self::$_queueName);
     }
 
-    /**
-     * Wraps a function within a generator to manage execution flow.
-     * 
-     * @param callable $function The function to wrap.
-     * @return callable A generator function.
-     */
-    protected function wrapPromise($promise) {
+  /**
+ * Wraps a promise into a generator-compatible function.
+ *
+ * @param Promise $promise
+ * @return callable
+ */
+protected function wrapPromise($promise): callable {
+
         return function() use ($promise) {
             $result = $this->executePromise($promise);
             foreach ($result as $value) {
@@ -191,9 +201,15 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         $function();
     }
 
-    protected function handleError(\Exception $e) {
-        $this->logError($e); // Log the error or perform other error reporting.
-        $this->perform([Event::Error, Event::FAILURE], new Meta(info: $e->getMessage()));
+/**
+ * Handles errors that occur during task execution.
+ *
+ * @param \Exception $e
+ * @return mixed|null
+ */
+protected function handleError(\Exception $e): mixed {
+    $this->logError($e); // Log the error or perform other error reporting.
+        $this->perform([Event::ERROR, Event::FAILURE], new Meta(info: $e->getMessage()));
 
         return null;
     }
@@ -215,7 +231,8 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
 
     protected function checkTimeout($task) {
         // Implement timeout check
-        if (time() - $task['start_time'] > self::getConfig()['task_timeout']) {
+        if (time() - $task['start_time'] > self::getConfig()['timeout']) {
+
             throw new TimeoutException("Task timed out");
         }
     }
@@ -232,10 +249,13 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral {
         file_get_contents(self::getConfig()['notifyURL'], false, $context);
     }
 
-    /**
-     * Runs all queued tasks.
-     */
-    public static function run() {
+  /**
+ * Run all queued tasks in the background and monitor their lifecycle.
+ *
+ * @return void
+ */
+public static function run(): void {
+
         $instance = self::instance();
 
         if ($instance->is(State::RUNNING))

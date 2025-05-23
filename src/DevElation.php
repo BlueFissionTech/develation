@@ -34,19 +34,23 @@ class DevElation {
         self::$_isActive = false;
     }
 
+  
     public static function config($key = null, $value = null)
-    {
-    	// Automatically determine class name if key is not provided
-        if (func_num_args() == 0) {
-            $key = self::getCallerClassName();
-        }
-
-        if ($value === null) {
-            return self::$_config[$key] ?? null;
-        } else {
-            self::$_config[$key] = $value;
-        }
+{
+    if (func_num_args() == 0) {
+        $key = self::getCallerClassName();
     }
+
+    if ($value === null) {
+        return self::$_config[$key] ?? null;
+    } else {
+        self::$_config[$key] = $value;
+        return $value;
+    }
+}
+
+
+
 
     public static function filter($name, callable $function, $priority = 10)
     {
@@ -57,7 +61,17 @@ class DevElation {
         ksort(self::$_filters[$name]); // Sort by priority
     }
 
-    public static function apply($name = null, $value)
+
+
+
+/**
+ * Applies all registered filters to the given value.
+ *
+ * @param string|null $name Filter name. If null, auto-generated.
+ * @param mixed $value The value to filter.
+ * @return mixed
+ */
+public static function apply($name = null, $value)
     {
     	$name = self::generateHookName($name);
         if (!self::$_isActive || !isset(self::$_filters[$name])) {

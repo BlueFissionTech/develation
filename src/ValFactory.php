@@ -1,8 +1,21 @@
 <?php
 namespace BlueFission;
 
+use BlueFission\DataTypes;
+use BlueFission\IVal;
+
+/**
+ * Factory class to instantiate IVal-based objects based on data type.
+ */
 class ValFactory {
-	static function make( $type = null ): IVal
+	/**
+ * Factory method to create an IVal object of the specified type.
+ *
+ * @param string|DataTypes|null $type The data type to create (as string or DataTypes enum)
+ * @param mixed ...$args Additional arguments passed to the constructor
+ * @return IVal
+ */
+static function make( $type = null ): IVal
 	{
 		$args = func_get_args();
 		array_shift($args);

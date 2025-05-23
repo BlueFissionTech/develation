@@ -3,6 +3,9 @@
 namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
+use Closure;
+use Exception;
+
 
 class Func extends Val implements IVal {
 	/**
@@ -12,10 +15,13 @@ class Func extends Val implements IVal {
 	protected $_type = DataTypes::CALLABLE;
 
 	/**
-	 * Constructor to initialize value of the class
-	 *
-	 * @param mixed $value
-	 */
+ * Constructor that accepts any callable. If it's not callable and casting is enabled,
+ * attempts to convert it to a Closure.
+ *
+ * @param mixed $value The value to store (expected to be callable)
+ * @param bool $snapshot Whether to track the original value
+ * @param bool $cast Whether to cast non-callables into closures
+ */
 	public function __construct( $value = null, $snapshot = true, $cast = false ) {
 		$value = is_callable( $value, true ) ? $value : ( ( ( $cast || $this->_forceType ) && !is_null($value)) ? \Closure::fromCallable($value) : $value );
 		parent::__construct($value);
@@ -61,11 +67,11 @@ class Func extends Val implements IVal {
 
 		return $this;
 	}
-
-	/**
-	 * Returns a list of the arguments that the callback expects
-	 * @return array the list of arguments
-	 */
+/**
+ * Returns an array of ReflectionParameter objects for the callback.
+ *
+ * @return array<int, \ReflectionParameter>
+ */
 	public function expects(): array
 	{
 		if ( is_string($this->_data) || is_array($this->_data) ) {
@@ -113,7 +119,15 @@ class Func extends Val implements IVal {
 		return call_user_func_array($this->_data, $ref_args);
 	}
 
-	public function __invoke( $value = null )
+
+
+/**
+ * Allows the object to be called like a function.
+ *
+ * @param mixed ...$args Arguments to pass to the stored callable
+ * @return mixed
+ */
+public function __invoke( $value = null )
 	{
 		$args = func_get_args();
 		return $this->call(...$args);

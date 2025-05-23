@@ -17,6 +17,31 @@ use Traversable;
  * @implements IVal
  * @implements ArrayAccess
  */
+
+ ## Coding Standards (Internal Summary)
+
+//  Class properties use snake_case, public methods use camelCase.
+//  This makes it easy to tell variables apart from methods at a glance.
+ 
+//  Always type hint where possible (int, bool, array, etc.).
+//  This helps prevent bugs by telling PHP and other developers what kind of data to expect.
+ 
+//  Avoid inline logical negation like !$this->is(...) more than once in a method.
+//  Instead, check once at the top of the method and return early. This keeps the code cleaner and easier to read.
+ 
+//  Trigger Event::CHANGE on any method that mutates _data.
+//  Whenever you change the data (adding, removing, updating), fire this event so other parts of the system can respond.
+ 
+//  Ensure PHPDoc for all public methods with @param, @return, and if applicable, @throws.
+//  This documents what the method does, what it needs, what it gives back, and what errors it might throw — very helpful for team members and IDEs.
+ 
+//  Avoid commented-out legacy code. Use version control for history.
+//  Don’t leave old code commented in the file — Git keeps track of the past. Keep the file clean.
+ 
+//  Validate $_data using $this->is() before processing.
+//  Always make sure the value is actually an array before doing array stuff like looping or modifying. This prevents unexpected errors.
+
+
 class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate {
     protected $_type = DataTypes::ARRAY;
 
@@ -48,16 +73,6 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 
 		return $this;
 	}
-
-    // public function setValue($value) {
-    // 	if ( $value instanceof IVal ) {
-	// 		$value = $value->val();
-	// 	}
-
-	// 	$this->_data = $value;
-
-    // 	$this->_data = $this->_toArray();
-    // }
 
     /**
      * Check if value is an array
@@ -478,7 +493,13 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	}
 
 
-	public function push( $var ): IVal
+/**
+ * Pushes a value to the end of the internal array.
+ *
+ * @param mixed $var Value to push
+ * @return IVal
+ */
+public function push($var): IVal
 	{
 		if (!$this->is($this->_data)) {
 			return $this;
@@ -754,11 +775,12 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 	}
 
 	/**
-	 * Get the next value in the array and advance the internal pointer
-	 * @return mixed
-	 * 
-	 */
-	public function next() {
+ * Move the internal pointer to the next element and return it.
+ *
+ * @return mixed|null
+ */
+public function next() {
+
 		try {
 			return next($this->_data);
 		} catch (\Exception $e) {
@@ -782,8 +804,13 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 		}
 	}
 
-	public function getIterator() : Traversable {
-        return new \ArrayIterator($this->_data);
+/**
+ * Get an iterator for the internal array.
+ *
+ * @return Traversable
+ */
+public function getIterator(): Traversable {
+	return new \ArrayIterator($this->_data);
     }
 
     /**

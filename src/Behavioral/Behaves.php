@@ -67,11 +67,13 @@ trait Behaves
     }
 
     /**
-     * Performs behaviors on the object.
-     *
-     * @param string|Behavior $behavior The behavior to perform.
-     */
-    public function perform( ): IDispatcher
+ * Performs one or more behaviors on the object.
+ *
+ * @param string|Behavior|array $behavior The behavior(s) to perform
+ * @return IDispatcher
+ */
+public function perform(): IDispatcher
+
     {
         $args = func_get_args();
         $behaviors = array_shift( $args );
@@ -215,12 +217,14 @@ trait Behaves
 		}
 	}
 
-	/**
-	 * Halt the specified behavior.
-	 * 
-	 * @param string $behaviorName The name of the behavior to halt.
-	 */
-	public function halt( $behaviorName ): IDispatcher
+/**
+ * Removes one or more behaviors from the active state list.
+ *
+ * @param string|array $behaviorName The behavior(s) to halt
+ * @return IDispatcher
+ */
+public function halt($behaviorName): IDispatcher
+
 	{
 		if ( !is_array($behaviorName) ) {
 			$behaviorName = [$behaviorName];

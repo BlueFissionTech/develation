@@ -28,7 +28,6 @@ class Date extends Val implements IVal
 
     /**
      * @var mixed $_value The value of the date
-     * @var null
      */
     protected $_value = null;
 
@@ -73,12 +72,26 @@ class Date extends Val implements IVal
 	    ]);
     }
 
+	/**
+ * Magic getter for the internal DateTime object.
+ *
+ * @param string $name
+ * @return DateTime|null
+ */
     public function __get($name) {
     	if ($name === 'datetime') {
     		return $this->_datetime;
     	}
     }
 
+
+
+	/**
+ * Gets or sets the formatted date value.
+ *
+ * @param mixed|null $value The new date value (optional)
+ * @return mixed|string|$this The formatted date or self if setting
+ */
     public function val($value = null): mixed
     {
     	if ( $value ) {
@@ -107,6 +120,12 @@ class Date extends Val implements IVal
 		return $this;
 	}
 
+
+	/**
+ * Clears the current date value and resets to epoch.
+ *
+ * @return IVal
+ */
     public function clear(): IVAl
 	{
 		parent::clear();
@@ -119,6 +138,14 @@ class Date extends Val implements IVal
 		return $this;
 	}
 
+
+
+	/**
+ * References an external value to sync with the date object.
+ *
+ * @param mixed $value
+ * @return IVal
+ */
 	public function ref(&$value): IVal
 	{
 		$this->alter($value);
@@ -150,7 +177,7 @@ class Date extends Val implements IVal
 
 	/**
      * Checks is value is a date as a DateTime, parseable date string, or valid unix timestamp
-     *
+    * Determines if the current value is a valid timestamp.
      * @param mixed $value
      * 
      * @return bool
@@ -175,10 +202,12 @@ class Date extends Val implements IVal
 	}
 
 	/**
-	 * Returns the timestamp value of the date and time represented by the current instance
-	 * @param $data - optional timestamp value, if passed, it will set the timestamp of the current instance
-	 * @return int|null - timestamp value
-	 */
+ * Returns the timestamp value of the date.
+ *
+ * @param mixed|null $data Optional date input
+ * @return int|null
+ */
+
 	public function _timestamp( $data = null ): int|null
 	{		
 	    if ( is_null($data) ) {
@@ -234,7 +263,12 @@ class Date extends Val implements IVal
 		return $time;
 	}
 
-	public static function now()
+/**
+ * Returns the current date as a new instance.
+ *
+ * @return Date
+ */
+public static function now()
 	{
 		return new Date();
 	}
@@ -264,8 +298,6 @@ class Date extends Val implements IVal
 	public function delta()
 	{
 		return Date::diff($this->_snapshot, $this->_data);
-
-		return $this;
 	}
 
 	/**
