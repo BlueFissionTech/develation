@@ -39,7 +39,7 @@ class Response extends Obj
 	 */
 	protected $_data = [
 		'id'=>'',
-		'list'=>'',
+		'list'=>[],
 		'data'=>'',
 		'children'=>'',
 		'status'=>'',

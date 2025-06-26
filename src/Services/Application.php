@@ -1045,7 +1045,8 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		} elseif ( \is_string($callable) ) {
 			$functionOrMethod = new \ReflectionFunction($callable);
 		} elseif ( \is_callable($callable) ) {
-			return $callable();
+			$args = array_values($arguments);
+			return $callable(...$args);
 		}
 
 		if ( $functionOrMethod === null ) {
