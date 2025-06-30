@@ -39,6 +39,11 @@ class Request extends Obj {
 			case 'POST':
 				$request = filter_input_array(INPUT_POST);
 				break;
+			case 'PUT':
+				$putData = file_get_contents("php://input");
+				parse_str($putData, $myVars);
+				$request = json_decode($putData, true);
+				break;
 			default:
 				// $request = filter_input_array(INPUT_REQUEST); // Awaiting implmentation
 				$get = filter_input_array(INPUT_GET) ?? [];

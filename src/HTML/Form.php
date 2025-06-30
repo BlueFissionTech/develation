@@ -528,7 +528,7 @@ class Form {
 	 * 
 	 * @return string A table with form fields.
 	 */
-	static function draw($field_type_r = '', $active_field_r = '', $property_r = '') {
+	static function draw($fields, $field_type_r = '', $active_field_r = '', $property_r = '') {
 		$output = '';
 		$required = '';
 		$id = '';
@@ -536,9 +536,9 @@ class Form {
 		$field_type_r = Arr::toArray($field_type_r);
 		$property_r = Arr::toArray($property_r);
 		$readonly = false;
-		if (count($active_field_r) <= 0) $active_field_r = $this->getActiveFields();
+		// if (count($active_field_r) <= 0) $active_field_r = $this->getActiveFields();
 		$output .= '<table>';
-		foreach ($this->getFullFieldArray() as $a=>$b) {
+		foreach ($fields as $a=>$b) {
 			// if ($this->memberExists($a))	 {
 				$type = (array_key_exists($a, $field_type_r)) ? $field_type_r[$a] : '';
 				$properties = (array_key_exists($a, $property_r)) ? $property_r[$a] : '';

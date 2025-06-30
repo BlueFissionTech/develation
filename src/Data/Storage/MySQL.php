@@ -585,7 +585,7 @@ class MySQL extends Storage implements IData
 					}
 					elseif (is_string($b))
 					{
-						if ( Date::is( $b ) )
+						if ( \DateTime::createFromFormat('Y-m-d H:i:s', $b) !== false )
 							$type = "DATETIME";
 						else
 						{
