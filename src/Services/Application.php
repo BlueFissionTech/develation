@@ -1045,8 +1045,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		} elseif ( \is_string($callable) ) {
 			$functionOrMethod = new \ReflectionFunction($callable);
 		} elseif ( \is_callable($callable) ) {
-			$args = array_values($arguments);
-			return $callable(...$args);
+			$functionOrMethod = new \ReflectionFunction($callable);
 		}
 
 		if ( $functionOrMethod === null ) {
@@ -1062,6 +1061,10 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		if ( \is_array($callable) ) {
 			$object = \is_string($callable[0]) ? null : $callable[0];
 			$result = $functionOrMethod->invokeArgs($object , $dependencies );
+		}
+
+		if ( \is_callable($callable) ) {
+			$result = $functionOrMethod->invokeArgs( $dependencies );
 		}
 		
 		return $result;
@@ -1120,7 +1123,10 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		
 		$varTypes = ['string', 'int', 'float', 'bool', 'array', 'object', 'callable', 'iterable', 'void', 'null'];
 
-		$callingClass = $functionOrMethod?->class;
+		$callingClass = null;
+		if ( $functionOrMethod instanceof \ReflectionMethod ) {
+			$callingClass = $functionOrMethod?->class;
+		}
 		
 		foreach ($parameters as $parameter) {
 

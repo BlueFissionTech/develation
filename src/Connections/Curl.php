@@ -104,7 +104,7 @@ class Curl extends Connection implements IConfigurable
 			curl_setopt($this->_connection, CURLOPT_URL, $target);
 			curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
 			if (!Val::empty($this->config('headers'))) {
-				curl_setopt($this->_connection, CURLOPT_HTTPHEADER, Val::grab());
+				curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $this->config('headers'));
 			}
 
 			if ( $this->config('verbose') ) {
@@ -158,7 +158,7 @@ class Curl extends Connection implements IConfigurable
 		if ($curl)
 		{
 			if (Arr::check($query, ['isNotNull', 'isAssoc'])) {
-				$this->assign(Arr::grab());
+				$this->assign(Arr::use()->val());
 			}
 
 			$data = $this->_data->val();

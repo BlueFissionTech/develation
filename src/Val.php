@@ -85,7 +85,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function _check($functions = null): bool
 	{
-		$functions = is_array($functions) && !is_callable($functions, true) ? $functions : [$functions];
+		$functions = is_array($functions) && !is_callable($functions) ? $functions : [$functions];
 
 		$valid = false;
 
