@@ -1056,14 +1056,10 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 		if ( \is_string($callable) ) {
 			$result = $functionOrMethod->invokeArgs( $dependencies );
-		}
-
-		if ( \is_array($callable) ) {
+		} elseif ( \is_array($callable) ) {
 			$object = \is_string($callable[0]) ? null : $callable[0];
 			$result = $functionOrMethod->invokeArgs($object , $dependencies );
-		}
-
-		if ( \is_callable($callable) ) {
+		} elseif ( \is_callable($callable) ) {
 			$result = $functionOrMethod->invokeArgs( $dependencies );
 		}
 		
