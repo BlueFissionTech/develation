@@ -29,5 +29,32 @@ class RequestTest extends TestCase
         $this->expectException(\Exception::class);
 
         $request->field = 'value';
+
+        $this->assertEquals('value', $request->field);
+    }
+
+    public function testGet()
+    {
+        $request = new Request();
+
+        $this->expectException(\Exception::class);
+
+        $request->field = 'value';
+
+        $this->assertEquals('value', $request->get('field'));
+    }
+
+    public function testGetType()
+    {
+        $request = new Request();
+
+        $this->assertEquals('GET', $request->type());
+    }
+
+    public function testGetUri()
+    {
+        $request = new Request();
+
+        $this->assertEquals('/', $request->uri());
     }
 }

@@ -75,6 +75,8 @@ class MySQL extends Storage implements IData
 	
 	/**
 	 * Activates the object by initializing the database connection and loading the object fields and related data.
+	 *
+	 * @param mixed $connectionId Optional connection ID to use for the database connection.
 	 * 
 	 * @return IObj
 	 */
