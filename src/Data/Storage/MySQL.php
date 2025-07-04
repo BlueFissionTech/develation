@@ -81,7 +81,7 @@ class MySQL extends Storage implements IData
 	public function activate( $connectionId = null ): IObj
 	{
 		$this->_source = new MySQLLink( );
-		if ($connectionId === null) {
+		if ($connectionId !== null) {
 			$this->_source->connectionId( $connectionId );
 		}
 		

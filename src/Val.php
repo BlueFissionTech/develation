@@ -159,7 +159,7 @@ class Val implements IVal, IDispatcher {
 
 		$object = ValFactory::make($object->getType(), $value);
 
-		$object = Dev::apply('_out', $value);
+		$object = Dev::apply('_out', $object);
 
 		return $object;
 	}
