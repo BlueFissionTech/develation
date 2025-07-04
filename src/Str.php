@@ -2,6 +2,7 @@
 namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\DevElation as Dev;
 
 class Str extends Val implements IVal {
 	/**
@@ -464,7 +465,7 @@ class Str extends Val implements IVal {
 		return 0;
 	}
 
-	public function _slugify(): string
+	public function _slugify($seperator = '-'): string
 	{
 	    // Replace non-alphanumeric characters with hyphens
 	    $slug = preg_replace('/[^A-Za-z0-9-]+/', '-', $this->_data);
@@ -473,7 +474,7 @@ class Str extends Val implements IVal {
 	    $slug = strtolower($slug);
 	    
 	    // Trim hyphens from the beginning and end of the string
-	    $slug = trim($slug, '-');
+	    $slug = trim($slug, $seperator);
 	    
 	    return $slug;
 	}

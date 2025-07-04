@@ -1,6 +1,8 @@
 <?php
 namespace BlueFission;
 
+use BlueFission\DevElation as Dev;
+
 class ValFactory {
 	static function make( $type = null ): IVal
 	{
@@ -41,6 +43,8 @@ class ValFactory {
 				$class = '\BlueFission\Val';
 				break;
 		}
+
+		$class = Dev::apply(null, $class);
 
 		return new $class(...$args);
 	}
