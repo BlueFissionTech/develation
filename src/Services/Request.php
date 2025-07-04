@@ -56,6 +56,30 @@ class Request extends Obj {
 		return $request;
 	}
 
+	/**
+	 * Retrieves the value of a specific field from the request data.
+	 *
+	 * @param string $field The name of the field to retrieve.
+	 * @param mixed $default The default value to return if the field is not set.
+	 *
+	 * @return mixed The value of the field or the default value if the field is not set.
+	 */
+	public function get($field, $default = null)
+	{
+		if ( isset($this->_data[$field]) ) {
+			return $this->_data[$field];
+		}
+
+		return $default;
+	}
+
+	/**
+	 * Retrieves the value of a specific field from the request data, or returns null if the field is not set.
+	 *
+	 * @param string $field The name of the field to retrieve.
+	 *
+	 * @return mixed|null The value of the field or null if the field is not set.
+	 */
 	public function file($field)
 	{
 		$file = $_FILES[$field] ?? null;

@@ -57,7 +57,7 @@ class DevElation {
         ksort(self::$_filters[$name]); // Sort by priority
     }
 
-    public static function apply($name = null, $value)
+    public static function apply($name = null, $value = null)
     {
     	$name = self::generateHookName($name);
         if (!self::$_isActive || !isset(self::$_filters[$name])) {
@@ -118,11 +118,18 @@ class DevElation {
         }
     }
 
-    private static function generateHookName($name)
+    private static function generateHookName($name = null)
     {
-        if ($name) {
+        if ($name && strpos($name, '_') !== 0) {
             return $name;
         }
+
+        $append = '';
+        if (strpos($name, '_') === 0) {
+            $append = '.'.substr($name, 1);
+        }
+
+        $name = '';
         
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         $caller = $backtrace[1] ?? null;
@@ -130,10 +137,12 @@ class DevElation {
         if (isset($caller['class']) && isset($caller['function'])) {
             $class = str_replace(__NAMESPACE__ . '\\', '', $caller['class']);
             $function = $caller['function'];
-            return strtolower($class . '.' . $function);
+            $name = strtolower($class . '.' . $function) . ($append ?? '');
+            return $name;
         } else { // if this is a function rather than a method with a class
             $function = $caller['function'];
-            return strtolower($function);
+            $name = strtolower($function) . ($append ?? '');
+            return $name;
         }
 
         return 'global.hook';

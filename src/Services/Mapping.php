@@ -94,13 +94,17 @@ class Mapping {
 	/**
 	 * Adds a gateway to the list of gateways for this mapping.
 	 *
-	 * @param string $gateway The name of the gateway to be added.
+	 * @param string|array $gateway The name of the gateway to be added.
 	 *
 	 * @return Mapping Returns the current instance of the Mapping class.
 	 */
 	public function gateway( $gateway )
 	{
-		if ( $gateway) {
+		if (is_array($gateway)) {
+			foreach ($gateway as $g) {
+				$this->_gateways[] = $g;
+			}
+		} else {
 			$this->_gateways[] = $gateway;
 		}
 

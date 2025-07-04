@@ -77,6 +77,46 @@ class MappingTest extends TestCase
         $this->assertEquals(['gateway'], $mapping->gateways());
     }
 
+    public function testGatewayMethod1WithMultipleGateways()
+    {
+        $path = '/test';
+        $callable = function() {};
+        $name = 'test';
+        $method = 'get';
+
+        $mapping = Mapping::add($path, $callable, $name, $method);
+        $mapping->gateway('gateway1');
+        $mapping->gateway('gateway2');
+
+        $this->assertEquals(['gateway1', 'gateway2'], $mapping->gateways());
+    }
+
+    public function testGatewayMethod1WithEmptyGateways()
+    {
+        $path = '/test';
+        $callable = function() {};
+        $name = 'test';
+        $method = 'get';
+
+        $mapping = Mapping::add($path, $callable, $name, $method);
+        $mapping->gateway('');
+
+        $this->assertEquals([], $mapping->gateways());
+    }
+
+    public function testGetwayMethodWithArray()
+    {
+        $path = '/test';
+        $callable = function() {};
+        $name = 'test';
+        $method = 'get';
+
+        $mapping = Mapping::add($path, $callable, $name, $method);
+        $mapping->gateway(['gateway1', 'gateway2']);
+
+        $this->assertEquals(['gateway1', 'gateway2'], $mapping->gateways());
+    }
+
     /**
      * Test if the gateway method is working as expected
      * 

@@ -75,12 +75,18 @@ class MySQL extends Storage implements IData
 	
 	/**
 	 * Activates the object by initializing the database connection and loading the object fields and related data.
+	 *
+	 * @param mixed $connectionId Optional connection ID to use for the database connection.
 	 * 
 	 * @return IObj
 	 */
-	public function activate(): IObj
+	public function activate( $connectionId = null ): IObj
 	{
 		$this->_source = new MySQLLink( );
+		if ($connectionId !== null) {
+			$this->_source->connectionId( $connectionId );
+		}
+		
 		$this->_source->database( $this->config('location') );
 		// load object fields and related data
 		$this->fields();

@@ -7,6 +7,7 @@ use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Collections\Collection;
+use BlueFission\DevElation as Dev;
 use Exception;
 
 /**
@@ -107,6 +108,8 @@ class Val implements IVal, IDispatcher {
 			}
 		}
 
+		$value = Dev::apply(null, $value);
+
 		return $valid;
 	}
 
@@ -136,7 +139,10 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function getType(): string
 	{
-		return $this->_type->value;
+		$type = $this->_type->value;
+		$type = Dev::apply(null, $type);
+
+		return $type;
 	}
 
 	/**
@@ -146,10 +152,14 @@ class Val implements IVal, IDispatcher {
 	 */
 	public static function make($value = null): IVal
 	{
+		$value = Dev::apply('_in', $value);
+
 		$class = get_called_class();
 		$object = new $class();
 
 		$object = ValFactory::make($object->getType(), $value);
+
+		$object = Dev::apply('_out', $object);
 
 		return $object;
 	}
@@ -529,6 +539,8 @@ class Val implements IVal, IDispatcher {
 	{
 		// if ( Val::isNotNull($value) ) {
 		if ( !is_null($value) ) {
+			$value = Dev::apply('_in', $value);
+
     		if (!Val::isValid($value)) {
     			$this->trigger(Event::EXCEPTION);
     			throw new \Exception("Value is not a valid type '{$this->_type->value}'", 1);
@@ -545,6 +557,8 @@ class Val implements IVal, IDispatcher {
 				}
 			}
 		}
+
+		$value = Dev::apply('_out', $value);
 
 		return $value;
 	}

@@ -28,6 +28,7 @@ class MySQLLink extends Connection implements IConfigurable
 
     // protected property to store the database connection
     protected static $_database;
+    protected static $_default = null;
     private $_query;
     private $_last_row;
     
@@ -96,7 +97,7 @@ class MySQLLink extends Connection implements IConfigurable
             $status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 
 			$this->perform( $this->_connection 
-				? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+				? [Event::SUCCESS, Event::CONNECTED, State::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
         } else {    
 	        $status = $db->connect_error ?? self::STATUS_FAILED;
 			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
@@ -112,8 +113,67 @@ class MySQLLink extends Connection implements IConfigurable
 	{
 		if ($this->_connection) {
 			$this->_connection->close();
+			$this->_connection = null;
 		}
 		$this->perform(State::DISCONNECTED);
+	}
+
+	/**
+	 * Set the default connection to the last connection in the static $_database array
+	 * or to a specific connection ID if provided. 
+	 *
+	 * @param int|null $connectionId The connection ID to set as default. 
+	 * @return IObj The current instance for method chaining.
+	 */
+	public function setDefaultConnection( $connectionId = null ): IObj
+	{
+		if (Val::isNull($connectionId)) {
+			self::$_default = end(self::$_database);
+		} else {
+			if (Arr::hasKey(self::$_database, $connectionId)) {
+				self::$_default = self::$_database[$connectionId];
+			} else {
+				self::$_default = null;
+			}
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Get or set the connection ID for the current database connection
+	 *
+	 * This method allows you to set a specific connection ID or retrieve the current connection ID
+	 * or finds the index of the current connection in the static $_database array.
+	 * If the connection is not found, it returns the last index of the array.
+	 * 
+	 * @param int|null $id The connection ID to set. If null, it will return the current connection ID.
+	 *
+	 * @return ?int The connection ID
+	 */
+	public function connectionId( $id = null ): ?int
+	{
+
+		if (Val::isNotNull($id)) {
+			if (!Arr::hasKey(self::$_database, $id)) {
+				return null;
+			}
+
+			$this->_connection = self::$_database[$id] ?? null;
+			return $id;
+		}
+
+		$id = Arr::search(self::$_database, $this->_connection);
+
+		if (Val::isNull($id)) {
+			$id = Arr::size(self::$_database) - 1;
+		}
+
+		if ($id < 0) {
+			$id = null;
+		}
+
+		return $id;
 	}
 
 	/**
@@ -132,7 +192,7 @@ class MySQLLink extends Connection implements IConfigurable
 	 * @param string|array $query  The query to perform
 	 * @return IObj
 	 */
-	public function query ( $query = null ): IObj
+	public function query( $query = null ): IObj
 	{
 		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
@@ -577,6 +637,20 @@ class MySQLLink extends Connection implements IConfigurable
 	}
 
 	/**
+	 * Get the default database connection
+	 * 
+	 * @return ?\mysqli|null The default database connection
+	 */
+	protected static function getConnection()
+	{
+		if (Val::isNull(self::$_database)) {
+			return null;
+		}
+
+		return self::$_default ?? end(self::$_database);
+	}
+
+	/**
 	 * Sanitize the given string
 	 *
 	 * @param string $string The string to sanitize
@@ -589,7 +663,7 @@ class MySQLLink extends Connection implements IConfigurable
 			return 'NULL';
 		}
 		
-		$db = end ( self::$_database );
+		$db = end( self::$_database );
 		$pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
 		$replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', '' ];
 		
