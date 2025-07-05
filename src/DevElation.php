@@ -131,8 +131,8 @@ class DevElation {
 
         $name = '';
         
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-        $caller = $backtrace[1] ?? null;
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+        $caller = $backtrace[2] ?? null;
 
         if (isset($caller['class']) && isset($caller['function'])) {
             $class = str_replace(__NAMESPACE__ . '\\', '', $caller['class']);
