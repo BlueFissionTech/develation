@@ -125,7 +125,7 @@ class DevElation {
         }
 
         $append = '';
-        if (strpos($name, '_') === 0) {
+        if ($name && strpos($name, '_') === 0) {
             $append = '.'.substr($name, 1);
         }
 
