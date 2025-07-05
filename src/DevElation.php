@@ -142,7 +142,7 @@ class DevElation {
             $function = $caller['function'];
             $name = strtolower($class . '.' . $function) . ($append ?? '');
             return $name;
-        } else { // if this is a function rather than a method with a class
+        } elseif (isset($caller['function'])) {
             $function = $caller['function'];
             $name = strtolower($function) . ($append ?? '');
             return $name;
