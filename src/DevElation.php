@@ -22,6 +22,9 @@ class DevElation {
     private static $_actions = [];
     private static $_listeners = [];
 
+    const BACKTRACE_DEPTH = 3; // Adjust this depth as needed
+    const CALLER_INDEX = 2; // Adjust this index based on your backtrace structure
+
     public static function up()
     {
         // Activate the class
@@ -125,14 +128,14 @@ class DevElation {
         }
 
         $append = '';
-        if ($name && strpos($name, '_') === 0) {
+        if ($name !== null && strpos($name, '_') === 0) {
             $append = '.'.substr($name, 1);
         }
 
         $name = '';
         
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-        $caller = $backtrace[2] ?? null;
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, self::BACKTRACE_DEPTH);
+        $caller = $backtrace[self::CALLER_INDEX] ?? null;
 
         if (isset($caller['class']) && isset($caller['function'])) {
             $class = str_replace(__NAMESPACE__ . '\\', '', $caller['class']);
