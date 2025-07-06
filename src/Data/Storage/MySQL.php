@@ -142,7 +142,12 @@ class MySQL extends Storage implements IData
 	 */
 	public function write(): IObj
 	{
+		if (!$this->ensureDbSource()) {
+			return $this;
+		}
+
 		$db = $this->_source;
+
 		$status = self::STATUS_FAILED;
 		$keys = [];
 		$success = true;
@@ -239,12 +244,32 @@ class MySQL extends Storage implements IData
 	}
 
 	/**
+	 * Ensures that the database source is available.
+	 *
+	 * @return bool Returns true if the database source is available, false otherwise.
+	 */
+	private function ensureDbSource()
+	{
+		if (!$this->_source) {
+			$this->status(self::STATUS_FAILED_INIT);
+			$this->_query = '';
+			$this->_result = null;
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Executes a read query to retrieve data from the database.
 	 *
 	 * @return IObj
 	 */
 	public function read(): IObj
 	{
+		if (!$this->ensureDbSource()) {
+			return $this;
+		}
+
 		$tables = $this->tables();
 		if ( count($tables) < 1 ) {
 			$this->status( self::STATUS_FAILED );
@@ -399,6 +424,10 @@ class MySQL extends Storage implements IData
 	 */
 	public function run( $query = null ): IObj
 	{
+		if (!$this->ensureDbSource()) {
+			return $this;
+		}
+
 		$db = $this->_source;
 		
 		if ( !$query ) {
@@ -435,6 +464,10 @@ class MySQL extends Storage implements IData
 	 */
 	public function delete(): IObj
 	{
+		if (!$this->ensureDbSource()) {
+			return $this;
+		}
+
 		$db = $this->_source;
 		
 		$tables = $this->tables();
@@ -568,7 +601,12 @@ class MySQL extends Storage implements IData
 	 */
 	private function create(): IObj
 	{
+		if (!$this->ensureDbSource()) {
+			return $this;
+		}
+
 		$db = $this->_source;
+		
 		//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
 		$tables = Arr::toArray( $this->config(self::NAME_FIELD) );
 		$this->config(self::NAME_FIELD, $tables);
