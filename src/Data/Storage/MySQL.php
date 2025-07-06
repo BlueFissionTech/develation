@@ -776,6 +776,15 @@ class MySQL extends Storage implements IData
 		{
 			$tables[] = $table;
 		}
+
+		if (!empty($tables)) {
+			return $tables;
+		} elseif ($this->config(self::NAME_FIELD)) {
+			$tables = Arr::toArray($this->config(self::NAME_FIELD));
+		} else {
+			throw new \Exception("No tables found in the database or configuration.");
+		}
+
 		return $tables;
 	}
 	
@@ -821,7 +830,7 @@ class MySQL extends Storage implements IData
 	{
 		$fields = $this->fields();
 		// if no table is specified, used the first available entry.
-		$table = $table ? $table : ( isset( $tables[0] ) ? $tables[0] :current( Arr::toArray( $this->config(self::NAME_FIELD) ) ) );
+		$table = $table ?: $this->tables()[0];
 	
 		$passed = true;
 		
