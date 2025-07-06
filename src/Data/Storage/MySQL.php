@@ -771,8 +771,10 @@ class MySQL extends Storage implements IData
 			$tables[] = $table;
 		}
 
-		if (empty($tables) && $this->config(self::NAME_FIELD)) {
-			$tables = Arr::toArray( $this->config(self::NAME_FIELD) ) );
+		if (!empty($tables)) {
+			return $tables;
+		} elseif ($this->config(self::NAME_FIELD)) {
+			$tables = Arr::toArray($this->config(self::NAME_FIELD));
 		} else {
 			throw new \Exception("No tables found in the database or configuration.");
 		}
