@@ -259,7 +259,7 @@ class MySQL extends Storage implements IData
 			$this->_result = null;
 			return $this;
 		}
-		
+
 		$tables = $this->tables();
 		if ( count($tables) < 1 ) {
 			$this->status( self::STATUS_FAILED );
@@ -415,6 +415,12 @@ class MySQL extends Storage implements IData
 	public function run( $query = null ): IObj
 	{
 		$db = $this->_source;
+		if (!$db) {
+			$this->status(self::STATUS_FAILED_INIT);
+			$this->_query = '';
+			$this->_result = null;
+			return $this;
+		}
 		
 		if ( !$query ) {
 			$query = $this->_query;
@@ -451,7 +457,6 @@ class MySQL extends Storage implements IData
 	public function delete(): IObj
 	{
 		$db = $this->_source;
-
 		if (!$db) {
 			$this->status(self::STATUS_FAILED_INIT);
 			$this->_query = '';
