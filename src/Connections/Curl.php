@@ -12,7 +12,8 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Meta;
-
+use BlueFission\DevElation as Dev;
+use BlueFission\Connections\Connection;
 /**
  * Class Curl
  * 
@@ -163,6 +164,8 @@ class Curl extends Connection implements IConfigurable
 
 			$data = $this->_data->val();
 
+			$data = Dev::apply(null, $data);
+
 			if (Arr::size($data) > 0) {
 				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
 			}
@@ -187,6 +190,8 @@ class Curl extends Connection implements IConfigurable
 			foreach ($this->_options as $option=>$value) {
 				curl_setopt($curl, $option, $value);
 			}
+
+			Dev::do('curl.before_execute', [$curl]);
 			
 			//execute post
 			$this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);

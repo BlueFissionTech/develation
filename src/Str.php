@@ -94,6 +94,8 @@ class Str extends Val implements IVal {
 			$rand_string .= $this->_data[rand(0, strlen($this->_data)-1)];
 		}
 
+		$rand_string = Dev::apply(null, $rand_string);
+
 		$this->alter($rand_string);
 
 		return $this;
@@ -121,6 +123,8 @@ class Str extends Val implements IVal {
 
 	    // Output the 36 character UUID.
 	    $string = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+
+	    $string = Dev::apply(null, $string);
 
 	    $this->alter($string);
 
@@ -173,6 +177,9 @@ class Str extends Val implements IVal {
 			break;
 		case 'sha1':
 			$string = sha1($string);
+			break;
+		case 'custom':
+			$string = Dev::apply('_custom', $string);
 			break;
 		}
 		
@@ -490,7 +497,14 @@ class Str extends Val implements IVal {
 			'news', 'fish', 'sheep', 'moose', 'swine', 'buffalo', 'shrimp', 'trout'
 		];
 
+		$irregularWords = Dev::apply('_irregulars', $irregularWords);
+		$identicals = Dev::apply('_identicals', $identicals);
+
 		$string = $this->_data;
+
+		$string = Dev::apply('_pre', $string);
+
+		$plural = $string; // Default to the original string if no pluralization rules apply
 
 		if ( in_array($string, $identicals) ) {
 			$plural = $string;
@@ -515,6 +529,8 @@ class Str extends Val implements IVal {
 		} else {
 			$plural = $string . 's';
 		}
+
+		$plural = Dev::apply('_post', $plural);
 
 	    return $plural;
 	}

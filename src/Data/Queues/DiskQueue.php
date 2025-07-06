@@ -7,6 +7,7 @@ use BlueFission\Data\FileSystem;
 use BlueFission\Collections\Collection;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class DiskQueue
@@ -125,8 +126,11 @@ class DiskQueue extends Queue implements IQueue {
 					$message = $fs->contents();
 					$fs->delete();
 					$fs->close();
+
+					$message = $message ? unserialize($message) : null;
+					$message = Dev::apply(null, $message);
 					
-					return $message ? unserialize($message) : null;
+					return $message;
 				}
 			}
 		} elseif($after !== false && $until === false) {
@@ -147,7 +151,11 @@ class DiskQueue extends Queue implements IQueue {
 				$message = $fs->contents();
 				$fs->delete()->close();
 
-				$items[] = $message ? unserialize($message) : null;
+
+				$message = $message ? unserialize($message) : null;
+				$message = Dev::apply(null, $message);
+				
+				$items[] = $message;
 				$message = null;
 			}
 		}

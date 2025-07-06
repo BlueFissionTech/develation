@@ -318,30 +318,44 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	    
 	    $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
+	    $mimetype = 'application/octet-stream';
+
 	    switch (strtolower($extension)) {
 	        case 'css':
-	            return 'text/css';
+	            $mimetype = 'text/css';
+	            break;
 	        case 'js':
-	            return 'application/javascript';
+	            $mimetype = 'application/javascript';
+	            break;
 	        case 'html':
-	            return 'text/html';
+	            $mimetype = 'text/html';
+	            break;
 	        case 'gif':
-	            return 'image/gif';
+	            $mimetype = 'image/gif';
+	            break;
 	        case 'png':
-	            return 'image/png';
+	            $mimetype = 'image/png';
+	            break;
 	        case 'jpg':
 	        case 'jpeg':
-	            return 'image/jpeg';
+	            $mimetype = 'image/jpeg';
+	            break;
 	        // Add more common web formats here as needed
 	        default:
 				if ($realpath && function_exists('mime_content_type')) {
 			        $mimeType = mime_content_type($realpath);
 			        if (!empty($mimeType)) {
-			            return $mimeType;
+			            $mimetype = $mimeType;
+			            break;
 			        }
 			    }
-	            return 'application/octet-stream'; // Return a generic MIME type if not matched
+	            $mimetype = 'application/octet-stream'; // Return a generic MIME type if not matched
+	            break;
 	    }
+
+	    Dev::do('_post', [$filename, $mimetype]);
+
+	    return $mimetype;
 	}
 
 	public function process() {

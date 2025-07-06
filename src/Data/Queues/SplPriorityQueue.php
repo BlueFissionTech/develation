@@ -5,6 +5,7 @@ namespace BlueFission\Data\Queues;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Collections\Collection;
+use BlueFission\DevElation as Dev;
 
 use SplPriorityQueue as BaseSplPriorityQueue;
 
@@ -63,6 +64,8 @@ class SplPriorityQueue extends Queue implements IQueue {
         // Restore items not extracted
         while ($tempQueue->valid()) {
             $item = $tempQueue->extract();
+
+            $tiem = Dev::apply(null, $item);
             $queues->insert($item['data'], $item['priority']);
         }
 
@@ -77,6 +80,8 @@ class SplPriorityQueue extends Queue implements IQueue {
         }
         $priority = self::$_mode == self::FILO ? -$priority : $priority; // Invert priority for FILO
 
+        $item = Dev::apply(null, $item);
+        
         $queues->insert($item, $priority);
     }
 }

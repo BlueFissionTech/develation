@@ -3,6 +3,7 @@ namespace BlueFission\Data\Queues;
 
 use Memcached;
 use BlueFission\Collections\Collection;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class MemQueue
@@ -114,6 +115,9 @@ class MemQueue extends Queue implements IQueue
                 if ($id <= $tail) {
                     $output = $stack->get($queue . "_" . ($id - 1));
                     $stack->delete($queue . "_" . ($id - 1));
+
+                    $output = Dev::apply(null, $output);
+
                     return $output;
                 } else {
                     $stack->decrement($queue . "_head");
@@ -150,7 +154,8 @@ class MemQueue extends Queue implements IQueue
             return false;
         }
 
-        foreach ($item_keys as $key) {
+        foreach ($items as $key => $value) {
+            $items[$key] = Dev::apply(null, $value);
             $stack->delete($key);
         }
 
@@ -180,6 +185,8 @@ class MemQueue extends Queue implements IQueue
                 $stack->add($queue . "_head", 0, self::MEMQ_TTL);
             }
         }
+
+        $item = Dev::apply(null, $item);
         
         if ($stack->add($queue . "_" . $id, $item, self::MEMQ_TTL) === false) {
             return false;
@@ -188,4 +195,3 @@ class MemQueue extends Queue implements IQueue
         return $id;
     }
 }
-?>

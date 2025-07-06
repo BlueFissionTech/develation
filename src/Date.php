@@ -4,6 +4,7 @@ namespace BlueFission;
 use BlueFission\Val;
 use BlueFission\Num;
 use BlueFission\Arr;
+use BlueFission\DevElation as Dev;
 use BlueFission\Behavioral\Behaviors\Event;
 use \DateTime;
 
@@ -166,6 +167,7 @@ class Date extends Val implements IVal
 	 * @return bool 		 true if the value is a valid unix timestamp
 	 */
 	private function isValidTimestamp($timestamp): bool {
+
 	    return is_numeric($timestamp)
 	        && ($timestamp <= PHP_INT_MAX)
 	        && ($timestamp >= ~PHP_INT_MAX)
@@ -180,7 +182,9 @@ class Date extends Val implements IVal
 	 * @return int|null - timestamp value
 	 */
 	public function _timestamp( $data = null ): int|null
-	{		
+	{
+		$data = Dev::apply('_in', $data);
+
 	    if ( is_null($data) ) {
 	        $timestamp = mktime ((int)$this->_data['hour'], (int)$this->_data['minute'], (int)$this->_data['second'], (int)$this->_data['month'], (int)$this->_data['day'], (int)$this->_data['year']);
 	    } elseif ( Num::is($data) ) {
@@ -190,6 +194,8 @@ class Date extends Val implements IVal
 	    } else {
 	        $timestamp = strtotime($data) !== false ? strtotime($data) : null;
 	    }
+
+	    $timestamp = Dev::apply('_out', $timestamp);
 
 	    return $timestamp;
 	}
@@ -231,6 +237,8 @@ class Date extends Val implements IVal
 			$time = date($format, $timestamp);
 		}
 
+		$time = Dev::apply('_out', $time);
+
 		return $time;
 	}
 
@@ -251,6 +259,8 @@ class Date extends Val implements IVal
 			return $this->_format;
 		}
 
+		$format = Dev::apply('_in', $format);
+
 		$this->_format = $format;
 		
 		return $this;
@@ -264,8 +274,6 @@ class Date extends Val implements IVal
 	public function delta()
 	{
 		return Date::diff($this->_snapshot, $this->_data);
-
-		return $this;
 	}
 
 	/**
@@ -311,6 +319,8 @@ class Date extends Val implements IVal
 		if ( Val::isNull($date) ) {
 			$date = date($format, $timestamp);
 		}
+
+		$date = Dev::apply('_out', $date);
 		
 		return $date;
 	}
@@ -352,6 +362,9 @@ class Date extends Val implements IVal
 		}
 		
 		$output = ($difference / $div);
+
+		$output = Dev::apply('_out', $output);
+
 		return $output;
 	}
 

@@ -4,6 +4,7 @@ namespace BlueFission\Data\Queues;
 
 use RuntimeException;
 use BlueFission\Collections\Collection;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class FileQueue
@@ -78,11 +79,17 @@ class FileQueue extends Queue implements IQueue {
         	self::$cache[$queue] = array_reverse(self::$cache[$queue]);
         }
         self::save();
+
+        $item = Dev::apply(null, $item);
+
         return $item;
     }
 
     public static function enqueue($queue, $item) {
         self::ensureFileHandle();
+
+        $item = Dev::apply(null, $item);
+        
         self::$cache[$queue][] = $item;
         self::save();
     }

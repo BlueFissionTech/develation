@@ -160,7 +160,8 @@ class Authenticator extends Service {
 			$this->assign($data);
 		}
 
-		if($this->username != '' && $this->id != ''){
+		if($this->username != '' && $this->id != '') {
+			// I really want to remove this and any dependency on it
 			if (!defined("USER_ID")) {
 				define("USER_ID", $this->id);
 			}

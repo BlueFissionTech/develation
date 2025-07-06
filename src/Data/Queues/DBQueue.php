@@ -3,6 +3,7 @@ namespace BlueFission\Data\Queues;
 
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Data\Storage\MySql;
+use BlueFission\DevElation as Dev;
 
 class DBQueue extends Queue implements IQueue {
     /**
@@ -69,6 +70,9 @@ class DBQueue extends Queue implements IQueue {
         $storage = self::storage();
         
         $storage->channel = $queue;
+
+        $item = Dev::appy(null, $item);
+
         $storage->message = serialize($item);
         $storage->write();
         return true;
@@ -89,6 +93,8 @@ class DBQueue extends Queue implements IQueue {
         $item = $storage->read()->message;
         if ($item !== null) {
             $item = unserialize($item);
+            $item = Dev::appy(null, $item);
+
             if ( $storage->id() ) {
                 $storage->delete(); // Remove the message from storage after reading
             }

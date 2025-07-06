@@ -11,6 +11,7 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Stream
@@ -145,6 +146,9 @@ class Stream extends Connection implements IConfigurable
 				$this->perform([Action::RECEIVE, State::RECEIVING, State::PROCESSING, State::BUSY]);
 			    while (!feof($this->_handle)) {
 			    	$chunk = fread($this->_handle, 8192);
+
+			    	$chunk = Dev::apply('stream.chunk.received', $chunk);
+
 					$this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
 
 					$this->_result .= $chunk;

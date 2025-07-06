@@ -4,6 +4,7 @@ namespace BlueFission\System;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Date;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Machine
@@ -66,7 +67,12 @@ class Machine {
         if ($this->getOS() == 'Windows') {
             // Windows does not have a built-in, easy way to fetch uptime from CLI
             // Fallback to systeminfo command, parse output for uptime
-            $this->_system->run('systeminfo | find "System Boot Time:"');
+            $command = 'systeminfo | find "System Boot Time:"';
+            $command = Dev::apply(
+                'machine.uptime.command',
+                $command
+            );
+            $this->_system->run($command);
             $boottime = $this->_system->response();
             
             // extract the date from the line
@@ -90,7 +96,12 @@ class Machine {
     public function getCPUUsage() {
         if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting CPU usage
-            $this->_system->run("WMIC CPU GET LoadPercentage");
+            $command = "WMIC CPU GET LoadPercentage";
+            $command = Dev::apply(
+                'machine.cpu_usage.command',
+                $command
+            );
+            $this->_system->run($command);
             $response = $this->_system->response();
 
             //extract the numerical value from the response
@@ -112,7 +123,12 @@ class Machine {
         $temperature = "";
         if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting temperature
-            $this->_system->run("WMIC /Namespace:\\\\root\\WMI PATH MSAcpi_ThermalZoneTemperature GET CurrentTemperature");
+            $command = "WMIC /Namespace:\\\\root\\WMI PATH MSAcpi_ThermalZoneTemperature GET CurrentTemperature";
+            $command = Dev::apply(
+                'machine.temperature.command',
+                $command
+            );
+            $this->_system->run($command);
             $temperature = $this->_system->response();
         } else {
             // Linux command for getting temperature
@@ -124,6 +140,11 @@ class Machine {
                 "/sys/class/hwmon/hwmon*/temp*_input",
                 // Add more possible paths here if needed
             ];
+
+            $possiblePaths = Dev::apply(
+                'machine.temperature.paths',
+                $possiblePaths
+            );
 
             foreach ($possiblePaths as $path) {
                 $matches = glob($path);
@@ -146,7 +167,12 @@ class Machine {
         $fanSpeed = "";
         if (Str::sub(\php_uname(), 0, 7) == "Windows") { 
             // Windows command for getting fan speed
-            $this->_system->run("WMIC /Node:localhost PATH Win32_Fan GET Descriptions, VariableSpeed");
+            $command = "WMIC /Node:localhost PATH Win32_Fan GET Descriptions, VariableSpeed";
+            $command = Dev::apply(
+                'machine.fan_speed.command',
+                $command
+            );
+            $this->_system->run($command);
             $fanSpeed = $this->_system->response();
         } else {
             // Linux command for getting fan speed
@@ -158,6 +184,11 @@ class Machine {
                 "/sys/class/hwmon/hwmon*/fan*_input",
                 // Add more possible paths here if needed
             ];
+
+            $possiblePaths = Dev::apply(
+                'machine.fan_speed.paths',
+                $possiblePaths
+            );
 
             foreach ($possiblePaths as $path) {
                 $matches = glob($path);
@@ -186,7 +217,12 @@ class Machine {
         $powerConsumption = "";
         if (Str::sub(\php_uname(), 0, 7) == "Windows") {
             // Windows command for getting power consumption
-            $this->_system->run("WMIC /Node:localhost PATH Win32_PerfFormattedData_PerfOS_System GET ProcessorQueueLength");
+            $command = "WMIC /Node:localhost PATH Win32_PerfFormattedData_PerfOS_System GET ProcessorQueueLength";
+            $command = Dev::apply(
+                'machine.power.command',
+                $command
+            );
+            $this->_system->run($command);
             $powerConsumption = $this->_system->response();
         } else {
             // Linux command for getting power consumption
@@ -196,6 +232,11 @@ class Machine {
                 "/sys/class/power_supply/BAT1/power_now",
                 "/sys/class/power_supply/BAT1/energy_now",
             ];
+
+            $possiblePaths = Dev::apply(
+                'machine.power.paths',
+                $possiblePaths
+            );
 
             foreach ($potentialPaths as $path) {
                 $matches = glob($path);
