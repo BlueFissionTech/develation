@@ -12,6 +12,7 @@ use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\DevElation as Dev;
 
 class FileSystem extends Data implements IData {
 	/**
@@ -229,6 +230,9 @@ class FileSystem extends Data implements IData {
 				}
 			}
 		}
+
+		$root = Dev::apply(null, $root);
+
 		return $root;
 	}
 

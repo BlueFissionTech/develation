@@ -3,6 +3,7 @@
 namespace BlueFission\Data\Queues;
 
 use SplQueue as BaseSplQueue;
+use BlueFission\DevElation as Dev;
 
 class SplQueue extends Queue implements IQueue {
     private static $_queues = [];
@@ -26,13 +27,19 @@ class SplQueue extends Queue implements IQueue {
     public static function dequeue($queue, $after = false, $until = false) {
         $queues = self::instance($queue);
         if (!$queues->isEmpty()) {
-            return $queues->dequeue();
+            $item = $queues->dequeue();
+            $item = Dev::apply(null, $item);
+
+            return $item;
         }
         return null;
     }
 
     public static function enqueue($queue, $item) {
         $queues = self::instance($queue);
+
+        $item = Dev::apply(null, $item);
+
         $queues->enqueue($item);
     }
 }

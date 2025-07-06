@@ -6,6 +6,7 @@ use BlueFission\Str;
 use BlueFission\Arr;
 use BlueFission\Obj;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Response
@@ -100,6 +101,8 @@ class Response extends Obj
 		if ( $depth < 2 && \is_object($values) && $this->data == null  ) {
 			$this->data = $values;
 		}
+
+		$this->_data = Dev::apply(null, $this->_data);
 	}
 
 	/**

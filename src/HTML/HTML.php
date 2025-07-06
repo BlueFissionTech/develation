@@ -4,7 +4,8 @@ namespace BlueFission\HTML;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Utils\Util;
-
+use BlueFission\DevElation as Dev;
+use BlueFission\Utils\Num;
 /**
  * Class HTML
  * 
@@ -79,6 +80,9 @@ class HTML {
 	        '<u>$1</u>',
 	    ];
 
+	    $patterns = Dev::apply('_patterns', $patterns);
+	    $replacements = Dev::apply('_replacements', $replacements);
+
 	    $content = preg_replace($patterns, $replacements, $content);
 
 	    // Step 2: Post-process to group <li> items into <ul> or <ol>
@@ -111,6 +115,10 @@ class HTML {
 		        '<a href="$1" target="_blank">$1</a>', // Applies to both http and https URLs
 		        '<a href="mailto:$1">$1</a>'
 		    ];
+
+		    $pattern = Dev::apply('_rich.patterns', $pattern);
+	    	$replacement = Dev::apply('_rich.replacements', $replacement);
+
 		    $content = preg_replace($pattern, $replacement, stripslashes($content));
 		}
 		
@@ -156,6 +164,9 @@ class HTML {
 			}
 			else
 				$output .= '<img src="noimage.png" border="0" alt="' . $alt . '" title="' . $alt . '" width="' . $width . $height_line . '" align="left" />';
+
+			$output = Dev::apply(null, $output);
+
 			return $output;
 		} else {
 			return $image;
@@ -182,6 +193,9 @@ class HTML {
 				else $output .= '<a href="' . ((strpos($file, getcwd())) ? str_replace(getcwd(), $href, $file) : $file). '" target="_blank">' . basename($file) . '</a>';
 			else
 				$output .= 'file "' . basename($file) . '" not found';
+
+			$output = Dev::apply(null, $output);
+
 			return $output;
 		} else {
 			return $file;
@@ -214,21 +228,38 @@ class HTML {
 
 		if ( $start > 0 )
 		{
-			$chapter_r[] = '&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ';
+			$string = '&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ';
+			$string = Dev::apply('_previous', $string);
+			$chapter_r[] = $string;
 		}
 		if ( ($count/$lim) > 1 )
 		{
-			for ($i=0; $i<(($count/$lim)); $i++) $chapter_r[] = '<a href="' . $href . '?' . $begin . '=' . ($i * $lim) . '&amp;' . $get_query . '">' . ($i + 1) . '</a>';
+			for ($i=0; $i<(($count/$lim)); $i++) {
+				$string = '<a href="' . $href . '?' . $begin . '=' . ($i * $lim) . '&amp;' . $get_query . '">' . ($i + 1) . '</a>';
+				$string = Dev::apply('_chapter', $string);
+				$chapter_r[] = $string;
+			}
 		}
 		if ( $start < round($count/$lim) )
 		{
-			$chapter_r[] = '<a href="' . $href . '?' . $begin . '=' . (($start + $lim) >= ($count) ? $start : ($start + $lim)) . '&amp;' . $get_query . '">Next</a> &gt;';
+			$string = '<a href="' . $href . '?' . $begin . '=' . (($start + $lim) >= ($count) ? $start : ($start + $lim)) . '&amp;' . $get_query . '">Next</a> &gt;';
+			$string = Dev::apply('_next', $string);
+			$chapter_r[] = $string;
 		}
+
+		$showing = 'Showing ';
+		$results =  ($start + 1) . '-' . (($count < ($start+$lim)) ? $count : ($start+$lim)) . ' of ' . $count . ' results.';
+		$noMatching = 'No matching results';
+
+		$showing = Dev::apply('_showing', $showing);
+		$results = Dev::apply('_results', $results);
+		$noMatching = Dev::apply('_no_matching', $noMatching);
 		
-		$output .= (($count > 0) ? 'Showing ' . ($start + 1) . '-' . (($count < ($start+$lim)) ? $count : ($start+$lim)) . ' of ' . $count . ' results.' : 'No matching results') . '<br />
+		$output .= (($count > 0) ? $showing . $results : $noMatching) . '<br />
 		' . implode(' | ', $chapter_r);
 		
 		$output .= "<br />\n";
+
 		return $output;
 	}
 

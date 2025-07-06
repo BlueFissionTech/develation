@@ -7,6 +7,7 @@ use BlueFission\Num;
 use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Cookie
@@ -23,7 +24,8 @@ class Cookie extends Storage implements IData
 	 *
 	 * @var array
 	 */
-	protected $_config = [ 'location'=>'',
+	protected $_config = [
+		'location'=>'',
 		'name'=>'storage',
 		'expire'=>'3600',
 		'secure'=>false,
@@ -76,6 +78,9 @@ class Cookie extends Storage implements IData
 	public function write(): IObj
 	{	
 		$value = HTTP::jsonEncode( !empty($this->_data->val()) ? $this->_data->val() : $this->_contents);
+
+		$value = Dev::apply(null, $value);
+
 		$label = $this->_source;
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
@@ -99,6 +104,9 @@ class Cookie extends Storage implements IData
 	public function read(): IObj
 	{
 		$value = HTTP::cookie($this->_source);
+
+		$value = Dev::apply(null, $value);
+
 		if ( function_exists('json_decode') && !empty($value) )
 		{
 			$value = json_decode($value);

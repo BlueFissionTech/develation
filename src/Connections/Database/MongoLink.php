@@ -482,7 +482,7 @@ class MongoLink extends Connection
 	 *
 	 * @return mixed Result of the last operation
 	 */
-	public function result( )
+	public function result()
 	{
 		return $this->_result;
 	}

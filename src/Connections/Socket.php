@@ -10,6 +10,7 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Socket
@@ -177,6 +178,9 @@ class Socket extends Connection implements IConfigurable
 			while (!feof($socket)) 
 			{
 				$chunk = fgets($socket, 1024);
+
+				$chunk = Dev::apply('socket.chunk.recieved', $chunk);
+
 				$this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
 
 				$this->_result .= $chunk;

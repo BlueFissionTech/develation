@@ -6,6 +6,7 @@ use BlueFission\Num;
 use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Net\HTTP;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Session
@@ -46,7 +47,7 @@ class Session extends Storage implements IData
 	/**
 	 * Activates the session.
 	 */
-	public function activate( ): IObj
+	public function activate(): IObj
 	{
 		$path = $this->config('location');
 		$name = $this->config('name') ? (string)$this->config('name') : Str::rand();
@@ -80,6 +81,9 @@ class Session extends Storage implements IData
 	public function write(): IObj
 	{			
 		$value = HTTP::jsonEncode( $this->_data->size() > 0 ? $this->_data->val() : $this->_contents);
+
+		$value = Dev::apply(null, $value);
+
 		$label = $this->_source;
 		$path = $this->config('location');
 		$expire = (int)$this->config('expire');
@@ -103,6 +107,8 @@ class Session extends Storage implements IData
 	public function read(): IObj
 	{	
 		$value = HTTP::session( $this->_source );
+
+		$value = Dev::apply(null, $value);
 
 		if ( $value && function_exists('json_decode'))
 		{

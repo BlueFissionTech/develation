@@ -10,6 +10,7 @@ use BlueFission\Data\IData;
 use BlueFission\Data\FileSystem;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\DevElation as Dev;
 
 class Disk extends Storage implements IData
 {
@@ -95,6 +96,8 @@ class Disk extends Storage implements IData
 
 		$data = Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents;
 
+		$data = Dev::apply(null, $data);
+
 		$source->flush()->contents( $data )->write();
 		
 		$status = self::STATUS_SUCCESS;
@@ -119,6 +122,9 @@ class Disk extends Storage implements IData
 		$source->read();
 
 		$value = $source->contents();
+
+		$value = Dev::apply(null, $value);
+
 		if ( function_exists('json_decode'))
 		{
 			$value = json_decode($value, true);

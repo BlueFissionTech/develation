@@ -12,6 +12,7 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\DevElation as Dev;
 use InvalidArgumentException;
 
 /**
@@ -238,6 +239,11 @@ trait Behaves
 	 */
 	protected function init()
 	{
+		// Get class name (calling class, not parent class)
+		Dev::do('dev.behaves.init', [$this]);
+		$className = Str::slugify(get_called_class());
+		Dev::do($className.'.init', [$this]);
+
 		// Basic system events
 		$this->behavior( new Event( Event::LOAD ) );
 		$this->behavior( new Event( Event::UNLOAD ) );

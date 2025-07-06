@@ -5,6 +5,7 @@ namespace BlueFission\Utils;
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behavioral;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\DevElation as Dev;
 
 class Mem {
     protected static $pool = [];
@@ -100,12 +101,15 @@ class Mem {
         if (isset(self::$pool[$id]) && self::$pool[$id] === self::SLEEPING) {
             // Assume stored data is serialized
             self::$pool[$id] = self::retrieve($id);
+            Dev::do(null, [self::$pool[$id]]);
             self::$audit[$id]['used'] = true;
         }
     }
 
     public static function sleep($id) {
         if (isset(self::$pool[$id]) && self::$pool[$id] !== self::SLEEPING) {
+            Dev::do(null, [self::$pool[$id]]);
+
             if (self::$storage) {
                 $serializedData = serialize(self::$pool[$id]);
                 self::store($id, $serializedData);

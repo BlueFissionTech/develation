@@ -360,6 +360,10 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 			return false;
 		}
 
+		if (empty($this->_data)) {
+			return null;
+		}
+
 		return $this->_data[array_rand($this->_data)];
 	}
 

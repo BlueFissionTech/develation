@@ -5,6 +5,7 @@ use BlueFission\Val;
 use BlueFission\IObj;
 use BlueFission\Data\FileSystem;
 use BlueFission\Net\Email;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Log
@@ -26,7 +27,15 @@ class Log extends Data implements iData
      *      max_logs - The maximum number of logs that should be stored.
      *      instant - Whether to write the log data immediately or store it until write() is called.
      */
-    protected $_config = array('storage'=>'', 'file'=>'application.log', 'email'=>'', 'subject'=>'', 'from'=>'', 'max_logs'=>100, 'instant'=>false);
+    protected $_config = [
+    	'storage' => '', 
+    	'file' => 'application.log', 
+    	'email' => '', 
+    	'subject' => '', 
+    	'from' => '', 
+    	'max_logs' => 100, 
+    	'instant' => false
+    ];
     
     /**
      * @var array $_messages - An array to store log data.
@@ -88,6 +97,8 @@ class Log extends Data implements iData
      */
     public function push($message): IObj
 	{
+		$message = Dev::apply(null, $message);
+
 		$time = date('Y-m-d G:i:s');
 		$this->field($time, $message);
 		if ($this->config('instant')) {

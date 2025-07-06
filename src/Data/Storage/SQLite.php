@@ -4,13 +4,14 @@ namespace BlueFission\Data\Storage;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Str;
-use BlueFission\Date
-;use BlueFission\IObj;
+use BlueFission\Date;
+use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Connections\Database\SQLiteLink;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\Storage\Behaviors\StorageAction;
+use BlueFission\DevElation as Dev;
 
 /**
  * SQLite class is a storage implementation that provides a way to interact with an SQLite database.
@@ -196,6 +197,8 @@ class SQLite extends Storage implements IData
 				}
 				$data[$field] = $this->field($field);
 			}
+
+			$data = Dev::apply(null, $data);
 
 			$success = $db->query($data);
 
@@ -407,6 +410,8 @@ class SQLite extends Storage implements IData
 			$data = $this->_result->fetchArray(SQLITE3_ASSOC);
 			if ($data)
 			{
+				$data = Dev::apply('sqlite.read', $data);
+
 				$this->assign($data);
 				$this->_result->reset();
 			}

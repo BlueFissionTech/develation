@@ -2,6 +2,8 @@
 namespace BlueFission\Data\Storage;
 
 use Memcached as MemcachedClient;
+use BlueFission\IObj;
+use BlueFission\DevElation as Dev;
 
 class Memcached extends Storage {
     protected $_client;
@@ -25,11 +27,14 @@ class Memcached extends Storage {
     }
 
     protected function _read(): void {
-        $this->_contents = $this->_source;
+        $data = Dev::apply(null, $this->_source);
+        $this->_contents = $data;
     }
 
     protected function _write(): void {
-        $this->_client->set($this->_key, $this->_contents);
+        $data = Dev::apply(null, $this->_contents);
+
+        $this->_client->set($this->_key, $data);
     }
 
     protected function _delete(): void {

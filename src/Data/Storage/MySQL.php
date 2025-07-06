@@ -11,6 +11,7 @@ use BlueFission\Connections\Database\MySQLLink;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\Storage\Behaviors\StorageAction;
+use BlueFission\DevElation as Dev;
 
 /**
  * Mysql class is a storage implementation that provides a way to interact with a Mysql database.
@@ -82,6 +83,8 @@ class MySQL extends Storage implements IData
 	 */
 	public function activate( $connectionId = null ): IObj
 	{
+		$connectionId = Dev::apply('_connection', $connectionId);
+
 		$this->_source = new MySQLLink( );
 		if ($connectionId !== null) {
 			$this->_source->connectionId( $connectionId );
@@ -211,6 +214,8 @@ class MySQL extends Storage implements IData
 				}
 				$data[$field] = $this->field($field);
 			}
+
+			$data = Dev::apply(null, $data);
 
 			$success = $db->query($data);
 
@@ -449,6 +454,7 @@ class MySQL extends Storage implements IData
 			$data = $this->_result->fetch_assoc();
 			if ( $data )
 			{
+				$data = Dev::apply('mysql.read', $data);
 				$this->assign( $data );
 				$this->_result->data_seek(0);
 			}

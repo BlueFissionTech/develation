@@ -4,6 +4,7 @@ namespace BlueFission\Data\Storage;
 
 use BlueFission\IObj;
 use BlueFission\Connections\Database\MongoLink;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Mongo
@@ -38,7 +39,7 @@ class Mongo extends Storage {
 	/**
 	 * Activates the Mongo storage class and sets up the connection to the MongoDB database.
 	 */
-	public function activate( ): IObj
+	public function activate(): IObj
 	{
 		$this->_source = new MongoLink();
 		if ($this->config('location'))
@@ -66,6 +67,8 @@ class Mongo extends Storage {
 			$db->config('collection', $collection);
 
 			$success = $db->find($collection, $this->_data);
+
+			$success = Dev::apply(null, $success);
 
 			$this->_result = $success;
 
@@ -114,7 +117,10 @@ class Mongo extends Storage {
 
 			$db->config('collection', $collection);
 			// $db->config('ignore_null', $this->config('ignore_null'));
-			$success = $db->query($this->_data);
+			
+			$data = Dev::apply(null, $this->_data);
+
+			$success = $db->query($data);
 
 			if ($success) {
 				$affected_row = $db->last_row();

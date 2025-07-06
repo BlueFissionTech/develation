@@ -3,6 +3,7 @@
 namespace BlueFission\Data\Storage;
 
 use BlueFission\IObj;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Spreadsheet
@@ -74,6 +75,9 @@ class Spreadsheet extends Storage implements IData {
 		$data = Val::isNull($this->_contents) ? HTTP::jsonEncode($this->_fields) : $this->_contents; 
 		
 		$source->empty();
+		
+		$data = Dev::apply(null, $data);
+
 		$source->contents( $data );
 		$source->write();				
 		
@@ -93,6 +97,9 @@ class Spreadsheet extends Storage implements IData {
 	{	
 		if ( $this->_index ) {
 			$row = $this->_source[ $this->_index ];
+
+			$row = Dev::apply(null, $row);
+
 			$this->loadArray( $row );
 		}
 
