@@ -83,7 +83,7 @@ class MySQL extends Storage implements IData
 	 */
 	public function activate( $connectionId = null ): IObj
 	{
-		$connectionId = Dev::apply('_in', $connectionId);
+		$connectionId = Dev::apply('_connection', $connectionId);
 
 		$this->_source = new MySQLLink( );
 		if ($connectionId !== null) {
