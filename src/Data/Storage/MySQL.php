@@ -142,13 +142,11 @@ class MySQL extends Storage implements IData
 	 */
 	public function write(): IObj
 	{
-		$db = $this->_source;
-		if (!$db) {
-			$this->status(self::STATUS_FAILED_INIT);
-			$this->_query = '';
-			$this->_result = null;
+		if (!$this->ensureDbSource()) {
 			return $this;
 		}
+
+		$db = $this->_source;
 
 		$status = self::STATUS_FAILED;
 		$keys = [];
@@ -246,17 +244,29 @@ class MySQL extends Storage implements IData
 	}
 
 	/**
+	 * Ensures that the database source is available.
+	 *
+	 * @return bool Returns true if the database source is available, false otherwise.
+	 */
+	private function ensureDbSource()
+	{
+		if (!$this->_source) {
+			$this->status(self::STATUS_FAILED_INIT);
+			$this->_query = '';
+			$this->_result = null;
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Executes a read query to retrieve data from the database.
 	 *
 	 * @return IObj
 	 */
 	public function read(): IObj
 	{
-		$db = $this->_source;
-		if (!$db) {
-			$this->status(self::STATUS_FAILED_INIT);
-			$this->_query = '';
-			$this->_result = null;
+		if (!$this->ensureDbSource()) {
 			return $this;
 		}
 
@@ -414,13 +424,11 @@ class MySQL extends Storage implements IData
 	 */
 	public function run( $query = null ): IObj
 	{
-		$db = $this->_source;
-		if (!$db) {
-			$this->status(self::STATUS_FAILED_INIT);
-			$this->_query = '';
-			$this->_result = null;
+		if (!$this->ensureDbSource()) {
 			return $this;
 		}
+
+		$db = $this->_source;
 		
 		if ( !$query ) {
 			$query = $this->_query;
@@ -456,13 +464,11 @@ class MySQL extends Storage implements IData
 	 */
 	public function delete(): IObj
 	{
-		$db = $this->_source;
-		if (!$db) {
-			$this->status(self::STATUS_FAILED_INIT);
-			$this->_query = '';
-			$this->_result = null;
+		if (!$this->ensureDbSource()) {
 			return $this;
 		}
+
+		$db = $this->_source;
 		
 		$tables = $this->tables();
 		$table = $tables[0];
@@ -595,7 +601,12 @@ class MySQL extends Storage implements IData
 	 */
 	private function create(): IObj
 	{
+		if (!$this->ensureDbSource()) {
+			return $this;
+		}
+
 		$db = $this->_source;
+		
 		//$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );
 		$tables = Arr::toArray( $this->config(self::NAME_FIELD) );
 		$this->config(self::NAME_FIELD, $tables);
