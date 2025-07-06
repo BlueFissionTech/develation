@@ -233,9 +233,9 @@ class Machine {
                 "/sys/class/power_supply/BAT1/energy_now",
             ];
 
-            $possiblePaths = Dev::apply(
+            $potentialPaths = Dev::apply(
                 'machine.power.paths',
-                $possiblePaths
+                $potentialPaths
             );
 
             foreach ($potentialPaths as $path) {

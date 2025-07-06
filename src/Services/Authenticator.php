@@ -161,7 +161,7 @@ class Authenticator extends Service {
 		}
 
 		if($this->username != '' && $this->id != '') {
-			// I really want to remove this and any dependency on it
+			// TODO: Remove this and any dependencies on it
 			if (!defined("USER_ID")) {
 				define("USER_ID", $this->id);
 			}

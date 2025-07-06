@@ -71,7 +71,7 @@ class DBQueue extends Queue implements IQueue {
         
         $storage->channel = $queue;
 
-        $item = Dev::appy(null, $item);
+        $item = Dev::apply(null, $item);
 
         $storage->message = serialize($item);
         $storage->write();
@@ -93,7 +93,7 @@ class DBQueue extends Queue implements IQueue {
         $item = $storage->read()->message;
         if ($item !== null) {
             $item = unserialize($item);
-            $item = Dev::appy(null, $item);
+            $item = Dev::apply(null, $item);
 
             if ( $storage->id() ) {
                 $storage->delete(); // Remove the message from storage after reading

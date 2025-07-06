@@ -65,7 +65,7 @@ class SplPriorityQueue extends Queue implements IQueue {
         while ($tempQueue->valid()) {
             $item = $tempQueue->extract();
 
-            $tiem = Dev::apply(null, $item);
+            $item = Dev::apply(null, $item);
             $queues->insert($item['data'], $item['priority']);
         }
 
@@ -81,7 +81,7 @@ class SplPriorityQueue extends Queue implements IQueue {
         $priority = self::$_mode == self::FILO ? -$priority : $priority; // Invert priority for FILO
 
         $item = Dev::apply(null, $item);
-        
+
         $queues->insert($item, $priority);
     }
 }
