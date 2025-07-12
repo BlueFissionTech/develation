@@ -108,8 +108,6 @@ class Val implements IVal, IDispatcher {
 			}
 		}
 
-		$value = Dev::apply(null, $value);
-
 		return $valid;
 	}
 
