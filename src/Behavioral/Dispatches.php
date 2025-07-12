@@ -113,8 +113,8 @@ trait Dispatches {
         }
 
         foreach ($behaviors as $behavior) {
-            $otherObject->when($behavior, function($behavior, $args) {
-                $this->dispatch($behavior, $args);
+            $otherObject->when($behavior, function($b, $args) {
+                $this->dispatch($b, $args);
             });
         }
 
