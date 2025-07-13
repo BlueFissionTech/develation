@@ -291,7 +291,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function fileExists($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists(OPUS_ROOT.'public/'.$path) ) {
+		if ( file_exists(APP_ROOT.'public/'.$path) ) {
 			return true;
 		} elseif ( file_exists( $templateDir.$path )) {
 			return true;
@@ -302,9 +302,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function fileContents($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists(OPUS_ROOT.'public/'.$path) && $path != "") {
-			header('Content-type: '. $this->getMimeType(OPUS_ROOT.'public/'.$path));
-			return file_get_contents(OPUS_ROOT.'public/'.$path);
+		if ( file_exists(APP_ROOT.'public/'.$path) && $path != "") {
+			header('Content-type: '. $this->getMimeType(APP_ROOT.'public/'.$path));
+			return file_get_contents(APP_ROOT.'public/'.$path);
 		} elseif ( file_exists( $templateDir.$path ) && $path != "") {
 			header('Content-type: '. $this->getMimeType($templateDir.$path));
 			return file_get_contents($templateDir.$path);
