@@ -71,6 +71,13 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	private $_assetDir = "";
 
 	/**
+	 * Store the web root directory
+	 *
+	 * @var string
+	 */
+	private $_webRoot = "";
+
+	/**
 	 * Default configuration for the application
 	 *
 	 * @var array
@@ -277,23 +284,31 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		// get the data triggered by this request
 		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($uri->parts, 2) ?? null );
 
-		// die(var_dump(parse_url($url, PHP_URL_PATH)));
-
 		return $this;
 	}
 
 	public function assetDir($directory = null) {
 		if ( $directory ) {
+			$directory = trim($directory, '/');
 			$this->_assetDir = $directory;
 		}
 		return $this->_assetDir;
 	}
 
+	public function webRoot($path = null) {
+		if ( $path ) {
+			$path = trim($path, '/');
+			$this->_webRoot = $path;
+		}
+		return $this->_webRoot;
+	}
+
 	public function fileExists($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists(OPUS_ROOT.'public/'.$path) ) {
+		$webRoot = $this->webRoot();
+		if ( file_exists($webRoot.DIRECTORY_SEPARATOR.$path) ) {
 			return true;
-		} elseif ( file_exists( $templateDir.$path )) {
+		} elseif ( file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) ) {
 			return true;
 		} else {
 			return false;
@@ -302,12 +317,13 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function fileContents($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists(OPUS_ROOT.'public/'.$path) && $path != "") {
-			header('Content-type: '. $this->getMimeType(OPUS_ROOT.'public/'.$path));
-			return file_get_contents(OPUS_ROOT.'public/'.$path);
-		} elseif ( file_exists( $templateDir.$path ) && $path != "") {
-			header('Content-type: '. $this->getMimeType($templateDir.$path));
-			return file_get_contents($templateDir.$path);
+		$webRoot = $this->webRoot();
+		if ( $path != "" && file_exists($webRoot.DIRECTORY_SEPARATOR.$path) ) {
+			header('Content-type: '. $this->getMimeType($webRoot.DIRECTORY_SEPARATOR.$path));
+			return file_get_contents($webRoot.DIRECTORY_SEPARATOR.$path);
+		} elseif ( $path != "" && file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) ) {
+			header('Content-type: '. $this->getMimeType($templateDir.DIRECTORY_SEPARATOR.$path));
+			return file_get_contents($templateDir.DIRECTORY_SEPARATOR.$path);
 		} else {
 			return null;
 		}
