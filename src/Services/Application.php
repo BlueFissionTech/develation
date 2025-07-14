@@ -305,7 +305,8 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function fileExists($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists(($this->_webRoot.DIRECTORY_SEPARATOR.$path) ) {
+		$webRoot = $this->webRoot();
+		if ( file_exists(($webRoot.DIRECTORY_SEPARATOR.$path) ) {
 			return true;
 		} elseif ( file_exists( $templateDir.DIRECTORY_SEPARATOR.$path )) {
 			return true;
@@ -315,10 +316,11 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	public function fileContents($path) {
-		$templateDir.DIRECTORY_SEPARATOR = $this->assetDir();
-		if ( file_exists(($this->_webRoot.DIRECTORY_SEPARATOR.$path) && $path != "") {
-			header('Content-type: '. $this->getMimeType(($this->_webRoot.DIRECTORY_SEPARATOR.$path));
-			return file_get_contents(($this->_webRoot.DIRECTORY_SEPARATOR.$path);
+		$templateDir = $this->assetDir();
+		$webRoot = $this->webRoot();
+		if ( file_exists(($webRoot.DIRECTORY_SEPARATOR.$path) && $path != "") {
+			header('Content-type: '. $this->getMimeType(($webRoot.DIRECTORY_SEPARATOR.$path));
+			return file_get_contents(($webRoot.DIRECTORY_SEPARATOR.$path);
 		} elseif ( file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) && $path != "") {
 			header('Content-type: '. $this->getMimeType($templateDir.DIRECTORY_SEPARATOR.$path));
 			return file_get_contents($templateDir.DIRECTORY_SEPARATOR.$path);
