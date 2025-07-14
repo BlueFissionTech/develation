@@ -71,6 +71,13 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	private $_assetDir = "";
 
 	/**
+	 * Store the web root directory
+	 *
+	 * @var string
+	 */
+	private $_webRoot = "";
+
+	/**
 	 * Default configuration for the application
 	 *
 	 * @var array
@@ -277,8 +284,6 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		// get the data triggered by this request
 		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($uri->parts, 2) ?? null );
 
-		// die(var_dump(parse_url($url, PHP_URL_PATH)));
-
 		return $this;
 	}
 
@@ -289,9 +294,16 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		return $this->_assetDir;
 	}
 
+	public function webRoot($path = null) {
+		if ( $path ) {
+			$this->_webRoot = $path;
+		}
+		return $this->_webRoot;
+	}
+
 	public function fileExists($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists(OPUS_ROOT.'public/'.$path) ) {
+		if ( file_exists($this->_webRoot.$path) ) {
 			return true;
 		} elseif ( file_exists( $templateDir.$path )) {
 			return true;
@@ -302,9 +314,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function fileContents($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists(OPUS_ROOT.'public/'.$path) && $path != "") {
-			header('Content-type: '. $this->getMimeType(OPUS_ROOT.'public/'.$path));
-			return file_get_contents(OPUS_ROOT.'public/'.$path);
+		if ( file_exists($this->_webRoot.$path) && $path != "") {
+			header('Content-type: '. $this->getMimeType($this->_webRoot.$path));
+			return file_get_contents($this->_webRoot.$path);
 		} elseif ( file_exists( $templateDir.$path ) && $path != "") {
 			header('Content-type: '. $this->getMimeType($templateDir.$path));
 			return file_get_contents($templateDir.$path);
