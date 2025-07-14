@@ -289,7 +289,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function assetDir($directory = null) {
 		if ( $directory ) {
-			$path = trim($path, '/');
+			$directory = trim($directory, '/');
 			$this->_assetDir = $directory;
 		}
 		return $this->_assetDir;
@@ -306,9 +306,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	public function fileExists($path) {
 		$templateDir = $this->assetDir();
 		$webRoot = $this->webRoot();
-		if ( file_exists(($webRoot.DIRECTORY_SEPARATOR.$path) ) {
+		if ( file_exists($webRoot.DIRECTORY_SEPARATOR.$path) ) {
 			return true;
-		} elseif ( file_exists( $templateDir.DIRECTORY_SEPARATOR.$path )) {
+		} elseif ( file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) ) {
 			return true;
 		} else {
 			return false;
@@ -318,10 +318,10 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	public function fileContents($path) {
 		$templateDir = $this->assetDir();
 		$webRoot = $this->webRoot();
-		if ( file_exists(($webRoot.DIRECTORY_SEPARATOR.$path) && $path != "") {
-			header('Content-type: '. $this->getMimeType(($webRoot.DIRECTORY_SEPARATOR.$path));
-			return file_get_contents(($webRoot.DIRECTORY_SEPARATOR.$path);
-		} elseif ( file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) && $path != "") {
+		if ( $path != "" && file_exists($webRoot.DIRECTORY_SEPARATOR.$path) ) {
+			header('Content-type: '. $this->getMimeType($webRoot.DIRECTORY_SEPARATOR.$path));
+			return file_get_contents($webRoot.DIRECTORY_SEPARATOR.$path);
+		} elseif ( $path != "" && file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) ) {
 			header('Content-type: '. $this->getMimeType($templateDir.DIRECTORY_SEPARATOR.$path));
 			return file_get_contents($templateDir.DIRECTORY_SEPARATOR.$path);
 		} else {
