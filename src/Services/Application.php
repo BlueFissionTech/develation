@@ -289,6 +289,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function assetDir($directory = null) {
 		if ( $directory ) {
+			$path = trim($path, '/');
 			$this->_assetDir = $directory;
 		}
 		return $this->_assetDir;
@@ -296,6 +297,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function webRoot($path = null) {
 		if ( $path ) {
+			$path = trim($path, '/');
 			$this->_webRoot = $path;
 		}
 		return $this->_webRoot;
@@ -303,9 +305,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function fileExists($path) {
 		$templateDir = $this->assetDir();
-		if ( file_exists($this->_webRoot.$path) ) {
+		if ( file_exists(($this->_webRoot.DIRECTORY_SEPATATOR.$path) ) {
 			return true;
-		} elseif ( file_exists( $templateDir.$path )) {
+		} elseif ( file_exists( $templateDir.DIRECTORY_SEPATATOR.$path )) {
 			return true;
 		} else {
 			return false;
@@ -313,13 +315,13 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	public function fileContents($path) {
-		$templateDir = $this->assetDir();
-		if ( file_exists($this->_webRoot.$path) && $path != "") {
-			header('Content-type: '. $this->getMimeType($this->_webRoot.$path));
-			return file_get_contents($this->_webRoot.$path);
-		} elseif ( file_exists( $templateDir.$path ) && $path != "") {
-			header('Content-type: '. $this->getMimeType($templateDir.$path));
-			return file_get_contents($templateDir.$path);
+		$templateDir.DIRECTORY_SEPATATOR = $this->assetDir();
+		if ( file_exists(($this->_webRoot.DIRECTORY_SEPATATOR.$path) && $path != "") {
+			header('Content-type: '. $this->getMimeType(($this->_webRoot.DIRECTORY_SEPATATOR.$path));
+			return file_get_contents(($this->_webRoot.DIRECTORY_SEPATATOR.$path);
+		} elseif ( file_exists( $templateDir.DIRECTORY_SEPATATOR.$path ) && $path != "") {
+			header('Content-type: '. $this->getMimeType($templateDir.DIRECTORY_SEPATATOR.$path));
+			return file_get_contents($templateDir.DIRECTORY_SEPATATOR.$path);
 		} else {
 			return null;
 		}
