@@ -11,6 +11,6 @@ class VarElement extends Element implements IRenderableElement
     {
         $name = $this->getAttribute('name');
 
-        return (string) ($this->block->getVar($var) ?? '');
+        return (string) ($this->block->getVar($name) ?? '');
     }
 }

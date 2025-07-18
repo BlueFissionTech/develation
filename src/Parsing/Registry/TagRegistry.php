@@ -210,9 +210,17 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'macro',
-            pattern: '@macro\((.*?)\)',
+            pattern: '\@macro\((.*?)\)(.*?)\@endmacro',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
+            class: Elements\MacroElement::class
+        ));
+
+        self::register(new TagDefinition(
+            name: 'invoke',
+            pattern: '@invoke\((.*?)\)',
+            attributes: ['name'],
+            interface: Contracts\IExecutableElement::class,
             class: Elements\MacroElement::class
         ));
 

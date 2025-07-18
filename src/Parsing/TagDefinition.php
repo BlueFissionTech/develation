@@ -2,6 +2,8 @@
 
 namespace BlueFission\Parsing;
 
+use BlueFission\Str;
+
 /**
  * Tag types used as tokens by the parser
  */

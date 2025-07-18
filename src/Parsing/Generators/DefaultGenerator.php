@@ -7,8 +7,8 @@ use BlueFission\Parsing\Element;
 
 class DefaultGenerator implements IGenerator {
     public function generate(Element $element): string {
-        $prompt = $this->getAttribute('prompt') ?? 'Enter text: ';
-        $default = $this->getAttribute('default') ?? 'Lorem Ipsum';
+        $prompt = $element->getAttribute('prompt') ?? 'Enter text: ';
+        $default = $element->getAttribute('default') ?? 'Lorem Ipsum';
         $input = $default;
 
         // If CLI 

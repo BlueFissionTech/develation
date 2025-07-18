@@ -11,6 +11,8 @@ use BlueFission\DataTypes;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Parsing\Registry\RendererRegistry;
+use BlueFission\Parsing\Registry\ExecutorRegistry;
 use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Contracts\ILoopElement;
 use BlueFission\Parsing\Contracts\IConditionElement;
@@ -52,12 +54,15 @@ class Block extends Obj {
 
     private Element $root;
 
-    public function __construct(string $content = '', $closed = false)
+    public function __construct(string $content = '', $closed = false, $open = null, $close = null)
     {
         parent::__construct();
         $this->__dispatchConstruct();
         $this->content = $content;
         $this->closed = $closed;
+
+        $this->open = $open ?: $this->open;
+        $this->close = $close ?: $this->close;
     }
 
     public function parse(): void
@@ -93,18 +98,24 @@ class Block extends Obj {
     {
         $original = $this->content;
 
+
         foreach ($this->elements as $element) {
             $output = '';
+            $result = null;
+            $renderer = RendererRegistry::get($element->getTag());
+            $executor = ExecutorRegistry::get($element->getTag());
+
             if ($element instanceof IConditionElement) {
                 if ($element->evaluate()) {
-                    $output .= $element->render();
+                    $output .= $renderer->render($element);
                 }
             } elseif ($element instanceof ILoopElement) {
                 $output = $element->run($this->allVars());
             } elseif ($element instanceof IExecutableElement) {
-                $element->execute();
+                $result = $executor->execute($element);
+                $output .= $renderer->render($element);
             } elseif ($element instanceof IRenderableElement) {
-                $output = $element->render();
+                $output = $renderer->render($element);
             }
 
             $original = Str::replace($original, $element->getMatch(), $output);
@@ -177,18 +188,5 @@ class Block extends Obj {
     public function allElements(): array
     {
         return $this->elements;
-    }
-
-    public function getRoot(): Element
-    {
-        $current = $this->owner;
-        while ($current && $current->getParent()) {
-            $current = $current->getParent();
-            if ($current->getTag() === TagRegistry::ROOT) {
-                return $current;
-            }
-        }
-
-        return $current ?: new Element(TagRegistry::ROOT, '', []);
     }
 }

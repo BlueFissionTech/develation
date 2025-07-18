@@ -4,11 +4,11 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Data\FileSystem;
-use BlueFission\Parsing\Interfaces\IExecutableElement;
+use BlueFission\Parsing\Contracts\IExecutableElement;
 
 class ImportElement extends Element implements IExecutableElement
 {
-    public function execute(): string
+    public function execute(): mixed
     {
         $file = $this->getAttribute('name');
         if (!$file) return '';
@@ -24,10 +24,15 @@ class ImportElement extends Element implements IExecutableElement
         $importFile = $fs->open($directory . $file);
         $content = $importFile->read()->contents();
 
-        $block = new Block($content);
-        $block->field('vars', $this->block->allVars());
-        $block->process(); // preload variables, but discard render output
+        $this->block->setContent($content);
+        $this->block->parse();
+        $this->block->process();
 
+        return '';
+    }
+
+    public function render(): string
+    {
         return '';
     }
 }

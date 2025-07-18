@@ -3,6 +3,7 @@
 namespace BlueFission\Parsing;
 
 use BlueFission\Obj;
+use BlueFission\Parsing\Registry\TagRegistry;
 
 /**
  * Represents a matched element in the template
@@ -13,6 +14,7 @@ class Element extends Obj {
     protected string $match;
     protected $template;
     protected array $sections = [];
+    protected array $macros = [];
     protected array $attributes = [];
     protected array $includePaths = [];
     protected Block $block;
@@ -109,6 +111,11 @@ class Element extends Obj {
         $this->sections[$name] = $section;
     }
 
+    public function addMacro(string $name, Element $macro): void
+    {
+       $this->macro[$name] = $macro;
+    }
+
     public function getRaw(): string
     {
         return $this->raw;
@@ -128,6 +135,19 @@ class Element extends Obj {
         $value = $this->attributes[$name];
 
         return $this->resolveValue($value);
+    }    
+
+    public function getRoot(): Element
+    {
+        $current = $this;
+        while ($current && $current->getParent()) {
+            $current = $current->getParent();
+            if ($current->getTag() === TagRegistry::ROOT) {
+                return $current;
+            }
+        }
+
+        return $current ?: new Element(TagRegistry::ROOT, '', []);
     }
 
     protected function getNestedValue($dotNotationString, $varName = null): mixed

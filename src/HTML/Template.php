@@ -17,6 +17,8 @@ use BlueFission\Data\FileSystem;
 use BlueFission\Data\Storage\Disk;
 use BlueFission\Parsing\Parser;
 use BlueFission\Parsing\Registry\TagRegistry;
+use BlueFission\Parsing\Registry\RendererRegistry;
+use BlueFission\Parsing\Registry\ExecutorRegistry;
 use \InvalidArgumentException;
 
 /**
@@ -360,7 +362,10 @@ class Template extends Obj {
 		// $this->applyTemplate();
 		// $this->commit( $this->config('format') );
 		
-		TagRegistry::registerDefaults(); // ensure Vibe tags are active
+		TagRegistry::registerDefaults(); // ensure tags are active
+		RendererRegistry::registerDefaults(); // ensure renderers are active
+		ExecutorRegistry::registerDefaults(); // ensure executors are active
+		
 		$parser = new Parser($this->_template, $this->config('delimiter_start'), $this->config('delimiter_end'));
 
 		$parser->setVariables($this->_data->val());

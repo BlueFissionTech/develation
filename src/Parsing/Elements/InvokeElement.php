@@ -3,26 +3,18 @@
 namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Contracts\IRenderableElement;
-use BlueFission\Parsing\Contracts\IExecutableElement;
 use BlueFission\Parsing\Element;
 
-class MacroElement extends Element implements IRenderableElement, IExecutableElement
+class InvokeElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
-        $name = $this->getAttribute('name');
-        if (!$name) return '';
-
-        $this->getRoot()->addMacro($name, $this);
-
-        return '';
-    }
-
-    public function invoke(array $args = []): string
-    {
         $this->closed = true; // prevent further scope propogation
 
+        $args = $this->attributes;
+
         foreach ($args as $key => $value) {
+            $value = $this->getAttribute($key) ?? $value;
             $this->block->setVar($key, $value);
         }
         return $this->block->process();

@@ -2,6 +2,7 @@
 
 namespace BlueFission\Parsing\Registry;
 
+use BlueFission\Parsing\Renderers;
 use BlueFission\Parsing\Contracts\IElementRenderer;
 
 class RendererRegistry {
@@ -12,10 +13,14 @@ class RendererRegistry {
     }
 
     public static function get(string $tag): ?IElementRenderer {
-        return self::$renderers[$tag] ?? null;
+        return self::$renderers[$tag] ?? self::$renderers['*'] ?? null;
     }
 
     public static function all(): array {
         return self::$renderers;
+    }
+
+    public static function registerDefaults() {
+        self::register('*', new Renderers\DefaultRenderer());
     }
 }
