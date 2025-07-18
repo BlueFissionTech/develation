@@ -68,9 +68,9 @@ class Block extends Obj {
                 foreach (TagRegistry::all() as $definition) {
                     $tag = $definition->name;
                     if (isset($match[$tag]) && !empty($match[$tag][0])) {
-                        // var_dump($match);
                         $capture = $match[$tag][0];
-                        $raw = $match[26][0] ?? $match[3][0];
+                        // $raw = $match[26][0] ?: $match[6][0] ?: $match[3][0];
+                        $raw = end($match)[0];
                         $attributes = TagRegistry::extractAttributes($tag, $match);
                         $elementClass = TagRegistry::get($tag)->class;
                         $element = new $elementClass($tag, $capture, $raw, $attributes);
@@ -165,7 +165,7 @@ class Block extends Obj {
 
     public function allVars(): array
     {
-        return $this->field('vars');
+        return $this->field('vars')->val() ?? [];
     }
 
     public function getSection(string $name): ?Element

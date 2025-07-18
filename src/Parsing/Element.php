@@ -130,6 +130,26 @@ class Element extends Obj {
         return $this->resolveValue($value);
     }
 
+    protected function getNestedValue($dotNotationString, $varName = null): mixed
+    {
+        $parts = explode('.', $dotNotationString);
+        $name = array_shift($parts);
+        $varName = $varName ?? $name;
+        $value = $this->block->getVar($varName);
+
+        foreach ($parts as $part) {
+            if (is_array($value) && array_key_exists($part, $value)) {
+                $value = $value[$part];
+            } elseif (is_object($value) && property_exists($value, $part)) {
+                $value = $value->$part;
+            } else {
+                return null; // Return null if the path does not exist
+            }
+        }
+
+        return $value;
+    }
+
     protected function resolveValue(string $value, ?string $type = null): mixed
     {
         $firstChar = substr($value, 0, 1);
@@ -139,12 +159,12 @@ class Element extends Obj {
             $firstChar === '"' || $firstChar === "'" => trim($value, "'\""),
             $firstChar === '[' => json_decode(str_replace("'", '"', $value), true),
             $firstChar === '{' => json_decode($value, true),
-            preg_match('/^[a-zA-Z_]/', $value) => $this->getScopeVariable($value),
+            (bool)preg_match('/(^[a-zA-Z_]+)/', $value) => $this->getScopeVariable($value),
             default => (float)$value,
         };
 
         if ($type === 'json') {
-            $parsed = json_decode($value, true);
+            $parsed = json_decode($parsed, true);
         }
 
         return $parsed;

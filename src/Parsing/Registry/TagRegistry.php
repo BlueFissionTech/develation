@@ -93,12 +93,12 @@ class TagRegistry {
 	    foreach ($matches as $m) {
 	        $key = $m[1];
 	    	if ($definition->attributes[0] == '*') {
-	    		$value = $m[2] ?? $m[3] ?? $m[4] ?? '';
+	    		$value = $m[2] ?: $m[3] ?: $m[4] ?: $m[6] ?: '';
 	            $attributes[$key] = $value;
 	            continue;
 	    	}
 	        if (in_array($key, $definition->attributes)) {
-	            $value = $m[2] ?? $m[3] ?? $m[4] ?? '';
+	            $value = $m[2] ?: $m[3] ?: $m[4] ?: $m[6] ?: '';
 	            $attributes[$key] = $value;
 	        }
 	    }
@@ -115,7 +115,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'if',
             pattern: '{open}\#if(.*?)?{close}(.*?){open}\/if{close}',
-            // unifiedPattern: '{open}\#if(.*?)?{close}(.*?){open}\/if{close}',
             attributes: ['var', 'equals', 'not_equals', 'gt', 'lt', 'gte', 'lte'],
             interface: Contracts\IConditionElement::class,
             class: Elements\IfElement::class
@@ -124,7 +123,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'each',
             pattern: '{open}\#each(.*?)?{close}(.*?){open}\/each{close}',
-            // unifiedPattern: '\#each(.*?)?(.*?)\/each',
             attributes: ['items', 'iterations', 'glue'],
             interface: Contracts\ILoopElement::class,
             class: Elements\EachElement::class
@@ -133,7 +131,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'let',
             pattern: '{open}\#let (.*?)=(.*?){close}',
-            // unifiedPattern: '{open}\#let (.*?)=(.*?){close}',
             attributes: ['*'],
             interface: Contracts\IExecutableElement::class,
             class: Elements\LetElement::class
@@ -142,7 +139,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'eval',
             pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
-            // unifiedPattern: '=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?',
             attributes: ['expression', 'assign', 'silent'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\EvalElement::class
@@ -151,7 +147,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'var',
             pattern: '{open}\\$(\\w+){close}',
-            // unifiedPattern: '\\$(\\w+)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\VarElement::class
@@ -160,7 +155,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'while',
             pattern: '{open}\#while(.*?)?{close}(.*?){open}\/while{close}',
-            // unifiedPattern: '\#while(.*?)?(.*?)\/while',
             attributes: ['var', 'equals', 'not_equals', 'gt', 'lt', 'gte', 'lte'],
             interface: Contracts\ILoopElement::class,
             class: Elements\WhileElement::class
@@ -169,7 +163,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'await',
             pattern: '{open}\#await(.*?)?{close}(.*?){open}\/await{close}',
-            // unifiedPattern: '\#await(.*?)?(.*?)\/await',
             attributes: ['event'],
             interface: Contracts\IExecutableElement::class,
             class: Elements\AwaitElement::class
@@ -177,8 +170,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'template',
-            pattern: '\@template\\((.*?)\\)',
-            // unifiedPattern: '@template\((.*?)\)',
+            pattern: '\@template\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\TemplateElement::class
@@ -187,7 +179,6 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'section',
             pattern: '\@section\((.*?)\)(.*?)\@endsection',
-            // unifiedPattern: '@section\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\SectionElement::class
@@ -195,8 +186,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'output',
-            pattern: '\@output\\((.*?)\\)',
-            // unifiedPattern: '@output\((.*?)\)',
+            pattern: '\@output\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\OutputElement::class
@@ -204,8 +194,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'mod',
-            pattern: '@mod\\((.*?)\\)',
-            // unifiedPattern: '@mod\((.*?)\)',
+            pattern: '@mod\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\ModElement::class
@@ -213,8 +202,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'import',
-            pattern: '@import\\((.*?)\\)',
-            // unifiedPattern: '@import\((.*?)\)',
+            pattern: '@import\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\ImportElement::class
@@ -222,11 +210,26 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'macro',
-            pattern: '@macro\\((.*?)\\)',
-            // unifiedPattern: '@macro\((.*?)\)',
+            pattern: '@macro\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\MacroElement::class
+        ));
+
+        self::register(new TagDefinition(
+            name: 'current',
+            pattern: '{open}@current\.?(.*?){close}',
+            attributes: ['name'],
+            interface: Contracts\IRenderableElement::class,
+            class: Elements\CurrentElement::class
+        ));
+
+        self::register(new TagDefinition(
+            name: 'index',
+            pattern: '{open}@index{close}',
+            attributes: ['name'],
+            interface: Contracts\IRenderableElement::class,
+            class: Elements\IndexElement::class
         ));
     }
 }

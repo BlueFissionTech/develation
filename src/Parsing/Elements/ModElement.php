@@ -2,17 +2,18 @@
 
 namespace BlueFission\Parsing\Elements;
 
-use BlueFission\HTML\Template;
 use BlueFission\Parsing\Element;
+use BlueFission\Parsing\Block;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\Data\FileSystem;
 
 class ModElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
-        $file = $this->getAttribute('name');
+        $modulePath = $this->getAttribute('name');
 
-        if (!$file) return '';
+        if (!$modulePath) return '';
 
         $directory = $this->includePaths['modules'] ??
         $this->includePaths[1] ??
@@ -22,13 +23,11 @@ class ModElement extends Element implements IRenderableElement
         $directory = $directory ? $directory . DIRECTORY_SEPARATOR : '';
 
         $fs = new FileSystem();
-        $modFile = $fs->open($directory . $file);
-        $content = $modFile->read()->contents();
+        $file = $fs->open($directory . $modulePath);
+        $this->raw = $file->read()->contents() ?? '';
 
-        $block = new Block($content);
-        $block->field('vars', $this->block->allVars());
-        $block->parse();
+        $this->block->setContent($this->raw);
 
-        return $block->process();
+        return parent::render();
     }
 }

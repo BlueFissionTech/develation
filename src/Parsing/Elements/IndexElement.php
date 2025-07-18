@@ -5,12 +5,10 @@ namespace BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 
-class VarElement extends Element implements IRenderableElement
+class IndexElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
-        $name = $this->getAttribute('name');
-
-        return (string) ($this->block->getVar($var) ?? '');
+        return (string) $this->parent->getIndex();
     }
 }

@@ -5,6 +5,7 @@ namespace BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Block;
 use BlueFission\Parsing\IElementRenderer;
+use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
 
@@ -88,14 +89,9 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
             }
         }
 
-        // Fake tool registry
-        $tools = [
-            'summarize' => fn($text) => "Summary of: $text",
-            'classifyTone' => fn($text) => "Tone: Neutral",
-        ];
-
-        if (isset($tools[$function])) {
-            return $tools[$function](...$argArray);
+        $tool = FunctionRegistry::get($function);
+        if ($tool) {
+            return $tool->execute($argArray);
         }
 
         return "[Unknown tool: $function]";
