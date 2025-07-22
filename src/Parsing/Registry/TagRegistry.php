@@ -95,7 +95,7 @@ class TagRegistry {
         /x', $clean, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $m) {
-            $key = $m[1] ? 'expression' : ($m[1] ?: $m[2]);
+            $key = $m[1] ? 'expression' : $m[2];
             if ($definition->attributes[0] == '*') {
                 $value =  $m[1] ?: $m[3] ?: $m[4] ?: $m[6] ?: $m[7]  ?: $m[9] ?: '';
                 $attributes[$key] = $value;
