@@ -8,12 +8,13 @@ use BlueFission\Parsing\Element;
 abstract class BasePreparer implements IElementPreparer
 {
 	protected $data = null;
+	protected $context = null;
 	protected $supported = [];
 
 	public function __construct($data = null)
 	{
 		if ($data) {
-			$this->ready($data);
+			$this->data = $data;
 		}
 	}
 
@@ -43,14 +44,19 @@ abstract class BasePreparer implements IElementPreparer
 		$this->supported = $supports;
 	}
 
-	public function ready($data = null): void
+	public function ready($context = null): void
 	{
-		$this->data = $data;
+		$this->context = $context;
 	}
 
 	public function getData(): mixed
 	{
 		return $this->data;
+	}
+
+	public function getContext(): mixed
+	{
+		return $this->context;
 	}
 
 	abstract public function prepare(Element $element): void;

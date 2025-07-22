@@ -161,7 +161,7 @@ class Element extends Obj {
         $current = $this;
         while ($current && $current->getParent()) {
             $current = $current->getParent();
-            if ($current->getTag() === TagRegistry::ROOT) {
+            if ($current->getTag() === TagRegistry::ROOT || $current->isClosed()) {
                 return $current;
             }
         }

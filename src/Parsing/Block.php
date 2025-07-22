@@ -15,6 +15,7 @@ use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Parsing\Registry\RendererRegistry;
 use BlueFission\Parsing\Registry\ExecutorRegistry;
 use BlueFission\Parsing\Registry\TagRegistry;
+use BlueFission\Parsing\Registry\PreparerRegistry;
 use BlueFission\Parsing\Contracts\ILoopElement;
 use BlueFission\Parsing\Contracts\IConditionElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
@@ -82,14 +83,7 @@ class Block extends Obj {
                         $attributes = TagRegistry::extractAttributes($tag, $match);
                         $elementClass = TagRegistry::get($tag)->class;
                         $element = new $elementClass($tag, $capture, $raw, $attributes);
-                        $this->echo($element, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
-                        $element->setParent($this->owner);
-                        $element->setIncludePaths($this->owner->getIncludePaths());
-                        foreach($this->vars as $name => $value) {
-                            if (!$element->isClosed()) {
-                                $element->setScopeVariable($name, $value);
-                            }
-                        }
+                        $this->prepareElement($element);
                         $this->elements[] = $element;
                         break;
                     }
@@ -187,5 +181,17 @@ class Block extends Obj {
     public function allElements(): array
     {
         return $this->elements;
+    }
+
+    protected function prepareElement($element): void
+    {
+        foreach (PreparerRegistry::all() as $preparer) {
+            if ($preparer->supports($element)) {
+                if (!$preparer->getData()) {
+                    $preparer->ready($this->owner);
+                }
+                $preparer->prepare($element);
+            }
+        }
     }
 }
