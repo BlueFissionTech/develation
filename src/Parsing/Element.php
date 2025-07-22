@@ -154,7 +154,7 @@ class Element extends Obj {
         $value = $this->attributes[$name];
 
         return $this->resolveValue($value);
-    }    
+    }
 
     public function getRoot(): Element
     {
@@ -162,6 +162,19 @@ class Element extends Obj {
         while ($current && $current->getParent()) {
             $current = $current->getParent();
             if ($current->getTag() === TagRegistry::ROOT) {
+                return $current;
+            }
+        }
+
+        return $current ?: new Element(TagRegistry::ROOT, '', []);
+    }
+
+    public function getTop(): Element
+    {
+        $current = $this;
+        while ($current && $current->getParent()) {
+            $current = $current->getParent();
+            if ($current->getTag() === TagRegistry::ROOT || $current->isClosed()) {
                 return $current;
             }
         }

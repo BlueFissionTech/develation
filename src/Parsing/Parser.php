@@ -3,11 +3,18 @@
 namespace BlueFission\Parsing;
 
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\Dispatches;
 
 /**
  * Orchestrates loading input and initializing the parsing process
  */
-class Parser {
+class Parser implements IDispatcher {
+    use Dispatches {
+        Dispatches::__construct as private __dispatchConstruct;
+    }
+
     public Root $root;
 
     /**
@@ -15,7 +22,9 @@ class Parser {
      */
     public function __construct(string $input, string $open = '{', string $close = '}')
     {
+        $this->__dispatchConstruct();
         $this->root = new Root($input, $open, $close);
+        $this->echo($this->root, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
     }
 
     public function setVariable($name, $value = null): void

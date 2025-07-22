@@ -80,7 +80,7 @@ class TagRegistry {
 
         // Match key="value", key='value', or key=value
         preg_match_all('/
-            \{=([a-zA-Z_][a-zA-Z0-9_-]*) # matches '{=variableName' syntax, where variableName is alphanumeric
+            \{=([a-zA-Z_][a-zA-Z0-9_-]*) # matches {=variableName syntax, where variableName is alphanumeric
             |([a-zA-Z_][a-zA-Z0-9_-]*)     # key
             \s*=\s*
             (?:

@@ -9,7 +9,7 @@ class VariablePreparer extends BasePreparer
 {
 	public function prepare(Element $element): void
 	{
-		if ( !$this->data ) {
+		if ( !$this->context ) {
 			return;
 		}
 
@@ -17,8 +17,8 @@ class VariablePreparer extends BasePreparer
         	return;
         }
 		
-		if (is_object($this->data) && property_exists($this->data, 'vars') && is_iterable($this->data->vars)) {
-			foreach ($this->data->vars as $name => $value) {
+		if (is_object($this->context) && property_exists($this->context, 'vars') && is_iterable($this->context->vars)) {
+			foreach ($this->context->vars as $name => $value) {
             	$element->setScopeVariable($name, $value);
         	}
 		}
