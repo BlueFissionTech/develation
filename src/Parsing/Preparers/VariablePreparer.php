@@ -9,7 +9,7 @@ class VariablePreparer extends BasePreparer
 {
 	public function prepare(Element $element): void
 	{
-		if ( !$this->owner ) {
+		if ( !$this->data ) {
 			return;
 		}
 
@@ -17,7 +17,7 @@ class VariablePreparer extends BasePreparer
         	return;
         }
 		
-		foreach($this->owner->vars as $name => $value) {
+		foreach($this->data->vars as $name => $value) {
             $element->setScopeVariable($name, $value);
         }
 	}

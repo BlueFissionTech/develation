@@ -7,8 +7,15 @@ use BlueFission\Parsing\Element;
 
 abstract class BasePreparer implements IElementPreparer
 {
-	protected $owner = null;
+	protected $data = null;
 	protected $supported = [];
+
+	public function __construct($data = null)
+	{
+		if ($data) {
+			$this->ready($data);
+		}
+	}
 
 	public function supports (Element $element): bool
 	{
@@ -35,7 +42,12 @@ abstract class BasePreparer implements IElementPreparer
 
 	public function ready($data = null): void
 	{
-		$this->owner = $data;
+		$this->data = $data;
+	}
+
+	public function getData(): mixed
+	{
+		return $this->data;
 	}
 
 	abstract public function prepare(Element $element): void;

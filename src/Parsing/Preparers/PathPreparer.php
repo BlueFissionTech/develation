@@ -9,10 +9,10 @@ class PathPreparer extends BasePreparer
 {
 	public function prepare(Element $element): void
 	{
-		if ( !$this->owner ) {
+		if ( !$this->data ) {
 			return;
 		}
 
-		$element->setIncludePaths($this->owner->getIncludePaths());
+		$element->setIncludePaths($this->data->getIncludePaths());
 	}
 }

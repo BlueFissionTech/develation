@@ -9,10 +9,10 @@ class HierarchyPreparer extends BasePreparer
 {
 	public function prepare(Element $element): void
 	{
-		if ( !$this->owner ) {
+		if ( !$this->data ) {
 			return;
 		}
 
-		$element->setParent($this->owner);
+		$element->setParent($this->data);
 	}
 }

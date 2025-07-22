@@ -12,10 +12,10 @@ class EventBubblePreparer extends BasePreparer
 {
 	public function prepare(Element $element): void
 	{
-		if ( !$this->owner ) {
+		if ( !$this->data ) {
 			return;
 		}
 
-		$this->owner->echo($element, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
+		$this->data->echo($element, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
 	}
 }
