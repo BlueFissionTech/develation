@@ -3,12 +3,19 @@
 namespace BlueFission\Parsing;
 
 use BlueFission\Obj;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Parsing\Registry\TagRegistry;
 
 /**
  * Represents a matched element in the template
  */
 class Element extends Obj {
+    use Dispatches {
+        Dispatches::__construct as private __dispatchConstruct;
+    }
+
     protected string $tag;
     protected string $raw;
     protected string $match;
@@ -23,6 +30,7 @@ class Element extends Obj {
     public function __construct(string $tag, string $match, string $raw, array $attributes = [])
     {
         parent::__construct();
+        $this->__dispatchConstruct();
         $this->tag = $tag;
         $this->match = $match;
         $this->raw = $raw;
@@ -31,6 +39,7 @@ class Element extends Obj {
         // Set the root block this element represents
         $this->block = new Block($this->raw);
         $this->block->setOwner($this);
+        $this->echo($this->block, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
     }
 
     public function parse(): void
@@ -53,6 +62,11 @@ class Element extends Obj {
     public function getScopeVariable(string $name): mixed
     {
         return $this->block->getVar($name);
+    }
+
+    public function getAllVariables(): array
+    {
+        return $this->block->allVars();
     }
 
     public function setIncludePaths(array $paths): void {
@@ -121,6 +135,11 @@ class Element extends Obj {
         return $this->raw;
     }
 
+    public function getContent(): string
+    {
+        return $this->block->content;
+    }
+
     public function children(): array
     {
         return $this->block->allElements();
@@ -156,7 +175,6 @@ class Element extends Obj {
         $name = array_shift($parts);
         $varName = $varName ?? $name;
         $value = $this->block->getVar($varName);
-
         foreach ($parts as $part) {
             if (is_array($value) && array_key_exists($part, $value)) {
                 $value = $value[$part];

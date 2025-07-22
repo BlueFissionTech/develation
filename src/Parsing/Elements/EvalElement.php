@@ -4,7 +4,6 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Block;
-use BlueFission\Parsing\IElementRenderer;
 use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;

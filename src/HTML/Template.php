@@ -18,6 +18,7 @@ use BlueFission\Data\Storage\Disk;
 use BlueFission\Parsing\Parser;
 use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Registry\RendererRegistry;
+use BlueFission\Parsing\Registry\PreparerRegistry;
 use BlueFission\Parsing\Registry\ExecutorRegistry;
 use \InvalidArgumentException;
 
@@ -365,6 +366,8 @@ class Template extends Obj {
 		TagRegistry::registerDefaults(); // ensure tags are active
 		RendererRegistry::registerDefaults(); // ensure renderers are active
 		ExecutorRegistry::registerDefaults(); // ensure executors are active
+		PreparerRegistry::registerDefaults(); // ensure preparers are active
+
 		
 		$parser = new Parser($this->_template, $this->config('delimiter_start'), $this->config('delimiter_end'));
 

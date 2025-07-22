@@ -10,6 +10,7 @@ use BlueFission\Flag;
 use BlueFission\DataTypes;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Parsing\Registry\RendererRegistry;
 use BlueFission\Parsing\Registry\ExecutorRegistry;
@@ -68,10 +69,12 @@ class Block extends Obj {
     public function parse(): void
     {
         $pattern = TagRegistry::unifiedPattern();
+
         if (preg_match_all($pattern, $this->content, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 foreach (TagRegistry::all() as $definition) {
                     $tag = $definition->name;
+
                     if (isset($match[$tag]) && !empty($match[$tag][0])) {
                         $capture = $match[$tag][0];
                         // $raw = $match[26][0] ?: $match[6][0] ?: $match[3][0];
@@ -79,6 +82,7 @@ class Block extends Obj {
                         $attributes = TagRegistry::extractAttributes($tag, $match);
                         $elementClass = TagRegistry::get($tag)->class;
                         $element = new $elementClass($tag, $capture, $raw, $attributes);
+                        $this->echo($element, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
                         $element->setParent($this->owner);
                         $element->setIncludePaths($this->owner->getIncludePaths());
                         foreach($this->vars as $name => $value) {
@@ -96,9 +100,6 @@ class Block extends Obj {
 
     public function process(): void
     {
-        $original = $this->content;
-
-
         foreach ($this->elements as $element) {
             $output = '';
             $result = null;
@@ -118,10 +119,8 @@ class Block extends Obj {
                 $output = $renderer->render($element);
             }
 
-            $original = Str::replace($original, $element->getMatch(), $output);
+            $this->content = Str::replace($this->content, $element->getMatch(), $output);
         }
-
-        $this->content = $original;
     }
 
     public function isClosed(): bool

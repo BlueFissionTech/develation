@@ -8,7 +8,7 @@ use BlueFission\Parsing\Contracts;
 
 class TagRegistry {
 
-	const ROOT = '__ROOT__';
+    const ROOT = '__ROOT__';
 
     protected static array $definitions = [];
 
@@ -49,67 +49,71 @@ class TagRegistry {
     }
 
     public static function extractAttributes(string $tag, array $match): array {
-	    $attributes = [];
+        $attributes = [];
 
-	    $definition = self::get($tag);
-	    if (!$definition || empty($definition->attributes)) {
-	        return $attributes;
-	    }
+        $definition = self::get($tag);
+        if (!$definition || empty($definition->attributes)) {
+            return $attributes;
+        }
 
-	    // Raw tag body from the named capture group
-	    $raw = $match[$tag][0] ?? '';
+        // Raw tag body from the named capture group
+        $raw = $match[$tag][0] ?? '';
 
-	    // Remove outer delimiters if they exist (e.g., {#if ...}, @template(...))
-	    $raw = trim($raw);
+        // Remove outer delimiters if they exist (e.g., {#if ...}, @template(...))
+        $raw = trim($raw);
 
-	    // Extract inner expression — e.g. from {#if var="x"} or @template("main")
-	    if (preg_match('/^[{@]?#?[a-z]+\s*(?:\((.*?)\))?/i', $raw, $inner)) {
-	        $argString = $inner[1] ?? '';
+        // Extract inner expression — e.g. from {#if var="x"} or @template("main")
+        if (preg_match('/^[{@]?#?[a-z]+\s*(?:\((.*?)\))?/i', $raw, $inner)) {
+            $argString = $inner[1] ?? '';
 
-	        // If the tag uses parenthetical single-arg syntax, like @template("x")
-	        if ($argString && count($definition->attributes) === 1) {
-	            $attributes[$definition->attributes[0]] = $argString;
-	            return $attributes;
-	        }
-	    }
+            // If the tag uses parenthetical single-arg syntax, like @template("x")
+            if ($argString && count($definition->attributes) === 1) {
+                $attributes[$definition->attributes[0]] = $argString;
 
-	    // Remove tag name prefix (e.g., #if, @template) to leave only key=val attrs
-	    $clean = preg_replace('/^[{@]?#?' . preg_quote($tag, '/') . '\s*/i', '', $raw);
-	    $clean = preg_replace('/[{}]$/', '', $clean); // trailing brace
+                return $attributes;
+            }
+        }
 
-	    // Match key="value", key='value', or key=value
-	    preg_match_all('/
-	        ([a-zA-Z_][a-zA-Z0-9_-]*)     # key
-	        \s*=\s*
-	        (?:
-	            ("(.*?)")                  # double-quoted
-	            |
-	            (\'(.*?)\')                # single-quoted
-	            |
-	            ([^\s"\'}]+)             # unquoted
-	        )
-	    /x', $clean, $matches, PREG_SET_ORDER);
+        // Remove tag name prefix (e.g., #if, @template) to leave only key=val attrs
+        $clean = preg_replace('/^[{@]?#?' . preg_quote($tag, '/') . '\s*/i', '', $raw);
+        $clean = preg_replace('/[{}]$/', '', $clean); // trailing brace
 
-	    foreach ($matches as $m) {
-	        $key = $m[1];
-	    	if ($definition->attributes[0] == '*') {
-	    		$value = $m[2] ?: $m[3] ?: $m[4] ?: $m[6] ?: '';
-	            $attributes[$key] = $value;
-	            continue;
-	    	}
-	        if (in_array($key, $definition->attributes)) {
-	            $value = $m[2] ?: $m[3] ?: $m[4] ?: $m[6] ?: '';
-	            $attributes[$key] = $value;
-	        }
-	    }
+        // Match key="value", key='value', or key=value
+        preg_match_all('/
+            \{=([a-zA-Z_][a-zA-Z0-9_-]*) # matches '{=variableName' syntax, where variableName is alphanumeric
+            |([a-zA-Z_][a-zA-Z0-9_-]*)     # key
+            \s*=\s*
+            (?:
+                ("(.*?)")                  # double-quoted
+                |
+                (\'(.*?)\')                # single-quoted
+                |
+                (\[(.*?)\])                 # bracketed
+                |
+                ([^\s"\'}]+)                # unquoted
+            )
+        /x', $clean, $matches, PREG_SET_ORDER);
 
-	    // Fallback: if a single unnamed parameter was passed (and allowed)
-	    if (empty($attributes) && count($definition->attributes) === 1) {
-	        $attributes[$definition->attributes[0]] = $clean;
-	    }
+        foreach ($matches as $m) {
+            $key = $m[1] ? 'expression' : $m[2];
+            if ($definition->attributes[0] == '*') {
+                $value =  $m[1] ?: $m[3] ?: $m[4] ?: $m[6] ?: $m[7]  ?: $m[9] ?: '';
+                $attributes[$key] = $value;
+                continue;
+            }
+            if (in_array($key, $definition->attributes)) {
+                $value =  $m[1] ?: $m[3] ?: $m[4] ?: $m[6] ?: $m[7]  ?: $m[9] ?: '';
+                $attributes[$key] = $value;
+            }
+        }
 
-	    return $attributes;
-	}
+        // Fallback: if a single unnamed parameter was passed (and allowed)
+        if (empty($attributes) && count($definition->attributes) === 1) {
+            $attributes[$definition->attributes[0]] = $clean;
+        }
+
+        return $attributes;
+    }
 
     public static function registerDefaults() {
         self::register(new TagDefinition(

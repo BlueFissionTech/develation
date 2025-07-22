@@ -104,7 +104,7 @@ class Curl extends Connection implements IConfigurable
 			
 			curl_setopt($this->_connection, CURLOPT_URL, $target);
 			curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
-			if (!Val::empty($this->config('headers'))) {
+			if (!Val::isEmpty($this->config('headers'))) {
 				curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $this->config('headers'));
 			}
 

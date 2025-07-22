@@ -27,4 +27,9 @@ class LetElement extends Element implements IExecutableElement
 
         return null;
     }
+
+    public function render(): string
+    {
+    	return '';
+    }
 }
