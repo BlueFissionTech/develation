@@ -9,8 +9,10 @@ class CurrentElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
-        $var = $this->parent->getCurrent().'.'.$this->raw;
+        $var = $this->parent->getCurrent() . ($this->raw ? '.' . $this->raw : '');
+        
+        $value = $this->getNestedValue($var);
 
-        return (string) $this->getNestedValue($var);
+        return (string)$value;
     }
 }
