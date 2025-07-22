@@ -14,7 +14,7 @@ class CurrentElement extends Element implements IRenderableElement
             return '';
         }
 
-        $var = $this?->parent?->getCurrent() . ($this->raw ? '.' . $this->raw : '');
+        $var = $this?->parent->getCurrent() . ($this->raw ? '.' . $this->raw : '');
         
         $value = $this->getNestedValue($var);
 

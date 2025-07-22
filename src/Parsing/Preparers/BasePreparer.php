@@ -44,7 +44,7 @@ abstract class BasePreparer implements IElementPreparer
 		$this->supported = $supports;
 	}
 
-	public function ready($context = null): void
+	public function setContext($context = null): void
 	{
 		$this->context = $context;
 	}

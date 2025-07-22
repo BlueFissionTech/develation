@@ -187,9 +187,7 @@ class Block extends Obj {
     {
         foreach (PreparerRegistry::all() as $preparer) {
             if ($preparer->supports($element)) {
-                if (!$preparer->getData()) {
-                    $preparer->ready($this->owner);
-                }
+                $preparer->setContext($this->owner);
                 $preparer->prepare($element);
             }
         }

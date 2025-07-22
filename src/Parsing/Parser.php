@@ -10,7 +10,7 @@ use BlueFission\Behavioral\Dispatches;
 /**
  * Orchestrates loading input and initializing the parsing process
  */
-class Parser extends Dispatches {
+class Parser implements IDispatcher {
     use Dispatches {
         Dispatches::__construct as private __dispatchConstruct;
     }
