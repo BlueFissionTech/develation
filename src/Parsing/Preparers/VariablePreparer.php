@@ -17,8 +17,10 @@ class VariablePreparer extends BasePreparer
         	return;
         }
 		
-		foreach($this->data->vars as $name => $value) {
-            $element->setScopeVariable($name, $value);
-        }
+		if (is_object($this->data) && property_exists($this->data, 'vars') && is_iterable($this->data->vars)) {
+			foreach ($this->data->vars as $name => $value) {
+            	$element->setScopeVariable($name, $value);
+        	}
+		}
 	}
 }
