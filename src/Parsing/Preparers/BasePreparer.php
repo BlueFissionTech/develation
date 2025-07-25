@@ -18,21 +18,18 @@ abstract class BasePreparer implements IElementPreparer
 		}
 	}
 
-	public function supports (Element|array $elements): bool
+	public function supports (Element $element): bool
 	{
 		if (empty($this->supported)) {
 			return true;
 		}
 
-		$elements = is_array($elements) ? $elements : [$elements];
 		$passes = false;
 
-		foreach ($elements as $element) {
-			foreach ($this->supported as $type) {
-				if ($element->getTag() == $type || is_a($element, $type) || is_subclass_of($element, $type)) {
-					$passes = true;
-					break 2;
-				}
+		foreach ($this->supported as $type) {
+			if ($element->getTag() == $type || is_a($element, $type) || is_subclass_of($element, $type)) {
+				$passes = true;
+				break;
 			}
 		}
 

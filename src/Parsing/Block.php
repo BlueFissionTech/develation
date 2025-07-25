@@ -108,11 +108,10 @@ class Block extends Obj {
                 $output = $element->run($this->allVars());
             } elseif ($element instanceof IExecutableElement) {
                 $result = $executor->execute($element);
-                $output .= $renderer->render($element);
+                $output = $renderer->render($element);
             } elseif ($element instanceof IRenderableElement) {
                 $output = $renderer->render($element);
             }
-
             $this->content = Str::replace($this->content, $element->getMatch(), $output);
         }
     }
@@ -147,12 +146,19 @@ class Block extends Obj {
                 $element->setScopeVariable($name, $value);
             }
         }
+
+        // var_dump("Variable Setting:", $this->vars);
     }
 
     public function getVar(string $name): mixed
     {
         $vars = $this->field('vars');
         return $vars[$name] ?? null;
+    }
+
+    public function hasVar(string $name): bool
+    {
+        return $this->vars->hasKey($name);
     }
 
     public function unsetVar(string $name): void

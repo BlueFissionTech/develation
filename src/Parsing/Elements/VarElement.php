@@ -9,7 +9,7 @@ class VarElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
-        $name = $this->getAttribute('name');
+        $name = $this->attributes['name'] ?? '';
 
         return (string) ($this->block->getVar($name) ?? '');
     }
