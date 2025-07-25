@@ -16,6 +16,6 @@ class EventBubblePreparer extends BasePreparer
 			return;
 		}
 
-		$this->context->echo($element, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
+		$this->context->echo($element, [Event::STARTED, Event::SENT, Event::ERROR, Event::RECEIVED, Event::COMPLETE]);
 	}
 }

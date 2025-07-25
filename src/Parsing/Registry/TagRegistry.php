@@ -48,6 +48,40 @@ class TagRegistry {
         return '/' . implode('|', $parts) . '/sx';
     }
 
+    public static function tagPattern(): string {
+        return '/
+            (?<full_tag>                                        # entire tag block
+                (?<tag_open>\{[#=\$]) ?                         # open brace + type
+                (?<tag_name>[a-zA-Z_][a-zA-Z0-9_-]*)?            # tag or variable name
+                (?:\((?<function_args>[^)]*)\))?                 # optional (function args)
+                (?:\s*->\s*(?<assign_target>[a-zA-Z_][a-zA-Z0-9_-]*))? # optional -> assign
+                (?<attributes>                                   # attributes blob
+                    (?:
+                        \s+[a-zA-Z_][a-zA-Z0-9_-]*               # key
+                        \s*=\s*
+                        (?:
+                            "(?:[^"\\\\]*(?:\\\\.[^"\\\\]*)*)"   # double quoted
+                            |
+                            \'(?:[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*)\' # single quoted
+                            |
+                            \[[^\]]*\]                            # bracketed
+                            |
+                            [^\s"\'\]\}]+                         # unquoted
+                        )
+                    )*
+                )?
+                \}                                               # close of opening tag
+
+                (?<inner_content>                                # optional block content
+                    (?:
+                        .*?                                      # non-greedy content match
+                    )
+                )?
+            (\{\\\k<tag_name>\})                                 # lookahead for matching close
+            )
+        /xs';
+    }
+
     public static function extractAttributes(string $tag, array $match): array {
         $attributes = [];
 
@@ -63,7 +97,7 @@ class TagRegistry {
         $raw = trim($raw);
 
         // Extract inner expression — e.g. from {#if var="x"} or @template("main")
-        if (preg_match('/^[{@]?#?[a-z]+\s*(?:\((.*?)\))?/i', $raw, $inner)) {
+        if (preg_match('/^[{@]?\#?[a-z]+\s*(?:\((.*?)\))?/i', $raw, $inner)) {
             $argString = $inner[1] ?? '';
 
             // If the tag uses parenthetical single-arg syntax, like @template("x")
@@ -74,35 +108,61 @@ class TagRegistry {
             }
         }
 
+
         // Remove tag name prefix (e.g., #if, @template) to leave only key=val attrs
         $clean = preg_replace('/^[{@]?#?' . preg_quote($tag, '/') . '\s*/i', '', $raw);
         $clean = preg_replace('/[{}]$/', '', $clean); // trailing brace
 
+        preg_match('/
+            ^[{@]?
+            (?<tag_open>[\#=\$])\s*?                            # tag type
+            (?<tag_name>\$?[a-zA-Z_][a-zA-Z0-9_-]*)          # tag or variable
+            (?:\((?<function_args>[^)]*)\))?               # optional func args
+            (?:\s*->\s*(?<assign_target>[a-zA-Z_][a-zA-Z0-9_-]*))? # optional assignment
+            (?<raw_attributes>.*)?                          # the rest = attributes
+        /x', $raw, $meta);
+
+        $attributeStr = $meta['raw_attributes'] ?? '';
+
         // Match key="value", key='value', or key=value
         preg_match_all('/
-            \{=([a-zA-Z_][a-zA-Z0-9_-]*) # matches {=variableName syntax, where variableName is alphanumeric
-            |([a-zA-Z_][a-zA-Z0-9_-]*)     # key
+            (?<key>[a-zA-Z_][a-zA-Z0-9_-]*)              # key
             \s*=\s*
-            (?:
-                ("(.*?)")                  # double-quoted
+            (?<value>
+                (?<double_quoted>"(.*?)")                            # double-quoted
                 |
-                (\'(.*?)\')                # single-quoted
+                (?<single_quoted>\'(.*?)\')                          # single-quoted
                 |
-                (\[(.*?)\])                 # bracketed
+                (?<bracketed>\[(.*?)\])                          # bracketed
                 |
-                ([^\s"\'}]+)                # unquoted
+                (?<unquoted>[^\s"\'\]\}]+)                    # unquoted
             )
-        /x', $clean, $matches, PREG_SET_ORDER);
+        /x', $attributeStr, $matches, PREG_SET_ORDER);
+
+        $tag_name = $meta['tag_name'] ?? $tag;
+        $function_args = $meta['function_args'] ?? '';
+        $assign_target = $meta['assign_target'] ?? '';
+
+        if (isset($meta['tag_open']) && $meta['tag_open'] === '=') {
+            // If it's a variable tag, we only care about the variable name
+            $attributes['expression'] = $tag_name;
+            if ($assign_target !== '') {
+                $attributes['assign'] = $assign_target;
+            }
+            if ($function_args !== '') {
+                $attributes['params'] = $function_args;
+            }
+        }
+
+        if (isset($meta['tag_open']) && $meta['tag_open'] === '$') {
+            // If it's a variable tag, we only care about the variable name
+            $attributes['name'] = $tag_name;
+        }
 
         foreach ($matches as $m) {
-            $key = $m[1] ? 'expression' : $m[2];
-            if ($definition->attributes[0] == '*') {
-                $value =  $m[1] ?: $m[3] ?: $m[4] ?: $m[6] ?: $m[7]  ?: $m[9] ?: '';
-                $attributes[$key] = $value;
-                continue;
-            }
-            if (in_array($key, $definition->attributes)) {
-                $value =  $m[1] ?: $m[3] ?: $m[4] ?: $m[6] ?: $m[7]  ?: $m[9] ?: '';
+            $key = $m['key'];
+            if ($definition->attributes[0] == '*' || in_array($key, $definition->attributes)) {
+                $value =  $m['value'];
                 $attributes[$key] = $value;
             }
         }
@@ -143,7 +203,7 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'eval',
             pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
-            attributes: ['expression', 'assign', 'silent'],
+            attributes: ['expression', 'params', 'assign', 'silent', 'default'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\EvalElement::class
         ));

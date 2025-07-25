@@ -192,7 +192,6 @@ class Curl extends Connection implements IConfigurable
 			}
 
 			Dev::do('curl.before_execute', [$curl]);
-			
 			//execute post
 			$this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
 			$this->_result = curl_exec($curl);

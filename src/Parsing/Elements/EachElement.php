@@ -4,6 +4,7 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\ILoopElement;
+use BlueFission\Str;
 
 class EachElement extends Element implements ILoopElement
 {
@@ -38,8 +39,6 @@ class EachElement extends Element implements ILoopElement
                 $this->block->process();
                 $results[] = $this->block->content;
             }
-        } else {
-            throw new \InvalidArgumentException("`each` requires either 'items' or 'iterations'.");
         }
 
         return implode($glue, $results);

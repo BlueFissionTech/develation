@@ -10,7 +10,7 @@ class PreparerRegistry {
 
     public static function register(IElementPreparer $preparer, ?array $supports = null): void {
         if ($supports !== null) {
-            $preparer->supports($supports);
+            $preparer->setsSupported($supports);
         }
 
         self::$preparers[] = $preparer;

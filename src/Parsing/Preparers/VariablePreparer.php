@@ -13,12 +13,12 @@ class VariablePreparer extends BasePreparer
 			return;
 		}
 
-        if (!$element->isClosed()) {
+        if ($element->isClosed()) {
         	return;
         }
-		
-		if (is_object($this->context) && property_exists($this->context, 'vars') && is_iterable($this->context->vars)) {
-			foreach ($this->context->vars as $name => $value) {
+
+		if (is_object($this->context) && $this->context->getAllVariables()) {
+			foreach ($this->context->getAllVariables() as $name => $value) {
             	$element->setScopeVariable($name, $value);
         	}
 		}

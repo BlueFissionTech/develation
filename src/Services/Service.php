@@ -272,11 +272,4 @@ class Service extends Obj {
 	public function response(): ?string {
 		return $this->_response;
 	}
-	// public function dispatch( $behavior, $args = null ) {
-	// 	// echo "{$behavior}\n";
-	// 	if ( $behavior instanceof Behavior && $behavior->target == $this->instance ) {
-	// 		$behavior->target = $this;
-	// 	}
-	// 	parent::dispatch($behavior, $args);
-	// }
 }

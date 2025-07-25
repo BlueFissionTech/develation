@@ -18,9 +18,6 @@ class IfElement extends Element implements IConditionElement, IRenderableElement
                  $this->getAttribute('gte') ??
                  $this->getAttribute('lte') ?? null;
 
-        $left = $this->resolveValue($left);
-        $right = $this->resolveValue($right);
-
         $operator = match(true) {
             isset($this->attributes['not_equals']) => '!=',
             isset($this->attributes['gt']) => '>',

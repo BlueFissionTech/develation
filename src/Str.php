@@ -349,8 +349,8 @@ class Str extends Val implements IVal {
 	 *
 	 * @return IVal
 	 */
-	public function _trim(): IVal {
-		$string = trim($this->_data);
+	public function _trim($chars = " \n\r\t\v\x00"): IVal {
+		$string = trim($this->_data, $chars);
 
 		$this->alter($string);
 

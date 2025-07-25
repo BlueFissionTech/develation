@@ -3,6 +3,7 @@
 namespace BlueFission\Parsing;
 
 use BlueFission\Obj;
+use BlueFission\Str;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -25,6 +26,7 @@ class Element extends Obj {
     protected array $attributes = [];
     protected array $includePaths = [];
     protected Block $block;
+    protected $uuid;
     protected ?Element $parent = null;
 
     public function __construct(string $tag, string $match, string $raw, array $attributes = [])
@@ -36,10 +38,14 @@ class Element extends Obj {
         $this->raw = $raw;
         $this->attributes = $attributes;
 
+        if (!$this->uuid) {
+            $this->uuid = uniqid($this->getTag()."_", true);
+        }
+
         // Set the root block this element represents
         $this->block = new Block($this->raw);
         $this->block->setOwner($this);
-        $this->echo($this->block, [Event::STARTED, Event::SENT, Event::RECEIVED, Event::COMPLETE]);
+        $this->echo($this->block, [Event::STARTED, Event::SENT, Event::ERROR, Event::RECEIVED, Event::COMPLETE]);
     }
 
     public function parse(): void
@@ -52,6 +58,11 @@ class Element extends Obj {
     public function isClosed(): bool
     {
         return $this->block->isClosed();
+    }
+
+    public function hasScopeVariable(string $name): bool
+    {
+        return $this->block->hasVar($name);
     }
 
     public function setScopeVariable(string $name, mixed $value): void
@@ -87,7 +98,6 @@ class Element extends Obj {
             foreach ($this->sections as $name => $section) {
                 $this->template->addOutput($name, $section->build());
             }
-
 
             return $this->template->build();
         }
@@ -137,7 +147,9 @@ class Element extends Obj {
 
     public function getContent(): string
     {
-        return $this->block->content;
+        $content = $this->block->content;
+
+        return $content;
     }
 
     public function children(): array
@@ -154,6 +166,16 @@ class Element extends Obj {
         $value = $this->attributes[$name];
 
         return $this->resolveValue($value);
+    }
+
+    public function getAttributes(): array
+    {
+        $attributes = [];
+        foreach ($this->attributes as $key => $value) {
+            $attributes[$key] = $this->resolveValue($value);
+        }
+
+        return $attributes;
     }
 
     public function getRoot(): Element
@@ -220,4 +242,22 @@ class Element extends Obj {
 
         return $parsed;
     }
+
+    protected function resolveCastClass(string $cast): string
+    {
+        $map = [
+            'text' => \BlueFission\Str::class,
+            'number' => \BlueFission\Num::class,
+            'flag' => \BlueFission\Flag::class,
+            'value' => \BlueFission\Val::class,
+            'val' => \BlueFission\Val::class,
+            'list' => \BlueFission\Arr::class,
+            'date' => \BlueFission\Date::class,
+            'object' => \BlueFission\Obj::class,
+            'macro' => \BlueFission\Func::class,
+        ];
+
+        return $map[strtolower($cast)] ?? \BlueFission\Val::class;
+    }
+
 }
