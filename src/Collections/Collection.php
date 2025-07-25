@@ -341,7 +341,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return Collection
 	 */
 	public function filter( callable $callback ) {
-		
+
 		if ( !is_callable( $callback ) ) {
 			throw new InvalidArgumentException('Callback must be callable');
 		}
@@ -349,8 +349,8 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		$reflectionFunction = new \ReflectionFunction($callback);
 		$numberOfParameters = $reflectionFunction->getNumberOfRequiredParameters();
 
-		$filterOption = $numberOfParameters > 1 ? ARRAY_FILTER_USE_BOTH : ARRAY_FILTER_USE_KEY;
-		
+		$filterOption = $numberOfParameters > 1 ? ARRAY_FILTER_USE_BOTH : ARRAY_FILTER_USE_VALUE;
+
 		$list = array_filter( $this->contents(), $callback, $filterOption );
 		return new Collection( $list );
 	}

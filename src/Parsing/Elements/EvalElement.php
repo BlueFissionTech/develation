@@ -134,13 +134,16 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
             if ($step === '') continue;
 
             // Handle function calls or method chains
-            if (preg_match('/^(?<var>\$?[a-zA-Z_][a-zA-Z0-9_-]*)
-                (?:(?<call>(\((.*?)\))))?
-                (?:(?<push>(\[\])))?
-                (?:(?<append>(\&)))?
-                (?::(?<cast>[a-zA-Z_][a-zA-Z0-9_-]*))?
-                (?<chain>(\s*\.[a-zA-Z_][a-zA-Z0-9_-]*\((.*?)\))*)
-                \s*(?<attributes>(.*?)(\s*=\s*)?(.*?))$/xsm', $step, $m)) {
+            if (preg_match('/^
+                (?<var>\$?[a-zA-Z_][a-zA-Z0-9_-]*)        # Variable name, optionally starting with $ (if name itself is variable)
+                (?:(?<call>\((.*?)\)))?                   # Optional function call with arguments
+                (?:(?<push>\[\]))?                        # Optional array push operator ([])
+                (?:(?<append>\&))?                        # Optional append operator (&)
+                (?::(?<cast>[a-zA-Z_][a-zA-Z0-9_-]*))?    # Optional type cast (e.g., :text, :number)
+                (?<chain>(\s*\.[a-zA-Z_][a-zA-Z0-9_-]*    # Optional method chaining
+                    \((.*?)\))*)
+                \s*(?<attributes>(.*?)(\s*=\s*)?(.*?))    # Attributes or assignment (e.g., key=value)
+                $/xsm', $this->raw, $m)) {
                 $var = $m['var'];
                 $call = $m['call'];
                 $append = $m['append'] == '&';

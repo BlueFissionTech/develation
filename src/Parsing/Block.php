@@ -146,8 +146,6 @@ class Block extends Obj {
                 $element->setScopeVariable($name, $value);
             }
         }
-
-        // var_dump("Variable Setting:", $this->vars);
     }
 
     public function getVar(string $name): mixed
