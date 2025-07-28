@@ -2,16 +2,20 @@
 
 namespace BlueFission\Parsing\Registry;
 
-use BlueFission\Parsing\Contracts\IGenerator;
+use BlueFission\Parsing\Contracts\IProcessor;
 
-class GeneratorRegistry {
-    protected static ?IGenerator $generator = null;
+class ProcessorRegistor {
+    protected static array $processors = [];
 
-    public static function set(IGenerator $gen): void {
-        self::$generator = $gen;
+    public static function register(IProcessor $fn): void {
+        self::$processors[$fn->name()] = $fn;
     }
 
-    public static function get(): ?IGenerator {
-        return self::$generator;
+    public static function get(string $name): ?IProcessor {
+        return self::$processors[$name] ?? null;
+    }
+
+    public static function all(): array {
+        return self::$processors;
     }
 }

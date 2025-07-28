@@ -88,6 +88,16 @@ trait Dispatches {
 	}
 
 	/**
+	 * Returns the collection of behaviors.
+	 *
+	 * @return BehaviorCollection The collection of behaviors.
+	 */
+	public function behaviors(): BehaviorCollection
+	{
+		return $this->_behaviors;
+	}
+
+	/**
 	 * When, an alias for behavior, adds a behavior to the behavior collection and creates a callback to trigger the behavior if specified.
 	 *
 	 * @param Behavior|string $behavior The behavior to be added. Can be a string or an instance of Behavior.
@@ -110,6 +120,12 @@ trait Dispatches {
 	{
         if (!is_array($behaviors)) {
             $behaviors = [$behaviors];
+        }
+
+        if (empty($behaviors)) {
+        	$behaviors = $otherObject->behaviors()->map(function($behavior) {
+				return $behavior->name();
+			})->toArray();
         }
 
         foreach ($behaviors as $behavior) {

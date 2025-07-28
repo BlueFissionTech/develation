@@ -118,10 +118,18 @@ trait Behaves
             if (!$behavior) {
             	return $this;
             }
-            
+
             if ($behavior->target == null) {
                 $behavior->target = $this;
             }
+
+            if (empty($args)) {
+            	$args = new Meta( src: $behavior->target );
+            }
+
+	        if ($args instanceof Meta && $args->src == null) {
+	        	$args->src = $this;
+	        }
 
             if ($behavior->context == null) {
                 $behavior->context = $args;
@@ -165,27 +173,6 @@ trait Behaves
 	}
 
 	/**
-	 * Repeats another Dispatcher's selected behaviors
-	 *
-	 * @param IDispatcher $otherObject The other object to repeat the behaviors from
-	 * @param mixed $behaviors The behaviors to repeat
-	 */
-	public function echo( IDispatcher $otherObject, $behaviors ): IDispatcher
-	{
-        if (!is_array($behaviors)) {
-            $behaviors = [$behaviors];
-        }
-
-        foreach ($behaviors as $behavior) {
-            $otherObject->when($behavior, function() use ($behavior) {
-                $this->perform($behavior);
-            });
-        }
-
-        return $this;
-    }
-
-	/**
 	 * Check if the behavior can be performed.
 	 * 
 	 * @param string $behaviorName The name of the behavior.
@@ -214,6 +201,16 @@ trait Behaves
 		} else {
 			return $this->_state->last();
 		}
+	}
+
+	/**
+	 * Get the last behavior performed on the object.
+	 * 
+	 * @return mixed The last behavior performed, or null if no behaviors have been performed.
+	 */
+	public function just()
+	{
+		return $this->_history->last();
 	}
 
 	/**

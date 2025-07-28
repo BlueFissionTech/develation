@@ -43,12 +43,12 @@ class Block extends Obj {
 
     protected $_exposeValueObject = true;
     
+    public Block $block;
     public string $content = '';
     public bool $closed = false;
     public bool $active = true;
     public string $open = '{';
     public string $close = '}';
-    public Block $block;
     public array $elements = [];
     public array $refs = [];
 
@@ -78,13 +78,16 @@ class Block extends Obj {
 
                     if (isset($match[$tag]) && !empty($match[$tag][0])) {
                         $capture = $match[$tag][0];
-                        // $raw = $match[26][0] ?: $match[6][0] ?: $match[3][0];
                         $raw = end($match)[0];
                         $attributes = TagRegistry::extractAttributes($tag, $match);
                         $elementClass = TagRegistry::get($tag)->class;
                         $element = new $elementClass($tag, $capture, $raw, $attributes);
                         $this->prepareElement($element);
                         $this->elements[] = $element;
+                        $this->perform(Event::ITEM_ADDED, new Meta(
+                            src: $this,
+                            data: $element,
+                        ));
                         break;
                     }
                 }
@@ -94,6 +97,7 @@ class Block extends Obj {
 
     public function process(): void
     {
+        $this->perform(State::PROCESSING);
         foreach ($this->elements as $element) {
             $output = '';
             $result = null;
@@ -112,8 +116,11 @@ class Block extends Obj {
             } elseif ($element instanceof IRenderableElement) {
                 $output = $renderer->render($element);
             }
+
             $this->content = Str::replace($this->content, $element->getMatch(), $output);
         }
+        $this->perform(Event::PROCESSED);
+        $this->halt(State::PROCESSING);
     }
 
     public function isClosed(): bool

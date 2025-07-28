@@ -45,7 +45,7 @@ class Element extends Obj {
         // Set the root block this element represents
         $this->block = new Block($this->raw);
         $this->block->setOwner($this);
-        $this->echo($this->block, [Event::STARTED, Event::SENT, Event::ERROR, Event::RECEIVED, Event::COMPLETE]);
+        $this->echo($this->block);
     }
 
     public function parse(): void
@@ -245,19 +245,6 @@ class Element extends Obj {
 
     protected function resolveCastClass(string $cast): string
     {
-        $map = [
-            'text' => \BlueFission\Str::class,
-            'number' => \BlueFission\Num::class,
-            'flag' => \BlueFission\Flag::class,
-            'value' => \BlueFission\Val::class,
-            'val' => \BlueFission\Val::class,
-            'list' => \BlueFission\Arr::class,
-            'date' => \BlueFission\Date::class,
-            'object' => \BlueFission\Obj::class,
-            'macro' => \BlueFission\Func::class,
-        ];
-
-        return $map[strtolower($cast)] ?? \BlueFission\Val::class;
+        return DatatypeRegistry::get($cast);
     }
-
 }

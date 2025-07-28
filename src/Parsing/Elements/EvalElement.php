@@ -7,6 +7,7 @@ use BlueFission\Parsing\Block;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Parsing\Registry\GeneratorRegistry;
 use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
@@ -19,10 +20,16 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
     protected string $var;
     protected string $type;
     protected string $value = '';
+    protected $generatorDriver;
 
     public function __construct(string $tag, string $match, string $raw, array $attributes = [])
     {
         parent::__construct($tag, $match, $raw, $attributes);
+    }
+
+    public function setDriver($driver): void
+    {
+        $this->generatorDriver = $driver;
     }
 
     public function execute(): mixed
@@ -370,7 +377,13 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
 
     protected function useGenerator(string $expression): mixed
     {
-        // Very simple fallback generator
-        return "Lorem Ipsum";
+        try {
+            $generator = GeneratorRegistry::get();
+            $generator->setDriver($this->generatorDriver);
+            return $generator->generate($this);
+        }
+        catch (\Exception $e) {
+            return "[Generation Error]";
+        }
     }
 }
