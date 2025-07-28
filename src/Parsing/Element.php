@@ -4,6 +4,7 @@ namespace BlueFission\Parsing;
 
 use BlueFission\Obj;
 use BlueFission\Str;
+use BlueFission\Collections\Collection;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -22,6 +23,7 @@ class Element extends Obj {
     protected string $match;
     protected $template;
     protected array $sections = [];
+    protected array $units = [];
     protected array $macros = [];
     protected array $attributes = [];
     protected array $includePaths = [];
@@ -94,12 +96,12 @@ class Element extends Obj {
         $this->parse();
         $this->block->process();
 
-        if ($this->template) {
-            foreach ($this->sections as $name => $section) {
-                $this->template->addOutput($name, $section->build());
-            }
+        $template = (new Collection($parent->children())->filter(function($child) {
+            return $child->getTag() === 'template';
+        }))->first() ?? null;
 
-            return $this->template->build();
+        if ($template) {
+            return $template->build();
         }
 
         return $this->block->content;
@@ -125,14 +127,9 @@ class Element extends Obj {
         $this->parent = $parent;
     }
 
-    public function setTemplate(Element $template): void
+    public function addUnit(string $name, Element $unit): void
     {
-        $this->template = $template;
-    }
-
-    public function addSection(string $name, Element $section): void
-    {
-        $this->sections[$name] = $section;
+        $this->units[$name] = $unit;
     }
 
     public function addMacro(string $name, Element $macro): void
