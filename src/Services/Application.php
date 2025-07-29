@@ -162,7 +162,8 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * @var array
 	 */
 	protected $_mappingNames = [];
-	    /**
+	
+	/**
      * An array to store bound arguments.
      * @var array $_boundArguments 
      */
@@ -173,6 +174,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      * @var array $_routes 
      */
     protected $_routes = [];
+    
     /**
      * An array to store arguments.
      * @var array $_arguments 
@@ -190,19 +192,23 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      *
      * @return void
      */
-    public function __construct() 
+    public function __construct($config = [])
     {
-        $calledClass = get_called_class();
-        if (isset(self::$_instances[$calledClass])) {
-            return self::$_instances[$calledClass];
+        $name = $config['name'] ??
+        	$this->config['name'] ??
+        	get_called_class();
+
+        if (isset(self::$_instances[$name])) {
+            return self::$_instances[$name];
         }
 
         parent::__construct();
         $this->__tConstruct(); // Call trait constructor
+        $this->config($config);
         $this->_services = new Collection();
-        $this->_broadcastedEvents[$this->name()] = [];
+        $this->_broadcastedEvents[$name] = [];
 
-        self::$_instances[$calledClass] = $this;
+        self::$_instances[$name] = $this;
     }
 
     /**
@@ -210,9 +216,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      *
      * @return object An instance of the current class.
      */
-    static function getInstance()
+    static function getInstance($name = null)
     {
-        $calledClass = get_called_class();
+        $calledClass = $name ?? get_called_class();
         if (!isset(self::$_instances[$calledClass])) {
             self::$_instances[$calledClass] = new static();
         }
@@ -256,7 +262,6 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      */
 	public function args() {
 		global $argv, $argc;
-
 
 		if ( $argc > 1 ) {
 			$this->_arguments[$this->_parameters[0]] = 'console';

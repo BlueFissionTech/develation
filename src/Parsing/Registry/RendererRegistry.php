@@ -22,5 +22,6 @@ class RendererRegistry {
 
     public static function registerDefaults() {
         self::register('*', new Renderers\DefaultRenderer());
+        self::register('template', new Renderers\TemplateRenderer());
     }
 }

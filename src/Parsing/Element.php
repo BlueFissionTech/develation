@@ -96,14 +96,6 @@ class Element extends Obj {
         $this->parse();
         $this->block->process();
 
-        $template = (new Collection($parent->children())->filter(function($child) {
-            return $child->getTag() === 'template';
-        }))->first() ?? null;
-
-        if ($template) {
-            return $template->build();
-        }
-
         return $this->block->content;
     }
 
@@ -147,6 +139,11 @@ class Element extends Obj {
         $content = $this->block->content;
 
         return $content;
+    }
+
+    public function setContent($content): void
+    {
+        $this->block->content = $content;
     }
 
     public function children(): array

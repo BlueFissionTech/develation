@@ -37,7 +37,7 @@ trait Programmable
 	 * 
 	 * Calls the parent constructor and initializes the `$_tasks` array.
 	 */
-	public function __construct( )
+	public function __construct()
 	{
 		$this->__configConstruct();
 		$this->_tasks = new Arr();
