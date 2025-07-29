@@ -22,8 +22,6 @@ class Element extends Obj {
     protected string $raw;
     protected string $match;
     protected $template;
-    protected array $sections = [];
-    protected array $units = [];
     protected array $macros = [];
     protected array $attributes = [];
     protected array $includePaths = [];
@@ -117,11 +115,6 @@ class Element extends Obj {
     public function setParent(Element $parent): void
     {
         $this->parent = $parent;
-    }
-
-    public function addUnit(string $name, Element $unit): void
-    {
-        $this->units[$name] = $unit;
     }
 
     public function addMacro(string $name, Element $macro): void
