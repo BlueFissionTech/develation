@@ -57,6 +57,10 @@ class Event extends Behavior
     const ACTION_PERFORMED = 'OnActionPerformed';
     const ACTION_FAILED = 'OnActionFailed';
 
+    // Changes and Mutations
+    const ITEM_ADDED = "OnItemAdded";
+    const ITEM_REMOVED = "OnItemRemoved";
+
 	/**
 	 * Constructor for the Event class
 	 *

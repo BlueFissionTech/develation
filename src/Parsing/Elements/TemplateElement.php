@@ -9,6 +9,7 @@ use BlueFission\Data\FileSystem;
 
 class TemplateElement extends Element implements IRenderableElement
 {
+    protected array $sections = [];
     protected array $outputs = [];
 
     public function render(): string
@@ -32,6 +33,11 @@ class TemplateElement extends Element implements IRenderableElement
         $this->block->setContent($this->raw);
 
         return '';
+    }
+
+    public function addSection(string $name, Element $section): void
+    {
+        $this->sections[$name] = $section;
     }
 
     public function addOutput(string $name, string $output): void

@@ -4,10 +4,12 @@ namespace BlueFission\Parsing;
 
 use BlueFission\Obj;
 use BlueFission\Str;
+use BlueFission\Collections\Collection;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Parsing\Registry\TagRegistry;
+use BlueFission\Parsing\Registry\DatatypeRegistry;
 
 /**
  * Represents a matched element in the template
@@ -21,7 +23,6 @@ class Element extends Obj {
     protected string $raw;
     protected string $match;
     protected $template;
-    protected array $sections = [];
     protected array $macros = [];
     protected array $attributes = [];
     protected array $includePaths = [];
@@ -45,7 +46,7 @@ class Element extends Obj {
         // Set the root block this element represents
         $this->block = new Block($this->raw);
         $this->block->setOwner($this);
-        $this->echo($this->block, [Event::STARTED, Event::SENT, Event::ERROR, Event::RECEIVED, Event::COMPLETE]);
+        $this->echo($this->block);
     }
 
     public function parse(): void
@@ -94,14 +95,6 @@ class Element extends Obj {
         $this->parse();
         $this->block->process();
 
-        if ($this->template) {
-            foreach ($this->sections as $name => $section) {
-                $this->template->addOutput($name, $section->build());
-            }
-
-            return $this->template->build();
-        }
-
         return $this->block->content;
     }
 
@@ -125,16 +118,6 @@ class Element extends Obj {
         $this->parent = $parent;
     }
 
-    public function setTemplate(Element $template): void
-    {
-        $this->template = $template;
-    }
-
-    public function addSection(string $name, Element $section): void
-    {
-        $this->sections[$name] = $section;
-    }
-
     public function addMacro(string $name, Element $macro): void
     {
        $this->macro[$name] = $macro;
@@ -150,6 +133,11 @@ class Element extends Obj {
         $content = $this->block->content;
 
         return $content;
+    }
+
+    public function setContent($content): void
+    {
+        $this->block->content = $content;
     }
 
     public function children(): array
@@ -245,19 +233,6 @@ class Element extends Obj {
 
     protected function resolveCastClass(string $cast): string
     {
-        $map = [
-            'text' => \BlueFission\Str::class,
-            'number' => \BlueFission\Num::class,
-            'flag' => \BlueFission\Flag::class,
-            'value' => \BlueFission\Val::class,
-            'val' => \BlueFission\Val::class,
-            'list' => \BlueFission\Arr::class,
-            'date' => \BlueFission\Date::class,
-            'object' => \BlueFission\Obj::class,
-            'macro' => \BlueFission\Func::class,
-        ];
-
-        return $map[strtolower($cast)] ?? \BlueFission\Val::class;
+        return DatatypeRegistry::get($cast);
     }
-
 }

@@ -6,6 +6,7 @@ use BlueFission\IObj;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Func;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -36,7 +37,7 @@ trait Programmable
 	 * 
 	 * Calls the parent constructor and initializes the `$_tasks` array.
 	 */
-	public function __construct( )
+	public function __construct()
 	{
 		$this->__configConstruct();
 		$this->_tasks = new Arr();
@@ -114,7 +115,11 @@ trait Programmable
 			&& !$this->_tasks->hasKey($task)
 			&& $this->is( State::DRAFT ) )
 		{
-			$this->_tasks[$task] = $function->bindTo($this, $this);
+			$function = ($function instanceof Function)
+				? $function
+				: new Func($function);
+
+			$this->_tasks[$task] = $function->bind($this, $this);
 
 			if ($behavior)
 			{
