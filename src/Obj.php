@@ -154,6 +154,16 @@ class Obj implements IObj, IDispatcher, IBehavioral
     }
 
     /**
+     * This method is used to get the data.
+     *
+     * @return mixed
+     */
+    public function data(): mixed
+    {
+        return $this->_data->val();
+    }
+
+    /**
      * Assign values to fields in this object.
      *
      * @param  object|array  $data  The data to import into this object.
