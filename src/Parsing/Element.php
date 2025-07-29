@@ -9,6 +9,7 @@ use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Parsing\Registry\TagRegistry;
+use BlueFission\Parsing\Registry\DatatypeRegistry;
 
 /**
  * Represents a matched element in the template

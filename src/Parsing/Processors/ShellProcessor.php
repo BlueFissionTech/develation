@@ -1,6 +1,6 @@
 <?php
 
-namespace BlueFission\Parsing\Renderers;
+namespace BlueFission\Parsing\Processors;
 
 use BlueFission\Parsing\Contracts\IProcessor;
 use BlueFission\Parsing\Element;
@@ -11,7 +11,8 @@ class ShellProcessor implements IProcessor {
         if (!is_string($content)) {
             throw new \InvalidArgumentException('Content must be a string');
         }
-
-        (new System)->run($content);
+        
+        $result = (new System)->run($content);
+        return is_string($result) ? $result : 'Execution completed successfully';
     }
 }

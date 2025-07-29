@@ -4,7 +4,7 @@ namespace BlueFission\Parsing\Registry;
 
 use BlueFission\Parsing\Contracts\IProcessor;
 
-class ProcessorRegistor {
+class ProcessorRegistry {
     protected static array $processors = [];
 
     public static function register(IProcessor $fn): void {

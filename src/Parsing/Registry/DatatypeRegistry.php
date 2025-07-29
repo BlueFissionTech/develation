@@ -18,7 +18,7 @@ class DatatypeRegistry {
     }
 
     public static function get(string $name): ?IVal {
-        return self::$datatypes[$name] ?? \BlueFission\Val::class;;
+        return self::$datatypes[$name] ?? \BlueFission\Val::class;
     }
 
     public static function all(): array {

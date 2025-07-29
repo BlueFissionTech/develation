@@ -3,6 +3,7 @@
 namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
+use BlueFission\Collections\Collection;
 use BlueFission\Parsing\Elements\TemplateElement;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 
@@ -19,7 +20,7 @@ class SectionElement extends Element implements IRenderableElement
             while ($parent && $template === null) {
                 $templates = (new Collection($parent->children())->filter(function($child) {
                     return $child instanceof TemplateElement;
-                }))->toArray();            
+                }))->toArray();
 
                 if (count($templates)) {
                     $template = end($templates);
@@ -30,7 +31,7 @@ class SectionElement extends Element implements IRenderableElement
         }
 
         if ($template) {
-            $templates->addSection($sectionName, $this);
+            $template->addSection($sectionName, $this);
         }
         
         return '';
