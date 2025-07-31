@@ -10,14 +10,14 @@ class DatatypeRegistry {
     protected static array $datatypes = [];
 
     public static function register(string $name, string $class): void {
-        if (!is_a($class, IVal::class) || !is_a($class, IObj::class)) {
+        if (!class_implements($class, IVal::class) || !class_implements($class, IObj::class)) {
             throw new \InvalidArgumentException("Class {$class} must implement ".IVal::class." or ".IObj::class);
         }
 
         self::$datatypes[$name] = $class;
     }
 
-    public static function get(string $name): ?IVal {
+    public static function get(string $name): ?string {
         return self::$datatypes[$name] ?? \BlueFission\Val::class;
     }
 
@@ -25,7 +25,7 @@ class DatatypeRegistry {
         return self::$datatypes;
     }
 
-    public static function defaults(): void
+    public static function registerDefaults(): void
     {
         $map = [
             'text' => \BlueFission\Str::class,

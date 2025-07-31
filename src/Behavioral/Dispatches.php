@@ -116,9 +116,9 @@ trait Dispatches {
 	 * @param IDispatcher $otherObject The other object to repeat the behaviors from
 	 * @param mixed $behaviors The behaviors to repeat
 	 */
-	public function echo( IDispatcher $otherObject, $behaviors ): IDispatcher
+	public function echo( IDispatcher $otherObject, $behaviors = null ): IDispatcher
 	{
-        if (!is_array($behaviors)) {
+        if ($behaviors && !is_array($behaviors)) {
             $behaviors = [$behaviors];
         }
 

@@ -148,7 +148,7 @@ trait Behaves
                 $this->dispatch( Event::STATE_CHANGED );
             }
 
-            if (count($args) == 1 && $args[0] instanceof Meta ) {
+            if (is_array($args) && count($args) == 1 && $args[0] instanceof Meta ) {
             	$args = $args[0];
             }
 
