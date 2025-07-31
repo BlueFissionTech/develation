@@ -361,7 +361,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
             return [];
 
         foreach ($matches as $match) {
-            if (!isset($match['param']) || empty($match['param'])) {
+            if (!isset($match['param']) || trim($match['param']) === '') {
                 continue;
             }
             $args[] = trim($this->resolveValue($match['param']));
