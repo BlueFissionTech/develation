@@ -396,7 +396,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
             return $generator->generate($this);
         }
         catch (\Exception $e) {
-            return "[Generation Error]". $e->getMessage();
+            return "[Generation Error]";
         }
     }
 }
