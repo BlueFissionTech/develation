@@ -49,6 +49,11 @@ class Element extends Obj {
         $this->echo($this->block);
     }
 
+    public function getUuid(): string
+    {
+        return $this->uuid;
+    }
+
     public function parse(): void
     {
         if ( $this->block->active ) {

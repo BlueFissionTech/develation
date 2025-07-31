@@ -25,6 +25,10 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
     public function __construct(string $tag, string $match, string $raw, array $attributes = [])
     {
         parent::__construct($tag, $match, $raw, $attributes);
+        $generator = GeneratorRegistry::get();
+        if ($generator) {
+            $this->echo($generator);
+        }
     }
 
     public function setDriver($driver): void
@@ -46,13 +50,19 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
         $append = false;
         $push = false;
 
-        if (preg_match('/^(?<var>\$?[a-zA-Z_][a-zA-Z0-9_-]*)
-                (?:(?<call>(\((.*?)\))))?
-                (?:(?<push>(\[\])))?
-                (?:(?<append>(\&)))?
-                (?::(?<cast>[a-zA-Z_][a-zA-Z0-9_-]*))?
-                (?<chain>(\s*\.[a-zA-Z_][a-zA-Z0-9_-]*\((.*?)\))*)
-                \s*(?<attributes>(.*?)(\s*=\s*)?(.*?))$/xsm', $this->raw, $m)) {
+        if (preg_match('/^
+                (?<var>\$?[a-zA-Z_][a-zA-Z0-9_-]*)        # Variable name, optionally starting with $ (if name itself is variable)
+                (?:(?<call>\((.*?)\)))?                   # Optional function call with arguments
+                (?:(?<push>\[\]))?                        # Optional array push operator ([])
+                (?:(?<append>\&))?                        # Optional append operator (&)
+                (?::(?<cast>[a-zA-Z_][a-zA-Z0-9_-]*))?    # Optional type cast (e.g., :text, :number)
+                (?:\s*->\s*
+                    (\$\.
+                        (?<chain>([a-zA-Z_][a-zA-Z0-9_-]*)\(["\']?(.*?)["\']?\)*)
+                    )
+                )?
+                \s*(?<attributes>(([a-zA-Z_][a-zA-Z0-9_-]*)\s?=\s?(.*?)))?    # Attributes or assignment (e.g., key=value)
+                $/xsm', $this->raw, $m)) {
             $this->name = $m['var'] ?? $this->name;
             $this->type = $m['cast'] ?? $this->type;
             $append = isset($m['append']) && $m['append'] === '&';
@@ -73,7 +83,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
             $value = $this->getAttribute('default');
         }
 
-        $this->value = $value;
+        $this->value = $value ?? '';
 
         if ($append) {
             if (!$this->hasScopeVariable($this->var)) {
@@ -131,6 +141,8 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
 
         $additional = $this->parseAdditional();
         $options = array_merge($this->attributes, $additional);
+        $append = false;
+        $push = false;
 
         $value = null;
         $first = true;
@@ -147,14 +159,17 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
                 (?:(?<push>\[\]))?                        # Optional array push operator ([])
                 (?:(?<append>\&))?                        # Optional append operator (&)
                 (?::(?<cast>[a-zA-Z_][a-zA-Z0-9_-]*))?    # Optional type cast (e.g., :text, :number)
-                (?<chain>(\s*\.[a-zA-Z_][a-zA-Z0-9_-]*    # Optional method chaining
-                    \((.*?)\))*)
-                \s*(?<attributes>(.*?)(\s*=\s*)?(.*?))    # Attributes or assignment (e.g., key=value)
+                (?:\s*->\s*
+                    (\$\.
+                        (?<chain>([a-zA-Z_][a-zA-Z0-9_-]*)\(["\']?(.*?)["\']?\)*)
+                    )
+                )?
+                \s*(?<attributes>(([a-zA-Z_][a-zA-Z0-9_-]*)\s?=\s?(.*?)))?    # Attributes or assignment (e.g., key=value)
                 $/xsm', $this->raw, $m)) {
                 $var = $m['var'];
-                $call = $m['call'];
-                $append = $m['append'] == '&';
-                $push = $m['push'] == '[]';
+                $call = $m['call'] ?? '';
+                $append = isset($m['append']) && $m['append'] == '&';
+                $push = isset($m['push']) && $m['push'] == '[]';
                 $cast = $m['cast'] ?? 'val';
                 $chain = $m['chain'] ?? '';
 
@@ -174,8 +189,8 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
                         $paramsStr = trim($m['call'], '() ');
                         $this->params = $this->parseParameters($paramsStr ?? '');
                         $value = $this->invokeTool($var);
-                    } elseif (isset($m['chain']) && !empty($m['chain']) && $m['chain'] != "") {
-                        $value = $this->resolveValue($var);
+                    // } elseif (isset($m['chain']) && !empty($m['chain']) && $m['chain'] != "") {
+                    //     $value = $this->resolveValue($var);
                     } elseif (isset($options['use']) && !empty($options['use'])) {
                         $this->params = $this->parseParameters($options['params'] ?? '');
                         $value = $this->invokeTool();
@@ -348,7 +363,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
             return [];
 
         foreach ($matches as $match) {
-            if (!isset($match['param'])) {
+            if (!isset($match['param']) || empty($match['param'])) {
                 continue;
             }
             $args[] = trim($this->resolveValue($match['param']));
@@ -383,7 +398,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
             return $generator->generate($this);
         }
         catch (\Exception $e) {
-            return "[Generation Error]";
+            return "[Generation Error]". $e->getMessage();
         }
     }
 }

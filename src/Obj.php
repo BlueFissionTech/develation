@@ -160,7 +160,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function data(): mixed
     {
-        return $this->_data->val();
+        if ($this->_data instanceof IVal) {
+            return $this->_data->val();
+        }
+
+        return $this->_data ?? [];
     }
 
     /**
