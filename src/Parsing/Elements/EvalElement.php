@@ -189,8 +189,6 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
                         $paramsStr = trim($m['call'], '() ');
                         $this->params = $this->parseParameters($paramsStr ?? '');
                         $value = $this->invokeTool($var);
-                    // } elseif (isset($m['chain']) && !empty($m['chain']) && $m['chain'] != "") {
-                    //     $value = $this->resolveValue($var);
                     } elseif (isset($options['use']) && !empty($options['use'])) {
                         $this->params = $this->parseParameters($options['params'] ?? '');
                         $value = $this->invokeTool();
