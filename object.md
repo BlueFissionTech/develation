@@ -279,3 +279,145 @@ $obj = new Person();
 $obj->name = 'Jane Doe'; // Outputs: My values have changed
 ```
 
+# How to Use the Obj Class in an E-Commerce Store
+
+Think of the `Obj` class in BlueFission like a smart product box in your store.
+
+Instead of manually writing rules, validations, or formats for every product field (like price, stock, or name), the `Obj` class lets you define those things in one place — and reuse them safely everywhere in your store.
+
+Let’s go step by step through an e-commerce use case:
+
+## Step 1: Define a Product Blueprint
+
+In a real online store, every product has:
+
+- A name (text)  
+- A price (number)  
+- Inventory count (number)  
+
+We can use `Obj` to define a reusable product "template" with fields and their types.
+
+```php
+class Product extends \BlueFission\Obj {
+    protected $_data = [
+        'name' => null,
+        'price' => null,
+        'in_stock' => null,
+    ];
+
+    protected $_types = [
+        'name' => \BlueFission\DataTypes::STRING,
+        'price' => \BlueFission\DataTypes::NUMBER,
+        'in_stock' => \BlueFission\DataTypes::INTEGER,
+    ];
+
+    protected $_lockDataType = true;
+    protected $_exposeValueObject = true;
+}
+```
+
+### What this does:
+
+- `_data` sets the fields every product will have.  
+- `_types` ensures each field behaves like it should (e.g., price must be a number).  
+- `_lockDataType = true` prevents people from changing the field type later.  
+- `_exposeValueObject = true` lets you run methods directly on a field like `$product->name->capitalize()`.
+
+## Step 2: Create a Product and Set Its Info
+
+Now that we have a blueprint, we can create actual products.
+
+```php
+$product = new Product();
+
+$product->name = 'wireless mouse';
+$product->price = 29.99;
+$product->in_stock = 50;
+```
+
+### What's happening:
+
+Even though these look like normal variables, each field is actually a smart value — it remembers its type, supports events, and can be extended.
+
+## Step 3: Format or Transform a Field
+
+Since we said `name` is a string and exposed it as a value object, we can now do this:
+
+```php
+$product->name->capitalize();
+```
+
+This updates the product name from "wireless mouse" to "Wireless mouse".
+
+You can also create your own helper functions and "slot" them in for reuse.
+
+## Step 4: Add a Validation Rule (Constraint)
+
+Let’s say we don’t want anyone to set `price` to something that isn’t a number.
+
+```php
+$product->field('price')->constraint(function ($value) {
+    if (!is_numeric($value)) {
+        throw new InvalidArgumentException("Price must be numeric.");
+    }
+});
+```
+
+```php
+$product->price = 100;   // OK
+$product->price = 'free'; // Throws error
+```
+
+### Why this matters:
+
+It protects your data and avoids weird bugs from people passing the wrong thing into your objects.
+
+## Step 5: Trigger Events When Something Changes
+
+What if you want to notify the system when stock changes?
+
+You can define a behavior (like a custom event):
+
+```php
+use BlueFission\Behavioral\Behaviors\Meta;
+
+$product->behavior('stockUpdated', function($behavior, Meta $meta) {
+    echo "Stock was updated to: {$meta->data}";
+});
+
+$product->in_stock = 40;
+$product->dispatch('stockUpdated', new Meta(data: 40));
+```
+
+### This is powerful:
+
+You can connect changes in data to actions (like alerts, logs, emails, etc.).
+
+## Step 6: Bulk Update and Export to JSON
+
+You can also bulk update a product using an array:
+
+```php
+$product->assign([
+    'name' => 'gaming keyboard',
+    'price' => 79.99,
+    'in_stock' => 20,
+]);
+
+echo $product->toJson();
+```
+
+### This is great:
+
+Especially when pulling data from a database or an API and need to quickly populate the product.
+
+## Summary: Why Use Obj for Products?
+
+If you run an e-commerce site, `Obj` helps you:
+
+- Define your product structure once and reuse it  
+- Validate price, stock, and fields safely  
+- Add logic or formatting directly to fields  
+- Use events to react to changes (like stock alerts)  
+- Export to arrays or JSON for APIs or frontend
+
