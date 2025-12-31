@@ -35,7 +35,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
 
     public function setDriver($driver): void
     {
-        $this->evalutator->setDriver($driver);
+        $this->evaluator->setDriver($driver);
     }
 
     public function execute(): mixed
