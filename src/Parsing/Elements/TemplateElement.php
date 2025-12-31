@@ -29,13 +29,11 @@ class TemplateElement extends Element implements IRenderableElement
 
     public function addOutput(string $name, string $output): void
     {
-        echo "addOutput $name\n";
         $this->outputs[$name] = $output;
     }
 
     public function findOutput(string $name): string
     {
-        echo "findOutput $name\n";
         return $this->outputs[$name] ?? '';
     }
 

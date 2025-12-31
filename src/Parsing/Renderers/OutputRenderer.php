@@ -11,11 +11,7 @@ class OutputRenderer implements IElementRenderer {
 
         if (!$template) return '';
 
-        echo "Output\n";
-
         $output = $element->render();
-
-        // $element->getParent()->addOutput($element->getAttribute('name'), $output);
 
         return $output;
     }

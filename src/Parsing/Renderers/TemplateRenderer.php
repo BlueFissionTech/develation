@@ -9,8 +9,6 @@ class TemplateRenderer implements IElementRenderer {
     public function render(Element $element): string {
         $content = $element->build();
 
-        echo "Template\n";
-
         $element->getParent()?->setContent($content);
 
         return '';
