@@ -10,6 +10,7 @@ class OutputElement extends Element implements IRenderableElement
     public function render(): string
     {
         $name = $this->getAttribute('name');
+        // Pull the rendered section output captured earlier.
         $output = $this->parent->findOutput($name);
 
         $this->setContent($output);

@@ -11,6 +11,7 @@ class OutputRenderer implements IElementRenderer {
 
         if (!$template) return '';
 
+        // Output elements just surface already-captured output.
         $output = $element->render();
 
         return $output;

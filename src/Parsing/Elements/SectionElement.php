@@ -30,6 +30,7 @@ class SectionElement extends Element implements IRenderableElement
     {
         if ($this->template) return $this->template;
 
+        // Walk ancestors to find the nearest template context.
         $parent = $this->getParent();
         $template = null;
         $templates = [];
@@ -60,6 +61,7 @@ class SectionElement extends Element implements IRenderableElement
             $template = $this->getTemplate();
 
             if ($template) {
+                // Register the section so templates can map outputs later.
                 $template->addSection($sectionName, $this);
             }
         }

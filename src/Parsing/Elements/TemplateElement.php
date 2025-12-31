@@ -43,6 +43,7 @@ class TemplateElement extends Element implements IRenderableElement
 
         if (!$templatePath) return '';
 
+        // Register this template on the parent; actual output is deferred to later passes.
         $this->parent->setTemplate($this);
 
         $directory = $this->includePaths['templates'] ??
@@ -57,6 +58,7 @@ class TemplateElement extends Element implements IRenderableElement
 
         $this->block->setContent($this->raw);
 
+        // Defer output so post-processing can evaluate sections and outputs.
         return '';//$this->raw;
     }
 

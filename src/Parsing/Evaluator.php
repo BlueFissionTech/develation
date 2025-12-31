@@ -53,6 +53,7 @@ class Evaluator implements IDispatcher
 
     public function evaluate(string $expression = ''): mixed
     {
+        // Parse assignment/cast/push/append flags, then resolve and store the result.
         $this->expression = $expression;
         $this->var = '';
         $this->type = 'val'; // Default type
@@ -117,6 +118,7 @@ class Evaluator implements IDispatcher
         $expression = ltrim($expression, '= ');
         $steps = preg_split('/->/', $expression);
 
+        // Merge element attributes with inline call options so extensions can override behavior.
         $additional = $this->parseAdditional();
         $options = array_merge($this->element->getAttributes(), $additional);
         $append = false;
@@ -130,7 +132,7 @@ class Evaluator implements IDispatcher
 
             if ($step === '') continue;
 
-            // Handle function calls or method chains
+            // Handle function calls or method chains across the pipeline.
             if ($this->match($this->expression, $m)) {
                 $var = $m['var'] ?: $m['assignment'] ?? '';
                 $call = $m['call'] ?? '';
@@ -157,6 +159,7 @@ class Evaluator implements IDispatcher
 
                     if (isset($call) && !empty($call) && $call != "") {
                         
+                        // Split chained calls while keeping argument groups.
                         preg_match_all('/((?<call>[a-zA-Z_][a-zA-Z0-9_-]*(\((?<arguments>[^)]*)\))?))/', $call, $callMatch);
 
                         $callChain = $callMatch['call'] ?? [];
@@ -174,8 +177,10 @@ class Evaluator implements IDispatcher
                                 continue;
                             }
 
+                            // Standard registry enables predefined call targets without user lookup.
                             $result = StandardRegistry::get($result);
                         } elseif ($call != '') {
+                            // Executable element tags run for side effects (no direct output here).
                             $function = preg_replace('/\([^\)]*\)/', '', $call);
                             $tag = TagRegistry::get($function);
                             if ($tag && is_subclass_of($tag->class, IExecutableElement::class) ) {
@@ -191,6 +196,7 @@ class Evaluator implements IDispatcher
                             continue;
                         }
 
+                        // Continue method/handler chaining on the prior result.
                         for ($i = 0; $i < count($callChain); $i++) {
                             $part = $callChain[$i];
                             $args = $argChain[$i] ?? '';
@@ -213,7 +219,7 @@ class Evaluator implements IDispatcher
                     }
                 }
 
-                // Cast value
+                // Cast value into an expected type wrapper for chainable methods.
                 $castClass = $this->element->resolveCastClass($cast);
                 if (!class_exists($castClass)) {
                     throw new \Exception("Cast type '{$cast}' is not supported.");
@@ -221,7 +227,7 @@ class Evaluator implements IDispatcher
 
                 $obj = $castClass::make($value);
 
-                // Apply method chain
+                // Apply method chain (dot calls) on the cast object.
                 if (preg_match_all('/\.([a-zA-Z_][a-zA-Z0-9_-]*)\((.*?)\)/', $chain, $methods, PREG_SET_ORDER)) {
                     foreach ($methods as $method) {
                         $methodName = $method[1];
@@ -291,7 +297,7 @@ class Evaluator implements IDispatcher
                     throw new \Exception("Function/tool '{$tool}' not found.");
                 }
             } else {
-                // treat as final assignment
+                // Treat as final assignment or terminal variable name.
                 $this->var = trim($step);
                 if ($append) {
                     if (!$this->element->hasScopeVariable($this->var)) {
@@ -389,6 +395,7 @@ class Evaluator implements IDispatcher
 
     protected function parseParameters(string $params): array
     {
+        // Parse loosely-typed arguments; resolved values can be vars, strings, or bracketed values.
         $pattern = '/(?:
             (?<param>
                 "(.*?)"   # double quoted
@@ -422,6 +429,7 @@ class Evaluator implements IDispatcher
 
     protected function invokeTool( $name = null ): mixed
     {
+        // Allow tag or attribute-based tool invocation with optional assignment.
         [$function, $params, $assign] = array_values($this->parseAdditional());
 
         $function = $name ?? $this->element->resolveValue($function);
@@ -440,6 +448,7 @@ class Evaluator implements IDispatcher
 
     protected function useGenerator(string $expression): mixed
     {
+        // Generators are used when a variable is a content-producing tag.
         try {
             $generator = GeneratorRegistry::get();
             $generator->setDriver($this->generatorDriver);
@@ -452,6 +461,7 @@ class Evaluator implements IDispatcher
 
     protected function call($classOrObject, $method, $args = []): mixed
     {
+        // Handle both class static calls and instance method calls.
         if (is_string($classOrObject)) {
             if (!class_exists($classOrObject)) {
                 throw new \Exception("Class '{$classOrObject}' does not exist.");

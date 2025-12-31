@@ -69,15 +69,15 @@ class Func extends Val implements IVal {
 	    return $this;
 	}
 
-	public function body(callable|string $logic): self
-	{
-	    if (is_callable($logic)) {
-	        $this->_data = \Closure::fromCallable($logic);
-	    } elseif (is_string($logic)) {
-	        // Create closure from string-based body using eval
-	        $paramList = implode(', ', array_map(fn($p) => $p['name'], $this->_signature));
-	        $return = $this->_returnType ? ": {$this->_returnType}" : '';
-	        $code = "return function($paramList)$return { $logic };";
+    public function body(callable|string $logic): self
+    {
+        if (is_callable($logic)) {
+            $this->_data = \Closure::fromCallable($logic);
+        } elseif (is_string($logic)) {
+            // Create closure from string-based body using eval (only for trusted input).
+            $paramList = implode(', ', array_map(fn($p) => $p['name'], $this->_signature));
+            $return = $this->_returnType ? ": {$this->_returnType}" : '';
+            $code = "return function($paramList)$return { $logic };";
 
 	        $this->_data = eval($code);
 	    }

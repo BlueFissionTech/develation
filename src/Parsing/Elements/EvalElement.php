@@ -40,6 +40,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
 
     public function execute(): mixed
     {
+        // Evaluation here is side-effect driven; extensions control output behavior.
         $this->name = $this->attributes['expression'];
         if (strpos($this->name, ':')) {
             $parts = explode(':', $this->name, 2);

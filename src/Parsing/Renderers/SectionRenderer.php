@@ -11,6 +11,7 @@ class SectionRenderer implements IElementRenderer {
 
         if (!$template) return '';
 
+        // Render the section and register its output for later insertion.
         $output = $element->build();
 
         $element->getParent()->getTemplate()->addOutput($element->getAttribute('name'), $output);
