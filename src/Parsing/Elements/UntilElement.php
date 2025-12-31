@@ -30,4 +30,15 @@ class UntilElement extends Element implements ILoopElement
 
         return $result;
     }
+
+    public function getDescription(): string
+    {
+        $validator = $this->getAttribute('validator');
+
+        $descriptionString = sprintf('Re-generate the content of this element until it is valid against `%s`', $validator);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

@@ -11,4 +11,16 @@ class CommentElement extends Element implements IRenderableElement
     {
         return '';
     }
+
+    public function getDescription(): string
+    {
+        $descriptionString = sprintf(
+            'Comment Element: %s',
+            Str::truncate($this->getRaw(), 30)
+        );
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

@@ -15,4 +15,15 @@ class AwaitElement extends Element implements IExecutableElement
         }
         return null;
     }
+
+    public function getDescription(): string
+    {
+        $descriptionString = sprintf(
+            'Awaits the occurrence of a specific event before proceeding. Use the "event" attribute to specify the event name to wait for.'
+        );
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

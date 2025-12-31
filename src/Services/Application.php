@@ -218,12 +218,16 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      */
     static function getInstance($name = null)
     {
-        $calledClass = $name ?? get_called_class();
-        if (!isset(self::$_instances[$calledClass])) {
-            self::$_instances[$calledClass] = new static();
+        $appName = $name ?? get_called_class();
+        if (!isset(self::$_instances[$appName])) {
+        	$config = [];
+        	if ($name) {
+        		$config['name'] = $name;
+        	}
+            self::$_instances[$appName] = new static($config);
         }
 
-        return self::$_instances[$calledClass];
+        return self::$_instances[$appName];
     }
 
     /**

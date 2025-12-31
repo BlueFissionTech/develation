@@ -1,4 +1,4 @@
-<?php
+            <?php
 
 namespace BlueFission\Async;
 
@@ -35,7 +35,7 @@ class WebSocketServer implements MessageComponentInterface {
         // The connection is closed, remove it
         $this->clients->detach($conn);
         echo "Connection {$conn->resourceId} has disconnected\n";
-    }
+    }               
 
     public function onError(ConnectionInterface $conn, \Exception $e) {
         echo "An error has occurred: {$e->getMessage()}\n";

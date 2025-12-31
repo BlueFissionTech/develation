@@ -269,7 +269,7 @@ class HTTP {
 	static function redirect($href = '', $request_r = [], $snapshot = '') {
 	  $href = HTTP::href($href);
 	  $request = ($request_r) ? http_build_query($request_r) : "";
-	  $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+	  $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? "https://" : "http://";
 	  $href = $protocol . str_replace(['http://', 'https://'], '', $href) . (($request != '') ? "?$request" : "");
 	  if ($snapshot != '') HTTP::cookie('href_snapshot', $snapshot);
 	  header("Location: $href");

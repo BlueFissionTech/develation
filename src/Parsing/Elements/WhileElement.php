@@ -23,4 +23,15 @@ class WhileElement extends Element implements ILoopElement
 
         return !!$condition; // crude fallback
     }
+
+    public function getDescription(): string
+    {
+        $condition = $this->getAttribute('condition');
+
+        $descriptionString = sprintf('While the value %s is true, loop the following block', $condition);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

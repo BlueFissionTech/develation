@@ -82,7 +82,7 @@ class TagRegistry {
         /xs';
     }
 
-    public static function extractAttributes(string $tag, array $match): array {
+    public static function extractAttributes(string $tag, string $match): array {
         $attributes = [];
 
         $definition = self::get($tag);
@@ -91,7 +91,7 @@ class TagRegistry {
         }
 
         // Raw tag body from the named capture group
-        $raw = $match[$tag][0] ?? '';
+        $raw = $match ?? '';
 
         // Remove outer delimiters if they exist (e.g., {#if ...}, @template(...))
         $raw = trim($raw);
@@ -107,7 +107,6 @@ class TagRegistry {
                 return $attributes;
             }
         }
-
 
         // Remove tag name prefix (e.g., #if, @template) to leave only key=val attrs
         $clean = preg_replace('/^[{@]?#?' . preg_quote($tag, '/') . '\s*/i', '', $raw);
@@ -257,11 +256,11 @@ class TagRegistry {
         ));
 
         self::register(new TagDefinition(
-            name: 'mod',
-            pattern: '@mod\((.*?)\)',
+            name: 'include',
+            pattern: '@include\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
-            class: Elements\ModElement::class
+            class: Elements\IncludeElement::class
         ));
 
         self::register(new TagDefinition(
@@ -285,7 +284,7 @@ class TagRegistry {
             pattern: '@invoke\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IExecutableElement::class,
-            class: Elements\MacroElement::class
+            class: Elements\InvokeElement::class
         ));
 
         self::register(new TagDefinition(

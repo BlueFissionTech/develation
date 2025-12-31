@@ -79,7 +79,7 @@ class Block extends Obj {
                     if (isset($match[$tag]) && !empty($match[$tag][0])) {
                         $capture = $match[$tag][0];
                         $raw = end($match)[0];
-                        $attributes = TagRegistry::extractAttributes($tag, $match);
+                        $attributes = TagRegistry::extractAttributes($tag, $match[$tag][0]);
                         $elementClass = TagRegistry::get($tag)->class;
                         $element = new $elementClass($tag, $capture, $raw, $attributes);
                         $this->prepareElement($element);

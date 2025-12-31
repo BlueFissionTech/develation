@@ -12,7 +12,34 @@ class TemplateElement extends Element implements IRenderableElement
     protected array $sections = [];
     protected array $outputs = [];
 
-    public function render(): string
+    public function addSection(string $name, Element $section): void
+    {
+        $this->sections[$name] = $section;
+    }
+
+    public function getSections(): array
+    {
+        return $this->sections;
+    }
+
+    public function getSection(string $name): string
+    {
+        return $this->sections[$name]?->getContent() ?? '';
+    }
+
+    public function addOutput(string $name, string $output): void
+    {
+        echo "addOutput $name\n";
+        $this->outputs[$name] = $output;
+    }
+
+    public function findOutput(string $name): string
+    {
+        echo "findOutput $name\n";
+        return $this->outputs[$name] ?? '';
+    }
+
+    public function build(): string
     {
         $templatePath = $this->getAttribute('name');
 
@@ -32,26 +59,17 @@ class TemplateElement extends Element implements IRenderableElement
 
         $this->block->setContent($this->raw);
 
-        return '';
+        return '';//$this->raw;
     }
 
-    public function addSection(string $name, Element $section): void
+    public function getDescription(): string
     {
-        $this->sections[$name] = $section;
-    }
+        $path = $this->getAttribute('name');
 
-    public function addOutput(string $name, string $output): void
-    {
-        $this->outputs[$name] = $output;
-    }
+        $descriptionString = sprintf('Load a template from "%s"', $path);
 
-    public function findOutput(string $name): string
-    {
-        return $this->outputs[$name] ?? '';
-    }
+        $this->description = $descriptionString;
 
-    public function build(): string
-    {
-        return parent::render();
+        return $this->description;
     }
 }

@@ -368,7 +368,6 @@ class Template extends Obj {
 		ExecutorRegistry::registerDefaults(); // ensure executors are active
 		PreparerRegistry::registerDefaults(); // ensure preparers are active
 
-		
 		$parser = new Parser($this->_template, $this->config('delimiter_start'), $this->config('delimiter_end'));
 
 		$parser->setVariables($this->_data->val());

@@ -27,4 +27,15 @@ class MacroElement extends Element implements IRenderableElement, IExecutableEle
         }
         return $this->block->process();
     }
+
+    public function getDescription(): string
+    {
+        $name = $this->getAttribute('name');
+
+        $descriptionString = sprintf('Define a code block macro named `%s`', $name);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

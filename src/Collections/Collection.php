@@ -349,7 +349,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 		$reflectionFunction = new \ReflectionFunction($callback);
 		$numberOfParameters = $reflectionFunction->getNumberOfRequiredParameters();
 
-		$filterOption = $numberOfParameters > 1 ? ARRAY_FILTER_USE_BOTH : ARRAY_FILTER_USE_VALUE;
+		$filterOption = $numberOfParameters > 1 ? ARRAY_FILTER_USE_BOTH : 0;
 
 		$list = array_filter( $this->contents(), $callback, $filterOption );
 		return new Collection( $list );

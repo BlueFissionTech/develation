@@ -35,4 +35,15 @@ class ImportElement extends Element implements IExecutableElement
     {
         return '';
     }
+
+    public function getDescription(): string
+    {
+        $path = $this->getAttribute('name');
+
+        $descriptionString = sprintf('Import data from path `%s`', $path);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

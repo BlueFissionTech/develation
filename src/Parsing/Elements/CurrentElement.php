@@ -20,4 +20,14 @@ class CurrentElement extends Element implements IRenderableElement
 
         return (string)$value;
     }
+
+    public function getDescription(): string
+    {
+        $current = $this->parent->getCurrent();
+        $descriptionString = sprintf('Looping with current item `%d`', $current);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

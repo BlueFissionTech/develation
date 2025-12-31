@@ -25,8 +25,8 @@ class Data extends Obj implements IData
 
     public function __construct( $config = null )
     {
-        $this->__configConstruct($config);
         parent::__construct();
+        $this->__configConstruct($config);
 
         $this->behavior(new Action( Action::CREATE ), function($behavior) {
             $this->write();
@@ -178,16 +178,6 @@ class Data extends Obj implements IData
         }
         
         return $data;
-    }
-
-    /**
-     * This method is used to get the data.
-     *
-     * @return mixed
-     */
-    public function data(): mixed
-    {
-        return $this->_data->val();
     }
     
     /**

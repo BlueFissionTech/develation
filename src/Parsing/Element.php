@@ -22,6 +22,7 @@ class Element extends Obj {
     protected string $tag;
     protected string $raw;
     protected string $match;
+    protected bool $closed = false;
     protected $template;
     protected array $macros = [];
     protected array $attributes = [];
@@ -29,6 +30,8 @@ class Element extends Obj {
     protected Block $block;
     protected $uuid;
     protected ?Element $parent = null;
+
+    protected string $description = 'Generic element';
 
     public function __construct(string $tag, string $match, string $raw, array $attributes = [])
     {
@@ -44,7 +47,8 @@ class Element extends Obj {
         }
 
         // Set the root block this element represents
-        $this->block = new Block($this->raw);
+        $this->block = new Block($this->raw, $this->closed);
+        $this->echo($this->block, [Event::ITEM_ADDED]);
         $this->block->setOwner($this);
         $this->echo($this->block);
     }
@@ -100,6 +104,11 @@ class Element extends Obj {
         $this->parse();
         $this->block->process();
 
+        if ($this->getTemplate()) {
+            $templateContent = $this->getTemplate()->render();
+            $this->setContent($templateContent);
+        }
+
         return $this->block->content;
     }
 
@@ -123,6 +132,16 @@ class Element extends Obj {
         $this->parent = $parent;
     }
 
+    public function getTemplate(): ?Element
+    {
+        return $this->template;
+    }
+
+    public function setTemplate($template): void
+    {
+        $this->template = $template;
+    }
+
     public function addMacro(string $name, Element $macro): void
     {
        $this->macro[$name] = $macro;
@@ -143,6 +162,24 @@ class Element extends Obj {
     public function setContent($content): void
     {
         $this->block->content = $content;
+    }
+
+    public function getName(): string
+    {
+        $name = $this->getAttribute('name');
+        $tag = $this->getTag();
+        if ($name) {
+            $tag = "{$tag}_".Str::slug($name);
+        }
+
+        $name = "{$tag}_".Str::slug(substr($this->getUuid(), -6));
+
+        return $name;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
     }
 
     public function children(): array
@@ -216,7 +253,7 @@ class Element extends Obj {
         return $value;
     }
 
-    protected function resolveValue(string $value, ?string $type = null): mixed
+    public function resolveValue(string $value, ?string $type = null): mixed
     {
         $firstChar = substr($value, 0, 1);
         $lastChar = substr($value, -1);
@@ -236,7 +273,7 @@ class Element extends Obj {
         return $parsed;
     }
 
-    protected function resolveCastClass(string $cast): string
+    public function resolveCastClass(string $cast): string
     {
         return DatatypeRegistry::get($cast);
     }

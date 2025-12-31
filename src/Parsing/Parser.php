@@ -24,7 +24,7 @@ class Parser implements IDispatcher {
     {
         $this->__dispatchConstruct();
         $this->root = new Root($input, $open, $close);
-        $this->echo($this->root, [Event::SENT, Event::RECEIVED, Event::ERROR, State::RUNNING, State::IDLE]);
+        $this->echo($this->root, [Event::SENT, Event::RECEIVED, Event::ERROR, Event::ITEM_ADDED, State::RUNNING, State::IDLE]);
     }
 
     public function setVariable($name, $value = null): void

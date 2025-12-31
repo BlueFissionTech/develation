@@ -11,6 +11,20 @@ class OutputElement extends Element implements IRenderableElement
     {
         $name = $this->getAttribute('name');
         $output = $this->parent->findOutput($name);
-        return $output;
+
+        $this->setContent($output);
+
+        return parent::render();
+    }
+
+    public function getDescription(): string
+    {
+        $name = $this->getAttribute('name');
+
+        $descriptionString = sprintf('Designate a new content section "%s"', $name);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
     }
 }

@@ -23,5 +23,7 @@ class RendererRegistry {
     public static function registerDefaults() {
         self::register('*', new Renderers\DefaultRenderer());
         self::register('template', new Renderers\TemplateRenderer());
+        self::register('section', new Renderers\SectionRenderer());
+        self::register('output', new Renderers\OutputRenderer());
     }
 }

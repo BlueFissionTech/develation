@@ -55,4 +55,19 @@ class FunctionElement extends Element implements IExecutableElement, IRenderable
 
         return $result;
     }
+
+    public function getDescription(): string
+    {
+        $name = 'undefined';
+        if (preg_match('/->\s*(\w+)/', $rawExpr, $match)) {
+            $name = $match[1];
+            // $rawExpr = trim(str_replace($match[0], '', $rawExpr));
+        }
+
+        $descriptionString = sprintf('Define a function named `%s`', $name);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

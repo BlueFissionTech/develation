@@ -53,4 +53,13 @@ class EachElement extends Element implements ILoopElement
     {
         return $this->current;
     }
+
+    public function getDescription(): string
+    {
+        $descriptionString = sprintf('Evaluate the block for each item in the list %s.', $this->attributes['items'] ?? 'N/A');
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

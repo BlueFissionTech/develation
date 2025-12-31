@@ -7,7 +7,7 @@ use BlueFission\Parsing\Block;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Data\FileSystem;
 
-class ModElement extends Element implements IRenderableElement
+class IncludeElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
@@ -29,5 +29,16 @@ class ModElement extends Element implements IRenderableElement
         $this->block->setContent($this->raw);
 
         return parent::render();
+    }
+
+    public function getDescription(): string
+    {
+        $path = $this->getAttribute('name');
+
+        $descriptionString = sprintf('Include file from path `%s`', $path);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
     }
 }

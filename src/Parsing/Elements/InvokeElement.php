@@ -17,6 +17,16 @@ class InvokeElement extends Element implements IRenderableElement
             $value = $this->getAttribute($key) ?? $value;
             $this->block->setVar($key, $value);
         }
+
         return $this->block->process();
+    }
+
+    public function getDescription(): string
+    {
+        $descriptionString = sprintf('Inovke code');
+
+        $this->description = $descriptionString;
+
+        return $this->description;
     }
 }

@@ -1,6 +1,8 @@
 <?php
 namespace BlueFission\Data\Storage;
 
+use BlueFission\IObj;
+
 class Local extends Storage {
     protected $_data = [];
 

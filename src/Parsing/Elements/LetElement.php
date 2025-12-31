@@ -32,4 +32,16 @@ class LetElement extends Element implements IExecutableElement
     {
     	return '';
     }
+
+    public function getDescription(): string
+    {
+        $name = array_key_first($this->attributes);
+        $value = $this->attributes[$name];
+
+        $descriptionString = sprintf('Declare a new variable named `%s` with the value `%s`', $name, $value);
+
+        $this->description = $descriptionString;
+
+        return $this->description;
+    }
 }

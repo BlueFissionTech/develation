@@ -60,7 +60,7 @@ trait Programmable
 	{
 		if (method_exists ( $this , $name ))
 		{
-			return call_user_func_array([$this, $name, $args]);
+			return call_user_func_array([$this, $name], $args);
 		}
 
 		if (Val::is($this->_tasks[$name]) && is_callable($this->_tasks[$name]))
@@ -115,7 +115,7 @@ trait Programmable
 			&& !$this->_tasks->hasKey($task)
 			&& $this->is( State::DRAFT ) )
 		{
-			$function = ($function instanceof Function)
+			$function = ($function instanceof Func)
 				? $function
 				: new Func($function);
 

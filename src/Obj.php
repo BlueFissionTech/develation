@@ -49,13 +49,13 @@ class Obj implements IObj, IDispatcher, IBehavioral
      * Obj constructor.
      */
     public function __construct() {
-        $this->__behavesConstruct();
-
         if ( !Val::is($this->_data) ) {
             $this->_data = new Arr();
         } elseif ( Arr::is($this->_data) ) {
             $this->_data = Arr::use();
         }
+
+        $this->__behavesConstruct();
 
         foreach ( $this->_types as $field=>$type ) {
             $item = Factory::make($type, $this->_data[$field] ?? null);
