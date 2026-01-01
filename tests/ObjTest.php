@@ -18,9 +18,9 @@ class ObjTest extends \PHPUnit\Framework\TestCase {
 		$this->assertEquals(static::$classname, "".$this->object."");
 	}
 
-	public function testThrowsErrorOnUndefinedAccess()
+	public function testUndefinedAccessReturnsNull()
 	{
-		// var_dump($this->object->testValue);
+		$this->assertNull($this->object->testValue);
 	}
 
 	public function testAddsAndClearsUndefinedFields()

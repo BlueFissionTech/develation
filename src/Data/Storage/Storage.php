@@ -135,7 +135,8 @@ class Storage extends Data implements IData
 	protected function _write(): void
 	{
 		if ( get_class($this) == 'BlueFission\Data\Storage\Storage' ) {
-			$this->_source = $this->_contents ?? HTTP::jsonEncode($this->_data);
+			$data = $this->_contents ?? HTTP::jsonEncode($this->_data->val());
+			$this->_source = $data;
 			$this->perform( Event::SUCCESS, new Meta(when: Action::SAVE));
 		}
 

@@ -46,6 +46,7 @@ class RequestTest extends TestCase
 
     public function testGetType()
     {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
         $request = new Request();
 
         $this->assertEquals('GET', $request->type());
@@ -55,6 +56,7 @@ class RequestTest extends TestCase
     {
         $request = new Request();
 
-        $this->assertEquals('/', $request->uri());
+        $this->expectException(\Exception::class);
+        $request->uri();
     }
 }

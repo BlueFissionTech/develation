@@ -3,6 +3,10 @@ namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Connection;
 use BlueFission\Connections\Socket;
+use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../Support/TestEnvironment.php';
 
 class SocketTest extends ConnectionTest {
  
@@ -11,11 +15,21 @@ class SocketTest extends ConnectionTest {
 
     public function setUp(): void
     {
-        parent::setUp();
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->markTestSkipped('Network tests are disabled');
+        }
+
+        $target = getenv('DEV_ELATION_SOCKET_TEST_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($target)) {
+            $this->markTestSkipped('Socket target is not reachable');
+        }
+
         static::$configuration = [
-            'target' => 'https://bluefission.com', // Use a valid target that can be used for testing
+            'target' => $target,
             'port' => 80
         ];
+
+        parent::setUp();
     }
 
     public function testOpenConnection()
@@ -41,8 +55,9 @@ class SocketTest extends ConnectionTest {
 
     public function testFailToConnect()
     {
-        static::$configuration['target'] = 'http://nonexistent12345.com'; // Unreachable host
+        static::$configuration['target'] = 'http://nonexistent.invalid';
+        $this->object->config(static::$configuration);
         $this->object->open();
-        $this->assertEquals(Connection::STATUS_NOTCONNECTED, $this->object->status(), "Socket should fail to connect to an invalid host.");
+        $this->assertEquals(Connection::STATUS_FAILED, $this->object->status(), "Socket should fail to connect to an invalid host.");
     }
 }

@@ -214,7 +214,7 @@ class XML extends Obj {
 	 *
 	 * @return mixed
 	 */
-	public function data() 
+	public function data(): mixed
 	{
 		return $this->_data;
 	}

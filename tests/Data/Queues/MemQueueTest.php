@@ -4,11 +4,19 @@ namespace BlueFission\Tests\Data\Queues;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\MemQueue;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../../Support/TestEnvironment.php';
 
 class MemQueueTest extends TestCase {
     private static $testQueueName = 'testQueue';
 
     protected function setUp(): void {
+        $config = TestEnvironment::memcachedConfig();
+        if (!class_exists('Memcached') || !$config) {
+            $this->markTestSkipped('Memcached tests require ext-memcached and DEV_ELATION_MEMCACHED_HOST');
+        }
+
         MemQueue::setMode(MemQueue::FIFO); // Default to FIFO for consistency in testing
     }
 

@@ -49,7 +49,7 @@ class Num extends Val implements IVal {
         if ( $this->_type && ($this->_forceType == true || $cast) ) {
             $clone = $this->_data;
             settype($clone, $this->_type->value);
-            $remainder = $clone % 1;
+            $remainder = fmod((float)$clone, 1.0);
             $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
             settype($this->_data, $this->_type->value);
         }
@@ -67,7 +67,7 @@ class Num extends Val implements IVal {
 		if ( $this->_type ) {
             $clone = $this->_data;
             settype($clone, $this->_type->value);
-            $remainder = $clone % 1;
+            $remainder = fmod((float)$clone, 1.0);
             $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
             settype($this->_data, $this->_type->value);
 			$this->trigger(Event::CHANGE);

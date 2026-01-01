@@ -83,6 +83,11 @@ A set of utility functions and tools for administrative alerts, logging, IP bloc
 
 - [Utilities Documentation](utilities.md)
 
+### Testing
+Guidance for running PHPUnit tests and enabling optional integration coverage.
+
+- [Testing Documentation](tests.md)
+
 ## Usage
 
 As of now, DevElation does not have a composer package and is not available on Packagist. It can be utilized by cloning the repository `bluefission/develation` from GitHub.

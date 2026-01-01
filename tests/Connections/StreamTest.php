@@ -2,6 +2,10 @@
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Stream;
+use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../Support/TestEnvironment.php';
  
 class StreamTest extends ConnectionTest {
  
@@ -9,18 +13,25 @@ class StreamTest extends ConnectionTest {
 
  	public function setUp(): void
  	{
- 		// Set up a bunch of conditions to create an acceptable test connection here
+ 		if (!TestEnvironment::isNetworkEnabled()) {
+ 			$this->markTestSkipped('Network tests are disabled');
+ 		}
  		parent::setUp();
  	}
 
  	public function testOpen()
     {
+        $target = getenv('DEV_ELATION_STREAM_TEST_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($target)) {
+            $this->markTestSkipped('Stream target is not reachable');
+        }
+
         $stream = new Stream();
         $stream->open();
 
         $this->assertEquals(Stream::STATUS_NOTCONNECTED, $stream->status());
 
-        $stream->config('target', 'https://bluefission.com');
+        $stream->config('target', $target);
         $stream->open();
 
         $this->assertEquals(Stream::STATUS_CONNECTED, $stream->status());
@@ -28,12 +39,17 @@ class StreamTest extends ConnectionTest {
 
     public function testQuery()
     {
+        $target = getenv('DEV_ELATION_STREAM_TEST_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($target)) {
+            $this->markTestSkipped('Stream target is not reachable');
+        }
+
         $stream = new Stream();
         $stream->open();
 
         $this->assertEquals(Stream::STATUS_NOTCONNECTED, $stream->status());
 
-        $stream->config('target', 'https://bluefission.com');
+        $stream->config('target', $target);
         $stream->open();
         $stream->query('test');
 

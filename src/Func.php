@@ -121,7 +121,14 @@ class Func extends Val implements IVal {
 	    }
 
 		if (is_callable($this->_data)) {
-	        $reflector = new \ReflectionFunction($this->_data);
+			$reflector = null;
+			if (is_array($this->_data)) {
+				$reflector = new \ReflectionMethod($this->_data[0], $this->_data[1]);
+			} elseif (is_string($this->_data) && Str::pos($this->_data, '::') !== false) {
+				$reflector = new \ReflectionMethod($this->_data);
+			} else {
+	        	$reflector = new \ReflectionFunction($this->_data);
+			}
 	        return array_map(fn($p) => ['name' => $p->getName(), 'type' => (string)$p->getType()], $reflector->getParameters());
 	    }
 
@@ -137,8 +144,15 @@ class Func extends Val implements IVal {
 		if ($this->_returnType) return $this->_returnType;
 
 	    if (is_callable($this->_data)) {
-	        $reflector = new \ReflectionFunction($this->_data);
-	        return (string) $reflector->getReturnType();
+			$reflector = null;
+			if (is_array($this->_data)) {
+				$reflector = new \ReflectionMethod($this->_data[0], $this->_data[1]);
+			} elseif (is_string($this->_data) && Str::pos($this->_data, '::') !== false) {
+				$reflector = new \ReflectionMethod($this->_data);
+			} else {
+	        	$reflector = new \ReflectionFunction($this->_data);
+			}
+	        return (string)$reflector->getReturnType();
 	    }
 
 	    return null;

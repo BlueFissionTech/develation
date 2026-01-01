@@ -102,10 +102,14 @@ class Mapping {
 	{
 		if (is_array($gateway)) {
 			foreach ($gateway as $g) {
-				$this->_gateways[] = $g;
+				if (trim((string)$g) !== '') {
+					$this->_gateways[] = $g;
+				}
 			}
 		} else {
-			$this->_gateways[] = $gateway;
+			if (trim((string)$gateway) !== '') {
+				$this->_gateways[] = $gateway;
+			}
 		}
 
 		return $this;

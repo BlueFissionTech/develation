@@ -147,12 +147,8 @@ class Email extends Obj implements IConfigurable, IEmail
 
 			return $this;
 		}
-		else 
-		{
-			$value = (isset($this->_data[$field])) ? $this->_data[$field] : null;
-		}
 
-		return $value;
+		return parent::field($field);
 	}
 
 	/**

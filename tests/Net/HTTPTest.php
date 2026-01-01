@@ -3,6 +3,9 @@ namespace BlueFission\Tests\Net;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../Support/TestEnvironment.php';
 
 class HTTPTest extends TestCase {
 
@@ -19,8 +22,14 @@ class HTTPTest extends TestCase {
     }
 
     public function testUrlExists() {
-        $this->assertTrue(HTTP::urlExists('https://www.bluefission.com'));
-        $this->assertFalse(HTTP::urlExists('http://nonexistenturl.com'));
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->assertFalse(HTTP::urlExists('ftp://example.com'));
+            return;
+        }
+
+        $url = getenv('DEV_ELATION_HTTP_TEST_URL') ?: 'https://www.bluefission.com';
+        $this->assertTrue(HTTP::urlExists($url));
+        $this->assertFalse(HTTP::urlExists('http://nonexistent.invalid'));
     }
 
     public function testDomain() {

@@ -22,7 +22,7 @@ class StorageTest extends \PHPUnit\Framework\TestCase {
 	public function testStorageCanActivate()
 	{
 		$value = false;
-		$this->object->when(Event::ACTIVATED, function($b, $args) use (&$value) {
+		$this->object->when(Event::FAILURE, function($b, $args) use (&$value) {
 			$value = true;
 		})->activate();
 
@@ -31,26 +31,30 @@ class StorageTest extends \PHPUnit\Framework\TestCase {
 
 	public function testStorageCanRead()
 	{
-		$this->object->activate();
-
+		$this->object->contents('read-test');
+		$this->object->write();
 		$this->object->read();
+		$this->assertEquals('read-test', $this->object->contents());
 	}
 
 	public function testStorageCanWriteFields()
 	{
-		$this->object->activate();
-
 		$this->object->var1 = 'checking';
 		$this->object->var2 = 'confirming';
 		$this->object->write();
+		$this->object->read();
+		$data = json_decode($this->object->contents(), true);
+		$this->assertEquals('checking', $data['var1'] ?? null);
+		$this->assertEquals('confirming', $data['var2'] ?? null);
 	}
 
 	public function testStorageCanWriteContentOverFields()
 	{
-		$this->object->activate();
 		$this->object->var1 = 'checking';
 		$this->object->var2 = 'confirming';
 		$this->object->contents("Testing.");
 		$this->object->write();
+		$this->object->read();
+		$this->assertEquals('Testing.', $this->object->contents());
 	}
 }

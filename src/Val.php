@@ -333,8 +333,8 @@ class Val implements IVal, IDispatcher {
 				case DataTypes::SCALAR:
 					return is_scalar($var);
 					break;
-				case DataTypes::CALLBACK:
-					return is_callback($var);
+				case DataTypes::CALLABLE:
+					return is_callable($var);
 					break;
 				case DataTypes::DATETIME:
 					return $var instanceof DateTime || strtotime($var) !== false;
@@ -698,9 +698,9 @@ class Val implements IVal, IDispatcher {
 			
 			return $output;
 		} else {
-			if ( in_array($method, $this->_slots) ) {
+			if ( in_array($method, self::$_slots, true) ) {
 				$this->trigger(Event::ACTION_PERFORMED);
-				return call_user_func_array($this->_slots[$method], $args);
+				return call_user_func_array(self::$_slots[$method], $args);
 			}
 
 			// throw new Exception("Method {$method} not defined", 1);

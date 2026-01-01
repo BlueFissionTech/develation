@@ -16,8 +16,8 @@ class SplQueueTest extends TestCase {
     }
 
     public function testEnqueueDequeueItems() {
-        SplQueue::enqueue('item1', 'testChannel');
-        SplQueue::enqueue('item2', 'testChannel');
+        SplQueue::enqueue('testChannel', 'item1');
+        SplQueue::enqueue('testChannel', 'item2');
         $this->assertFalse(SplQueue::isEmpty('testChannel'), "Queue should not be empty after enqueueing items.");
 
         $firstItem = SplQueue::dequeue('testChannel');
@@ -29,8 +29,8 @@ class SplQueueTest extends TestCase {
     }
 
     public function testDifferentChannelsAreIndependent() {
-        SplQueue::enqueue('channel1Item', 'channel1');
-        SplQueue::enqueue('channel2Item', 'channel2');
+        SplQueue::enqueue('channel1', 'channel1Item');
+        SplQueue::enqueue('channel2', 'channel2Item');
 
         $this->assertEquals('channel1Item', SplQueue::dequeue('channel1'), "Dequeue from 'channel1' should yield 'channel1Item'.");
         $this->assertEquals('channel2Item', SplQueue::dequeue('channel2'), "Dequeue from 'channel2' should yield 'channel2Item'.");

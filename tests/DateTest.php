@@ -99,11 +99,11 @@ class DateTest extends ValTest {
 	public function testCastsAsType()
 	{
 		$object = new static::$classname('now');
-		if ( $object->getType ) {
-			$value = $object->cast()->val();
-			$this->assertInstanceOf($object->getType, $value);
-			$this->assertTrue(static::$classname::isValue($value));
-		}
+		$this->assertSame('datetime', $object->getType());
+		$value = $object->cast()->val();
+		$this->assertIsString($value);
+		$this->assertNotEmpty($value);
+		$this->assertInstanceOf(\DateTime::class, new \DateTime($value));
 	}
 
 	public function testGetsTimestamp()

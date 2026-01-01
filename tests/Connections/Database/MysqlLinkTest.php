@@ -3,6 +3,9 @@ namespace BlueFission\Tests\Connections\Database;
 
 use BlueFission\Tests\Connections\ConnectionTest;
 use BlueFission\Connections\Database\MySQLLink;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../../Support/TestEnvironment.php';
  
 class MySQLLinkTest extends ConnectionTest {
  
@@ -10,10 +13,20 @@ class MySQLLinkTest extends ConnectionTest {
 
  	public function setUp(): void
  	{
- 		// Set up a bunch of conditions to create an acceptable test connection here
- 		if ( function_exists('mysql_connect') ) {
- 			static::$canbetested = true;
+ 		$config = TestEnvironment::mysqlConfig();
+ 		if (!class_exists('mysqli') || !$config) {
+ 			$this->markTestSkipped('MySQL tests require mysqli and DEV_ELATION_MYSQL_* env vars');
  		}
+
+ 		static::$canbetested = true;
+ 		static::$configuration = [
+ 			'target' => $config['host'],
+ 			'username' => $config['user'],
+ 			'password' => $config['pass'],
+ 			'database' => $config['db'],
+ 			'port' => $config['port'],
+ 		];
+
  		parent::setUp();
  	}
 }

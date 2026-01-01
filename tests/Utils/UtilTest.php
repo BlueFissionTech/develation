@@ -8,6 +8,11 @@ use BlueFission\Net\Email;
 
 class UtilTest extends \PHPUnit\Framework\TestCase {
     public function testEmailAdmin() {
+        $enabled = strtolower((string)getenv('DEV_ELATION_EMAIL_TESTS'));
+        if (!in_array($enabled, ['1', 'true', 'yes'], true)) {
+            $this->markTestSkipped('Email tests are disabled');
+        }
+
         //Test sending email with all default values
         $status = Util::emailAdmin();
         $this->assertTrue($status);
@@ -23,21 +28,21 @@ class UtilTest extends \PHPUnit\Framework\TestCase {
     }
 
     public function testParachute() {
-        //Test exceeding max count and exiting with log and alert
-        $count = 500;
-        $max = 400;
-        $redirect = "";
-        $log = true;
-        $alert = true;
+        $count = 0;
+        $max = 2;
 
-        $this->expectExceptionCode(0);
-        Util::parachute($count, $max, $redirect, $log, $alert);
+        Util::parachute($count, $max);
+        $this->assertEquals(1, $count);
+
+        Util::parachute($count, $max);
+        $this->assertEquals(2, $count);
     }
 
     public function testCsrfToken() {
         //Test generating csrf token
-        $token = Util::csrf_token();
+        $token = Util::csrfToken();
         $this->assertTrue(is_string($token));
+        $this->assertEquals(64, strlen($token));
     }
 
     public function testValue() {

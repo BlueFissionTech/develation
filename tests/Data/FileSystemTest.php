@@ -2,52 +2,41 @@
 namespace BlueFission\Tests\Data;
 
 use BlueFission\Data\FileSystem;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../Support/TestEnvironment.php';
  
 class FileSystemTest extends \PHPUnit\Framework\TestCase {
  
-	static $testdirectory = '../../testdirectory';
+	private string $testdirectory;
 
  	static $classname = 'BlueFission\Data\FileSystem';
 
  	protected $object;
 
  	static $configuration = [ 
- 		'mode'=>'rw', 
+ 		'mode'=>'c+', 
  		'filter'=>[], 
- 		'root'=>'../../testdirectory', 
+ 		'root'=>'', 
  		'doNotConfirm'=>'false', 
  		'lock'=>false 
  	];
 	
 	public function setUp(): void
 	{
-		chdir(__DIR__);
-		mkdir(static::$testdirectory);
-
+		$this->testdirectory = TestEnvironment::tempDir('bf_fs');
+		static::$configuration['root'] = $this->testdirectory;
 		$this->object = new static::$classname(static::$configuration);
 	}
 
 	public function tearDown(): void
 	{
-		$testfiles = [
-			'filesystem',
-			'testfile.txt',
-		];
-
-		foreach ($testfiles as $file) {
-			if (is_dir(static::$testdirectory.DIRECTORY_SEPARATOR.$file)) {
-				@rmdir(static::$testdirectory.DIRECTORY_SEPARATOR.$file);
-			}
-
-			if (file_exists(static::$testdirectory.DIRECTORY_SEPARATOR.$file)) {
-				@unlink(static::$testdirectory.DIRECTORY_SEPARATOR.$file);
-			}
-		}
+		TestEnvironment::removeDir($this->testdirectory);
 	}
 
 	public function testCanViewFolder()
 	{
-		touch(static::$testdirectory.DIRECTORY_SEPARATOR.'testfile.txt');
+		touch($this->testdirectory.DIRECTORY_SEPARATOR.'testfile.txt');
 
 		$dir = $this->object->listDir();
 		$status = $this->object->status();
@@ -70,12 +59,6 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->object->filename = 'testfile.txt';
 		$this->object->write();
 
-		// $status = $this->object->status();
-
-		// $this->assertEquals('File \'testfile.txt\' has been created', $status);
-
-		// $dir = $this->object->listDir();
-
-		// $this->assertTrue(count($dir) > 0);
+		$this->assertTrue(file_exists($this->testdirectory.DIRECTORY_SEPARATOR.'testfile.txt'));
 	}
 }

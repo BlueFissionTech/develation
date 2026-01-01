@@ -102,7 +102,8 @@ class FuncTest extends ValTest
         $func = new Func(function($arg1, $arg2) {});
         $expects = $func->expects();
         $this->assertCount(2, $expects);
-        $this->assertContainsOnlyInstancesOf(\ReflectionParameter::class, $expects);
+        $this->assertSame(['arg1', 'arg2'], array_column($expects, 'name'));
+        $this->assertSame(['', ''], array_column($expects, 'type'));
     }
 
     public function testReturns()

@@ -83,9 +83,8 @@ class IP {
 		$storage->when( new Event( Event::CONNECTED ), function() use ( $data, $storage ) {
 			if (Arr::is($data)) {
 				$delimiter = "\t";
-				array_walk($data, fn ($line, $key) => $line = implode($delimiter, $line));
-				
-				$storage->contents( implode("\n", $data) )->write();
+				$lines = array_map(fn ($line) => implode($delimiter, $line), $data);
+				$storage->contents( implode("\n", $lines) )->write();
 			}
 		})
 
@@ -157,8 +156,8 @@ class IP {
 
 		// Write the data to the file upon successful conncection
 		->when( Event::READ , function() use ( &$result, $storage, $ip ) {
-			$ipList = $storage->contents();
-			$ips = explode("\n", $ipList);
+			$ipList = (string)$storage->contents();
+			$ips = array_filter(array_map('trim', explode("\n", $ipList)));
 
 			if (Arr::has($ips, $ip)) {
 				self::setStatus("IP address $ip already blocked");
@@ -282,7 +281,6 @@ class IP {
 	 */
 	public static function log($ip = null, $href = null, $timestamp = null) 
 	{
-			$lines = [];
 			$href = $href ?? HTTP::href($href);
 			$ip = $ip ?? self::remote();
 			$timestamp = $timestamp ?? date('Y-m-d H:i:s');
@@ -290,24 +288,39 @@ class IP {
 			$limit = 5;
 
 			$lines = self::read();
-			if (Arr::is($lines)) {
-				$isFound = false;
-				while (list($a, $b) = $lines || $isFound) {
-					if ($b[0] == $ip && $b[1] == $href) Flag::flip($isFound);
+			if (!Arr::is($lines)) {
+				$lines = [];
+			}
+
+			$foundIndex = null;
+			foreach ($lines as $index => $entry) {
+				if (($entry[0] ?? null) === $ip && ($entry[1] ?? null) === $href) {
+					$foundIndex = $index;
+					break;
 				}
-				if ($isFound || Date::diff($b[2], $timestamp, 'minutes') > 5) {
-					$lines[$a][3]++;
+			}
+
+			if ($foundIndex !== null) {
+				$entry = $lines[$foundIndex];
+				$lastTimestamp = $entry[2] ?? $timestamp;
+				$count = (int)($entry[3] ?? 0);
+
+				if (Date::diff($lastTimestamp, $timestamp, 'minutes') <= $interval) {
+					$count++;
 				} else {
-					$lines[] = [$ip, $href, $timestamp, 1];
+					$count = 1;
 				}
 
+				$lines[$foundIndex] = [$ip, $href, $timestamp, $count];
 
-				if (($b[3] >= $limit) && (Date::diff($b[2], $timestamp, 'minutes') <= $interval)) {
+				if ($count >= $limit && Date::diff($lastTimestamp, $timestamp, 'minutes') <= $interval) {
 					self::block($ip);
 				}
-
-				$status = self::update($lines);
+			} else {
+				$lines[] = [$ip, $href, $timestamp, 1];
 			}
+
+			self::update($lines);
 
 			return true;
 		}
@@ -326,14 +339,12 @@ class IP {
 	public static function query($href = null, $ip = null) {
 		$lines = self::read();
 		if (Arr::is($lines)) {
-			$lines = [];
 			$href = HTTP::href($href);
 			$ip = (Val::isNull($ip)) ? self::remote() : $ip;
-			$isFound = false;
-			while (list($a, $b) = $lines || $isFound) {
-				if ($b[0] == $ip && $b[1] == $href) {
-					$response = [$b];
-					Flag::flip($isFound);
+			$response = [];
+			foreach ($lines as $entry) {
+				if (($entry[0] ?? null) === $ip && ($entry[1] ?? null) === $href) {
+					$response[] = $entry;
 				}
 			}
 		} else {

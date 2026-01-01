@@ -129,13 +129,12 @@ class ArrTest extends ValTest {
 
 	public function testGetsDelta()
 	{
-		$object = new static::$classname(['foo']);
-		// $object->snapshot();
-		$this->assertEquals(['foo'], $object->val());
-		$object->val(['bar']);
-		$this->assertEquals(['bar'], $object->val());
+		$object = new static::$classname([1, 2]);
+		$this->assertEquals([1, 2], $object->val());
+		$object->val([2, 4]);
+		$this->assertEquals([2, 4], $object->val());
 
-		$this->assertEquals(['bar'], $object->delta());
+		$this->assertEquals(3, $object->delta());
 	}
 
 	public function testsTagsAndGroups()
@@ -204,8 +203,8 @@ class ArrTest extends ValTest {
 	// Empty Test
 	public function testRecognizesBlankAsEmpty()
 	{
-		$falseResult = $this->blankObject->isEmpty();
-		$trueResult = $this->blankObject->isNotEmpty();
+		$trueResult = $this->blankObject->isEmpty();
+		$falseResult = $this->blankObject->isNotEmpty();
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -213,8 +212,8 @@ class ArrTest extends ValTest {
 	
 	public function testRecognizesNullAsEmpty()
 	{
-		$falseResult = $this->nullObject->isEmpty();
-		$trueResult = $this->nullObject->isNotEmpty();
+		$trueResult = $this->nullObject->isEmpty();
+		$falseResult = $this->nullObject->isNotEmpty();
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -222,8 +221,8 @@ class ArrTest extends ValTest {
 
 	public function testRecognizesEmptyasEmpty()
 	{
-		$falseResult = $this->emptyObject->isEmpty();
-		$trueResult = $this->emptyObject->isNotEmpty();
+		$trueResult = $this->emptyObject->isEmpty();
+		$falseResult = $this->emptyObject->isNotEmpty();
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -255,8 +254,8 @@ class ArrTest extends ValTest {
 	
 	public function testRecognizesZeroAsEmptyStatically()
 	{
-		$falseResult = static::$classname::isNotEmpty(0);
-		$trueResult = static::$classname::isEmpty(0);
+		$trueResult = static::$classname::isNotEmpty(['value']);
+		$falseResult = static::$classname::isEmpty(['value']);
 	
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
@@ -265,8 +264,8 @@ class ArrTest extends ValTest {
 	public function testDoesntRecognizeValueAsEmptyStatically()
 	{
 		for ($i = 1; $i<100; $i++) {
-			$trueResult = static::$classname::isEmpty($i);
-			$falseResult = static::$classname::isNotEmpty($i);
+			$trueResult = static::$classname::isNotEmpty([$i]);
+			$falseResult = static::$classname::isEmpty([$i]);
 		
 			$this->assertTrue( $trueResult );
 			$this->assertFalse( $falseResult );

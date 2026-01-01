@@ -127,9 +127,13 @@ class Disk extends Storage implements IData
 
 		if ( function_exists('json_decode'))
 		{
-			$value = json_decode($value, true);
-			$this->contents($value);
-			$this->assign((array)$value);
+			$decoded = json_decode($value, true);
+			if (json_last_error() === JSON_ERROR_NONE) {
+				$this->contents($decoded);
+				$this->assign((array)$decoded);
+			} else {
+				$this->contents($value);
+			}
 		}
 	}
 	

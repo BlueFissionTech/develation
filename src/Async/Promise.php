@@ -49,7 +49,7 @@ class Promise {
                 if ($this->_onFulfill->isCallable()) {
                     $this->_onFulfill->call($this->_result);
                 }
-                if ($this->_asyncInstance && is_a(IAsync::class, $this->_asyncInstance)) {
+                if ($this->_asyncInstance && is_a($this->_asyncInstance, IAsync::class)) {
                     $this->_asyncInstance->perform(Event::SUCCESS, new Meta(data: $this));
                 }
             }
@@ -64,7 +64,7 @@ class Promise {
                 if ($this->_onReject->isCallable()) {
                     $this->_onReject->call($this->_result);
                 }
-                if ($this->_asyncInstance && is_a(IAsync::class, $this->_asyncInstance)) {
+                if ($this->_asyncInstance && is_a($this->_asyncInstance, IAsync::class)) {
                     $this->_asyncInstance->perform(Event::FAILURE, new Meta(data: $this));
                 }
             }

@@ -23,7 +23,7 @@ class StrTest extends ValTest {
 	{
 		$strings = [];
 		for ($i = 0; $i < 100; $i++ ) {
-			$string = $this->object->clear()->random()->val();
+			$string = $this->object->clear()->rand()->val();
 			$this->assertFalse(in_array($string, $strings));
 			$strings[] = $string;
 		}

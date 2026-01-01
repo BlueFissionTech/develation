@@ -32,7 +32,9 @@ class ConnectionTest extends \PHPUnit\Framework\TestCase {
 
 	public function testDefaultStatusIsNotConnected()
 	{
-		if ( !static::$canbetested ) return;
+		if ( !static::$canbetested ) {
+			$this->markTestSkipped('Cannot test connection');
+		}
 		$this->assertEquals(Connection::STATUS_NOTCONNECTED, $this->object->status() );
 	}
 

@@ -181,6 +181,17 @@ class Util {
         $cookie = filter_input(INPUT_COOKIE, $var);
 		$get = filter_input(INPUT_GET, $var);
 		$post = filter_input(INPUT_POST, $var);
+
+        if ($cookie === null) {
+            $cookie = $_COOKIE[$var] ?? null;
+        }
+        if ($post === null) {
+            $post = $_POST[$var] ?? null;
+        }
+        if ($get === null) {
+            $get = $_GET[$var] ?? null;
+        }
+
 		return ( Val::isNotNull($cookie) ) ? $cookie : ( ( Val::isNotNull($post) ) ? $post : $get);
 	}
 }

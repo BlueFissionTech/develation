@@ -5,6 +5,10 @@ namespace BlueFission\Async\Tests;
 use PHPUnit\Framework\TestCase;
 use BlueFission\Async\Remote;
 use BlueFission\Connections\Curl;
+use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../Support/TestEnvironment.php';
 
 class RemoteTest extends TestCase {
     protected function setUp(): void {
@@ -15,7 +19,14 @@ class RemoteTest extends TestCase {
     }
 
     public function testRemoteHttpRequestSuccessful() {
-        $url = 'https://bluefission.com';
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->markTestSkipped('Network tests are disabled');
+        }
+
+        $url = getenv('DEV_ELATION_REMOTE_TEST_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($url)) {
+            $this->markTestSkipped('Remote target is not reachable');
+        }
         $options = ['method' => 'GET', 'headers' => ['Accept' => 'application/json']];
         $result = '';
 
@@ -44,17 +55,30 @@ class RemoteTest extends TestCase {
     }
 
     public function testRemoteHttpRequestFailure() {
-        $url = 'https://bluefission.com/fail';
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->markTestSkipped('Network tests are disabled');
+        }
+
+        $url = getenv('DEV_ELATION_REMOTE_TEST_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($url)) {
+            $this->markTestSkipped('Remote target is not reachable');
+        }
+        $url = rtrim($url, '/') . '/fail';
         $options = ['method' => 'POST', 'data' => ['key' => 'value']];
+        $result = null;
 
         $promise = Remote::do($url, $options);
 
         // Attempt to execute the remote operation and handle failure
         $promise->then(
             function ($result) {}, 
-            function ($error) {
-                $this->asserTrue($error === null, "The Remote HTTP request should handle failures.");
+            function ($error) use (&$result) {
+                $result = $error;
             }
         );
+
+        Remote::run();
+
+        $this->assertNotNull($result);
     }
 }
