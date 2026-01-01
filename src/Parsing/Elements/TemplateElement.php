@@ -6,6 +6,7 @@ use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Block;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Data\FileSystem;
+use BlueFission\DevElation as Dev;
 
 class TemplateElement extends Element implements IRenderableElement
 {
@@ -39,9 +40,11 @@ class TemplateElement extends Element implements IRenderableElement
 
     public function build(): string
     {
+        Dev::do('_before', [$this]);
         $templatePath = $this->getAttribute('name');
 
         if (!$templatePath) return '';
+        $templatePath = Dev::apply('_in', $templatePath);
 
         // Register this template on the parent; actual output is deferred to later passes.
         $this->parent->setTemplate($this);
@@ -54,12 +57,15 @@ class TemplateElement extends Element implements IRenderableElement
 
         $fs = new FileSystem();
         $file = $fs->open($directory . $templatePath);
-        $this->raw = $file->read()->contents() ?? '';
+        $this->raw = Dev::apply('_in', $file->read()->contents() ?? '');
 
         $this->block->setContent($this->raw);
 
         // Defer output so post-processing can evaluate sections and outputs.
-        return '';//$this->raw;
+        $output = '';
+        $output = Dev::apply('_out', $output);
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function getDescription(): string

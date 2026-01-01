@@ -58,6 +58,11 @@ Construct HTML elements for forms, tables, and templating with ease, improving t
 
 - [HTML Tools Documentation](html_tools.md)
 
+### Parsing & Templating
+Vibe parsing, tag execution, includes, and template sections for declarative templating workflows.
+
+- [Parsing & Templating Documentation](parsing.md)
+
 ### Network Services
 Tools for handling email, HTTP requests, and IP operations, essential for developing web services and networked applications.
 

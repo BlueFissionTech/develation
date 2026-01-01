@@ -5,11 +5,13 @@ namespace BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\ILoopElement;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\DevElation as Dev;
 
 class CurrentElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
+        Dev::do('_before', [$this]);
         if (!$this->parent || !($this->parent instanceof ILoopElement)) {
             return '';
         }
@@ -18,7 +20,10 @@ class CurrentElement extends Element implements IRenderableElement
         
         $value = $this->getNestedValue($var);
 
-        return (string)$value;
+        $output = (string)$value;
+        $output = Dev::apply('_out', $output);
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function getDescription(): string

@@ -247,7 +247,11 @@ class FileSystem extends Data implements IData {
 		$root = $this->config('root') ?? $this->getSystemRoot();
 		// Maybe we should override the root if its passed with the path?
 		// $root = ( $root && Str::pos($path, $root) === 0 ) ? $root : '';
-		if ( Str::pos($path, DIRECTORY_SEPARATOR) === 0 && Arr::is($info) ) {
+		$isAbsolutePath = Str::pos($path, DIRECTORY_SEPARATOR) === 0;
+		if (!$isAbsolutePath && Str::is($path)) {
+			$isAbsolutePath = preg_match('/^[A-Z]:\\\\/i', $path) === 1;
+		}
+		if ( $isAbsolutePath && Arr::is($info) ) {
 			$root = $info['dirname'] ?? $root;
 		}
 

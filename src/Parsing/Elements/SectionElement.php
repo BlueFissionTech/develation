@@ -6,6 +6,7 @@ use BlueFission\Parsing\Element;
 use BlueFission\Collections\Collection;
 use BlueFission\Parsing\Elements\TemplateElement;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\DevElation as Dev;
 
 class SectionElement extends Element implements IRenderableElement
 {
@@ -28,6 +29,7 @@ class SectionElement extends Element implements IRenderableElement
 
     public function getTemplate(): ?Element
     {
+        Dev::do('_before', [$this]);
         if ($this->template) return $this->template;
 
         // Walk ancestors to find the nearest template context.
@@ -49,11 +51,13 @@ class SectionElement extends Element implements IRenderableElement
 
         $this->template = $template;
 
+        Dev::do('_after', [$this->template, $this]);
         return $template;
     }
 
     public function build(): string
     {
+        Dev::do('_before', [$this]);
         $sectionName = $this->getAttribute('name');
 
         if ($sectionName) {
@@ -66,7 +70,10 @@ class SectionElement extends Element implements IRenderableElement
             }
         }
 
-        return $this->getContent();
+        $output = $this->getContent();
+        $output = Dev::apply('_out', $output);
+        Dev::do('_after', [$output, $this]);
+        return $output;
         // return $this->render();
     }
 

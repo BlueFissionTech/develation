@@ -14,6 +14,7 @@ use BlueFission\Parsing\Registry\StandardRegistry;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
 use BlueFission\Val;
+use BlueFission\DevElation as Dev;
 
 class EvalElement extends Element implements IExecutableElement, IRenderableElement
 {
@@ -41,6 +42,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
     public function execute(): mixed
     {
         // Evaluation here is side-effect driven; extensions control output behavior.
+        Dev::do('_before', [$this]);
         $this->name = $this->attributes['expression'];
         if (strpos($this->name, ':')) {
             $parts = explode(':', $this->name, 2);
@@ -51,6 +53,8 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
         }
 
         $this->value = $this->evaluator->evaluate($this->raw);
+        $this->value = Dev::apply('_out', $this->value);
+        Dev::do('_after', [$this->value, $this]);
 
         return $this->value;
     }

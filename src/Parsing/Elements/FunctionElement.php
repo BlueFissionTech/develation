@@ -8,25 +8,32 @@ use BlueFission\Parsing\Contracts\IToolFunction;
 use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\Registry\GeneratorRegistry;
 use BlueFission\Parsing\Element;
+use BlueFission\DevElation as Dev;
 
 class FunctionElement extends Element implements IExecutableElement, IRenderableElement
 {
     public function render(): string
     {
+        Dev::do('_before', [$this]);
         $result = $this->execute();
+        $result = Dev::apply('_out', $result);
 
         // Check for silent attribute
         $silent = $this->getAttribute('silent') ?? 'false';
         if (filter_var($silent, FILTER_VALIDATE_BOOLEAN)) {
+            Dev::do('_after', ['', $this]);
             return '';
         }
 
+        Dev::do('_after', [$result, $this]);
         return $result;
     }
 
     public function execute(): mixed
     {
+        Dev::do('_before', [$this]);
         $rawExpr = array_keys($this->attributes)[0] ?? '';
+        $rawExpr = Dev::apply('_in', $rawExpr);
 
         // Check for assignment syntax -> varName
         $assignTo = null;
@@ -53,6 +60,7 @@ class FunctionElement extends Element implements IExecutableElement, IRenderable
             $this->block->setVar($assignTo, $result);
         }
 
+        Dev::do('_after', [$result, $this]);
         return $result;
     }
 

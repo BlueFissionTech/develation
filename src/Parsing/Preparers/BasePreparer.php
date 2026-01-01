@@ -4,6 +4,7 @@ namespace BlueFission\Parsing\Preparers;
 
 use BlueFission\Parsing\Contracts\IElementPreparer;
 use BlueFission\Parsing\Element;
+use BlueFission\DevElation as Dev;
 
 abstract class BasePreparer implements IElementPreparer
 {
@@ -14,7 +15,7 @@ abstract class BasePreparer implements IElementPreparer
 	public function __construct($data = null)
 	{
 		if ($data) {
-			$this->data = $data;
+			$this->data = Dev::apply('_in', $data);
 		}
 	}
 
@@ -33,7 +34,7 @@ abstract class BasePreparer implements IElementPreparer
 			}
 		}
 
-		return $passes;
+		return Dev::apply('_out', $passes);
 	}
 
 	public function setsSupported(array $supports):void
@@ -43,17 +44,17 @@ abstract class BasePreparer implements IElementPreparer
 
 	public function setContext($context = null): void
 	{
-		$this->context = $context;
+		$this->context = Dev::apply('_in', $context);
 	}
 
 	public function getData(): mixed
 	{
-		return $this->data;
+		return Dev::apply('_out', $this->data);
 	}
 
 	public function getContext(): mixed
 	{
-		return $this->context;
+		return Dev::apply('_out', $this->context);
 	}
 
 	abstract public function prepare(Element $element): void;

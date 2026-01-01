@@ -6,14 +6,17 @@ use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Block;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Data\FileSystem;
+use BlueFission\DevElation as Dev;
 
 class IncludeElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
+        Dev::do('_before', [$this]);
         $modulePath = $this->getAttribute('name');
 
         if (!$modulePath) return '';
+        $modulePath = Dev::apply('_in', $modulePath);
 
         $directory = $this->includePaths['modules'] ??
         $this->includePaths[1] ??
@@ -24,11 +27,14 @@ class IncludeElement extends Element implements IRenderableElement
 
         $fs = new FileSystem();
         $file = $fs->open($directory . $modulePath);
-        $this->raw = $file->read()->contents() ?? '';
+        $this->raw = Dev::apply('_in', $file->read()->contents() ?? '');
 
         $this->block->setContent($this->raw);
 
-        return parent::render();
+        $output = parent::render();
+        $output = Dev::apply('_out', $output);
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function getDescription(): string

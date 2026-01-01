@@ -1,0 +1,14 @@
+# Dependencies
+/vendor/
+
+# IDE/editor
+/.idea/
+/.vscode/
+
+# PHPUnit
+/.phpunit.cache/
+/.phpunit.result.cache
+
+# Test temp artifacts
+/tests/Parsing/_tmp/
+/tests/HTML/_tmp/

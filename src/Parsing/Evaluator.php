@@ -17,6 +17,7 @@ use BlueFission\Val;
 use BlueFission\Obj;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
+use BlueFission\DevElation as Dev;
 
 class Evaluator implements IDispatcher
 {
@@ -54,6 +55,8 @@ class Evaluator implements IDispatcher
     public function evaluate(string $expression = ''): mixed
     {
         // Parse assignment/cast/push/append flags, then resolve and store the result.
+        $expression = Dev::apply('_in', $expression);
+        Dev::do('_before', [$expression, $this->element]);
         $this->expression = $expression;
         $this->var = '';
         $this->type = 'val'; // Default type
@@ -74,6 +77,7 @@ class Evaluator implements IDispatcher
         }
 
         $value = $this->process();
+        $value = Dev::apply('_out', $value);
 
         $this->value = $value ?? '';
 
@@ -106,6 +110,7 @@ class Evaluator implements IDispatcher
         }
 
         $this->element->setScopeVariable($this->var, $value);
+        Dev::do('_after', [$this->var, $value, $this->element]);
 
         return $this->value;
     }
@@ -116,6 +121,7 @@ class Evaluator implements IDispatcher
 
         // Strip surrounding ={} if present
         $expression = ltrim($expression, '= ');
+        $expression = Dev::apply('_in', $expression);
         $steps = preg_split('/->/', $expression);
 
         // Merge element attributes with inline call options so extensions can override behavior.

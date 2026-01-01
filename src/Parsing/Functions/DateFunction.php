@@ -3,6 +3,7 @@
 namespace BlueFission\Parsing\Functions;
 
 use BlueFission\Parsing\Contracts\IToolFunction;
+use BlueFission\DevElation as Dev;
 
 class DateFunction implements IToolFunction {
     public function name(): string {
@@ -10,6 +11,7 @@ class DateFunction implements IToolFunction {
     }
 
     public function execute(array $args): mixed {
+        $args = Dev::apply('_in', $args);
         $timestamp = $args[0] ?? '';
         $format = $args[1] ?? 'Y-m-d H:i:s';
         if (!is_numeric($timestamp)) {
@@ -22,6 +24,6 @@ class DateFunction implements IToolFunction {
             return 'Invalid date format';
         }
 
-        return $date;
+        return Dev::apply('_out', $date);
     }
 }

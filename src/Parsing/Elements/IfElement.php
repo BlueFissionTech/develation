@@ -5,11 +5,13 @@ namespace BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\IConditionElement;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\DevElation as Dev;
 
 class IfElement extends Element implements IConditionElement, IRenderableElement
 {
     public function evaluate(): bool
     {
+        Dev::do('_before', [$this]);
         $left = $this->getAttribute('var') ?? null;
         $right = $this->getAttribute('equals') ??
                  $this->getAttribute('not_equals') ??
@@ -36,6 +38,8 @@ class IfElement extends Element implements IConditionElement, IRenderableElement
             default => $left == $right,
         };
 
+        $result = Dev::apply('_out', $result);
+        Dev::do('_after', [$result, $this]);
         return $result;
     }
 

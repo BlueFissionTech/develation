@@ -5,15 +5,19 @@ namespace BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Registry\ValidatorRegistry;
 use BlueFission\Parsing\Contracts\ILoopElement;
+use BlueFission\DevElation as Dev;
 
 class UntilElement extends Element implements ILoopElement
 {
     public function run(): string
     {
+        Dev::do('_before', [$this]);
         $output = '';
         while ($this->evaluate()) {
             $output .= $this->block->process();
         }
+        $output = Dev::apply('_out', $output);
+        Dev::do('_after', [$output, $this]);
         return $output;
     }
 
@@ -28,6 +32,7 @@ class UntilElement extends Element implements ILoopElement
             return false;
         }
 
+        $result = Dev::apply('_out', $result);
         return $result;
     }
 

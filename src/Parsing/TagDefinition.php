@@ -3,6 +3,7 @@
 namespace BlueFission\Parsing;
 
 use BlueFission\Str;
+use BlueFission\DevElation as Dev;
 
 /**
  * Tag types used as tokens by the parser
@@ -25,19 +26,19 @@ class TagDefinition {
         ?string $class = null,
         ?string $renderer = null
     ) {
-        $this->name = $name;
-        $this->pattern = $pattern;
-        $this->unifiedPattern = $unifiedPattern;
-        $this->attributes = $attributes;
-        $this->interface = $interface;
-        $this->renderer = $renderer;
-        $this->class = $class;
+        $this->name = Dev::apply('_in', $name);
+        $this->pattern = Dev::apply('_in', $pattern);
+        $this->unifiedPattern = Dev::apply('_in', $unifiedPattern);
+        $this->attributes = Dev::apply('_attributes', $attributes);
+        $this->interface = Dev::apply('_in', $interface);
+        $this->renderer = Dev::apply('_in', $renderer);
+        $this->class = Dev::apply('_in', $class);
     }
 
     public function token(): string
     {
         $token = '__'.Str::slugify($this->name, '_').'__';
 
-        return $token;
+        return Dev::apply('_out', $token);
     }
 }

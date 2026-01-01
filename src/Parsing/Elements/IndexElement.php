@@ -4,12 +4,17 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\DevElation as Dev;
 
 class IndexElement extends Element implements IRenderableElement
 {
     public function render(): string
     {
-        return (string) $this->parent->getIndex();
+        Dev::do('_before', [$this]);
+        $output = (string) $this->parent->getIndex();
+        $output = Dev::apply('_out', $output);
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function getDescription(): string

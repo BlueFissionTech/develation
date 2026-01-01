@@ -10,6 +10,7 @@ use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Registry\DatatypeRegistry;
+use BlueFission\DevElation as Dev;
 
 /**
  * Represents a matched element in the template
@@ -39,8 +40,8 @@ class Element extends Obj {
         $this->__dispatchConstruct();
         $this->tag = $tag;
         $this->match = $match;
-        $this->raw = $raw;
-        $this->attributes = $attributes;
+        $this->raw = Dev::apply('_in', $raw);
+        $this->attributes = Dev::apply('_attributes', $attributes);
 
         if (!$this->uuid) {
             $this->uuid = uniqid($this->getTag()."_", true);
@@ -91,7 +92,7 @@ class Element extends Obj {
     }
 
     public function setIncludePaths(array $paths): void {
-        $this->includePaths = $paths;
+        $this->includePaths = Dev::apply('_in', $paths);
     }
 
     public function getIncludePaths(): array
@@ -101,6 +102,7 @@ class Element extends Obj {
 
     public function render(): string
     {
+        Dev::do('_before', [$this]);
         $this->parse();
         $this->block->process();
 
@@ -109,7 +111,10 @@ class Element extends Obj {
             $this->setContent($templateContent);
         }
 
-        return $this->block->content;
+        $content = Dev::apply('_out', $this->block->content);
+        $this->block->content = $content;
+        Dev::do('_after', [$content, $this]);
+        return $content;
     }
 
     public function getMatch(): string
@@ -156,12 +161,12 @@ class Element extends Obj {
     {
         $content = $this->block->content;
 
-        return $content;
+        return Dev::apply('_out', $content);
     }
 
     public function setContent($content): void
     {
-        $this->block->content = $content;
+        $this->block->content = Dev::apply('_in', $content);
     }
 
     public function getName(): string
@@ -195,7 +200,8 @@ class Element extends Obj {
 
         $value = $this->attributes[$name];
 
-        return $this->resolveValue($value);
+        $value = $this->resolveValue($value);
+        return Dev::apply('_attribute', $value);
     }
 
     public function getAttributes(): array
@@ -205,7 +211,7 @@ class Element extends Obj {
             $attributes[$key] = $this->resolveValue($value);
         }
 
-        return $attributes;
+        return Dev::apply('_attributes', $attributes);
     }
 
     public function getRoot(): Element
@@ -270,11 +276,11 @@ class Element extends Obj {
             $parsed = json_decode($parsed, true);
         }
 
-        return $parsed;
+        return Dev::apply('_value', $parsed);
     }
 
     public function resolveCastClass(string $cast): string
     {
-        return DatatypeRegistry::get($cast);
+        return Dev::apply('_cast', DatatypeRegistry::get($cast));
     }
 }

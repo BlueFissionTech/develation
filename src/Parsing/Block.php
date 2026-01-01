@@ -20,6 +20,7 @@ use BlueFission\Parsing\Contracts\ILoopElement;
 use BlueFission\Parsing\Contracts\IConditionElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\DevElation as Dev;
 
 /**
  * Represents a logical block of content, used for root or element scope
@@ -69,6 +70,8 @@ class Block extends Obj {
 
     public function parse(): void
     {
+        $this->content = Dev::apply('_in', $this->content);
+        Dev::do('_before', [$this->content, $this]);
         $pattern = TagRegistry::unifiedPattern();
 
         if (preg_match_all($pattern, $this->content, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
@@ -80,8 +83,10 @@ class Block extends Obj {
                         $capture = $match[$tag][0];
                         $raw = end($match)[0];
                         $attributes = TagRegistry::extractAttributes($tag, $match[$tag][0]);
+                        $attributes = Dev::apply('_attributes', $attributes);
                         $elementClass = TagRegistry::get($tag)->class;
                         $element = new $elementClass($tag, $capture, $raw, $attributes);
+                        $element = Dev::apply('_element', $element);
                         $this->prepareElement($element);
                         $this->elements[] = $element;
                         $this->perform(Event::ITEM_ADDED, new Meta(
@@ -93,16 +98,19 @@ class Block extends Obj {
                 }
             }
         }
+        Dev::do('_after', [$this->elements, $this]);
     }
 
     public function process(): void
     {
         $this->perform(State::PROCESSING);
+        Dev::do('_before', [$this]);
         foreach ($this->elements as $element) {
             $output = '';
             $result = null;
             $renderer = RendererRegistry::get($element->getTag());
             $executor = ExecutorRegistry::get($element->getTag());
+            Dev::do('parsing.block.before_element', [$element, $this]);
 
             if ($element instanceof IConditionElement) {
                 if ($element->evaluate()) {
@@ -117,10 +125,13 @@ class Block extends Obj {
                 $output = $renderer->render($element);
             }
 
+            $output = Dev::apply('_output', $output);
             $this->content = Str::replace($this->content, $element->getMatch(), $output);
+            Dev::do('parsing.block.after_element', [$element, $output, $this]);
         }
         $this->perform(Event::PROCESSED);
         $this->halt(State::PROCESSING);
+        Dev::do('_after', [$this->content, $this]);
     }
 
     public function isClosed(): bool
@@ -175,7 +186,7 @@ class Block extends Obj {
 
     public function setContent(string $content): void
     {
-        $this->content = $content;
+        $this->content = Dev::apply('_in', $content);
     }
 
     public function allVars(): array
