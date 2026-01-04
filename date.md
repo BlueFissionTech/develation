@@ -94,3 +94,64 @@ echo $date->time(14, 30, 0); // Sets the time to 2:30 PM and outputs the result
 // Get the difference in days
 $anotherDate = new BlueFission\Date('2023-04-05');
 echo $date->difference($anotherDate->val(), 'days'); // Outputs the difference in days
+
+# E-Commerce Example with BlueFission Date Wrapper
+
+The `Date` class in BlueFission gives you a smarter way to handle time and date in your online store. You can create and format order dates, calculate shipping time, and handle timezones easily — all while keeping your code clean and object-oriented.
+
+---
+
+## 1. Create an Order Date in a Specific Timezone
+
+```php
+use BlueFission\Date;
+
+// Customer places an order on April 1, 2023, in New York time
+$orderDate = new Date('2023-04-01', 'America/New_York');
+
+echo $orderDate->format('Y-m-d H:i:s');
+// Outputs: 2023-04-01 00:00:00 (adjusted to NY time)
+```
+
+## 2. Set Delivery Time
+
+```php
+// Set delivery time to 2:30 PM on the same day
+echo $orderDate->time(14, 30, 0);
+// Outputs: 14:30:00
+```
+
+## 3. Compare to Expected Delivery Date
+
+```php
+$deliveryDate = new Date('2023-04-05');
+
+// Find how many days until delivery
+echo $orderDate->difference($deliveryDate->val(), 'days');
+// Outputs: 4
+```
+
+## 4. Get Timestamps for Logs or Sorting
+
+```php
+echo $orderDate->timestamp();
+// Outputs a UNIX timestamp like 1680307200
+```
+
+## 5. Format Dates for Emails
+
+```php
+echo $deliveryDate->format('l, F jS Y');
+// Outputs: Wednesday, April 5th 2023
+```
+
+## Summary
+
+With BlueFission’s Date class, you can:
+
+- Set and format order dates  
+- Calculate time between now and delivery  
+- Handle different timezones easily  
+- Send nicely formatted dates in emails or receipts  
+- Log events with exact timestamps
+
