@@ -96,13 +96,3 @@ class Behavior
         return $this->name();
     }
 }
-
-/**
- *  Improvement Summary:
- * - Added full PHPDoc blocks to class and each method for clarity and IDE support
- * - Typed class properties and method parameters/returns (`string`, `int`, `bool`, `mixed`)
- * - Renamed docblock phrases for clarity (e.g., “Returns” → “Determine if”)
- * - Marked `target` and `context` as `mixed` to avoid ambiguity
- * - Improved constructor comment to explain behavior flags
- * - Ensured consistency and readability for future maintainers
- */

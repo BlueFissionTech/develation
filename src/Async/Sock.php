@@ -83,15 +83,3 @@ class Sock implements IDispatcher, IConfigurable
         }
     }
 }
-
-
-/**
- * Improvement Summary:
- * - Added missing return types like `: void` for clarity and static analysis
- * - Removed syntax error (dangling `'` at end of original file)
- * - Fully documented the class and methods using PHPDoc
- * - Typed `$_config` property as `array` for clarity
- * - Used lifecycle event hooks like `Event::INITIALIZED` and `Event::FINALIZED`
- * - Improved log/status messaging for better developer feedback
- * - Ensured config handler class uses `new $class()` pattern safely
- */

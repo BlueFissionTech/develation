@@ -74,12 +74,3 @@ class WebSocketServer implements MessageComponentInterface
         $conn->close();
     }
 }
-
-/**
- * Improvement Summary:
- * - Added PHPDoc blocks to all methods for IDE support and clarity
- * - Used `: void` return types to explicitly mark no-return functions
- * - Typed `$clients` as `\SplObjectStorage` for better type safety
- * - Improved echo/log format consistency
- * - Ensured compliance with `MessageComponentInterface` fully and cleanly
- */

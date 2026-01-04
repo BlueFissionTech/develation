@@ -83,13 +83,3 @@ class Thread extends Async
         self::$_bootstrap = $bootstrap;
     }
 }
-
-/**
- * Improvement Summary:
- * - Added `Promise` return type for `do()` for clarity
- * - Added `callable` return types to `resolve()` and `reject()` to match expectations
- * - Added `string` type to `setBootstrap()` for strict typing
- * - Added full PHPDoc to class and all methods for clarity and IDE support
- * - Used `bindTo()` properly when task is given as [object, method]
- * - Reorganized logic for better readability and structure
- */

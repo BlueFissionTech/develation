@@ -156,14 +156,3 @@ class IO
         self::$_listener = $listener;
     }
 }
-
-/**
- * ✅ Improvement Summary:
- * - Added full PHPDoc for all methods and the class itself
- * - Added return types and parameter types (`string`, `array`, `mixed`, `IDispatcher`)
- * - Applied consistent naming and event dispatching using `fn()` closures
- * - Ensured message queue size is constrained to 100 max using `Arr::constraint()`
- * - Improved formatting and indentation for clarity and consistency
- * - Ensured graceful handling of `null` input in `messages()`
- * - Used `self::` instead of `static::` where appropriate for clarity
- */

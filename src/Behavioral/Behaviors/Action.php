@@ -71,12 +71,3 @@ class Action extends Behavior
         parent::__construct($name, 0, false, true);
     }
 }
-
-/**
- *  Improvement Summary:
- * - Added full docblocks to the class and constructor for clarity
- * - Grouped constants by logical categories (CRUD, UI, Network, etc.)
- * - Cleaned up inline comments to be concise and consistent
- * - Typed constructor parameter as `string` for strict mode safety
- * - Ensured format matches Behavior standards and is ready for IDE hints
- */

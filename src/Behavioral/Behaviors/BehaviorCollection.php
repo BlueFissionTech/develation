@@ -62,13 +62,3 @@ class BehaviorCollection extends Collection
         return false;
     }
 }
-
-/**
- * ✅ Improvement Summary:
- * - Added return types (`?Behavior`, `bool`, `ICollection`) for stricter type safety
- * - Added full PHPDoc for all methods and the class itself
- * - Used strict equality (`===`) for more reliable behavior name matching
- * - Ensured fallback return `null` for `get()` when no match is found
- * - Cleaned up formatting and spacing for consistency
- * - Removed unused `$label` logic for now but left parameter for future expansion
- */
