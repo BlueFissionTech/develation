@@ -10,7 +10,12 @@ use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Behaviors\Event;
 
-class Sock implements IDispatcher, IConfigurable {
+/**
+ * Sock class sets up a WebSocket server using Ratchet.
+ * It supports configuration for host, port, and handler class.
+ */
+class Sock implements IDispatcher, IConfigurable
+{
     use Configurable {
         Configurable::__construct as private __configConstruct;
     }
@@ -18,24 +23,38 @@ class Sock implements IDispatcher, IConfigurable {
     private $_server;
     private $_port;
 
-    protected $_config = [
+    protected array $_config = [
         'host' => 'localhost',
-        'port' => '8080',
-        'path' => null, // Optional: path where the WebSocket server should serve
+        'port' => 8080,
+        'path' => null, // Optional path for advanced routing
         'class' => WebSocketServer::class, // Your WebSocket handler class
     ];
 
-    public function __construct($port = 8080, $config = []) {
-        
+    /**
+     * Constructor for Sock server.
+     *
+     * @param int $port Port to run the WebSocket server on
+     * @param array $config Optional additional config
+     */
+    public function __construct(int $port = 8080, array $config = [])
+    {
         $this->__configConstruct($config);
 
         $this->_port = $port;
         $this->config($config);
     }
 
-    public function start() {
+    /**
+     * Starts the WebSocket server.
+     *
+     * @return void
+     */
+    public function start(): void
+    {
         $this->status("Starting WebSocket server on port {$this->config('port')}");
+
         $class = $this->config('class');
+
         $webSocket = new WsServer(new $class());
         $server = IoServer::factory(
             new HttpServer($webSocket),
@@ -44,11 +63,18 @@ class Sock implements IDispatcher, IConfigurable {
         );
 
         $this->_server = $server;
+
         $this->perform(Event::INITIALIZED);
         $server->run();
     }
 
-    public function stop() {
+    /**
+     * Stops the WebSocket server.
+     *
+     * @return void
+     */
+    public function stop(): void
+    {
         if ($this->_server) {
             $this->_server->socket->close();
             $this->_server = null;

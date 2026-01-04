@@ -1,13 +1,14 @@
 <?php
+
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Connection;
 use BlueFission\Connections\Stdio;
 
-class StdioTest extends ConnectionTest {
- 
-    static $classname = 'BlueFission\Connections\Stdio';
-    static $canbetested = true;
+class StdioTest extends ConnectionTest
+{
+    public static $classname = 'BlueFission\Connections\Stdio';
+    public static $canbetested = true;
 
     public function setUp(): void
     {
@@ -18,7 +19,7 @@ class StdioTest extends ConnectionTest {
     // {
     //     if (!static::$canbetested) return;
     //     $this->object->open();
-        
+
     //     // Simulate input for STDIN for testing purposes
     //     fwrite(STDIN, "test input\n");
     //     rewind(STDIN);
@@ -28,7 +29,9 @@ class StdioTest extends ConnectionTest {
 
     public function testConnectionStatusOnOpenInput()
     {
-        if (!static::$canbetested) return;
+        if (!static::$canbetested) {
+            return;
+        }
         $this->object->open();
 
         $this->assertEquals(Connection::STATUS_CONNECTED, $this->object->status(), "Status should be connected after opening input.");
@@ -36,7 +39,9 @@ class StdioTest extends ConnectionTest {
 
     public function testConnectionStatusOnOpenOutput()
     {
-        if (!static::$canbetested) return;
+        if (!static::$canbetested) {
+            return;
+        }
         $this->object->open();
 
         $this->assertEquals(Connection::STATUS_CONNECTED, $this->object->status(), "Status should be connected after opening output.");

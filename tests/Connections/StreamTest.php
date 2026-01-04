@@ -1,19 +1,20 @@
 <?php
+
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Stream;
- 
-class StreamTest extends ConnectionTest {
- 
- 	static $classname = 'BlueFission\Connections\Stream';
 
- 	public function setUp(): void
- 	{
- 		// Set up a bunch of conditions to create an acceptable test connection here
- 		parent::setUp();
- 	}
+class StreamTest extends ConnectionTest
+{
+    public static $classname = 'BlueFission\Connections\Stream';
 
- 	public function testOpen()
+    public function setUp(): void
+    {
+        // Set up a bunch of conditions to create an acceptable test connection here
+        parent::setUp();
+    }
+
+    public function testOpen()
     {
         $stream = new Stream();
         $stream->open();

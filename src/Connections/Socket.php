@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Connections;
 
 use BlueFission\Val;
@@ -10,7 +11,6 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Meta;
-use BlueFission\DevElation as Dev;
 
 /**
  * Class Socket
@@ -85,15 +85,15 @@ class Socket extends Connection implements IConfigurable
 
             $this->_connection = fsockopen($this->_host, $port, $error_number, $error_string, 30);
 
-            $status = ($this->_connection) 
+            $status = ($this->_connection)
             ? self::STATUS_CONNECTED : (($error_string) ? ($error_string . ': ' . $error_number) : self::STATUS_NOTCONNECTED);
 
-            $this->perform( $this->_connection 
-            	? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+            $this->perform($this->_connection
+                ? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
 
         } else {
             $status = self::STATUS_FAILED;
-            $this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status ) );
+            $this->perform([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
         }
 
         $this->status($status);
@@ -110,97 +110,92 @@ class Socket extends Connection implements IConfigurable
      */
     protected function _close(): void
     {
-    	if ( $this->_connection) {
-        	fclose($this->_connection);
-    	}
-		$this->perform(State::DISCONNECTED);
+        if ($this->_connection) {
+            fclose($this->_connection);
+        }
+        $this->perform(State::DISCONNECTED);
     }
-	
-	/**
-	 * Performs an HTTP query
-	 *
-	 * @param string|null $query The query to be performed. If not provided, the query will use the method specified in the config.
-	 *
-	 * @return IObj
-	 */
-	public function query( $query = null ): IObj
-	{
 
-		$this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
+    /**
+     * Performs an HTTP query
+     *
+     * @param string|null $query The query to be performed. If not provided, the query will use the method specified in the config.
+     *
+     * @return IObj
+     */
+    public function query($query = null): IObj
+    {
+
+        $this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
 
-		$socket = $this->_connection;
-		$status = '';
-		
-		if ($socket) 
-		{
-			$method = $this->config('method');
-			
-			$data = HTTP::query($this->_data);
+        $socket = $this->_connection;
+        $status = '';
 
-			if (Val::is($data)) {
-				$this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
-			}
+        if ($socket) {
+            $method = $this->config('method');
 
-			$method = strtoupper($method);
-			$request = '';
-			
-			$user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'PHP/'.phpversion();
-			
-			if ($method == 'GET') {
-				$request .= '/' . $this->_url . '?';
-				$request .= $data;
-				$request .= "\r\n";
-				$request .= "User-Agent: Dev-Elation\r\n"; 
-				$request .= "Connection: Close\r\n";
-				$request .= "Content-Length: 0\r\n";
-				
-				$cmd = "GET $request HTTP/1.0\r\nHost: ".$this->_host."\r\n\r\n";
-			} elseif ($method == 'POST') {
-				
-				$request .= '/' . $this->_url;
-				$request .= "\r\n";
-				$request .= "User-Agent: Dev-Elation\r\n"; 
-				$request .= "Content-Type: application/x-www-form-urlencoded\r\n";
-				$request .= "Content-Length: ".strlen($data)."\r\n";
-				$request .= $data;
-			} else {
-				$status = self::STATUS_FAILED;
-				$this->status($status);
-				return false;
-			}
-			
-			$cmd = "$method $request HTTP/1.1\r\nHost: ".$this->_host."\r\n";
-			
-			$this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
-			fputs($socket, $cmd);
-			
-			while (!feof($socket)) 
-			{
-				$chunk = fgets($socket, 1024);
+            $data = HTTP::query($this->_data);
 
-				$chunk = Dev::apply('socket.chunk.recieved', $chunk);
+            if (Val::is($data)) {
+                $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
+            }
 
-				$this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
+            $method = strtoupper($method);
+            $request = '';
 
-				$this->_result .= $chunk;
-			}
-			$this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
+            $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'PHP/'.phpversion();
 
-			$status = $this->_result ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+            if ($method == 'GET') {
+                $request .= '/' . $this->_url . '?';
+                $request .= $data;
+                $request .= "\r\n";
+                $request .= "User-Agent: Dev-Elation\r\n";
+                $request .= "Connection: Close\r\n";
+                $request .= "Content-Length: 0\r\n";
 
-			$this->perform( 
-				$this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE], 
-				new Meta(when: Action::PROCESS, info: $status ) 
-			);
-		} else {
-			$status = self::STATUS_NOTCONNECTED;
-			$this->perform( [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status ) );
-		}	
-		
-		$this->halt(State::PERFORMING_ACTION);
-		$this->status($status);
+                $cmd = "GET $request HTTP/1.0\r\nHost: ".$this->_host."\r\n\r\n";
+            } elseif ($method == 'POST') {
 
-		return $this;
-	}
+                $request .= '/' . $this->_url;
+                $request .= "\r\n";
+                $request .= "User-Agent: Dev-Elation\r\n";
+                $request .= "Content-Type: application/x-www-form-urlencoded\r\n";
+                $request .= "Content-Length: ".strlen($data)."\r\n";
+                $request .= $data;
+            } else {
+                $status = self::STATUS_FAILED;
+                $this->status($status);
+                return false;
+            }
+
+            $cmd = "$method $request HTTP/1.1\r\nHost: ".$this->_host."\r\n";
+
+            $this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
+            fputs($socket, $cmd);
+
+            while (!feof($socket)) {
+                $chunk = fgets($socket, 1024);
+                $this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
+
+                $this->_result .= $chunk;
+            }
+            $this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
+
+            $status = $this->_result ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+
+            $this->perform(
+                $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(when: Action::PROCESS, info: $status)
+            );
+        } else {
+            $status = self::STATUS_NOTCONNECTED;
+            $this->perform([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::PROCESS, info: $status));
+        }
+
+        $this->halt(State::PERFORMING_ACTION);
+        $this->status($status);
+
+        return $this;
+    }
 }

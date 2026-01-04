@@ -7,227 +7,237 @@ use BlueFission\Data\FileSystem;
 use BlueFission\Collections\Collection;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
-use BlueFission\DevElation as Dev;
 
 /**
  * Class DiskQueue
  * This class implements the IQueue interface and serves as a disk based queue for message storage and processing
  */
-class DiskQueue extends Queue implements IQueue {
-	
-	/**
-	 * Directory name for the disk-based queue
-	 * @var string
-	 */
-	const DIRNAME = 'php_temp_stack_dir';
-	
-	/**
-	 * Filename prefix for messages stored in the disk-based queue
-	 * @var string
-	 */
-	const FILENAME = 'message_';
-	
-	/**
-	 * The instance of the disk-based queue
-	 * @var string
-	 */
-	private static $_stack;
-	
-	/**
-	 * The array of messages in the disk-based queue
-	 * @var array
-	 */
-	private static $_array;
+class DiskQueue extends Queue implements IQueue
+{
+    /**
+     * Directory name for the disk-based queue
+     * @var string
+     */
+    public const DIRNAME = 'php_temp_stack_dir';
 
-	private static $initialized = false;
+    /**
+     * Filename prefix for messages stored in the disk-based queue
+     * @var string
+     */
+    public const FILENAME = 'message_';
 
-	/**
-	 * Get the instance of the disk-based queue
-	 * @return string
-	 */
-	private static function instance() {
-		if(!self::$_stack) self::init();
-		return self::$_stack;
-	}
-	
-	/**
-	 * Initialize the disk-based queue by creating a directory and file system object
-	 * @return void
-	 */
-	private static function init() {
-		if (!self::$initialized) {
-			$tempfile = sys_get_temp_dir();
-			
-			$stack = $tempfile.DIRECTORY_SEPARATOR.self::DIRNAME;
+    /**
+     * The instance of the disk-based queue
+     * @var string
+     */
+    private static $_stack;
 
-			$fs = new FileSystem(array('root'=>$tempfile, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true));
-		    
-		    if (file_exists($stack) && !is_dir($stack)) { 
-		    	unlink($stack); 
-		    }
+    /**
+     * The array of messages in the disk-based queue
+     * @var array
+     */
+    private static $_array;
 
-		    if (!is_dir($stack)) {
-		    	$fs->mkdir(self::DIRNAME);
-		    }
-		    
-		    self::$_stack = $stack;
+    private static $initialized = false;
+
+    /**
+     * Get the instance of the disk-based queue
+     * @return string
+     */
+    private static function instance()
+    {
+        if (!self::$_stack) {
+            self::init();
+        }
+        return self::$_stack;
+    }
+
+    /**
+     * Initialize the disk-based queue by creating a directory and file system object
+     * @return void
+     */
+    private static function init()
+    {
+        if (!self::$initialized) {
+            $tempfile = sys_get_temp_dir();
+
+            $stack = $tempfile.DIRECTORY_SEPARATOR.self::DIRNAME;
+
+            $fs = new FileSystem(array('root' => $tempfile, 'mode' => 'a+', 'filter' => 'file', 'doNotConfirm' => true));
+
+            if (file_exists($stack) && !is_dir($stack)) {
+                unlink($stack);
+            }
+
+            if (!is_dir($stack)) {
+                $fs->mkdir(self::DIRNAME);
+            }
+
+            self::$_stack = $stack;
 
             self::$initialized = true;
         }
-	}
-	
-	/**
-	 * Check if the disk-based queue is empty
-	 * @param  string  $queue
-	 * @return boolean
-	 */
-	public static function isEmpty($queue) {
-		$stack = self::instance();
+    }
 
-		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'r', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));
-		$fs->dirname = $queue;
+    /**
+     * Check if the disk-based queue is empty
+     * @param  string  $queue
+     * @return boolean
+     */
+    public static function isEmpty($queue)
+    {
+        $stack = self::instance();
 
-		$array = $fs->listDir();
+        $fs = new FileSystem(array('root' => $stack, 'mode' => 'r', 'filter' => 'file', 'doNotConfirm' => true, 'lock' => true));
+        $fs->dirname = $queue;
 
-		if (!Arr::is($array)) return true;
+        $array = $fs->listDir();
 
-		return count( $array ) ? false : true;
-	}
+        if (!Arr::is($array)) {
+            return true;
+        }
 
-	/**
-	 * Dequeue messages from the disk-based queue
-	 * @param  string  $queue
-	 * @param  integer $after
-	 * @param  integer $until
-	 * @return mixed
-	 */
-	public static function dequeue($queue, $after=false, $until=false) {
-		$stack = self::instance();
+        return count($array) ? false : true;
+    }
 
-		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'a+', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));
-		$fs->dirname = $queue;
-		$array = $fs->listDir();
+    /**
+     * Dequeue messages from the disk-based queue
+     * @param  string  $queue
+     * @param  integer $after
+     * @param  integer $until
+     * @return mixed
+     */
+    public static function dequeue($queue, $after = false, $until = false)
+    {
+        $stack = self::instance();
 
-		if (  $array == false ) return false;
+        $fs = new FileSystem(array('root' => $stack, 'mode' => 'a+', 'filter' => 'file', 'doNotConfirm' => true, 'lock' => true));
+        $fs->dirname = $queue;
+        $array = $fs->listDir();
 
-		if ( self::$_mode == static::FILO ) {
-			$array = array_reverse($array);
-		}
+        if ($array == false) {
+            return false;
+        }
 
-		$message = null;
+        if (self::$_mode == static::FILO) {
+            $array = array_reverse($array);
+        }
 
-		if($after === false && $until === false) {
-			foreach ( $array as $file ) {
-				$fs->basename = $file;
-				$fs->open();
+        $message = null;
 
-				if ( $fs->isLocked() ) {
-					$fs->read();
-					$message = $fs->contents();
-					$fs->delete();
-					$fs->close();
+        if ($after === false && $until === false) {
+            foreach ($array as $file) {
+                $fs->basename = $file;
+                $fs->open();
 
-					$message = $message ? unserialize($message) : null;
-					$message = Dev::apply(null, $message);
-					
-					return $message;
-				}
-			}
-		} elseif($after !== false && $until === false) {
-			$until = self::tail($array);
-		}
+                if ($fs->isLocked()) {
+                    $fs->read();
+                    $message = $fs->contents();
+                    $fs->delete();
+                    $fs->close();
 
-		$items = [];
-		for($i=$after+1; $i<=$until; $i++)  {
-			$file = self::FILENAME . str_pad( $i, 11, '0', STR_PAD_LEFT);
-			$fs->filename = $file;
+                    return $message ? unserialize($message) : null;
+                }
+            }
+        } elseif ($after !== false && $until === false) {
+            $until = self::tail($array);
+        }
 
-			if ($fs->exists()) {
-				$fs->open();
-			}
+        $items = [];
+        for ($i = $after + 1; $i <= $until; $i++) {
+            $file = self::FILENAME . str_pad($i, 11, '0', STR_PAD_LEFT);
+            $fs->filename = $file;
 
-			if ( $fs->isLocked() ) {
-				$fs->read();
-				$message = $fs->contents();
-				$fs->delete()->close();
+            if ($fs->exists()) {
+                $fs->open();
+            }
 
+            if ($fs->isLocked()) {
+                $fs->read();
+                $message = $fs->contents();
+                $fs->delete()->close();
 
-				$message = $message ? unserialize($message) : null;
-				$message = Dev::apply(null, $message);
-				
-				$items[] = $message;
-				$message = null;
-			}
-		}
-		return new Collection($items);
-	}
-	
-	/**
-	 * Adds a new item to the specified queue.
-	 *
-	 * @param string $queue The name of the queue to add the item to.
-	 * @param mixed $item The item to be added to the queue.
-	 *
-	 * @return void
-	 */
-	public static function enqueue($queue, $item) {
-		$stack = self::instance();
+                $items[] = $message ? unserialize($message) : null;
+                $message = null;
+            }
+        }
+        return new Collection($items);
+    }
 
-		$fs = new FileSystem(['root'=>$stack, 'mode'=>'c', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true]);
+    /**
+     * Adds a new item to the specified queue.
+     *
+     * @param string $queue The name of the queue to add the item to.
+     * @param mixed $item The item to be added to the queue.
+     *
+     * @return void
+     */
+    public static function enqueue($queue, $item)
+    {
+        $stack = self::instance();
 
-		$fs->when(Event::CONNECTED, function () use ($fs) {
-			$fs->write();
-		})
-		->when(Event::SUCCESS, function ($behavior, $meta) use ($fs) {
-			if ( $meta->when == Action::SAVE ) {
-				$fs->close();
-			}
-		})
-		->when(Event::FAILURE, function ($b, $m) use ($fs) {
-			$fs->close();
-		})
-		->when(Event::ERROR, function ($b, $m) use ($fs) {
-			$fs->close();
-		});
+        $fs = new FileSystem(['root' => $stack, 'mode' => 'c', 'filter' => 'file', 'doNotConfirm' => true, 'lock' => true]);
 
-		$fs->dirname = $queue;
-    	$fs->mkdir();
+        $fs->when(Event::CONNECTED, function () use ($fs) {
+            $fs->write();
+        })
+        ->when(Event::SUCCESS, function ($behavior, $meta) use ($fs) {
+            if ($meta->when == Action::SAVE) {
+                $fs->close();
+            }
+        })
+        ->when(Event::FAILURE, function ($b, $m) use ($fs) {
+            $fs->close();
+        })
+        ->when(Event::ERROR, function ($b, $m) use ($fs) {
+            $fs->close();
+        });
 
-		$tail = self::tail($queue);
-		do {
-			$fs->basename = self::FILENAME . str_pad( $tail, 11, '0', STR_PAD_LEFT);
+        $fs->dirname = $queue;
+        $fs->mkdir();
 
-			$tail++;
-			if ($tail > 99999999999 ) $tail = 0;
-			if (!$fs->exists()) break;
-		} while($fs->exists());
+        $tail = self::tail($queue);
+        do {
+            $fs->basename = self::FILENAME . str_pad($tail, 11, '0', STR_PAD_LEFT);
 
-		$tail--;
+            $tail++;
+            if ($tail > 99999999999) {
+                $tail = 0;
+            }
+            if (!$fs->exists()) {
+                break;
+            }
+        } while ($fs->exists());
 
-		$fs->contents(serialize($item))->open();
-	}
+        $tail--;
 
-	/**
-	 * Retrieves the last item added to the specified queue.
-	 *
-	 * @param string $queue The name of the queue to retrieve the last item from.
-	 *
-	 * @return int The last item's index in the queue.
-	 */
-	private static function tail($queue) {
-		$stack = self::instance();
+        $fs->contents(serialize($item))->open();
+    }
 
-		$fs = new FileSystem(array('root'=>$stack, 'mode'=>'r', 'filter'=>'file', 'doNotConfirm'=>true, 'lock'=>true));
-		$fs->dirname = $queue;
-		$array = $fs->listDir();
+    /**
+     * Retrieves the last item added to the specified queue.
+     *
+     * @param string $queue The name of the queue to retrieve the last item from.
+     *
+     * @return int The last item's index in the queue.
+     */
+    private static function tail($queue)
+    {
+        $stack = self::instance();
 
-		if (!is_array($array) || count($array) < 1) return 1;
-		// rsort($array);
-		$last = end($array);
+        $fs = new FileSystem(array('root' => $stack, 'mode' => 'r', 'filter' => 'file', 'doNotConfirm' => true, 'lock' => true));
+        $fs->dirname = $queue;
+        $array = $fs->listDir();
 
-		$tail = str_replace([$stack, self::FILENAME, $queue,DIRECTORY_SEPARATOR], ['','','',''], $last);
+        if (!is_array($array) || count($array) < 1) {
+            return 1;
+        }
+        // rsort($array);
+        $last = end($array);
 
-		return (int)$tail;
-	}
+        $tail = str_replace([$stack, self::FILENAME, $queue,DIRECTORY_SEPARATOR], ['','','',''], $last);
+
+        return (int)$tail;
+    }
 
 }

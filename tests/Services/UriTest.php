@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests;
 
 use BlueFission\Services\Uri;

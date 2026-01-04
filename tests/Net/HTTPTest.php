@@ -1,12 +1,14 @@
 <?php
+
 namespace BlueFission\Tests\Net;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\Net\HTTP;
 
-class HTTPTest extends TestCase {
-
-    public function testQuery() {
+class HTTPTest extends TestCase
+{
+    public function testQuery()
+    {
         $formdata = [
             'key1' => 'value1',
             'key2' => 'value2'
@@ -18,12 +20,14 @@ class HTTPTest extends TestCase {
         $this->assertEquals($expected, $actual);
     }
 
-    public function testUrlExists() {
+    public function testUrlExists()
+    {
         $this->assertTrue(HTTP::urlExists('https://www.bluefission.com'));
         $this->assertFalse(HTTP::urlExists('http://nonexistenturl.com'));
     }
 
-    public function testDomain() {
+    public function testDomain()
+    {
         $_SERVER['HTTP_HOST'] = 'www.bluefission.com';
         $expected = '.bluefission.com';
         $actual = HTTP::domain();
@@ -35,7 +39,8 @@ class HTTPTest extends TestCase {
         $this->assertEquals($expected, $actual);
     }
 
-    public function testUrl() {
+    public function testUrl()
+    {
         $_SERVER['HTTP_HOST'] = 'www.bluefission.com';
         $_SERVER['REQUEST_URI'] = '/test';
         $_SERVER['HTTPS'] = 'on';
