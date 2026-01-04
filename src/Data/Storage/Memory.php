@@ -4,6 +4,7 @@ namespace BlueFission\Data\Storage;
 
 use BlueFission\IObj;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\DevElation as Dev;
 
 class Memory extends Storage
 {
@@ -36,6 +37,9 @@ class Memory extends Storage
     {
         rewind($this->_stream);
         $contents = stream_get_contents($this->_stream);
+
+        $contents = Dev::apply(null, $contents);
+
         $this->_contents = $contents ? json_decode($contents, true) : [];
     }
 
@@ -43,7 +47,10 @@ class Memory extends Storage
     {
         ftruncate($this->_stream, 0);
         rewind($this->_stream);
-        fwrite($this->_stream, json_encode($this->_contents));
+
+        $contents = Dev::apply(null, $this->_contents);
+        
+        fwrite($this->_stream, json_encode($contents));
     }
 
     protected function _delete(): void

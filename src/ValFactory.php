@@ -3,6 +3,7 @@
 namespace BlueFission;
 
 use BlueFission\DataTypes;
+use BlueFission\DevElation as Dev;
 use BlueFission\IVal;
 
 /**
@@ -11,12 +12,12 @@ use BlueFission\IVal;
 class ValFactory
 {
     /**
- * Factory method to create an IVal object of the specified type.
- *
- * @param string|DataTypes|null $type The data type to create (as string or DataTypes enum)
- * @param mixed ...$args Additional arguments passed to the constructor
- * @return IVal
- */
+     * Factory method to create an IVal object of the specified type.
+     *
+     * @param string|DataTypes|null $type The data type to create (as string or DataTypes enum)
+     * @param mixed ...$args Additional arguments passed to the constructor
+     * @return IVal
+     */
     public static function make($type = null): IVal
     {
         $args = func_get_args();
@@ -56,6 +57,8 @@ class ValFactory
                 $class = '\BlueFission\Val';
                 break;
         }
+
+        $class = Dev::apply(null, $class);
 
         return new $class(...$args);
     }

@@ -718,33 +718,31 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
-     * Get the change between the current value and the snapshot
+     * Get the change between the current value and the snapshot.
+     *
+     * For arrays, this is interpreted as the elements that are present in the
+     * current value but not in the snapshot. If no snapshot has been taken,
+     * the current array value is returned.
      *
      * @return mixed
      */
     public function delta()
     {
-        return $this->distance($this->_snapshot);
-    }
-
-    public function _distance(array $array2): float
-    {
         if (!$this->is($this->_data)) {
-            return $this;
+            return $this->_data;
         }
 
-        $array1 = $this->_data;
-
-        $keys = array_unique(array_merge(array_keys($array1), array_keys($array2)));
-        $distance = 0;
-
-        foreach ($keys as $key) {
-            $value1 = $array1[$key] ?? 0;
-            $value2 = $array2[$key] ?? 0;
-            $distance += abs($value1 - $value2);
+        // If there is no snapshot, treat the whole array as the delta.
+        if (!is_array($this->_snapshot)) {
+            return $this->_data;
         }
 
-        return $distance;
+        if (!is_array($this->_data)) {
+            return $this->_data;
+        }
+
+        // Return items that are in the current array but not in the snapshot.
+        return array_diff($this->_data, $this->_snapshot);
     }
 
     /**

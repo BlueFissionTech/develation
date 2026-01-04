@@ -483,12 +483,26 @@ class Str extends Val implements IVal
      */
     public function delta(): float
     {
-        if ($this->_snapshot !== $this->_data) {
-            // Get absolute value
-            return abs(Str::compare($this->_snapshot, $this->_data));
+        if ($this->_snapshot === $this->_data) {
+            return 0.0;
         }
 
-        return 0;
+        try {
+            $similarity = Str::similarityTo($this->_snapshot, $this->_data);
+        } catch (\Throwable $e) {
+            // If similarity cannot be computed, treat as completely changed
+            return 1.0;
+        }
+
+        $delta = 1.0 - (float)$similarity;
+
+        if ($delta < 0.0) {
+            $delta = 0.0;
+        } elseif ($delta > 1.0) {
+            $delta = 1.0;
+        }
+
+        return $delta;
     }
 
     public function _slugify(): string

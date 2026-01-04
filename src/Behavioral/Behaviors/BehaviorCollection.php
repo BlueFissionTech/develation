@@ -34,7 +34,7 @@ class BehaviorCollection extends Collection
      * @param string $behaviorName The name of the behavior to retrieve.
      * @return Behavior|null
      */
-    public function get(string $behaviorName): ?Behavior
+    public function get($behaviorName): ?Behavior
     {
         foreach ($this->_value as $c) {
             if ($c->name() === $behaviorName) {
@@ -51,7 +51,7 @@ class BehaviorCollection extends Collection
      * @param string $behaviorName
      * @return bool
      */
-    public function has(string $behaviorName): bool
+    public function has($behaviorName): bool
     {
         foreach ($this->_value as $c) {
             if ($c->name() === $behaviorName) {
