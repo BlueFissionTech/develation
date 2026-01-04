@@ -73,3 +73,101 @@ $result = $curl->query(['name'=>'John Doe'])->result();
 $curl->close();
 ```
 
+# Real-World Integration with BlueFission Connections
+
+Let’s imagine you run an online store that sells toys. When someone places an order, your store does all of this automatically:
+
+- Charges the customer’s card (via payment API)  
+- Gets a shipping label (from a shipping API)  
+- Downloads inventory updates (from a supplier CSV feed)  
+- Prints a receipt for warehouse staff  
+
+Each step uses a different BlueFission connection class.
+
+---
+
+## 1. Curl – Charge Customer with Stripe
+
+You want to send a payment request to Stripe when someone buys a toy.
+
+```php
+use BlueFission\Connections\Curl;
+
+$config = [
+    'target' => 'https://api.stripe.com/v1/charges',
+    'method' => 'POST',
+    'headers' => [
+        'Authorization: Bearer sk_test_abc123',
+        'Content-Type: application/x-www-form-urlencoded'
+    ]
+];
+
+$curl = (new Curl($config))->open();
+
+$response = $curl->query([
+    'amount' => 4999,
+    'currency' => 'usd',
+    'source' => 'tok_visa',
+    'description' => 'Order #1234 – Toy Car'
+])->result();
+
+$curl->close();
+
+echo "Payment response: " . $response['status']; // e.g., "succeeded"
+```
+
+Use when: You want to talk to REST APIs like Stripe, PayPal, Shippo, etc.
+
+---
+
+## 2. Stream – Download New Inventory Feed from Supplier
+
+Every night, your supplier updates a CSV file with stock levels and prices.
+
+```php
+use BlueFission\Connections\Stream;
+
+$stream = new Stream([
+    'target' => 'https://supplier.com/inventory.csv',
+    'context' => stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => "Authorization: Bearer supplier_token_123"
+        ]
+    ])
+]);
+
+$stream->open();
+$csv = $stream->query(null)->result();
+$stream->close();
+
+file_put_contents('data/inventory.csv', $csv);
+
+echo "Inventory feed downloaded.";
+```
+
+Use when: You’re downloading (or uploading) files from a partner or vendor.
+
+---
+
+## 3. Socket – Print Receipt for Warehouse
+
+When an order is confirmed, you want to print a receipt for packing.
+
+```php
+use BlueFission\Connections\Socket;
+
+$socket = new Socket([
+    'host' => '192.168.1.100',
+    'port' => 9100
+]);
+
+$socket->open();
+$socket->query("Order #1234\nCustomer: John Doe\nItem: Toy Car\nPrice: $49.99\n\nThank you!");
+$socket->close();
+
+echo "Receipt printed.";
+```
+
+Use when: You need to talk to a local device like a printer, labeler, or scanner.
+
