@@ -1,14 +1,16 @@
 <?php
+
 namespace BlueFission\Data\Storage\Structure;
 
 use BlueFission\Connections\Database\SQLiteLink;
 use BlueFission\Str;
 
 /**
- * Class SQLiteField 
- * Represents a field in a SQLite table. 
+ * Class SQLiteField
+ * Represents a field in a SQLite table.
  */
-class SQLiteField {
+class SQLiteField
+{
     /**
      * @var string The name of the field.
      */
@@ -54,7 +56,7 @@ class SQLiteField {
      *
      * @param string $name The name of the field.
      *
-     * @return SQLiteField 
+     * @return SQLiteField
      */
     public function __construct($name)
     {
@@ -68,7 +70,7 @@ class SQLiteField {
      *
      * @param string $type The type of the field.
      *
-     * @return SQLiteField 
+     * @return SQLiteField
      */
     public function type($type)
     {
@@ -82,7 +84,7 @@ class SQLiteField {
      *
      * @param int $size The size of the field.
      *
-     * @return SQLiteField 
+     * @return SQLiteField
      */
     public function size($size)
     {
@@ -96,9 +98,9 @@ class SQLiteField {
      *
      * @param boolean $isTrue If the field is a primary key.
      *
-     * @return SQLiteField 
+     * @return SQLiteField
      */
-    public function primary( $isTrue = true)
+    public function primary($isTrue = true)
     {
         $this->_primary = $isTrue;
 
@@ -110,9 +112,9 @@ class SQLiteField {
      *
      * @param boolean $isTrue If the field is auto-incremented.
      *
-     * @return SQLiteField 
+     * @return SQLiteField
      */
-    public function autoincrement( $isTrue = true)
+    public function autoincrement($isTrue = true)
     {
         $this->_autoincrement = $isTrue;
 
@@ -124,142 +126,142 @@ class SQLiteField {
      *
      * @param boolean $isTrue If the field is unique.
      *
-     * @return SQLiteField 
+     * @return SQLiteField
      */
-    public function unique( $isTrue = true)
+    public function unique($isTrue = true)
     {
         $this->_unique = $isTrue;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the null property of the field
-	 * 
-	 * @param bool $isTrue Whether the field should be set to null
-	 * @return object Returns the instance of the class
-	 */
-	public function null( $isTrue = true)
-	{
-		$this->_null = $isTrue;
+    /**
+     * Set the null property of the field
+     *
+     * @param bool $isTrue Whether the field should be set to null
+     * @return object Returns the instance of the class
+     */
+    public function null($isTrue = true)
+    {
+        $this->_null = $isTrue;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the default value of the field
-	 * 
-	 * @param mixed $value the default value of the field
-	 * @return object Returns the instance of the class
-	 */
-	public function default( mixed $value )
-	{
-		$this->_default = $value;
+    /**
+     * Set the default value of the field
+     *
+     * @param mixed $value the default value of the field
+     * @return object Returns the instance of the class
+     */
+    public function default(mixed $value)
+    {
+        $this->_default = $value;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the required property of the field
-	 * 
-	 * @param bool $isTrue Whether the field is required
-	 * @return object Returns the instance of the class
-	 */
-	public function required( $isTrue = true)
-	{
-		$this->_null = !$isTrue;
+    /**
+     * Set the required property of the field
+     *
+     * @param bool $isTrue Whether the field is required
+     * @return object Returns the instance of the class
+     */
+    public function required($isTrue = true)
+    {
+        $this->_null = !$isTrue;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Get the definition string of the field
-	 * 
-	 * @return string The definition string of the field
-	 */
-	public function definition()
-	{
-		$definition[] = "`{$this->_name}`";
-		
-		switch ($this->_type) {
-			case 'datetime':
-			$definition[] = "DATETIME";
-			break;
+    /**
+     * Get the definition string of the field
+     *
+     * @return string The definition string of the field
+     */
+    public function definition()
+    {
+        $definition[] = "`{$this->_name}`";
 
-			case 'date':
-			$definition[] = "DATE";
-			break;
+        switch ($this->_type) {
+            case 'datetime':
+                $definition[] = "DATETIME";
+                break;
 
-			case 'boolean':
-			$definition[] = "INTEGER";
-			break; 
+            case 'date':
+                $definition[] = "DATE";
+                break;
 
-			case 'numeric':
-			$definition[] = "INTEGER";
-			break;
+            case 'boolean':
+                $definition[] = "INTEGER";
+                break;
 
-			case 'decimal':
-			$definition[] = "REAL";
-			break;
+            case 'numeric':
+                $definition[] = "INTEGER";
+                break;
 
-			default:
-			case 'text':
-			$definition[] = "TEXT";
-			break;
-		}
+            case 'decimal':
+                $definition[] = "REAL";
+                break;
 
-		if ($this->_default !== null) {
-			$definition[] = "DEFAULT " . SQLiteLink::sanitize((string)$this->_default);
-		}
-		
-		if (!$this->_null) {
-			$definition[] = "NOT";
-		}
+            default:
+            case 'text':
+                $definition[] = "TEXT";
+                break;
+        }
 
-		$definition[] = "NULL";
+        if ($this->_default !== null) {
+            $definition[] = "DEFAULT " . SQLiteLink::sanitize((string)$this->_default);
+        }
 
-		if ($this->_autoincrement) {
-			$definition[] = "AUTOINCREMENT";
-		}
+        if (!$this->_null) {
+            $definition[] = "NOT";
+        }
 
-		$definition_string = implode(' ', $definition);
+        $definition[] = "NULL";
 
-		return $definition_string;
-	}
+        if ($this->_autoincrement) {
+            $definition[] = "AUTOINCREMENT";
+        }
 
-	/**
-	 * Get the extras string of the field
-	 * 
-	 * @return string The extras string of the field
-	 */
-	public function extras()
-	{
-		$extras = [];
+        $definition_string = implode(' ', $definition);
 
-		if ($this->_primary) {
-			$extras[] = "PRIMARY KEY (`{$this->_name}`)";
-		}
+        return $definition_string;
+    }
 
-		if ($this->_unique) {
-			$extras[] = "UNIQUE (`{$this->_name}`)";
-		}
+    /**
+     * Get the extras string of the field
+     *
+     * @return string The extras string of the field
+     */
+    public function extras()
+    {
+        $extras = [];
 
-		$extras_string = implode(",\n", $extras);
+        if ($this->_primary) {
+            $extras[] = "PRIMARY KEY (`{$this->_name}`)";
+        }
 
-		return $extras_string;
-	}
+        if ($this->_unique) {
+            $extras[] = "UNIQUE (`{$this->_name}`)";
+        }
 
-	/**
-	 * Adds any additional properties to the table definition.
-	 * 
-	 * @return string The string representation of the additional properties to be added to the table definition.
-	 */
-	public function additions()
-	{
-		$additions = [];
+        $extras_string = implode(",\n", $extras);
 
-		$addition_string = implode(",\n", $additions);
+        return $extras_string;
+    }
 
-		return $addition_string;
-	}
+    /**
+     * Adds any additional properties to the table definition.
+     *
+     * @return string The string representation of the additional properties to be added to the table definition.
+     */
+    public function additions()
+    {
+        $additions = [];
+
+        $addition_string = implode(",\n", $additions);
+
+        return $addition_string;
+    }
 }

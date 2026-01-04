@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\HTML;
 
 use BlueFission\Val;
@@ -15,22 +16,18 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\FileSystem;
 use BlueFission\Data\Storage\Disk;
-use BlueFission\Parsing\Parser;
-use BlueFission\Parsing\Registry\TagRegistry;
-use BlueFission\Parsing\Registry\RendererRegistry;
-use BlueFission\Parsing\Registry\PreparerRegistry;
-use BlueFission\Parsing\Registry\ExecutorRegistry;
-use \InvalidArgumentException;
+use InvalidArgumentException;
 
 /**
  * Class Template
  *
  * This class provides functionality for handling templates. It extends the Configurable class to handle configuration.
  */
-class Template extends Obj {
-	use Configurable {
-		Configurable::__construct as private __configConstruct;
-	}
+class Template extends Obj
+{
+    use Configurable {
+        Configurable::__construct as private __configConstruct;
+    }
 
     /**
      * @var string $_template The contents of the template file
@@ -58,18 +55,18 @@ class Template extends Obj {
      * @var array $_config Default configuration for the Template class
      */
     protected $_config = array(
-        'file'=>'',
-        'template_directory'=>'',
-        'cache'=>true,
-        'cache_expire'=>60,
-        'cache_directory'=>'cache',
-        'max_records'=>1000, 
-        'delimiter_start'=>'{', 
-        'delimiter_end'=>'}',
-        'module_token'=>'mod', 
-        'module_directory'=>'modules',
-        'format'=>false,
-        'eval'=>false,
+        'file' => '',
+        'template_directory' => '',
+        'cache' => true,
+        'cache_expire' => 60,
+        'cache_directory' => 'cache',
+        'max_records' => 1000,
+        'delimiter_start' => '{',
+        'delimiter_end' => '}',
+        'module_token' => 'mod',
+        'module_directory' => 'modules',
+        'format' => false,
+        'eval' => false,
     );
 
     /**
@@ -77,19 +74,19 @@ class Template extends Obj {
      *
      * @param null|array $config Configuration for the Template class
      */
-    public function __construct ( $config = null ) 
+    public function __construct($config = null)
     {
         parent::__construct();
-        if ( Val::isNotNull( $config ) && Str::is($config)) {
-            $config = ['file'=>$config];
+        if (Val::isNotNull($config) && Str::is($config)) {
+            $config = ['file' => $config];
         }
 
-    	$this->__configConstruct($config);
-    	$this->load();
-        
+        $this->__configConstruct($config);
+        $this->load();
+
         $this->_cached = false;
 
-        $this->dispatch( State::DRAFT );
+        $this->dispatch(State::DRAFT);
     }
 
     /**
@@ -97,37 +94,37 @@ class Template extends Obj {
      *
      * @param null|string $file The file to load
      */
-    public function load ( $file = null ): IObj
+    public function load($file = null): IObj
     {
-    	$this->perform( State::READING );
+        $this->perform(State::READING);
 
-    	$file = $file ?? $this->config('file');
+        $file = $file ?? $this->config('file');
 
-    	if ( Val::isEmpty($file) ) {
-    		$status = 'No file specified';
-    		$this->status($status);
-    		$this->perform( Event::ERROR, new Meta(info: $status, src: $this, when: State::READING ) );
-    		$this->halt(State::READING);
+        if (Val::isEmpty($file)) {
+            $status = 'No file specified';
+            $this->status($status);
+            $this->perform(Event::ERROR, new Meta(info: $status, src: $this, when: State::READING));
+            $this->halt(State::READING);
 
-			return $this;
-		}
-
-    	$info = pathinfo($file);
-
-    	$file = $info['basename'];
-
-    	$path_r = [];
-    	$path_r[] = $this->config('template_directory');
-    	$path_r[] = $info['dirname'];
-    	$path = implode(DIRECTORY_SEPARATOR, $path_r);
-
-        if ( Val::isNotNull($file)) {
-            $this->_file = (new FileSystem(['root'=>$path]))->open($file);
-            $this->_template = $this->_file->read()->contents();
-            $this->perform( Event::READ, new Meta(info: 'File loaded', src: $this, when: State::READING ) );
+            return $this;
         }
 
-    	$this->halt(State::READING);
+        $info = pathinfo($file);
+
+        $file = $info['basename'];
+
+        $path_r = [];
+        $path_r[] = $this->config('template_directory');
+        $path_r[] = $info['dirname'];
+        $path = implode(DIRECTORY_SEPARATOR, $path_r);
+
+        if (Val::isNotNull($file)) {
+            $this->_file = (new FileSystem(['root' => $path]))->open($file);
+            $this->_template = $this->_file->read()->contents();
+            $this->perform(Event::READ, new Meta(info: 'File loaded', src: $this, when: State::READING));
+        }
+
+        $this->halt(State::READING);
 
         return $this;
     }
@@ -138,264 +135,494 @@ class Template extends Obj {
      * @param null|string $data The new value for `$_template`
      * @return string The contents of `$_template`
      */
-	public function contents($data = null)
-	{
-		if (Val::isNull($data)) return $this->_template;
-		
-		$this->_template = $data;
-	}
-	
-	/**
-	 * public function clear()
-	 * This method clears the content of the template and resets it.
-	 */
-	public function clear(): IObj
-	{
-		parent::clear();
-		$this->reset();
+    public function contents($data = null)
+    {
+        if (Val::isNull($data)) {
+            return $this->_template;
+        }
 
-		return $this;
-	}
+        $this->_template = $data;
+    }
 
-	/**
-	 * public function reset()
-	 * This method resets the template to its original state.
-	 */
-	public function reset(): IObj
-	{
-		$this->load();
+    /**
+     * public function clear()
+     * This method clears the content of the template and resets it.
+     */
+    public function clear(): IObj
+    {
+        parent::clear();
+        $this->reset();
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * public function set( $var, $content = null, $formatted = null, $repetitions = null )
-	 * This method sets the content of the template.
-	 * @param  mixed  $var        the variable name or data
-	 * @param  mixed  $content    the content to be assigned to the variable
-	 * @param  mixed  $formatted  specifies if the content should be formatted as HTML or not
-	 * @param  mixed  $repetitions  specifies the number of repetitions for the content
-	 */
-	public function set( $var, $content = null, $formatted = null, $repetitions = null  ): IObj
-	{
-		if ($formatted)
-			$content = HTML::format($content);
+    /**
+     * public function reset()
+     * This method resets the template to its original state.
+     */
+    public function reset(): IObj
+    {
+        $this->load();
 
-		if (Str::is($var)) {
-			if ( Val::isNotNull($formatted) && !Flag::is($formatted) ) {
-				throw new InvalidArgumentException( 'Formatted argument expects boolean');
-			}
+        return $this;
+    }
 
-			if ( Str::is($content) ) {
-				$this->_template = str_replace( $this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions );
-			} elseif ( is_object( $content ) || Arr::isAssoc( $content ) )	{
-				foreach ($content as $a=>$b) 
-				{
-					$this->set($var.'.'.$a, $b, $formatted, $repetitions);
-				}
-				$this->field($var, $content);
-			}
-			elseif ( Arr::is($content) )
-			{
-				$this->field($var, $content);
-			}
-		} elseif ( is_object( $var ) || Arr::isAssoc( $var ) ) {
+    /**
+     * parses options from template tags
+     * @param  string $str the option string
+     * @return array      the parsed options
+     */
+    private function parseOptions(string $str)
+    {
+        $str = preg_replace("/\s*,\s*/", ",", $str); // Remove spaces surrounding commas
+        $str = preg_replace("/\s*\:\s*/", ":", $str); // Remove spaces surrounding colons
 
-			if ( $formatted == null ) {
-				$formatted = $content;
-			}
+        // Matches key-value pairs. This pattern considers the options inside single quotes, brackets and commas.
+        preg_match_all("/(\w+):'([^']*)'|\d|(\w+):([^']*)|\[(.*?)\]/", $str, $matches);
 
-			foreach ($var as $a=>$b) 
-			{
-				$this->set($a, $b, $formatted, $repetitions);
-			}
-		} else {
-			throw new InvalidArgumentException( 'Invalid property' );
-		}
+        $options = [];
 
-		return $this;
-	}
+        // Group the matches into key-value pairs
+        for ($i = 0; $i < count($matches[0]); $i++) {
+            if (!empty($matches[1][$i])) {
+                $options[$matches[1][$i]] = $matches[3][$i] != "" ? $matches[3][$i] : ($this->vars[$matches[2][$i]] ?? $matches[2][$i]);
+                if (preg_match("/\[(.*?)\]/", $options[$matches[1][$i]], $matches2)) {
+                    $value = explode(",", trim($matches2[1]));
+                    $options[$matches[1][$i]] = array_map(function ($v) { return trim($v, " '\""); }, $value);
+                }
+            } else {
+                $options['options'] = explode(',', str_replace('\'', '', $matches[4][$i]));
+            }
+        }
+        if (isset($options['stop'])) {
+            $options['stop'] = str_replace('\n', "\n", $options['stop']);
+        }
 
-	/**
-	 * Set the content of a field in the template
-	 *
-	 * @param mixed $var The field name or an associative array of field names and contents
-	 * @param mixed $content The content of the field. If $var is an associative array, this argument will be used as the value of $formatted
-	 * @param mixed $formatted Whether to format the content as HTML. Expects a boolean value
-	 *
-	 * @throws InvalidArgumentException If $content is empty or $formatted is not boolean
-	 * @return mixed The content of the field
-	 */
-	public function field( string|object|array $var, $content = null, $formatted = null ): mixed
-	{
-		if ($formatted) {
-			$content = HTML::format($content);
-		}
+        return $options;
+    }
 
-		if (Str::is($var))
-		{
-			if ( !$content )
-			{
-				throw new InvalidArgumentException( 'Cannot assign empty value.');
-			}
+    /**
+     * Parses a template conditional tag
+     * @param  mixed $left     left side value of the equality
+     * @param  mixed $right    right side value of the equality
+     * @param  string $operator comparison operator of the equality
+     * @return bool           whether the equality is true
+     */
+    private function parseCondition($left, $right, $operator = self::OPERATOR_EQUALS): bool
+    {
+        switch ($operator) {
+            default:
+            case self::OPERATOR_EQUALS:
+                return $left == $right;
+            case self::OPERATOR_NOT_EQUALS:
+                return $left != $right;
+            case self::OPERATOR_GREATER_THAN:
+                return $left > $right;
+            case self::OPERATOR_LESS_THAN:
+                return $left < $right;
+            case self::OPERATOR_GREATER_THAN_EQUALS:
+                return $left >= $right;
+            case self::OPERATOR_LESS_THAN_EQUALS:
+                return $left <= $right;
+        }
+    }
 
-			if ( Val::isNotNull($formatted) && !Flag::is($formatted) )
-			{
-				throw new InvalidArgumentException( 'Formatted argument expects boolean');
-			}
+    /**
+     * public function set( $var, $content = null, $formatted = null, $repetitions = null )
+     * This method sets the content of the template.
+     * @param  mixed  $var        the variable name or data
+     * @param  mixed  $content    the content to be assigned to the variable
+     * @param  mixed  $formatted  specifies if the content should be formatted as HTML or not
+     * @param  mixed  $repetitions  specifies the number of repetitions for the content
+     */
+    public function set($var, $content = null, $formatted = null, $repetitions = null): IObj
+    {
+        if ($formatted) {
+            $content = HTML::format($content);
+        }
 
-			return parent::field($var, $content );
-		}
-		elseif ( is_object( $var ) || Arr::isAssoc( $var ) )
-		{
+        if (Str::is($var)) {
+            if (Val::isNotNull($formatted) && !Flag::is($formatted)) {
+                throw new InvalidArgumentException('Formatted argument expects boolean');
+            }
 
-			if ( !$formatted )
-				$formatted = $content;
+            if (Str::is($content)) {
+                $this->_template = str_replace($this->config('delimiter_start') . $var . $this->config('delimiter_end'), $content, $this->_template, $repetitions);
+            } elseif (is_object($content) || Arr::isAssoc($content)) {
+                foreach ($content as $a => $b) {
+                    $this->set($var.'.'.$a, $b, $formatted, $repetitions);
+                }
+                $this->field($var, $content);
+            } elseif (Arr::is($content)) {
+                $this->field($var, $content);
+            }
+        } elseif (is_object($var) || Arr::isAssoc($var)) {
 
-			foreach ($var as $a=>$b) 
-			{
-				$this->field($a, $b, $formatted);
-			}
-		}
-		else
-		{
-			throw new InvalidArgumentException( 'Invalid property' );
-		}
+            if ($formatted == null) {
+                $formatted = $content;
+            }
 
-		return true;
-	}
+            foreach ($var as $a => $b) {
+                $this->set($a, $b, $formatted, $repetitions);
+            }
+        } else {
+            throw new InvalidArgumentException('Invalid property');
+        }
 
-	/**
-	 * Set the content of the fields in the template
-	 *
-	 * @param mixed $data The content of the fields. Expects an associative array of field names and contents
-	 * @param mixed $formatted Whether to format the content as HTML. Expects a boolean value
-	 *
-	 * @return IObj
-	 */
-	public function assign( $data, $formatted = null ): IObj
-	{
-		$this->field($data, $formatted);
+        return $this;
+    }
 
-		return $this;
-	}
+    /**
+     * Set the content of a field in the template
+     *
+     * @param mixed $var The field name or an associative array of field names and contents
+     * @param mixed $content The content of the field. If $var is an associative array, this argument will be used as the value of $formatted
+     * @param mixed $formatted Whether to format the content as HTML. Expects a boolean value
+     *
+     * @throws InvalidArgumentException If $content is empty or $formatted is not boolean
+     * @return mixed The content of the field
+     */
+    public function field(string|object|array $var, $content = null, $formatted = null): mixed
+    {
+        if ($formatted) {
+            $content = HTML::format($content);
+        }
 
-	/**
-	 * Cache the contents of the template
-	 *
-	 * @param int $minutes The number of minutes to cache the template
-	 *
-	 * @return IObj
-	 */
-	public function cache ( $minutes = null ): IObj
-	{
-		$file = $this->config('cache_directory').DIRECTORY_SEPARATOR.$_SERVER['REQUEST_URI'];
-		if (file_exists($file) && filectime($file) <= strtotime("-{$time} minutes")) {
-			$this->_cached = true;
-			$this->load ( $file );
-		}
-		else
-		{
-			$copy = new Disk( array('name'=>$file) );
-			$copy->contents($this->_template);
-			$copy->write();
-		}
-	}
+        if (Str::is($var)) {
+            if (!$content) {
+                throw new InvalidArgumentException('Cannot assign empty value.');
+            }
 
-	/**
-	 * Check if the contents of the template are cached
-	 *
-	 * @param mixed $value If set, sets the cached property to the value
-	 *
-	 * @return mixed The value of the cached property
-	 */
-	private function cached ( $value ) 
-	{
-		if (Val::isNull($value))
-			return $this->_cached;
-		$this->_cached = ($value == true);
-	}
+            if (Val::isNotNull($formatted) && !Flag::is($formatted)) {
+                throw new InvalidArgumentException('Formatted argument expects boolean');
+            }
 
-	/**
-	 * Method to commit the data and formatting to the template
-	 *
-	 * @param mixed $formatted The formatting to apply to the data, if any
-	 */
-	public function commit( $formatted = null ): IObj
-	{
-		$this->set( $this->_data->val(), $formatted );
+            return parent::field($var, $content);
+        } elseif (is_object($var) || Arr::isAssoc($var)) {
 
-		return $this;
-	}
+            if (!$formatted) {
+                $formatted = $content;
+            }
 
-	/**
-	 * Method to render a set of records
-	 *
-	 * @param array $recordSet The set of records to be rendered
-	 * @param mixed $formatted The formatting to apply to the records, if any
-	 *
-	 * @return string The rendered output
-	 */
-	public function renderRecordSet( $recordSet, $formatted = null ) 
-	{
-		$output = '';
-		$count = 0;
-		if (Val::isNull($formatted)) {
-			$formatted = true;
-		}
-		foreach ($recordSet as $a) {
-			$this->clear();
-			$this->set($a, $formatted);
-			$output .= $this->render();
-			Util::parachute($count, $this->config('max_records'));
-		}
-		return $output;
-	}
+            foreach ($var as $a => $b) {
+                $this->field($a, $b, $formatted);
+            }
+        } else {
+            throw new InvalidArgumentException('Invalid property');
+        }
 
-	/**
-	 * Method to render the current template and its data
-	 *
-	 * @return string The rendered output
-	 */
-	public function render ( ) 
-	{		
-		// $this->executeModules();
-		// $this->applyTemplate();
-		// $this->commit( $this->config('format') );
-		
-		TagRegistry::registerDefaults(); // ensure tags are active
-		RendererRegistry::registerDefaults(); // ensure renderers are active
-		ExecutorRegistry::registerDefaults(); // ensure executors are active
-		PreparerRegistry::registerDefaults(); // ensure preparers are active
+        return true;
+    }
 
-		
-		$parser = new Parser($this->_template, $this->config('delimiter_start'), $this->config('delimiter_end'));
+    /**
+     * Set the content of the fields in the template
+     *
+     * @param mixed $data The content of the fields. Expects an associative array of field names and contents
+     * @param mixed $formatted Whether to format the content as HTML. Expects a boolean value
+     *
+     * @return IObj
+     */
+    public function assign($data, $formatted = null): IObj
+    {
+        $this->field($data, $formatted);
 
-		$parser->setVariables($this->_data->val());
+        return $this;
+    }
 
-		$includeDirs = array_filter([
-			'templates' => $this->config('template_directory'),
-			'modules' => $this->config('module_directory'),
-		]);
+    /**
+     * Cache the contents of the template
+     *
+     * @param int $minutes The number of minutes to cache the template
+     *
+     * @return IObj
+     */
+    public function cache($minutes = null): IObj
+    {
+        $file = $this->config('cache_directory').DIRECTORY_SEPARATOR.$_SERVER['REQUEST_URI'];
+        if (file_exists($file) && filectime($file) <= strtotime("-{$time} minutes")) {
+            $this->_cached = true;
+            $this->load($file);
+        } else {
+            $copy = new Disk(array('name' => $file));
+            $copy->contents($this->_template);
+            $copy->write();
+        }
+    }
 
-		$parser->setIncludePaths($includeDirs);
+    /**
+     * Check if the contents of the template are cached
+     *
+     * @param mixed $value If set, sets the cached property to the value
+     *
+     * @return mixed The value of the cached property
+     */
+    private function cached($value)
+    {
+        if (Val::isNull($value)) {
+            return $this->_cached;
+        }
+        $this->_cached = ($value == true);
+    }
 
-		$output = $parser->render();
+    private function extractPlaceholders()
+    {
+        // Extract placeholders
+        if (preg_match_all("/\{=(.*?)\}/", $this->_template, $matches)) {
+            foreach ($matches[1] as $placeholder) {
+                // Extract placeholder options
+                preg_match("/([^[\s]+)(?:\[(.*?)\])?/", $placeholder, $optionMatches);
+                if (!empty($optionMatches)) {
+                    $this->_placeholderNames[] = $optionMatches[1];
+                    $this->_placeholders[] = $placeholder;
+                }
+            }
+        }
+    }
 
-		if ($this->config('eval')) {
-			ob_start();
-			eval('?>' . $output . '<?php');
-			return ob_get_clean();
-		}
+    private function handleVariables()
+    {
+        if (preg_match_all("/\{#var (.*?) = (.*?)\}/", $this->_template, $matches)) {
+            $vars = array_combine($matches[1], $matches[2]);
+            $this->_template = preg_replace("/\{#var (.*?) = (.*?)\}/", "", $this->_template);
+        }
 
-		return $output;
-	}
+        $this->assign($vars);
 
-	/**
-	 * Method to publish the rendered output to the screen
-	 */
-	public function publish ( ) 
-	{
-		print($this->render());
-	}
+        // Process variables, conditions, and loops directly within the run method
+        foreach ($this->_data as $var => $value) {
+            // Handle array variables
+            if (Arr::is($value)) {
+                $value = implode(", ", $value);
+            }
+
+            // Also replace variables in conditions and loops
+            foreach ($this->_conditions as &$condition) {
+                $condition['condition'] = str_replace($var, $value, $condition['condition']);
+                $condition['value'] = str_replace($var, $value, $condition['value']);
+                $condition['content'] = str_replace($var, $value, $condition['content']);
+            }
+        }
+    }
+
+    private function handleConditions()
+    {
+        if (preg_match_all("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $this->_template, $matches)) {
+            $this->conditions = array_map(function ($condition, $operator, $value, $content) {
+                return ['condition' => $condition, 'operator' => $operator, 'value' => $value, 'content' => $content];
+            }, $matches[1], $matches[2], $matches[3], $matches[4]);
+            $condition = $matches[1][0];
+            $operator = $matches[2][0];
+            $value = $matches[3][0];
+
+            if (strpos($condition, "'") === false && strpos($condition, "\"") === false) {
+                $condition = $this->_data[$condition] ?? null;
+            }
+
+            if (strpos($value, "'") === false && strpos($value, "\"") === false) {
+                $value = $this->_data[$value] ?? null;
+            }
+
+            $condition = trim($condition, "'\"");
+            $value = trim($value, "'\"");
+
+            if (!$this->parseCondition($condition, $value, $operator)) {
+                // $this->_data[$placeholderName] = "";
+                // $i++;
+                // continue;
+            }
+
+        }
+
+
+        foreach ($this->conditions as $condition) {
+            $conditionValue = $this->_data[$condition['condition']] ?? null;
+
+            $conditionValue = trim($conditionValue, "'\"");
+            $condition['value'] = trim($condition['value'], "'\"");
+            if ($this->parseCondition($conditionValue, $condition['value'], $condition['operator'])) {
+                $this->_template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", $condition['content'], $this->_template);
+            } else {
+                $this->_template = preg_replace("/\{#if\((.*?)([!=<>]+)(.*?)\)\}(.*?)\{#endif\}/s", "", $this->_template);
+            }
+        }
+    }
+
+    protected function handleLoops()
+    {
+        if (preg_match_all("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $this->_template, $matches)) {
+            $rules = $matches[1][0];
+            $iteratedContent ??= $matches[2][0];
+            $iteratedData = null;
+            $iteratedMax = null;
+            $loopGlue = null;
+            $iterationAssignment = null;
+            $vars = [];
+
+            if (strpos($rules, "[") === 0) {
+                $options = trim($rules, '[]');
+                $options = $this->parseOptions($options);
+            } else {
+                $vars = explode('=', $rules);
+                $var = trim($vars[0]);
+                $value = trim($vars[1]);
+            }
+
+            if (isset($options)) {
+                $iteratedMax = $options['iterations'];
+                $loopGlue = $options['glue'];
+                $iterationAssignment = $placeholderNames[$position];
+            } elseif ($value !== "") {
+                if (strpos($value, "'") === false && strpos($value, "\"") === false) {
+                    $value = $data[$value] ?? $vars[$value] ?? null;
+                } else {
+                    $value = trim($value, "'\"");
+                }
+
+                $iteratedData = (strpos($value, '[') === 0) ? $value : $vars[$value];
+                if (preg_match("/\[(.*?)\]/", $iteratedData, $matches2)) {
+                    $value = explode(",", trim($matches2[1]));
+                    $iteratedData = array_map(function ($v) { return trim($v, " '\""); }, $value);
+                }
+
+                $iterationAssignment = $var;
+            }
+
+            // TODO: fix this!
+            for ($i = 0; $i < $iteratedMax; $i++) {
+                $render = "";
+                if (isset($iterationAssignment) && !isset($data[$iterationAssignment])) {
+                    $render = $iteratedContent;
+                    if (!empty($iteratedData)) {
+                        $render = str_replace('{@current}', $iteratedData[$index], $render);
+                    }
+                    $render = str_replace('{@index}', $index + 1, $render);
+
+                    $data[$iterationAssignment] = [];
+                }
+
+                // $chunk = preg_replace("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)$/s", $render, $chunk);
+                $this->_template = str_replace($iteratedContent, $render, $this->_template);
+            }
+
+            preg_replace("/\{#each\s*((?:\[[^\]]*\]|[^}]+))\}(.*?)\{#endeach\}/s", $matches[2][0], $this_template);
+        }
+    }
+
+    /**
+     * Method to commit the data and formatting to the template
+     *
+     * @param mixed $formatted The formatting to apply to the data, if any
+     */
+    public function commit($formatted = null): IObj
+    {
+        $this->set($this->_data->val(), $formatted);
+
+        return $this;
+    }
+
+    /**
+     * Method to render a set of records
+     *
+     * @param array $recordSet The set of records to be rendered
+     * @param mixed $formatted The formatting to apply to the records, if any
+     *
+     * @return string The rendered output
+     */
+    public function renderRecordSet($recordSet, $formatted = null)
+    {
+        $output = '';
+        $count = 0;
+        if (Val::isNull($formatted)) {
+            $formatted = true;
+        }
+        foreach ($recordSet as $a) {
+            $this->clear();
+            $this->set($a, $formatted);
+            $output .= $this->render();
+            Util::parachute($count, $this->config('max_records'));
+        }
+        return $output;
+    }
+
+    /**
+     * Method to render the current template and its data
+     *
+     * @return string The rendered output
+     */
+    public function render()
+    {
+        $this->executeModules();
+        $this->applyTemplate();
+        $this->commit($this->config('format'));
+        ob_start();
+        if ($this->config('eval')) {
+            eval(' ?> ' . $this->_template . ' <?php ');
+        } else {
+            echo $this->_template;
+        }
+
+        return ob_get_clean();
+    }
+
+    /**
+     * Method to publish the rendered output to the screen
+     */
+    public function publish()
+    {
+        print($this->render());
+    }
+
+    /**
+     * Private method to execute any modules found in the template
+     */
+    private function executeModules(): IObj
+    {
+        if ($this->_template == null) {
+            return $this;
+        }
+
+        $pattern = "/@".$this->config('module_token')."\('(.*)'\)/";
+
+        preg_match_all($pattern, $this->_template, $matches);
+
+        for ($i = 0; $i < count($matches[0]); $i++) {
+            $match = $matches[0][$i];
+            $file = $matches[1][$i];
+            $template = new Template();
+            $template->load($this->config('module_directory').DIRECTORY_SEPARATOR.$file);
+            $template->set($this->_data->val());
+            $content = $template->render();
+            $this->_template = str_replace($match, $content, $this->_template);
+        }
+
+        return $this;
+    }
+
+    private function applyTemplate(): IObj
+    {
+        if ($this->_template == null) {
+            return $this;
+        }
+
+        // if a `@template('path-to-template.html')` tag is found, load the template
+        // load that content as the `$_template`
+        if (preg_match("/@template\('(.*)'\)/", $this->_template, $matches)) {
+            $content = $this->_template;
+            $template = new Template($this->config());
+            $template->load($matches[1]);
+            $this->_template = $template->render();
+
+            // if any content is wrapped in a `@section('section-name')...@endsection` tag,
+            // replace that content with the content of the section from the template wherever
+            // there's an @output('section-name') tag
+            if (preg_match_all("/@section\('(.*)'\)(.*?)@endsection/s", $content, $sectionMatches)) {
+                foreach ($sectionMatches[1] as $i => $sectionName) {
+                    $sectionContent = $sectionMatches[2][$i];
+                    $this->_template = str_replace("@output('$sectionName')", $sectionContent, $this->_template);
+                }
+            }
+        }
+
+        return $this;
+    }
 }

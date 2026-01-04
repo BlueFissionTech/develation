@@ -8,22 +8,20 @@ namespace BlueFission;
 // any work. It can also be memory intensive in large projects where the developer might prefer a custom solution to those problems. It will also have the ability
 // to register hooks, actions, and filters throughout the code. for instance, there might be a hook to filter all outgoing data with a prefix or as a JSON object.
 // That would be done through `DevElation::filter('filter_name', $filterFunction, $priority);` where filter names are mostly all dynamic but predictable.
-// Imagine that, for instance, adding `$output = DevElation::apply('filter_name', $input);` applies the filter 'filter_name', but 
+// Imagine that, for instance, adding `$output = DevElation::apply('filter_name', $input);` applies the filter 'filter_name', but
 // `$output = DevElation::apply(null, $input);` instead, because the name is null, would automatically generate a filter name based on the class and method, so
 // `Builder::makeItem();` would have a filter name of 'builder.make_item'. Actions would work the same way, which won't produce an output, just trigger some action through
 // `DevElation::do('action_name', $input);` and `DevElation::action('action_name', function( $input ) {}, $priority);`. There would also be the ability to subscribe to
-// events through this class. For example, from the originating class `DevElation::listen($eventOrBehavior);` and in the target class 
+// events through this class. For example, from the originating class `DevElation::listen($eventOrBehavior);` and in the target class
 // `DevElation::subscribe($this, $eventOrBehavior);` now registers that item as a listener of that event through `Dispatches::trigger($eventName, $args);`
 
-class DevElation {
+class DevElation
+{
     private static $_isActive = false;
     private static $_config = [];
     private static $_filters = [];
     private static $_actions = [];
     private static $_listeners = [];
-
-    const BACKTRACE_DEPTH = 3; // Adjust this depth as needed
-    const CALLER_INDEX = 2; // Adjust this index based on your backtrace structure
 
     public static function up()
     {
@@ -37,9 +35,9 @@ class DevElation {
         self::$_isActive = false;
     }
 
+
     public static function config($key = null, $value = null)
     {
-    	// Automatically determine class name if key is not provided
         if (func_num_args() == 0) {
             $key = self::getCallerClassName();
         }
@@ -48,8 +46,12 @@ class DevElation {
             return self::$_config[$key] ?? null;
         } else {
             self::$_config[$key] = $value;
+            return $value;
         }
     }
+
+
+
 
     public static function filter($name, callable $function, $priority = 10)
     {
@@ -60,9 +62,19 @@ class DevElation {
         ksort(self::$_filters[$name]); // Sort by priority
     }
 
-    public static function apply($name = null, $value = null)
+
+
+
+    /**
+     * Applies all registered filters to the given value.
+     *
+     * @param string|null $name Filter name. If null, auto-generated.
+     * @param mixed $value The value to filter.
+     * @return mixed
+     */
+    public static function apply($name = null, $value)
     {
-    	$name = self::generateHookName($name);
+        $name = self::generateHookName($name);
         if (!self::$_isActive || !isset(self::$_filters[$name])) {
             return $value;
         }
@@ -85,7 +97,7 @@ class DevElation {
 
     public static function do($name = null, $args = [])
     {
-    	$name = self::generateHookName($name);
+        $name = self::generateHookName($name);
         if (!self::$_isActive || !isset(self::$_actions[$name])) {
             return;
         }
@@ -121,31 +133,22 @@ class DevElation {
         }
     }
 
-    private static function generateHookName($name = null)
+    private static function generateHookName($name)
     {
-        if ($name && strpos($name, '_') !== 0) {
+        if ($name) {
             return $name;
         }
 
-        $append = '';
-        if ($name !== null && strpos($name, '_') === 0) {
-            $append = '.'.substr($name, 1);
-        }
-
-        $name = '';
-        
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, self::BACKTRACE_DEPTH);
-        $caller = $backtrace[self::CALLER_INDEX] ?? null;
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        $caller = $backtrace[1] ?? null;
 
         if (isset($caller['class']) && isset($caller['function'])) {
             $class = str_replace(__NAMESPACE__ . '\\', '', $caller['class']);
             $function = $caller['function'];
-            $name = strtolower($class . '.' . $function) . ($append ?? '');
-            return $name;
-        } elseif (isset($caller['function'])) {
+            return strtolower($class . '.' . $function);
+        } else { // if this is a function rather than a method with a class
             $function = $caller['function'];
-            $name = strtolower($function) . ($append ?? '');
-            return $name;
+            return strtolower($function);
         }
 
         return 'global.hook';

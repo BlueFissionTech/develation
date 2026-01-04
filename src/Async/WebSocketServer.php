@@ -5,39 +5,71 @@ namespace BlueFission\Async;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
-class WebSocketServer implements MessageComponentInterface {
-    protected $clients;
+/**
+ * Basic WebSocketServer implementation using Ratchet.
+ * Handles open, message, close, and error events for all clients.
+ */
+class WebSocketServer implements MessageComponentInterface
+{
+    protected \SplObjectStorage $clients;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->clients = new \SplObjectStorage();
         echo "WebSocket server started.\n";
     }
 
-    public function onOpen(ConnectionInterface $conn) {
-        // Store the new connection
+    /**
+     * Handles a new connection.
+     *
+     * @param ConnectionInterface $conn
+     * @return void
+     */
+    public function onOpen(ConnectionInterface $conn): void
+    {
         $this->clients->attach($conn);
         echo "New connection! ({$conn->resourceId})\n";
     }
 
-    public function onMessage(ConnectionInterface $from, $msg) {
-        echo sprintf('Message from %d: %s' . "\n", $from->resourceId, $msg);
+    /**
+     * Handles an incoming message from a client.
+     *
+     * @param ConnectionInterface $from
+     * @param string $msg
+     * @return void
+     */
+    public function onMessage(ConnectionInterface $from, $msg): void
+    {
+        echo sprintf("Message from %d: %s\n", $from->resourceId, $msg);
 
-        // Send a message to all connected clients
         foreach ($this->clients as $client) {
             if ($from !== $client) {
-                // The sender is not the receiver, send to each client connected
                 $client->send($msg);
             }
         }
     }
 
-    public function onClose(ConnectionInterface $conn) {
-        // The connection is closed, remove it
+    /**
+     * Handles a closed connection.
+     *
+     * @param ConnectionInterface $conn
+     * @return void
+     */
+    public function onClose(ConnectionInterface $conn): void
+    {
         $this->clients->detach($conn);
         echo "Connection {$conn->resourceId} has disconnected\n";
     }
 
-    public function onError(ConnectionInterface $conn, \Exception $e) {
+    /**
+     * Handles an error on a connection.
+     *
+     * @param ConnectionInterface $conn
+     * @param \Exception $e
+     * @return void
+     */
+    public function onError(ConnectionInterface $conn, \Exception $e): void
+    {
         echo "An error has occurred: {$e->getMessage()}\n";
         $conn->close();
     }

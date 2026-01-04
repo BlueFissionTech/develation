@@ -6,11 +6,13 @@ use PHPUnit\Framework\TestCase;
 use BlueFission\Async\Sock;
 use Ratchet\Server\IoServer;
 
-class SockTest extends TestCase {
+class SockTest extends TestCase
+{
     private $sock;
     private $port = 8080;
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         parent::setUp();
         // Mock the WebSocketServer class which is referenced in Sock
         $this->mockWebSocketServer = $this->getMockBuilder('BlueFission\Async\WebSocketServer')
@@ -21,7 +23,8 @@ class SockTest extends TestCase {
         $this->sock = new Sock($this->port, ['class' => get_class($this->mockWebSocketServer)]);
     }
 
-    public function testStartAndStopWebSocketServer() {
+    public function testStartAndStopWebSocketServer()
+    {
         // Assume IoServer can be mocked and controlled
         // $mockIoServer = $this->createMock(IoServer::class);
         // $mockIoServer->method('run')->willReturn(null);
@@ -52,7 +55,8 @@ class SockTest extends TestCase {
         // $this->assertNull($this->sock->getServer());
     }
 
-    protected function tearDown(): void {
+    protected function tearDown(): void
+    {
         parent::tearDown();
         // Clean up after test
         $this->sock->stop();
