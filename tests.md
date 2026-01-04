@@ -7,6 +7,13 @@ This project uses PHPUnit. The suite is split by feature area and includes optio
 1. Install dependencies: `composer install`
 2. Run all tests: `vendor/bin/phpunit --do-not-cache-result`
 3. Run a subset: `vendor/bin/phpunit --do-not-cache-result tests/Parsing`
+4. Run all tests inside Docker (php container only, lib mode):
+
+```powershell
+$env:BF_MODE = 'lib'
+$env:BF_SERVICES = 'mysql,redis'
+powershell -File scripts/bf-test.ps1
+```
 
 ## Optional Integrations
 

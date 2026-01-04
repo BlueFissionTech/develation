@@ -88,6 +88,13 @@ Guidance for running PHPUnit tests and enabling optional integration coverage.
 
 - [Testing Documentation](tests.md)
 
+### Examples
+Sample applications that demonstrate DevElation’s flexibility:
+
+- Session-backed todo list with Vibe templates: `examples/todo/index.php`
+- Simple comment thread with voting: `examples/comments/index.php`
+- CLI territory game using behavioral state machines: `examples/game/gangs.php`
+
 ## Usage
 
 As of now, DevElation does not have a composer package and is not available on Packagist. It can be utilized by cloning the repository `bluefission/develation` from GitHub.

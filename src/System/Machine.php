@@ -61,7 +61,7 @@ class Machine {
     /**
      * Returns the uptime of the machine
      *
-     * @return int The uptime in seconds
+     * @return float The uptime in seconds
      */
     public function getUptime() {
         if ($this->getOS() == 'Windows') {
@@ -72,20 +72,46 @@ class Machine {
                 'machine.uptime.command',
                 $command
             );
+
             $this->_system->run($command);
-            $boottime = $this->_system->response();
-            
-            // extract the date from the line
-            $boottimeParts = explode(":", $boottime);
-            $boottime = Str::trim($boottimeParts[1] . ":" . $boottimeParts[2] . ":" . $boottimeParts[3]);
+            $boottime = (string)$this->_system->response();
 
-            $uptime = Date::diff($boottime, Date::now()->val(), 'seconds');
+            try {
+                // Try to extract the boot time portion after the label
+                $matches = [];
+                if (preg_match('/System Boot Time:\\s*(.+)$/i', $boottime, $matches)) {
+                    $bootString = Str::trim($matches[1]);
+                } else {
+                    // Fallback to the original colon-based parsing but guard array access
+                    $boottimeParts = explode(':', $boottime, 4);
+                    if (count($boottimeParts) < 2) {
+                        return 0.0;
+                    }
+                    $tail = array_slice($boottimeParts, 1);
+                    $bootString = Str::trim(implode(':', $tail));
+                }
 
-            return $uptime;
-        } else {
-            $uptime = explode(" ", file_get_contents("/proc/uptime"));
-            return (int)$uptime[0];
+                $uptime = Date::diff($bootString, Date::now()->val(), 'seconds');
+
+                return (float)$uptime;
+            } catch (\Throwable $e) {
+                // If parsing fails for any reason, fall back to a neutral uptime
+                return 0.0;
+            }
         }
+
+        // Linux and other Unix-like systems: /proc/uptime where the first value is seconds
+        $contents = @file_get_contents('/proc/uptime');
+        if ($contents === false) {
+            return 0.0;
+        }
+
+        $parts = explode(' ', trim($contents));
+        if (!isset($parts[0]) || !is_numeric($parts[0])) {
+            return 0.0;
+        }
+
+        return (float)$parts[0];
     }
 
     /**
@@ -102,16 +128,24 @@ class Machine {
                 $command
             );
             $this->_system->run($command);
-            $response = $this->_system->response();
+            $response = (string)$this->_system->response();
 
             //extract the numerical value from the response
             $cpuUsage = preg_replace("/[^0-9]/", "", $response);
 
-            return $cpuUsage;
-        } else {
-            $load = \sys_getloadavg();
-            return $load[0];
+            if ($cpuUsage === null || $cpuUsage === '') {
+                return 0.0;
+            }
+
+            return (float)$cpuUsage;
         }
+
+        $load = @\sys_getloadavg();
+        if ($load === false || !isset($load[0]) || !is_numeric($load[0])) {
+            return 0.0;
+        }
+
+        return (float)$load[0];
     }
 
     /**

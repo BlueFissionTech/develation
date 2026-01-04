@@ -71,14 +71,17 @@ class System implements IDispatcher {
 			$valid = shell_exec("help $command");
 			// Parse the output to see if we got a help output or an error ("This command is not supported by the help utility")
 			$valid = strpos($valid, 'is not supported') === false;
-		} else {
-			$valid = shell_exec("which $command");
-			// Parse the output to see if we got a help output or an error
-			$valid = strpos($valid, 'not found') === false;
-		}
+        } else {
+            // Prefer a simple existence check that works across distros
+            $output = shell_exec("command -v $command 2>/dev/null");
+            if ($output === null || $output === false) {
+                return false;
+            }
 
+            return trim($output) !== '';
+        }
 
-		return $valid;
+        return (bool)$valid;
 	}
 
 	/**
