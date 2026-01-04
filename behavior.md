@@ -71,3 +71,50 @@ $object->when(Event::LOAD, function() {
 
 $object->dispatch(Event::LOAD);
 ```
+
+#### Example Usage
+Here’s an example of how an eCommerce checkout process might define and trigger behaviors within an application:
+
+```php
+$order->behavior(new Event(Event::CHECKOUT_STARTED));
+$order->behavior(new State(State::PROCESSING_PAYMENT));
+$order->behavior(new Action(Action::CHARGE_CARD));
+$order->behavior(new Event(Event::ORDER_CONFIRMED));
+$order->behavior(new Action(Action::SEND_EMAIL));
+
+$order->when(Event::CHECKOUT_STARTED, function() use ($order) {
+    echo "Checkout started.\n";
+    $order->perform(State::PROCESSING_PAYMENT);
+});
+
+$order->when(State::PROCESSING_PAYMENT, function() use ($order) {
+    echo "Processing payment...\n";
+    $order->perform(Action::CHARGE_CARD, new Meta(data: ['card' => '**** **** **** 1234']));
+});
+
+$order->when(Action::CHARGE_CARD, function($behavior, $meta) use ($order) {
+    echo "Charging card: " . $meta->data['card'] . "\n";
+    $order->perform(Event::ORDER_CONFIRMED);
+});
+
+$order->when(Event::ORDER_CONFIRMED, function() use ($order) {
+    echo "Order confirmed!\n";
+    $order->perform(Action::SEND_EMAIL, new Meta(data: ['to' => 'customer@example.com']));
+});
+
+$order->when(Action::SEND_EMAIL, function($behavior, $meta) {
+    echo "Sending email to " . $meta->data['to'] . "\n";
+});
+
+```
+
+### What’s Happening:
+ CHECKOUT_STARTED event is dispatched.
+
+ The system enters PROCESSING_PAYMENT state.
+
+ It performs CHARGE_CARD action using card info.
+
+ Once the card is charged, it triggers ORDER_CONFIRMED event.
+
+ Then it performs SEND_EMAIL action to email the customer.
