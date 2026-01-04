@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Connection;
@@ -8,10 +9,10 @@ use BlueFission\Tests\Support\TestEnvironment;
 
 require_once __DIR__ . '/../Support/TestEnvironment.php';
 
-class SocketTest extends ConnectionTest {
- 
-    static $classname = 'BlueFission\Connections\Socket';
-    static $canbetested = true;
+class SocketTest extends ConnectionTest
+{
+    public static $classname = 'BlueFission\Connections\Socket';
+    public static $canbetested = true;
 
     public function setUp(): void
     {

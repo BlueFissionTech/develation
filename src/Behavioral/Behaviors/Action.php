@@ -1,82 +1,73 @@
 <?php
+
 namespace BlueFission\Behavioral\Behaviors;
 
 /**
  * Class Action
- * 
- * Represents a behavior that performs an action in response to an event
+ *
+ * Represents a behavior that performs an action in response to an event.
  */
 class Action extends Behavior
 {
-	/**
-	 * Constant value representing activation of the behavior
-	 * 
-	 * @var string
-	 */
-	const ACTIVATE = 'DoActivate';
+    // Core actions
+    public const ACTIVATE = 'DoActivate';
+    public const UPDATE = 'DoUpdate';
 
-	/**
-	 * Constant value representing an update of the behavior
-	 * 
-	 * @var string
-	 */
-	const UPDATE = 'DoUpdate';
-
-	// CRUD Operations
-    const CREATE = 'DoCreate';
-    const READ = 'DoRead';
-    const DELETE = 'DoDelete';
-    const SAVE = 'DoSave'; // General save action that could be create or update
+    // CRUD Operations
+    public const CREATE = 'DoCreate';
+    public const READ = 'DoRead';
+    public const DELETE = 'DoDelete';
+    public const SAVE = 'DoSave'; // Generic save action that can cover both create and update
 
     // User Interactions
-    const CLICK = 'DoClick';
-    const HOVER = 'DoHover';
-    const SCROLL = 'DoScroll';
-    const INPUT = 'DoInput';
+    public const CLICK = 'DoClick';
+    public const HOVER = 'DoHover';
+    public const SCROLL = 'DoScroll';
+    public const INPUT = 'DoInput';
 
     // System and Application
-    const RUN = 'DoRun';
-    const START = 'DoStart';
-    const STOP = 'DoStop';
-    const RESTART = 'DoRestart';
-    const PAUSE = 'DoPause';
-    const RESUME = 'DoResume';
+    public const RUN = 'DoRun';
+    public const START = 'DoStart';
+    public const STOP = 'DoStop';
+    public const RESTART = 'DoRestart';
+    public const PAUSE = 'DoPause';
+    public const RESUME = 'DoResume';
 
     // Network and Communication
-    const CONNECT = 'DoConnect';
-    const DISCONNECT = 'DoDisconnect';
-    const SEND = 'DoSend';
-    const RECEIVE = 'DoReceive';
-    const SYNC = 'DoSync';
+    public const CONNECT = 'DoConnect';
+    public const DISCONNECT = 'DoDisconnect';
+    public const SEND = 'DoSend';
+    public const RECEIVE = 'DoReceive';
+    public const SYNC = 'DoSync';
 
     // Authentication
-    const LOGIN = 'DoLogin';
-    const LOGOUT = 'DoLogout';
-    const AUTHENTICATE = 'DoAuthenticate';
-    const AUTHORIZE = 'DoAuthorize';
+    public const LOGIN = 'DoLogin';
+    public const LOGOUT = 'DoLogout';
+    public const AUTHENTICATE = 'DoAuthenticate';
+    public const AUTHORIZE = 'DoAuthorize';
 
-    // Error handling
-    const THROW_ERROR = 'DoThrowError';
-    const CATCH_ERROR = 'DoCatchError';
-    const HANDLE_EXCEPTION = 'DoHandleException';
+    // Error Handling
+    public const THROW_ERROR = 'DoThrowError';
+    public const CATCH_ERROR = 'DoCatchError';
+    public const HANDLE_EXCEPTION = 'DoHandleException';
 
-    // Data manipulation and validation
-    const VALIDATE = 'DoValidate';
-    const FILTER = 'DoFilter';
-    const TRANSFORM = 'DoTransform';
+    // Data and Validation
+    public const VALIDATE = 'DoValidate';
+    public const FILTER = 'DoFilter';
+    public const TRANSFORM = 'DoTransform';
 
-    // Application specific actions
-    const PROCESS = 'DoProcess';
-    const REFRESH = 'DoRefresh';
-    const LOAD_MORE = 'DoLoadMore';
+    // App-Specific
+    public const PROCESS = 'DoProcess';
+    public const REFRESH = 'DoRefresh';
+    public const LOAD_MORE = 'DoLoadMore';
 
-	/**
-	 * Constructor
-	 * 
-	 * @param string $name  The name of the action
-	 */
-	public function __construct( $name )
-	{
-		parent::__construct( $name, 0, false, true );
-	}
+    /**
+     * Constructor for an Action behavior.
+     *
+     * @param string $name The name of the action
+     */
+    public function __construct(string $name)
+    {
+        parent::__construct($name, 0, false, true);
+    }
 }

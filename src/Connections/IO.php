@@ -6,116 +6,153 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Async\Promise;
+use BlueFission\Arr;
 
-class IO {
-    protected static $_filters = [];
-    protected static $_defaults = [];
-    protected static $_messages = [];
-    protected static $_listener = null;
+/**
+ * IO utility class for performing common input/output operations
+ * across Stdio, Curl, Stream, and Socket sources.
+ */
+class IO
+{
+    protected static array $_filters = [];
+    protected static array $_defaults = [];
+    protected static mixed $_messages = null;
+    protected static mixed $_listener = null;
 
-    public static function std($input = null, $config = []) {
+    /**
+     * Handle stdio input/output.
+     */
+    public static function std($input = null, array $config = []): mixed
+    {
         $stdio = new Stdio(array_merge(['target' => $input], $config));
         $stdio
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to stdio", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Communication complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Communication failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Communication error", $b); })
-        ->open();
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stdio", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Communication complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Communication failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Communication error", $b))
+            ->open();
 
         $result = $stdio->query()->result();
         $stdio->close();
-        $data = static::applyFilters($result);
 
-        return $data;
+        return self::applyFilters($result);
     }
 
-    public static function fetch($url, $config = []) {
+    /**
+     * Fetch remote data via HTTP.
+     */
+    public static function fetch(string $url, array $config = []): mixed
+    {
         $curl = new Curl(array_merge(['target' => $url], $config));
         $curl
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to remote", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Read complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Read failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Read error", $b); })
-        ->open();
-        
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to remote", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Read failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Read error", $b))
+            ->open();
+
         $result = $curl->query()->result();
         $curl->close();
-        $data = static::applyFilters($result);
 
-        return $data;
+        return self::applyFilters($result);
     }
 
-    public static function stream($url, $config = []) {
+    /**
+     * Stream data from a source.
+     */
+    public static function stream(string $url, array $config = []): mixed
+    {
         $stream = new Stream(array_merge(['target' => $url], $config));
         $stream
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to stream", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Read complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Read failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Read error", $b); })
-        ->open();
-        
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stream", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Read failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Read error", $b))
+            ->open();
+
         $result = $stream->query()->result();
         $stream->close();
-        $data = static::applyFilters($result);
 
-        return $data;
+        return self::applyFilters($result);
     }
 
-    public static function sock($url, $config = []) {
+    /**
+     * Communicate over a socket.
+     */
+    public static function sock(string $url, array $config = []): mixed
+    {
         $socket = new Socket(array_merge(['target' => $url], $config));
-        $socket            
-        ->when( new Event( Event::CONNECTED ), function($b) { IO::messages("Connected to socket", $b); })
-        ->when( new Event( Event::COMPLETE ), function($b) { IO::messages("Read complete", $b); })
-        ->when( new Event( Event::FAILURE ), function($b) { IO::messages("Read failed", $b); })
-        ->when( new Event( Event::ERROR ), function($b) { IO::messages("Read error", $b); })
-        ->open();
-        
+        $socket
+            ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to socket", $b))
+            ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
+            ->when(new Event(Event::FAILURE), fn ($b) => self::messages("Read failed", $b))
+            ->when(new Event(Event::ERROR), fn ($b) => self::messages("Read error", $b))
+            ->open();
+
         $result = $socket->query()->result();
         $socket->close();
-        $data = static::applyFilters($result);
 
-        return $data;
+        return self::applyFilters($result);
     }
 
-    public static function setDefault($key, $value) {
-        self::$__defaults[$key] = $value;
+    /**
+     * Set default configuration values.
+     */
+    public static function setDefault(string $key, mixed $value): void
+    {
+        self::$_defaults[$key] = $value;
     }
 
-    public static function addFilter(callable $filter) {
+    /**
+     * Register a callable filter to modify I/O results.
+     */
+    public static function addFilter(callable $filter): void
+    {
         self::$_filters[] = $filter;
     }
 
-    protected static function applyFilters($data) {
+    /**
+     * Apply registered filters to data.
+     */
+    protected static function applyFilters(mixed $data): mixed
+    {
         foreach (self::$_filters as $filter) {
             $data = call_user_func($filter, $data);
         }
         return $data;
     }
 
-    public static function messages( $input = null, $event = null )
+    /**
+     * Log a message or retrieve logged messages.
+     */
+    public static function messages(string|null $input = null, mixed $event = null): mixed
     {
-        if ( static::$_messages === null ) {
-            static::$_messages = (new Arr())->constraint(function(&$val) {
+        if (self::$_messages === null) {
+            self::$_messages = (new Arr())->constraint(function (&$val) {
                 if (Arr::size($val) > 100) {
                     array_shift($val);
                 }
             });
         }
 
-        if ( $input === null ) {
-            return static::$_messages->toArray();
+        if ($input === null) {
+            return self::$_messages->toArray();
         }
 
-        static::$_messages[] = $input;
+        self::$_messages[] = $input;
 
-        $listener = static::$_listener;
-        if ( $listener && $listener instanceof IDispatcher ) {
-            $listener->trigger( $event ?? Event::MESSAGE, new Meta(info: $input));
+        if (self::$_listener instanceof IDispatcher) {
+            self::$_listener->trigger($event ?? Event::MESSAGE, new Meta(info: $input));
         }
+
+        return null;
     }
 
-    public static function listener( $listener )
+    /**
+     * Set a global event listener.
+     */
+    public static function listener(IDispatcher $listener): void
     {
-        static::$_listener = $listener;
+        self::$_listener = $listener;
     }
 }

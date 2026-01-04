@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Async;
 
 use BlueFission\Arr;
@@ -6,29 +7,33 @@ use parallel\{Runtime, Future};
 use BlueFission\Behavioral\Behaviors\Event;
 
 /**
- * The Thread class extends the Async functionality to handle true concurrent tasks using PHP's parallel extension.
+ * The Thread class extends Async to handle concurrent tasks using PHP's parallel extension.
  */
-class Thread extends Async {
+class Thread extends Async
+{
     protected static string $_bootstrap = '';
 
     /**
-     * Executes a function in parallel (simulating a thread).
-     * 
-     * @param callable $function The function to execute.
-     * @param array $args Arguments to be passed to the function.
-     * @return Promise A promise that resolves when the parallel execution completes.
+     * Executes a task in parallel using the parallel extension.
+     *
+     * @param callable|array $task The task to execute. Can be a Closure or [object, method] pair.
+     * @param int $priority The priority for task execution.
+     * @return Promise Resolves when the task completes.
      */
-    public static function do($task, $priority = 10) {
+    public static function do($task, int $priority = 10): Promise
+    {
         if (Arr::is($task)) {
             $taskCopy = $task;
             $task = \Closure::fromCallable($task);
-            if ( isset($taskCopy[0]) && is_object($taskCopy[0]) ) {
-                $task->bindTo($taskCopy[0], $taskCopy[0]);
+            if (isset($taskCopy[0]) && is_object($taskCopy[0])) {
+                $task = $task->bindTo($taskCopy[0], $taskCopy[0]);
             }
         }
 
-        $promise = new Promise(function($resolve, $reject) use ($task) {
-            $runtime = ( self::$_bootstrap ? new Runtime(self::$_bootstrap) : new Runtime() );
+        $promise = new Promise(function ($resolve, $reject) use ($task) {
+            $runtime = self::$_bootstrap
+                ? new Runtime(self::$_bootstrap)
+                : new Runtime();
 
             try {
                 $future = $runtime->run($task, [$resolve, $reject]);
@@ -40,25 +45,41 @@ class Thread extends Async {
         }, self::instance());
 
         self::keep($promise, $priority);
-
         return $promise;
     }
 
-    public static function resolve() {
-        return function($response) {
-            // Success handler: handle thread success
+    /**
+     * Default resolve handler.
+     *
+     * @return callable
+     */
+    public static function resolve(): callable
+    {
+        return function ($response) {
             return $response;
         };
     }
 
-    public static function reject() {
-        return function($error) {
-            // Error handler: handle thread failure
+    /**
+     * Default reject handler.
+     *
+     * @return callable
+     */
+    public static function reject(): callable
+    {
+        return function ($error) {
             throw new \Exception("Thread failed: $error");
         };
     }
 
-    public static function setBootstrap($bootstrap) {
+    /**
+     * Sets the bootstrap script to initialize the parallel runtime.
+     *
+     * @param string $bootstrap
+     * @return void
+     */
+    public static function setBootstrap(string $bootstrap): void
+    {
         self::$_bootstrap = $bootstrap;
     }
 }

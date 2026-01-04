@@ -10,10 +10,11 @@ use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Meta;
 
 /**
- * Class Process is a wrapper class for the PHP proc_open function 
+ * Class Process is a wrapper class for the PHP proc_open function
  * and is used to start, manage and stop a system process.
  */
-class Process implements IDispatcher {
+class Process implements IDispatcher
+{
     use Dispatches {
         Dispatches::__construct as private __dConstruct;
     }
@@ -61,15 +62,15 @@ class Process implements IDispatcher {
     protected $_pipes = [];
 
     /**
-	 * Private variable that holds the default pipe specifications for the process.
-	 *
-	 * @var array
-	 */
-	private $_spec = [
-		0 => ["pipe", "r"],  // stdin is a pipe that the child will read from
-		1 => ["pipe", "w"],  // stdout is a pipe that the child will write to
-		2 => ["pipe", "a"], // stderr is a file to write to
-	];
+     * Private variable that holds the default pipe specifications for the process.
+     *
+     * @var array
+     */
+    private $_spec = [
+        0 => ["pipe", "r"],  // stdin is a pipe that the child will read from
+        1 => ["pipe", "w"],  // stdout is a pipe that the child will write to
+        2 => ["pipe", "a"], // stderr is a file to write to
+    ];
 
     /**
      * The process resource created by proc_open
@@ -101,7 +102,8 @@ class Process implements IDispatcher {
      * @param array $descriptorspec The descriptorspec for the command to be executed with
      * @param array $options The options for the command to be executed with
      */
-    public function __construct($command, $cwd = null, $env = null, $descriptorspec = null, $options = []) {
+    public function __construct($command, $cwd = null, $env = null, $descriptorspec = null, $options = [])
+    {
         $this->__dConstruct();
         $this->_command = $command;
         $this->_cwd = $cwd ?? getcwd();
@@ -124,10 +126,11 @@ class Process implements IDispatcher {
     /**
      * Starts the process execution
      */
-    public function start() {
+    public function start()
+    {
         $this->_process = proc_open($this->_command, $this->_descriptorspec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
         $this->trigger(Action::CONNECT);
-        
+
         if (is_resource($this->_process)) {
             $this->trigger(Event::STARTED);
             // Make the streams non-blocking
@@ -143,7 +146,8 @@ class Process implements IDispatcher {
         return $this;
     }
 
-    public function pipes($index = 1) {
+    public function pipes($index = 1)
+    {
         return $this->_pipes[$index];
     }
 
@@ -152,7 +156,8 @@ class Process implements IDispatcher {
      *
      * @return string The output of the process
      */
-    public function output() {
+    public function output()
+    {
         $this->trigger(Action::READ);
         $this->trigger(State::READING);
         $this->_output = stream_get_contents($this->_pipes[1]);
@@ -162,26 +167,26 @@ class Process implements IDispatcher {
     }
 
     /**
-	 * Method used to retrieve the status of the process.
-	 *
-	 * @return bool|string If the process is running, returns true. Otherwise returns the error message.
-	 */
-	public function status()
-	{
-		$this->_status = proc_get_status($this->_process);
-		if ( $this->_status )
-		{
-			return $this->_status['running'];
-		}
-		else
+     * Method used to retrieve the status of the process.
+     *
+     * @return bool|string If the process is running, returns true. Otherwise returns the error message.
+     */
+    public function status()
+    {
+        $this->_status = proc_get_status($this->_process);
+        if ($this->_status) {
+            return $this->_status['running'];
+        } else {
             return fread($this->_pipes[2], 2096);
-	}
+        }
+    }
 
     /**
      * Stop the running process
      * @return int Returns the termination status of the process that was run.
      */
-    public function stop() {
+    public function stop()
+    {
         $this->trigger(Action::STOP);
 
         foreach ($this->_pipes as $pipe) {
@@ -201,7 +206,8 @@ class Process implements IDispatcher {
      * Close the process resource
      * @return int Returns the exit code of the process that was run.
      */
-    public function close() {
+    public function close()
+    {
         $this->trigger(Action::DISCONNECT);
         $status = proc_close($this->_process);
         $this->trigger(Event::DISCONNECTED);

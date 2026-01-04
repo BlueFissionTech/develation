@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Authenticator;
@@ -6,7 +7,8 @@ use BlueFission\Data\Storage\Storage;
 use BlueFission\Data\Storage\Cookie;
 use PHPUnit\Framework\TestCase;
 
-class AuthenticatorTest extends TestCase {
+class AuthenticatorTest extends TestCase
+{
     private $authenticator;
 
     public function setUp(): void

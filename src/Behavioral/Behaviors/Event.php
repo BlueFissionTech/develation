@@ -1,73 +1,73 @@
 <?php
+
 namespace BlueFission\Behavioral\Behaviors;
 
 /**
  * Class Event
- * 
+ *
  * Represents a behavioral Event in the BlueFission Behavioral system.
  */
 class Event extends Behavior
 {
-	const LOAD = 'OnLoad';
-	const UNLOAD = 'OnUnload';
-	const ACTIVATED = 'OnActivated';
-	const CHANGE = 'OnChange';
-	const COMPLETE = 'OnComplete';
-	const STARTED = 'OnStarted';
-	const SUCCESS = 'OnSuccess';
-	const FAILURE = 'OnFailure';
-	const MESSAGE = 'OnMessageUpdate';
-    const CONNECTED = 'OnConnected';
-    const BLOCKED = 'OnBlocked';
-    const DISCONNECTED = 'OnDisconnected';
-    const CLEAR_DATA = 'OnClearData';
+    public const LOAD = 'OnLoad';
+    public const UNLOAD = 'OnUnload';
+    public const ACTIVATED = 'OnActivated';
+    public const CHANGE = 'OnChange';
+    public const COMPLETE = 'OnComplete';
+    public const STARTED = 'OnStarted';
+    public const SUCCESS = 'OnSuccess';
+    public const FAILURE = 'OnFailure';
+    public const MESSAGE = 'OnMessageUpdate';
+    public const CONNECTED = 'OnConnected';
+    public const BLOCKED = 'OnBlocked';
+    public const DISCONNECTED = 'OnDisconnected';
+    public const CLEAR_DATA = 'OnClearData';
 
     // CRUD operations
-    const CREATED = 'OnCreated';
-    const READ = 'OnRead';
-    const UPDATED = 'OnUpdated';
-    const SAVED = 'OnSaved';
-    const DELETED = 'OnDeleted';
+    public const CREATED = 'OnCreated';
+    public const READ = 'OnRead';
+    public const UPDATED = 'OnUpdated';
+    public const SAVED = 'OnSaved';
+    public const DELETED = 'OnDeleted';
 
     // Data transmission
-    const SENT = 'OnSent';
-    const RECEIVED = 'OnReceived';
+    public const SENT = 'OnSent';
+    public const RECEIVED = 'OnReceived';
 
     // State changes
-    const STATE_CHANGED = 'OnStateChanged';
+    public const STATE_CHANGED = 'OnStateChanged';
 
     // More granular system events
-    const AUTHENTICATED = 'OnAuthenticated';
-    const AUTHENTICATION_FAILED = 'OnAuthenticationFailed';
-    const SESSION_STARTED = 'OnSessionStarted';
-    const SESSION_ENDED = 'OnSessionEnded';
+    public const AUTHENTICATED = 'OnAuthenticated';
+    public const AUTHENTICATION_FAILED = 'OnAuthenticationFailed';
+    public const SESSION_STARTED = 'OnSessionStarted';
+    public const SESSION_ENDED = 'OnSessionEnded';
 
     // Error and Exception Handling
-    const ERROR = 'OnError';
-    const EXCEPTION = 'OnException';
+    public const ERROR = 'OnError';
+    public const EXCEPTION = 'OnException';
 
     // More specific application events
-    const CONFIGURED = 'OnConfigured';
-    const INITIALIZED = 'OnInitialized';
-    const FINALIZED = 'OnFinalized';
+    public const CONFIGURED = 'OnConfigured';
+    public const INITIALIZED = 'OnInitialized';
+    public const FINALIZED = 'OnFinalized';
 
     // Custom application logic
-    const PROCESSED = 'OnProcessed';
-    const STOPPED = 'OnStopped';
-    const ACTION_PERFORMED = 'OnActionPerformed';
-    const ACTION_FAILED = 'OnActionFailed';
+    public const PROCESSED = 'OnProcessed';
+    public const STOPPED = 'OnStopped';
+    public const ACTION_PERFORMED = 'OnActionPerformed';
+    public const ACTION_FAILED = 'OnActionFailed';
 
-    // Changes and Mutations
-    const ITEM_ADDED = "OnItemAdded";
-    const ITEM_REMOVED = "OnItemRemoved";
+    // Collection / parsing-related events
+    public const ITEM_ADDED = 'OnItemAdded';
 
-	/**
-	 * Constructor for the Event class
-	 *
-	 * @param string $name The name of the event.
-	 */
-	public function __construct( $name )
-	{
-		parent::__construct( $name, 0, true, false );
-	}
+    /**
+     * Constructor for the Event class
+     *
+     * @param string $name The name of the event.
+     */
+    public function __construct($name)
+    {
+        parent::__construct($name, 0, true, false);
+    }
 }

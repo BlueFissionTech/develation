@@ -19,7 +19,7 @@ class MappingTest extends TestCase
     public function testAddMethod()
     {
         $path = '/test';
-        $callable = function() {};
+        $callable = function () {};
         $name = 'test';
         $method = 'get';
 
@@ -75,7 +75,7 @@ class MappingTest extends TestCase
     public function testGatewayMethod1()
     {
         $path = '/test';
-        $callable = function() {};
+        $callable = function () {};
         $name = 'test';
         $method = 'get';
 
@@ -127,7 +127,7 @@ class MappingTest extends TestCase
 
     /**
      * Test if the gateway method is working as expected
-     * 
+     *
      * @return void
      */
     public function testGatewayMethod2()
@@ -135,7 +135,7 @@ class MappingTest extends TestCase
         $mapping = new Mapping();
         $mapping->gateway("test_gateway");
         $gateways = $mapping->gateways();
-        
+
         $this->assertCount(1, $gateways);
         $this->assertEquals("test_gateway", $gateways[0]);
     }

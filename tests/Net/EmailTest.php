@@ -1,4 +1,5 @@
 <?php
+
 namespace BlueFission\Tests\Net;
 
 use PHPUnit\Framework\TestCase;

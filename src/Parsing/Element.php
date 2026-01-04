@@ -51,7 +51,6 @@ class Element extends Obj {
         $this->block = new Block($this->raw, $this->closed);
         $this->echo($this->block, [Event::ITEM_ADDED]);
         $this->block->setOwner($this);
-        $this->echo($this->block);
     }
 
     public function getUuid(): string

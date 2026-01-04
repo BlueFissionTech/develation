@@ -1,12 +1,14 @@
 <?php
+
 namespace BlueFission\Net;
 
-interface IEmail {
-	public function subject( $subject = null);
-	public function body( $message = null);
-	public function recipients( $email = null, $name = null, $type = null);
-	public function from( $email = null, $name = null);
+interface IEmail
+{
+    public function subject($subject = null);
+    public function body($message = null);
+    public function recipients($email = null, $name = null, $type = null);
+    public function from($email = null, $name = null);
 
-	public function send();
-	public function status($status = null);
+    public function send();
+    public function status($status = null);
 }
