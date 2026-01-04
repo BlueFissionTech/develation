@@ -59,7 +59,7 @@ class WebSocketServer implements MessageComponentInterface
     {
         $this->clients->detach($conn);
         echo "Connection {$conn->resourceId} has disconnected\n";
-    }
+    }               
 
     /**
      * Handles an error on a connection.

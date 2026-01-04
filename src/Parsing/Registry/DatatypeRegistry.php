@@ -5,24 +5,28 @@ namespace BlueFission\Parsing\Registry;
 use BlueFission\IVal;
 use BlueFission\Val;
 use BlueFission\IObj;
+use BlueFission\DevElation as Dev;
 
 class DatatypeRegistry {
     protected static array $datatypes = [];
 
     public static function register(string $name, string $class): void {
+        $class = Dev::apply('_in', $class);
         if (!class_implements($class, IVal::class) || !class_implements($class, IObj::class)) {
             throw new \InvalidArgumentException("Class {$class} must implement ".IVal::class." or ".IObj::class);
         }
 
         self::$datatypes[$name] = $class;
+        Dev::do('_after', [$name, $class]);
     }
 
     public static function get(string $name): ?string {
-        return self::$datatypes[$name] ?? \BlueFission\Val::class;
+        $class = self::$datatypes[$name] ?? \BlueFission\Val::class;
+        return Dev::apply('_out', $class);
     }
 
     public static function all(): array {
-        return self::$datatypes;
+        return Dev::apply('_out', self::$datatypes);
     }
 
     public static function registerDefaults(): void

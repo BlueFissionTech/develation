@@ -5,6 +5,7 @@ namespace BlueFission\Parsing\Registry;
 use BlueFission\Parsing\TagDefinition;
 use BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Contracts;
+use BlueFission\DevElation as Dev;
 
 class TagRegistry {
 
@@ -13,15 +14,18 @@ class TagRegistry {
     protected static array $definitions = [];
 
     public static function register(TagDefinition $definition): void {
+        $definition = Dev::apply('_in', $definition);
         self::$definitions[$definition->name] = $definition;
+        Dev::do('_after', [$definition]);
     }
 
     public static function all(): array {
-        return self::$definitions;
+        return Dev::apply('_out', self::$definitions);
     }
 
     public static function get(string $name): ?TagDefinition {
-        return self::$definitions[$name] ?? null;
+        $definition = self::$definitions[$name] ?? null;
+        return Dev::apply('_out', $definition);
     }
 
     public static function patterns(string $open = '{', string $close = '}'): array {
@@ -30,7 +34,7 @@ class TagRegistry {
             $pattern = str_replace(['{open}', '{close}'], [preg_quote($open, '/'), preg_quote($close, '/')], $def->pattern);
             $compiled[$tag] = $pattern;
         }
-        return $compiled;
+        return Dev::apply('_out', $compiled);
     }
 
     public static function unifiedPattern(string $open = '{', string $close = '}'): string {
@@ -45,7 +49,8 @@ class TagRegistry {
                 $parts[] = $part;
             }
         }
-        return '/' . implode('|', $parts) . '/sx';
+        $pattern = '/' . implode('|', $parts) . '/sx';
+        return Dev::apply('_out', $pattern);
     }
 
     public static function tagPattern(): string {
@@ -82,16 +87,16 @@ class TagRegistry {
         /xs';
     }
 
-    public static function extractAttributes(string $tag, array $match): array {
+    public static function extractAttributes(string $tag, string $match): array {
         $attributes = [];
 
         $definition = self::get($tag);
         if (!$definition || empty($definition->attributes)) {
-            return $attributes;
+            return Dev::apply('_attributes', $attributes);
         }
 
         // Raw tag body from the named capture group
-        $raw = $match[$tag][0] ?? '';
+        $raw = $match ?? '';
 
         // Remove outer delimiters if they exist (e.g., {#if ...}, @template(...))
         $raw = trim($raw);
@@ -104,10 +109,9 @@ class TagRegistry {
             if ($argString && count($definition->attributes) === 1) {
                 $attributes[$definition->attributes[0]] = $argString;
 
-                return $attributes;
+                return Dev::apply('_attributes', $attributes);
             }
         }
-
 
         // Remove tag name prefix (e.g., #if, @template) to leave only key=val attrs
         $clean = preg_replace('/^[{@]?#?' . preg_quote($tag, '/') . '\s*/i', '', $raw);
@@ -172,7 +176,7 @@ class TagRegistry {
             $attributes[$definition->attributes[0]] = $clean;
         }
 
-        return $attributes;
+        return Dev::apply('_attributes', $attributes);
     }
 
     public static function registerDefaults() {
@@ -257,11 +261,11 @@ class TagRegistry {
         ));
 
         self::register(new TagDefinition(
-            name: 'mod',
-            pattern: '@mod\((.*?)\)',
+            name: 'include',
+            pattern: '@include\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
-            class: Elements\ModElement::class
+            class: Elements\IncludeElement::class
         ));
 
         self::register(new TagDefinition(
@@ -285,7 +289,7 @@ class TagRegistry {
             pattern: '@invoke\((.*?)\)',
             attributes: ['name'],
             interface: Contracts\IExecutableElement::class,
-            class: Elements\MacroElement::class
+            class: Elements\InvokeElement::class
         ));
 
         self::register(new TagDefinition(

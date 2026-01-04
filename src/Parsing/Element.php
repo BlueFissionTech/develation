@@ -10,6 +10,7 @@ use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Registry\DatatypeRegistry;
+use BlueFission\DevElation as Dev;
 
 /**
  * Represents a matched element in the template
@@ -22,6 +23,7 @@ class Element extends Obj {
     protected string $tag;
     protected string $raw;
     protected string $match;
+    protected bool $closed = false;
     protected $template;
     protected array $macros = [];
     protected array $attributes = [];
@@ -30,21 +32,24 @@ class Element extends Obj {
     protected $uuid;
     protected ?Element $parent = null;
 
+    protected string $description = 'Generic element';
+
     public function __construct(string $tag, string $match, string $raw, array $attributes = [])
     {
         parent::__construct();
         $this->__dispatchConstruct();
         $this->tag = $tag;
         $this->match = $match;
-        $this->raw = $raw;
-        $this->attributes = $attributes;
+        $this->raw = Dev::apply('_in', $raw);
+        $this->attributes = Dev::apply('_attributes', $attributes);
 
         if (!$this->uuid) {
             $this->uuid = uniqid($this->getTag()."_", true);
         }
 
         // Set the root block this element represents
-        $this->block = new Block($this->raw);
+        $this->block = new Block($this->raw, $this->closed);
+        $this->echo($this->block, [Event::ITEM_ADDED]);
         $this->block->setOwner($this);
         $this->echo($this->block);
     }
@@ -87,7 +92,7 @@ class Element extends Obj {
     }
 
     public function setIncludePaths(array $paths): void {
-        $this->includePaths = $paths;
+        $this->includePaths = Dev::apply('_in', $paths);
     }
 
     public function getIncludePaths(): array
@@ -97,10 +102,19 @@ class Element extends Obj {
 
     public function render(): string
     {
+        Dev::do('_before', [$this]);
         $this->parse();
         $this->block->process();
 
-        return $this->block->content;
+        if ($this->getTemplate()) {
+            $templateContent = $this->getTemplate()->render();
+            $this->setContent($templateContent);
+        }
+
+        $content = Dev::apply('_out', $this->block->content);
+        $this->block->content = $content;
+        Dev::do('_after', [$content, $this]);
+        return $content;
     }
 
     public function getMatch(): string
@@ -123,6 +137,16 @@ class Element extends Obj {
         $this->parent = $parent;
     }
 
+    public function getTemplate(): ?Element
+    {
+        return $this->template;
+    }
+
+    public function setTemplate($template): void
+    {
+        $this->template = $template;
+    }
+
     public function addMacro(string $name, Element $macro): void
     {
        $this->macro[$name] = $macro;
@@ -137,12 +161,30 @@ class Element extends Obj {
     {
         $content = $this->block->content;
 
-        return $content;
+        return Dev::apply('_out', $content);
     }
 
     public function setContent($content): void
     {
-        $this->block->content = $content;
+        $this->block->content = Dev::apply('_in', $content);
+    }
+
+    public function getName(): string
+    {
+        $name = $this->getAttribute('name');
+        $tag = $this->getTag();
+        if ($name) {
+            $tag = "{$tag}_".Str::slug($name);
+        }
+
+        $name = "{$tag}_".Str::slug(substr($this->getUuid(), -6));
+
+        return $name;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
     }
 
     public function children(): array
@@ -158,7 +200,8 @@ class Element extends Obj {
 
         $value = $this->attributes[$name];
 
-        return $this->resolveValue($value);
+        $value = $this->resolveValue($value);
+        return Dev::apply('_attribute', $value);
     }
 
     public function getAttributes(): array
@@ -168,7 +211,7 @@ class Element extends Obj {
             $attributes[$key] = $this->resolveValue($value);
         }
 
-        return $attributes;
+        return Dev::apply('_attributes', $attributes);
     }
 
     public function getRoot(): Element
@@ -216,7 +259,7 @@ class Element extends Obj {
         return $value;
     }
 
-    protected function resolveValue(string $value, ?string $type = null): mixed
+    public function resolveValue(string $value, ?string $type = null): mixed
     {
         $firstChar = substr($value, 0, 1);
         $lastChar = substr($value, -1);
@@ -233,11 +276,11 @@ class Element extends Obj {
             $parsed = json_decode($parsed, true);
         }
 
-        return $parsed;
+        return Dev::apply('_value', $parsed);
     }
 
-    protected function resolveCastClass(string $cast): string
+    public function resolveCastClass(string $cast): string
     {
-        return DatatypeRegistry::get($cast);
+        return Dev::apply('_cast', DatatypeRegistry::get($cast));
     }
 }

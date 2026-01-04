@@ -6,8 +6,10 @@ use BlueFission\IVal;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\ValFactory as Factory;
+
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
+
 use BlueFission\Behavioral\Behaves;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\IBehavioral;
@@ -46,25 +48,24 @@ class Obj implements IObj, IDispatcher, IBehavioral
     /**
      * Obj constructor.
      */
-    public function __construct()
-    {
-        $this->__behavesConstruct();
-
-        if (!Val::is($this->_data)) {
+    public function __construct() {
+        if ( !Val::is($this->_data) ) {
             $this->_data = new Arr();
-        } elseif (Arr::is($this->_data)) {
+        } elseif ( Arr::is($this->_data) ) {
             $this->_data = Arr::use();
         }
 
-        foreach ($this->_types as $field => $type) {
-            $item = Factory::make($type, $this->_data[$field] ?? null);
+        $this->__behavesConstruct();
 
+        foreach ( $this->_types as $field=>$type ) {
+            $item = Factory::make($type, $this->_data[$field] ?? null);
+            
             $this->_data[$field] = $item;
             $this->_data->echo($item, [Event::CHANGE]);
         }
-
-        if (!Val::is($this->_type)) {
-            $this->_type = get_class($this);
+        
+        if ( !Val::is($this->_type) ) {
+            $this->_type = get_class( $this );
         }
 
         $this->echo($this->_data, [Event::CHANGE]);
@@ -73,26 +74,26 @@ class Obj implements IObj, IDispatcher, IBehavioral
 
     /**
      * Sets one of the object fields by name
-     *
+     * 
      * @param string $field
      * @param mixed|null $value
      * @return mixed|null
      */
     public function field(string $field, $value = null): mixed
     {
-        if (Val::isNotEmpty($value)) {
-            if ($this->_lockDataType
-                && isset($this->_data[$field])
-                && $this->_data[$field] instanceof IVal) {
-                if ($this->_data[$field]->isValid($value)) {
+        if ( Val::isNotEmpty($value) ) {
+            if ( $this->_lockDataType 
+                && isset( $this->_data[$field] )
+                && $this->_data[$field] instanceof IVal ) {
+                if ( $this->_data[$field]->isValid($value) ) {
                     $this->_data[$field]->val($value);
                 } else {
                     $this->trigger(Event::EXCEPTION);
                     throw new \Exception("Invalid value for field $field");
                 }
-            } elseif (isset($this->_data[$field])
+            } elseif (isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IVal
-                && $this->_data[$field]->isValid($value)) {
+                && $this->_data[$field]->isValid($value) ) {
                 $this->_data[$field]->val($value);
             } else {
                 $this->_data[$field] = $value;
@@ -101,7 +102,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
             return $this;
         } else {
             $value = $this->_data[$field] ?? null;
-            if ($value instanceof IVal && $this->_exposeValueObject == false) {
+            if ( $value instanceof IVal && $this->_exposeValueObject == false ) {
                 $value = $value->val();
             }
         }
@@ -113,20 +114,20 @@ class Obj implements IObj, IDispatcher, IBehavioral
      * @param  callable $callable a function to run on the value before setting
      * @return IObj
      */
-    public function constraint(callable $callable): IObj
+    public function constraint( callable $callable ): IObj
     {
-        $this->_data->contraint($callable);
+        $this->_data->contraint( $callable );
 
         return $this;
     }
 
     /**
      * Sets whether the value object should be returned as the value or the object
-     *
+     * 
      * @param  bool $expose
      * @return IObj
      */
-    public function exposeValueObject(bool $expose = true): IObj
+    public function exposeValueObject( bool $expose = true ): IObj
     {
         $this->_exposeValueObject = $expose;
 
@@ -139,8 +140,8 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function clear(): IObj
     {
-        foreach ($this->_data as $key => &$value) {
-            if ($value instanceof IVal) {
+        foreach ( $this->_data as $key => &$value ) {
+            if ( $value instanceof IVal ) {
                 $value->clear();
             } else {
                 $value = null;
@@ -153,23 +154,37 @@ class Obj implements IObj, IDispatcher, IBehavioral
     }
 
     /**
+     * This method is used to get the data.
+     *
+     * @return mixed
+     */
+    public function data(): mixed
+    {
+        if ($this->_data instanceof IVal) {
+            return $this->_data->val();
+        }
+
+        return $this->_data ?? [];
+    }
+
+    /**
      * Assign values to fields in this object.
      *
      * @param  object|array  $data  The data to import into this object.
      * @return IObj
      * @throws InvalidArgumentException  If the data is not an object or associative array.
      */
-    public function assign($data): IObj
+    public function assign( $data ): IObj
     {
-        if (is_object($data) || Arr::isAssoc($data)) {
-            $this->dispatch(State::BUSY);
-            foreach ($data as $a => $b) {
+        if ( is_object( $data ) || Arr::isAssoc( $data ) ) {
+            $this->dispatch( State::BUSY );
+            foreach ( $data as $a=>$b ) {
                 $this->field($a, $b);
             }
-            $this->halt(State::BUSY);
-        } else {
-            throw new \InvalidArgumentException("Can't import from variable type " . gettype($data));
+            $this->halt( State::BUSY );
         }
+        else
+            throw new \InvalidArgumentException( "Can't import from variable type " . gettype($data) );
 
         return $this;
     }
@@ -181,17 +196,17 @@ class Obj implements IObj, IDispatcher, IBehavioral
      * @param array $args
      * @return mixed
      */
-    public function __call($method, $args)
+    public function __call( $method, $args )
     {
-        if (method_exists($this, $method)) {
+        if ( method_exists($this, $method) ) {
             $this->trigger(Event::ACTION_PERFORMED);
 
             return call_user_func_array([$this, $method], $args);
-        } elseif (Arr::hasKey($this->_data, $method)) {
-            $output = call_user_func_array(function () use ($method) {
+        } elseif ( Arr::hasKey($this->_data, $method) ) {
+            $output = call_user_func_array(function() use ( $method ) {
                 return $this->_data[$method];
             }, $args);
-
+            
             $this->trigger(Event::ACTION_PERFORMED);
 
             return $output;
@@ -200,7 +215,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
             throw new \Exception("Method $method does not exist");
         }
     }
-
+    
     /**
      * @param string $field
      * @return mixed|null
@@ -225,18 +240,18 @@ class Obj implements IObj, IDispatcher, IBehavioral
      * @param string $field
      * @return bool
      */
-    public function __isset($field): bool
+    public function __isset( $field ): bool
     {
-        return isset($this->_data[$field]);
+        return isset ( $this->_data[$field] );
     }
 
     /**
      * @param string $field
      * @return void
      */
-    public function __unset($field): void
+    public function __unset( $field ): void
     {
-        unset($this->_data[$field]);
+        unset ( $this->_data[$field] );
     }
 
     public function __sleep()
@@ -255,18 +270,18 @@ class Obj implements IObj, IDispatcher, IBehavioral
     public function __toString(): string
     {
         return $this->_type;
-    }
+    }  
 
-    /**
-    * Convert the object data into an array
-    *
-    * @return array The object data as an array
-    */
+     /**
+     * Convert the object data into an array
+     * 
+     * @return array The object data as an array
+     */
     public function toArray(): array
     {
         $array = $this->_data->toArray();
-        foreach ($array as $key => $value) {
-            if ($value instanceof IVal) {
+        foreach ( $array as $key => $value ) {
+            if ( $value instanceof IVal ) {
                 $array[$key] = $value->val();
             }
         }
@@ -275,7 +290,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
 
     /**
      * Convert the object data into a JSON string
-     *
+     * 
      * @return string The object data as a JSON string
      */
     public function toJson(): string
@@ -285,7 +300,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
 
     /**
      * Serialize the object data
-     *
+     * 
      * @return string The serialized object data
      */
     public function serialize(): string
@@ -295,7 +310,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
 
     /**
      * Unserialize the object data
-     *
+     * 
      * @param string $data The serialized object data
      * @return void
      */
