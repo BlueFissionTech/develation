@@ -24,6 +24,18 @@ class IO
      */
     public static function std($input = null, array $config = []): mixed
     {
+        // Fast-path: when a concrete input file is provided, avoid the
+        // behavioral/stdio stack and just copy/read the file directly.
+        if (is_string($input) && is_file($input)) {
+            $data = @file_get_contents($input);
+
+            if (isset($config['output']) && is_string($config['output'])) {
+                @file_put_contents($config['output'], $data);
+            }
+
+            return self::applyFilters($data);
+        }
+
         $stdio = new Stdio(array_merge(['target' => $input], $config));
         $stdio
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stdio", $b))

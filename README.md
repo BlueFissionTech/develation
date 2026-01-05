@@ -28,6 +28,8 @@ A collection of wrapper classes around PHP's primitive data types that offer enh
 
 - [Data Types Documentation](datatypes.md)
 
+Static helpers: most `Val`/`Obj`-based classes expose their underscored instance helpers as static shorthand. For example, `Str` has an internal `_pluralize()` instance method which can be invoked statically via `Str::pluralize('comment')` thanks to `Val::__callStatic`. This pattern is used throughout the library and examples.
+
 ### DateTime Handling
 Sophisticated date and time manipulation with object-oriented principles, extending PHP's native `DateTime` class.
 
@@ -91,9 +93,9 @@ Guidance for running PHPUnit tests and enabling optional integration coverage.
 ### Examples
 Sample applications that demonstrate DevElation’s flexibility:
 
-- Session-backed todo list with Vibe templates: `examples/todo/index.php`
-- Simple comment thread with voting: `examples/comments/index.php`
-- CLI territory game using behavioral state machines: `examples/game/gangs.php`
+- Session-backed todo list using `Arr`, `Date`, `Session` storage, HTML helpers, and Vibe templates: `examples/todo/index.php`
+- Simple comment thread with voting using `Arr`, `Str`, `Session` storage, HTML helpers, and Vibe templates: `examples/comments/index.php`
+- CLI territory game using the behavioral engine (`Behaves`) and an `Arr`-backed log: `examples/game/gangs.php`
 
 ## Usage
 
