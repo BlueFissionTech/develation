@@ -720,9 +720,8 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     /**
      * Get the change between the current value and the snapshot.
      *
-     * For arrays, this is interpreted as the elements that are present in the
-     * current value but not in the snapshot. If no snapshot has been taken,
-     * the current array value is returned.
+     * For numeric arrays, this is interpreted as the sum of absolute
+     * differences between corresponding elements (a simple distance metric).
      *
      * @return mixed
      */
@@ -732,17 +731,32 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
             return $this->_data;
         }
 
-        // If there is no snapshot, treat the whole array as the delta.
         if (!is_array($this->_snapshot)) {
-            return $this->_data;
+            // No snapshot; treat as zero change for this type,
+            // callers that need more can override.
+            return 0;
         }
 
-        if (!is_array($this->_data)) {
-            return $this->_data;
+        $array1 = $this->_snapshot;
+        $array2 = $this->_data;
+
+        if (!is_array($array1) || !is_array($array2)) {
+            return 0;
         }
 
-        // Return items that are in the current array but not in the snapshot.
-        return array_diff($this->_data, $this->_snapshot);
+        $keys = array_unique(array_merge(array_keys($array1), array_keys($array2)));
+        $distance = 0;
+
+        foreach ($keys as $key) {
+            $value1 = $array1[$key] ?? 0;
+            $value2 = $array2[$key] ?? 0;
+
+            if (is_numeric($value1) && is_numeric($value2)) {
+                $distance += abs($value2 - $value1);
+            }
+        }
+
+        return $distance;
     }
 
     /**

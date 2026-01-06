@@ -61,8 +61,9 @@ class Session extends Storage implements IData
             $cookiedie = (Num::isValid($expire)) ? time() + (int)$expire : (int)$expire; //expire in one hour
             $secure = (bool)$secure;
 
+            session_name($name);
             session_set_cookie_params($cookiedie, $dir, $domain, $secure);
-            session_start($this->_source);
+            session_start();
 
             if (session_id()) {
                 $this->_source = $name;

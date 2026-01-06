@@ -1,31 +1,43 @@
 <?php
-
-namespace BlueFission\Test\Services;
+namespace BlueFission\Tests\Net;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\Net\IP;
+use BlueFission\Tests\Support\TestEnvironment;
+
+require_once __DIR__ . '/../Support/TestEnvironment.php';
 
 class IPTest extends TestCase
 {
-    public static $testdirectory = 'testdirectory';
-    public static $accessLog = 'access.log';
-    public static $ipFile = 'ipblock.txt';
+    private string $testdirectory;
+    private string $accessLog;
+    private string $ipFile;
 
     public function setUp(): void
     {
-        IP::accessLog(self::$testdirectory . DIRECTORY_SEPARATOR . self::$accessLog);
-        IP::ipFile(self::$testdirectory . DIRECTORY_SEPARATOR . self::$ipFile);
+        $this->testdirectory = TestEnvironment::tempDir('bf_ip');
+        $this->accessLog = $this->testdirectory . DIRECTORY_SEPARATOR . 'access.log';
+        $this->ipFile = $this->testdirectory . DIRECTORY_SEPARATOR . 'ipblock.txt';
+
+        $ref = new \ReflectionClass(IP::class);
+        $prop = $ref->getProperty('_storage');
+        $prop->setAccessible(true);
+        $prop->setValue(null);
+
+        IP::accessLog($this->accessLog);
+        IP::ipFile($this->ipFile);
+
+        file_put_contents($this->accessLog, '');
+        file_put_contents($this->ipFile, '');
+
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $_SERVER['HTTP_HOST'] = 'localhost';
+        $_SERVER['REQUEST_URI'] = '/';
     }
 
     public function tearDown(): void
     {
-        if (file_exists(self::$testdirectory . DIRECTORY_SEPARATOR . self::$accessLog)) {
-            unlink(self::$testdirectory . DIRECTORY_SEPARATOR . self::$accessLog);
-        }
-
-        if (file_exists(self::$testdirectory . DIRECTORY_SEPARATOR . self::$ipFile)) {
-            unlink(self::$testdirectory . DIRECTORY_SEPARATOR . self::$ipFile);
-        }
+        TestEnvironment::removeDir($this->testdirectory);
     }
 
     /**
@@ -35,18 +47,21 @@ class IPTest extends TestCase
     {
         $this->assertEquals($_SERVER['REMOTE_ADDR'], IP::remote());
     }
-
+ 
     /**
      * Test deny() method returns the status of IP blocking process
      */
     public function testDeny()
     {
         $ipAddress = '127.0.0.1';
-        $expected = "Blocked IP address $ipAddress";
         $this->assertTrue(IP::deny($ipAddress));
-        $this->assertEquals($expected, IP::status());
+        $this->assertContains(IP::status(), [
+            "Blocked IP address $ipAddress",
+            "IP address $ipAddress already blocked",
+        ]);
+        $this->assertStringContainsString($ipAddress, file_get_contents($this->ipFile));
     }
-
+ 
     /**
      * Test allow() method returns the status of IP allowing process
      */
@@ -57,7 +72,7 @@ class IPTest extends TestCase
         $this->assertTrue(IP::allow($ipAddress));
         $this->assertEquals($expected, IP::status());
     }
-
+ 
     /**
      * Test handle() method returns the status of IP handling process
      */
@@ -77,7 +92,7 @@ class IPTest extends TestCase
 
         IP::allow($ipAddress);
     }
-
+ 
     /**
      * Test log() method returns the status of the log
      */

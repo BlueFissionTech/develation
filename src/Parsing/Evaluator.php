@@ -42,8 +42,8 @@ class Evaluator implements IDispatcher
         $this->__dispatchConstruct();
         $this->element = $element;
         $generator = GeneratorRegistry::get();
-        if ($generator) {
-            $this->echo($generator);
+        if ($generator && method_exists($generator, 'registerEchoes')) {
+            $generator->registerEchoes($this);
         }
     }
 

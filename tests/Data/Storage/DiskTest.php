@@ -1,76 +1,73 @@
 <?php
-
 namespace BlueFission\Tests\Data\Storage;
 
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Data\Storage\Disk;
+use BlueFission\Tests\Support\TestEnvironment;
 
-class DiskTest extends StorageTest
-{
-    public static $testdirectory = '../../../testdirectory';
+require_once __DIR__ . '/../../Support/TestEnvironment.php';
+ 
+class DiskTest extends StorageTest {
+ 
+ 	static $classname = 'BlueFission\Data\Storage\Disk';
 
-    public static $classname = 'BlueFission\Data\Storage\Disk';
+ 	static $configuration = [ 'location'=>'', 'name'=>'storage.tmp' ];
 
-    public static $configuration = [ 'location' => '../../../testdirectory', 'name' => 'storage.tmp' ];
+	private string $tempDir;
 
-    protected $originalDir;
+	public function setUp(): void
+	{
+	    $this->tempDir = TestEnvironment::tempDir('bf_disk');
+	    static::$configuration['location'] = $this->tempDir;
+	    $this->object = new static::$classname(static::$configuration);
+	}
 
-    public function setUp(): void
-    {
-        $this->originalDir = getcwd();
-        chdir(__DIR__);
+	public function tearDown(): void
+	{
+	    TestEnvironment::removeDir($this->tempDir);
+	    unset($this->object);
+	}
 
-        $testDirPath = realpath(static::$testdirectory) ?: static::$testdirectory;
-        if (!file_exists($testDirPath)) {
-            mkdir($testDirPath, 0777, true); // Ensure the directory is created if it does not exist
-        }
-        // touch($testDirPath . DIRECTORY_SEPARATOR . 'storage.tmp'); // Ensure the file exists
+	public function testStorageCanActivate()
+	{
+		$this->object->activate();
+		$this->assertEquals(Storage::STATUS_SUCCESSFUL_INIT, $this->object->status());
+	}
 
-        $this->object = new static::$classname(static::$configuration);
-    }
+	public function testStorageCanWriteFields()
+	{
+		$this->object->activate();
+		$this->object->var1 = 'checking';
+		$this->object->var2 = 'confirming';
+		$this->object->write();
 
-    public function tearDown(): void
-    {
-        $testDirPath = realpath(static::$testdirectory) ?: static::$testdirectory;
-        $testFilePath = $testDirPath . DIRECTORY_SEPARATOR . 'storage.tmp';
-        if (file_exists($testFilePath)) {
-            unlink($testFilePath); // Delete the file
-        }
-        chdir($this->originalDir); // Restore the original working directory
-        unset($this->object);
-    }
+		$filePath = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		if (!file_exists($filePath)) {
+			$this->fail('File ' . $filePath . ' not found.');
+		}
 
-    #[RunInSeparateProcess]
-    public function testStorageCanActivate()
-    {
-        parent::testStorageCanActivate();
+		$this->assertEquals('{"var1":"checking","var2":"confirming"}', file_get_contents($filePath));
 
-        $this->assertEquals(Storage::STATUS_SUCCESSFUL_INIT, $this->object->status());
-    }
+		$this->object->read();
+		$this->assertEquals(['var1' => 'checking', 'var2' => 'confirming'], $this->object->contents());
+	}
 
-    #[RunInSeparateProcess]
-    public function testStorageCanWriteFields()
-    {
-        $this->object->activate();
-        // die(var_dump($this->object->status()));
-        parent::testStorageCanWriteFields();
+	public function testStorageCanWriteContentOverFields()
+	{
+		$this->object->activate();
+		$this->object->var1 = 'checking';
+		$this->object->var2 = 'confirming';
+		$this->object->contents("Testing.");
+		$this->object->write();
 
-        if (!file_exists(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp')) {
-            $this->fail('File '.realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp not found.');
-        }
+		$filePath = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		if (!file_exists($filePath)) {
+			$this->fail('File ' . $filePath . ' not found.');
+		}
 
-        $this->assertEquals('{"var1":"checking","var2":"confirming"}', file_get_contents(static::$testdirectory.DIRECTORY_SEPARATOR.'storage.tmp'));
-    }
+		$this->assertEquals('Testing.', file_get_contents($filePath));
 
-    #[RunInSeparateProcess]
-    public function testStorageCanWriteContentOverFields()
-    {
-        parent::testStorageCanWriteContentOverFields();
-
-        if (!file_exists(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp')) {
-            $this->fail('File '.realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp not found.');
-        }
-
-        $this->assertEquals('Testing.', file_get_contents(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.'storage.tmp'));
-    }
+		$this->object->read();
+		$this->assertEquals('Testing.', $this->object->contents());
+	}
 }

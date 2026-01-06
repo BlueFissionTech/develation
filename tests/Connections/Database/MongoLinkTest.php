@@ -1,20 +1,31 @@
 <?php
-
 namespace BlueFission\Tests\Connections\Database;
 
 use BlueFission\Tests\Connections\ConnectionTest;
 use BlueFission\Connections\Database\MongoLink;
+use BlueFission\Tests\Support\TestEnvironment;
 
-class MongoLinkTest extends ConnectionTest
-{
-    public static $classname = 'BlueFission\Connections\Database\MongoLink';
+require_once __DIR__ . '/../../Support/TestEnvironment.php';
+ 
+class MongoLinkTest extends ConnectionTest {
+ 
+ 	static $classname = 'BlueFission\Connections\Database\MongoLink';
 
-    public function setUp(): void
-    {
-        // Set up a bunch of conditions to create an acceptable test connection here
-        if (class_exists('\MongoDB\Client')) {
-            static::$canbetested = true;
-        }
-        parent::setUp();
-    }
+ 	public function setUp(): void
+ 	{
+ 		$config = TestEnvironment::mongoConfig();
+ 		if (!class_exists('MongoDB\\Client') || !$config) {
+ 			$this->markTestSkipped('Mongo tests require mongodb extension and DEV_ELATION_MONGO_URI');
+ 		}
+
+ 		static::$canbetested = true;
+ 		static::$configuration = [
+ 			'target' => $config['host'],
+ 			'username' => $config['user'],
+ 			'password' => $config['pass'],
+ 			'database' => $config['db'],
+ 		];
+
+ 		parent::setUp();
+ 	}
 }

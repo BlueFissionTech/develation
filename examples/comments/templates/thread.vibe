@@ -1,0 +1,10 @@
+@template('layout.vibe')
+
+@section('main')
+    <p><small>Thread backed by DevElation Session storage, using Arr, Str, HTML\Form, and HTML\Table helpers.</small></p>
+    <p><small>{\$comment_count} {\$comment_label}</small></p>
+
+    {@add_form}
+
+    {@items_table}
+@endsection

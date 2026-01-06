@@ -1,14 +1,15 @@
 <?php
-
 namespace BlueFission\Tests\Net;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
 
-class HTTPTest extends TestCase
-{
-    public function testQuery()
-    {
+require_once __DIR__ . '/../Support/TestEnvironment.php';
+
+class HTTPTest extends TestCase {
+
+    public function testQuery() {
         $formdata = [
             'key1' => 'value1',
             'key2' => 'value2'
@@ -20,14 +21,18 @@ class HTTPTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
-    public function testUrlExists()
-    {
-        $this->assertTrue(HTTP::urlExists('https://www.bluefission.com'));
-        $this->assertFalse(HTTP::urlExists('http://nonexistenturl.com'));
+    public function testUrlExists() {
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->assertFalse(HTTP::urlExists('ftp://example.com'));
+            return;
+        }
+
+        $url = getenv('DEV_ELATION_HTTP_TEST_URL') ?: 'https://www.bluefission.com';
+        $this->assertTrue(HTTP::urlExists($url));
+        $this->assertFalse(HTTP::urlExists('http://nonexistent.invalid'));
     }
 
-    public function testDomain()
-    {
+    public function testDomain() {
         $_SERVER['HTTP_HOST'] = 'www.bluefission.com';
         $expected = '.bluefission.com';
         $actual = HTTP::domain();
@@ -39,8 +44,7 @@ class HTTPTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
-    public function testUrl()
-    {
+    public function testUrl() {
         $_SERVER['HTTP_HOST'] = 'www.bluefission.com';
         $_SERVER['REQUEST_URI'] = '/test';
         $_SERVER['HTTPS'] = 'on';

@@ -54,6 +54,7 @@ class Behavior
         $this->_passive = $passive;
         $this->_priority = $priority;
         $this->target = null;
+        $this->context = null;
     }
 
     /**

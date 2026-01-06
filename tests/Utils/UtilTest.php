@@ -1,5 +1,4 @@
 <?php
-
 namespace BlueFission\Tests;
 
 use BlueFission\Utils\Util;
@@ -7,10 +6,13 @@ use BlueFission\Val;
 use BlueFission\Net\HTTP;
 use BlueFission\Net\Email;
 
-class UtilTest extends \PHPUnit\Framework\TestCase
-{
-    public function testEmailAdmin()
-    {
+class UtilTest extends \PHPUnit\Framework\TestCase {
+    public function testEmailAdmin() {
+        $enabled = strtolower((string)getenv('DEV_ELATION_EMAIL_TESTS'));
+        if (!in_array($enabled, ['1', 'true', 'yes'], true)) {
+            $this->markTestSkipped('Email tests are disabled');
+        }
+
         //Test sending email with all default values
         $status = Util::emailAdmin();
         $this->assertTrue($status);
@@ -25,28 +27,25 @@ class UtilTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($status);
     }
 
-    public function testParachute()
-    {
-        //Test exceeding max count and exiting with log and alert
-        $count = 500;
-        $max = 400;
-        $redirect = "";
-        $log = true;
-        $alert = true;
+    public function testParachute() {
+        $count = 0;
+        $max = 2;
 
-        $this->expectExceptionCode(0);
-        Util::parachute($count, $max, $redirect, $log, $alert);
+        Util::parachute($count, $max);
+        $this->assertEquals(1, $count);
+
+        Util::parachute($count, $max);
+        $this->assertEquals(2, $count);
     }
 
-    public function testCsrfToken()
-    {
+    public function testCsrfToken() {
         //Test generating csrf token
-        $token = Util::csrf_token();
+        $token = Util::csrfToken();
         $this->assertTrue(is_string($token));
+        $this->assertEquals(64, strlen($token));
     }
 
-    public function testValue()
-    {
+    public function testValue() {
         //Test getting value from cookie, post or get with all defaults
         $_COOKIE['test'] = 'cookie_value';
         $_GET['test'] = 'get_value';

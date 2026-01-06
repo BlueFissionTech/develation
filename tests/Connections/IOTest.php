@@ -1,75 +1,68 @@
 <?php
-
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\IO;
 use PHPUnit\Framework\TestCase;
+use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
 
-class IOTest extends TestCase
-{
-    public function testStdio()
-    {
-        // Mock Stdio to simulate input behavior
-        $mockStdio = $this->createMock(\BlueFission\Connections\Stdio::class);
-        $mockStdio->method('open')->willReturnSelf();
-        $mockStdio->method('result')->willReturn("Test input data");
+require_once __DIR__ . '/../Support/TestEnvironment.php';
 
-        // Replace the real Stdio with our mock
-        // Assuming you have a way to set the internal Stdio instance, you would set it here
-        // IO::setStdioInstance($mockStdio);
-
-        //write a text file with the contents 'test'
-        chdir(__DIR__);
-        $filename = '../../testdirectory/testfile.txt';
+class IOTest extends TestCase {
+    public function testStdio() {
+        $dir = TestEnvironment::tempDir('bf_stdio');
+        $filename = $dir . DIRECTORY_SEPARATOR . 'testfile.txt';
+        $outputFile = $dir . DIRECTORY_SEPARATOR . 'out.txt';
         file_put_contents($filename, 'test');
 
-        $data = IO::std($filename);
+        $data = IO::std($filename, ['output' => $outputFile]);
 
-        unlink($filename);
-
-        $this->assertEquals($data, 'test');
+        $this->assertEquals('test', $data);
+        TestEnvironment::removeDir($dir);
     }
 
-    public function testFetch()
-    {
-        $url = 'https://bluefission.com';
-        $mockCurl = $this->createMock(\BlueFission\Connections\Curl::class);
-        $mockCurl->method('open')->willReturnSelf();
-        $mockCurl->method('result')->willReturn("Fetched data");
+    public function testFetch() {
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->markTestSkipped('Network tests are disabled');
+        }
 
-        // Replace the real Curl with our mock
-        // IO::setCurlInstance($mockCurl);
+        $url = getenv('DEV_ELATION_IO_FETCH_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($url)) {
+            $this->markTestSkipped('Fetch target is not reachable');
+        }
 
         $data = IO::fetch($url);
 
-        $this->assertTrue($data !== null);
+        $this->assertNotNull($data);
     }
 
-    public function testStream()
-    {
-        $url = 'https://bluefission.com/stream';
-        $mockStream = $this->createMock(\BlueFission\Connections\Stream::class);
-        $mockStream->method('open')->willReturnSelf();
-        $mockStream->method('result')->willReturn("Streamed data");
+    public function testStream() {
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->markTestSkipped('Network tests are disabled');
+        }
 
-        // IO::setStreamInstance($mockStream);
+        $url = getenv('DEV_ELATION_IO_STREAM_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($url)) {
+            $this->markTestSkipped('Stream target is not reachable');
+        }
 
         $data = IO::stream($url);
 
-        $this->assertTrue($data !== null);
+        $this->assertNotNull($data);
     }
 
-    public function testSock()
-    {
-        $url = 'ws://bluefission.com/socket';
-        $mockSocket = $this->createMock(\BlueFission\Connections\Socket::class);
-        $mockSocket->method('open')->willReturnSelf();
-        $mockSocket->method('result')->willReturn("Socket data");
+    public function testSock() {
+        if (!TestEnvironment::isNetworkEnabled()) {
+            $this->markTestSkipped('Network tests are disabled');
+        }
 
-        // IO::setSocketInstance($mockSocket);
+        $url = getenv('DEV_ELATION_IO_SOCKET_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($url)) {
+            $this->markTestSkipped('Socket target is not reachable');
+        }
 
         $data = IO::sock($url);
 
-        $this->assertTrue($data !== null, "Socket data should not be null");
+        $this->assertNotNull($data, "Socket data should not be null");
     }
 }

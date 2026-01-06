@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Dependencies
 /vendor/
 
@@ -13,17 +12,12 @@
 # Test temp artifacts
 /tests/Parsing/_tmp/
 /tests/HTML/_tmp/
-=======
-/vendor/
-composer.lock
-.phpunit.result.cache
-phpstan.neon.cache
-/node_modules/
-.env
-.DS_Store
-*.log
-*.cache
-*.swp
-.idea/
-.vscode/
->>>>>>> master
+
+# Blue Fission Codex harness
+/docker/
+/scripts/
+/artifacts/
+/.codex/
+/AGENTS.md
+/AGENTS.behavior.md
+/harness.json

@@ -212,8 +212,9 @@ class Log extends Data implements iData
      */
     private function message($records = null): string
     {
-        $records = (Val::isNull($records)) ? $records : $this->config('max_logs');
-        $message = array_slice($this->_data, -($records));
+        $records = (Val::isNull($records)) ? $this->config('max_logs') : $records;
+        $raw = $this->data();
+        $message = array_slice($raw, -($records));
         $message = array_filter($message);
         // $output = implode("\n", $message)."\n";
         $output = '';

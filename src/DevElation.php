@@ -72,7 +72,7 @@ class DevElation
      * @param mixed $value The value to filter.
      * @return mixed
      */
-    public static function apply($name = null, $value)
+    public static function apply($name = null, $value = null)
     {
         $name = self::generateHookName($name);
         if (!self::$_isActive || !isset(self::$_filters[$name])) {

@@ -5,23 +5,19 @@ namespace BlueFission\Tests\Data\Queues;
 use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\SplQueue;
 
-class SplQueueTest extends TestCase
-{
+class SplQueueTest extends TestCase {
     private $queue;
 
-    protected function setUp(): void
-    {
+    protected function setUp(): void {
     }
 
-    public function testQueueIsEmptyInitially()
-    {
+    public function testQueueIsEmptyInitially() {
         $this->assertTrue(SplQueue::isEmpty('testChannel'), "Queue should be empty initially.");
     }
 
-    public function testEnqueueDequeueItems()
-    {
-        SplQueue::enqueue('item1', 'testChannel');
-        SplQueue::enqueue('item2', 'testChannel');
+    public function testEnqueueDequeueItems() {
+        SplQueue::enqueue('testChannel', 'item1');
+        SplQueue::enqueue('testChannel', 'item2');
         $this->assertFalse(SplQueue::isEmpty('testChannel'), "Queue should not be empty after enqueueing items.");
 
         $firstItem = SplQueue::dequeue('testChannel');
@@ -32,10 +28,9 @@ class SplQueueTest extends TestCase
         $this->assertTrue(SplQueue::isEmpty('testChannel'), "Queue should be empty after dequeuing all items.");
     }
 
-    public function testDifferentChannelsAreIndependent()
-    {
-        SplQueue::enqueue('channel1Item', 'channel1');
-        SplQueue::enqueue('channel2Item', 'channel2');
+    public function testDifferentChannelsAreIndependent() {
+        SplQueue::enqueue('channel1', 'channel1Item');
+        SplQueue::enqueue('channel2', 'channel2Item');
 
         $this->assertEquals('channel1Item', SplQueue::dequeue('channel1'), "Dequeue from 'channel1' should yield 'channel1Item'.");
         $this->assertEquals('channel2Item', SplQueue::dequeue('channel2'), "Dequeue from 'channel2' should yield 'channel2Item'.");

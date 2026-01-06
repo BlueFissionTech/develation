@@ -64,8 +64,18 @@ class HTTP {
 	    }
 	    
 	    $host = parse_url($url, PHP_URL_HOST);
-	    $port = parse_url($url, PHP_URL_PORT) ?: 80;
-	    $fp = @fsockopen($host, $port);
+	    $port = parse_url($url, PHP_URL_PORT);
+
+        if (!$host) {
+            return false;
+        }
+
+        if ($port === null) {
+            $port = ($scheme === 'https') ? 443 : 80;
+        }
+
+        $timeout = 3.0;
+	    $fp = @fsockopen($host, $port, $errno, $errstr, $timeout);
 	    if ($fp === false) {
 	        return false;
 	    }

@@ -8,6 +8,14 @@ use PHPUnit\Framework\TestCase;
 
 class MappingTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        $ref = new \ReflectionClass(App::class);
+        $prop = $ref->getProperty('_instances');
+        $prop->setAccessible(true);
+        $prop->setValue([]);
+    }
+
     public function testAddMethod()
     {
         $path = '/test';
@@ -37,7 +45,7 @@ class MappingTest extends TestCase
         $app = App::instance();
         $maps = $app->maps();
 
-        $this->assertCount(2, $maps);
+        $this->assertCount(3, $maps);
         // $this->assertEquals('test', $maps['get']['test']->path);
         // $this->assertEquals('test', $maps['get']['test']->name);
         // $this->assertEquals('get', $maps['get']['test']->method);

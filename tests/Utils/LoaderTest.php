@@ -29,8 +29,7 @@ class LoaderTest extends TestCase
 
     public function testLoadClass()
     {
-        $this->expectException(\Exception::class);
         $loader = Loader::instance();
-        $loader->load('NotExistingClass');
+        $this->assertFalse($loader->load('NotExistingClass'));
     }
 }

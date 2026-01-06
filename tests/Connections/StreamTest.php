@@ -1,27 +1,37 @@
 <?php
-
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Stream;
+use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
 
-class StreamTest extends ConnectionTest
-{
-    public static $classname = 'BlueFission\Connections\Stream';
+require_once __DIR__ . '/../Support/TestEnvironment.php';
+ 
+class StreamTest extends ConnectionTest {
+ 
+ 	static $classname = 'BlueFission\Connections\Stream';
 
-    public function setUp(): void
+ 	public function setUp(): void
+ 	{
+ 		if (!TestEnvironment::isNetworkEnabled()) {
+ 			$this->markTestSkipped('Network tests are disabled');
+ 		}
+ 		parent::setUp();
+ 	}
+
+ 	public function testOpen()
     {
-        // Set up a bunch of conditions to create an acceptable test connection here
-        parent::setUp();
-    }
+        $target = getenv('DEV_ELATION_STREAM_TEST_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($target)) {
+            $this->markTestSkipped('Stream target is not reachable');
+        }
 
-    public function testOpen()
-    {
         $stream = new Stream();
         $stream->open();
 
         $this->assertEquals(Stream::STATUS_NOTCONNECTED, $stream->status());
 
-        $stream->config('target', 'https://bluefission.com');
+        $stream->config('target', $target);
         $stream->open();
 
         $this->assertEquals(Stream::STATUS_CONNECTED, $stream->status());
@@ -29,12 +39,17 @@ class StreamTest extends ConnectionTest
 
     public function testQuery()
     {
+        $target = getenv('DEV_ELATION_STREAM_TEST_URL') ?: 'https://bluefission.com';
+        if (!HTTP::urlExists($target)) {
+            $this->markTestSkipped('Stream target is not reachable');
+        }
+
         $stream = new Stream();
         $stream->open();
 
         $this->assertEquals(Stream::STATUS_NOTCONNECTED, $stream->status());
 
-        $stream->config('target', 'https://bluefission.com');
+        $stream->config('target', $target);
         $stream->open();
         $stream->query('test');
 

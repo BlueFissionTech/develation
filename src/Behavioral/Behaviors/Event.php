@@ -58,6 +58,9 @@ class Event extends Behavior
     public const ACTION_PERFORMED = 'OnActionPerformed';
     public const ACTION_FAILED = 'OnActionFailed';
 
+    // Collection / parsing-related events
+    public const ITEM_ADDED = 'OnItemAdded';
+
     /**
      * Constructor for the Event class
      *

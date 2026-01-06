@@ -29,9 +29,6 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
     {
         parent::__construct($tag, $match, $raw, $attributes);
         $this->evaluator = new Evaluator($this);
-        if ($this->evaluator) {
-            $this->echo($this->evaluator);
-        }
     }
 
     public function setDriver($driver): void

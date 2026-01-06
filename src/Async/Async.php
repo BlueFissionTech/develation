@@ -64,7 +64,7 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral
         $this->behavior(new Event(Event::COMPLETE));
         $this->behavior(new Event(Event::ERROR));
 
-        // Initializing the task queue
+        // Initializing the task queue (class name used for static queue operations)
         self::$_tasks = self::getQueue();
         self::$_config = self::getConfig();
     }
@@ -80,18 +80,17 @@ abstract class Async extends Obj implements IAsync, IObj, IBehavioral
     }
 
     /**
- * Returns the queue instance containing all async tasks.
- *
- * @return IQueue
- */
-    private function tasks(): IQueue
+     * Returns the queue handle used for async tasks.
+     *
+     * Historically this has been the queue class name returned by getQueue().
+     */
+    private function tasks()
     {
-
         return self::$_tasks;
     }
 
     /**
-     * Returns the queue instance, initializing it if necessary.
+     * Returns the queue class name, initializing it if necessary.
      */
     protected static function getQueue(): string
     {

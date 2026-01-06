@@ -32,14 +32,17 @@ class SystemTest extends TestCase
         // Test without any options
         $system->run($command);
         $this->assertNotEmpty($system->process());
-        $this->assertEquals('"Hello World"' . PHP_EOL, $system->response());
+        $expected = PHP_OS_FAMILY === 'Windows'
+            ? '"Hello World"' . PHP_EOL
+            : 'Hello World' . PHP_EOL;
+        $this->assertEquals($expected, $system->response());
 
         // Test with additional options
         // Only run if Linux
         if (PHP_OS_FAMILY === 'Linux') {
-            $system->run($command, false, ['-n']);
+            $system->run($command, ['-n']);
             $this->assertNotEmpty($system->process());
-            $this->assertEquals('"Hello World"', $system->response());
+            $this->assertEquals('Hello World', $system->response());
         }
 
         // Test with an invalid command

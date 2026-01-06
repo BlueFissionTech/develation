@@ -387,7 +387,11 @@ class FileSystem extends Data implements IData {
 
 		$content = $this->contents();
 
-		$content = ( substr(finfo_file($finfo, $filepath), 0, 4) == 'text') ? stripslashes($content) : $content;
+		$mimeType = null;
+		if ($filepath && file_exists($filepath) && is_readable($filepath)) {
+			$mimeType = @finfo_file($finfo, $filepath);
+		}
+		$content = ($mimeType && substr($mimeType, 0, 4) == 'text') ? stripslashes($content) : $content;
 
 		$status = '';
 		$isNewFile = false;

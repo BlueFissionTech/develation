@@ -1,21 +1,30 @@
 <?php
-
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Curl;
+use BlueFission\Net\HTTP;
+use BlueFission\Tests\Support\TestEnvironment;
 
-class CurlTest extends ConnectionTest
-{
-    public static $classname = 'BlueFission\Connections\Curl';
+require_once __DIR__ . '/../Support/TestEnvironment.php';
 
-    public function setUp(): void
-    {
-        // Set up a bunch of conditions to create an acceptable test connection here
-        $location = 'https://www.bluefission.com';
-        if (file_get_contents($location)) {
-            static::$canbetested = true;
-            static::$configuration['location'] = 'https://www.bluefission.com';
-        }
-        parent::setUp();
-    }
+class CurlTest extends ConnectionTest {
+ 
+ 	static $classname = 'BlueFission\Connections\Curl';
+
+ 	public function setUp(): void
+ 	{
+ 		if (!TestEnvironment::isNetworkEnabled()) {
+ 			$this->markTestSkipped('Network tests are disabled');
+ 		}
+
+ 		$location = getenv('DEV_ELATION_CURL_TEST_URL') ?: 'https://www.bluefission.com';
+ 		if (!HTTP::urlExists($location)) {
+ 			$this->markTestSkipped('Curl target is not reachable');
+ 		}
+
+ 		static::$canbetested = true;
+ 		static::$configuration = ['target' => $location];
+
+ 		parent::setUp();
+ 	}
 }
