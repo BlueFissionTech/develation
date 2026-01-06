@@ -46,7 +46,8 @@ class Promise {
             if ($this->_state === State::PENDING) {
                 $this->_state = State::FULFILLED;
                 $this->_result = $value;
-                if ($this->_onFulfill->isCallable()) {
+                
+                if ($this->_onFulfill && $this->_onFulfill->isCallable()) {
                     $this->_onFulfill->call($this->_result);
                 }
                 if ($this->_asyncInstance && is_a($this->_asyncInstance, IAsync::class)) {
