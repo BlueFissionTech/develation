@@ -36,13 +36,12 @@ class AdditionalTagsTest extends ParsingTestCase
         $this->assertSame('macro', $definition->name);
     }
 
-    public function testInvokeRendersEmptyOutput()
+    public function testInvokeResolvesAndRendersMacro()
     {
-        $this->expectException(\TypeError::class);
-        $template = "@invoke('greet')";
+        $template = "@macro('greet')Hello {\$name}!@endmacro @invoke('greet' name=World)";
         $parser = new Parser($template);
         $output = $parser->render();
 
-        $this->assertSame('', $output);
+        $this->assertStringContainsString('Hello World!', $output);
     }
 }
