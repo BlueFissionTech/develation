@@ -148,7 +148,18 @@ class Element extends Obj {
 
     public function addMacro(string $name, Element $macro): void
     {
-       $this->macro[$name] = $macro;
+        // Register macros on the nearest "top" element (limited scope root).
+        // This respects scoped blocks where ROOT may not be the intended
+        // macro namespace, but getTop() still allows @invoke to find macros
+        // consistently within that scope.
+        $top = $this->getTop();
+        $top->macros[$name] = $macro;
+    }
+
+    public function getMacro(string $name): ?Element
+    {
+        $top = $this->getTop();
+        return $top->macros[$name] ?? null;
     }
 
     public function getRaw(): string
