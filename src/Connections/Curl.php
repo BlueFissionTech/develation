@@ -214,12 +214,32 @@ class Curl extends Connection implements IConfigurable
                 if (Arr::size($data) > 0 || Str::is($data)) {
                     $payload = $data;
                     if (!Str::is($payload)) {
-                        $payload = HTTP::jsonEncode($data);
+                        $payload = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                    }
+                    if (!Str::is($payload)) {
+                        $payload = '';
+                    }
+                    $headers = $this->normalizeHeaders($this->config('headers'));
+                    $hasContentType = false;
+                    $hasAccept = false;
+                    $hasContentLength = false;
+                    foreach ($headers as $header) {
+                        $header = is_string($header) ? strtolower($header) : '';
+                        $hasContentType = $hasContentType || str_starts_with($header, 'content-type:');
+                        $hasAccept = $hasAccept || str_starts_with($header, 'accept:');
+                        $hasContentLength = $hasContentLength || str_starts_with($header, 'content-length:');
+                    }
+                    if (!$hasContentType) {
+                        $headers[] = 'Content-Type: application/json';
+                    }
+                    if (!$hasAccept) {
+                        $headers[] = 'Accept: application/json';
+                    }
+                    if (!$hasContentLength) {
+                        $headers[] = 'Content-Length: ' . strlen($payload);
                     }
                     curl_setopt($curl, CURLOPT_POST, true);
                     curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
-                    $headers = $this->normalizeHeaders($this->config('headers'));
-                    $headers = array_merge($headers, ['Content-Type: application/json']);
                     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
                 }
 
