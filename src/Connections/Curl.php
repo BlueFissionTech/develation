@@ -2,9 +2,9 @@
 
 namespace BlueFission\Connections;
 
-use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Str;
+use BlueFission\Val;
 use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
@@ -66,6 +66,36 @@ class Curl extends Connection implements IConfigurable
     }
 
     /**
+     * Normalize header inputs into a list of header strings.
+     *
+     * @param mixed $headers
+     * @return array
+     */
+    protected function normalizeHeaders($headers): array
+    {
+        if (Val::isEmpty($headers)) {
+            return [];
+        }
+
+        $headers = Val::grab();
+
+        if (Str::is($headers)) {
+            $headers = Str::replace(Str::grab(), "\r", '');
+            $headers = Str::split($headers, "\n");
+        } elseif (Arr::is($headers)) {
+            $headers = Arr::grab();
+        } else {
+            return [];
+        }
+
+        if (!Arr::isNotEmpty($headers)) {
+            return [];
+        }
+
+        return Arr::grab();
+    }
+
+    /**
      * Sets options for the cURL connection.
      *
      * @param string $option Option to set.
@@ -103,8 +133,9 @@ class Curl extends Connection implements IConfigurable
 
             curl_setopt($this->_connection, CURLOPT_URL, $target);
             curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
-            if (!Val::empty($this->config('headers'))) {
-                curl_setopt($this->_connection, CURLOPT_HTTPHEADER, Val::grab());
+            $headers = $this->normalizeHeaders($this->config('headers'));
+            if (Arr::isNotEmpty($headers)) {
+                curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $headers);
             }
 
             if ($this->config('verbose')) {
@@ -171,7 +202,8 @@ class Curl extends Connection implements IConfigurable
                 if (Arr::size($data) > 0) {
                     curl_setopt($curl, CURLOPT_POST, count($data));
                     curl_setopt($curl, CURLOPT_POSTFIELDS, HTTP::jsonEncode($data));
-                    $headers =  array_merge($this->config('headers'), ['Content-Type: application/json']);
+                    $headers = $this->normalizeHeaders($this->config('headers'));
+                    $headers = array_merge($headers, ['Content-Type: application/json']);
                     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
                 }
 

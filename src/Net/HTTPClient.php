@@ -3,6 +3,9 @@
 namespace BlueFission\Net;
 
 use BlueFission\Connections\Curl;
+use BlueFission\Arr;
+use BlueFission\Str;
+use BlueFission\Val;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -51,13 +54,38 @@ class HTTPClient implements ClientInterface
     {
         $headerSize = curl_getinfo($this->_curl->connection(), CURLINFO_HEADER_SIZE);
         $headerString = Str::sub($this->_curl->result(), 0, $headerSize);
+        $lines = $this->normalizeHeaderLines($headerString);
         $headers = [];
-        foreach (explode("\r\n", $headerString) as $line) {
+        foreach ($lines as $line) {
             if (Str::pos($line, ':') !== false) {
                 list($key, $value) = explode(':', Str::use(), 2);
                 $headers[trim($key)] = trim($value);
             }
         }
         return $headers;
+    }
+
+    protected function normalizeHeaderLines($headerString): array
+    {
+        if (Val::isEmpty($headerString)) {
+            return [];
+        }
+
+        $headerString = Val::grab();
+
+        if (Str::is($headerString)) {
+            $headerString = Str::replace(Str::grab(), "\r", '');
+            $lines = Str::split($headerString, "\n");
+        } elseif (Arr::is($headerString)) {
+            $lines = Arr::grab();
+        } else {
+            return [];
+        }
+
+        if (!Arr::isNotEmpty($lines)) {
+            return [];
+        }
+
+        return Arr::grab();
     }
 }
