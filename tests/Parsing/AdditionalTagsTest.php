@@ -29,6 +29,15 @@ class AdditionalTagsTest extends ParsingTestCase
         $this->assertSame('AB', $output);
     }
 
+    public function testUntilStopsWhenValidatorPasses()
+    {
+        $template = '{#until validator=notEmpty}Hello{/until}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('Hello', $output);
+    }
+
     public function testMacroTagIsRegistered()
     {
         $definition = TagRegistry::get('macro');

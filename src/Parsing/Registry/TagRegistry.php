@@ -229,6 +229,14 @@ class TagRegistry {
         ));
 
         self::register(new TagDefinition(
+            name: 'until',
+            pattern: '{open}\#until(.*?)?{close}(.*?){open}\/until{close}',
+            attributes: ['validator', 'max', 'limit', 'attempts'],
+            interface: Contracts\ILoopElement::class,
+            class: Elements\UntilElement::class
+        ));
+
+        self::register(new TagDefinition(
             name: 'await',
             pattern: '{open}\#await(.*?)?{close}(.*?){open}\/await{close}',
             attributes: ['event'],
