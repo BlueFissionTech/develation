@@ -186,15 +186,24 @@ class Evaluator implements IDispatcher
                             // Standard registry enables predefined call targets without user lookup.
                             $result = StandardRegistry::get($result);
                         } elseif ($call != '') {
-                            // Executable element tags run for side effects (no direct output here).
                             $function = preg_replace('/\([^\)]*\)/', '', $call);
-                            $tag = TagRegistry::get($function);
-                            if ($tag && is_subclass_of($tag->class, IExecutableElement::class) ) {
-                                $capture = '';
-                                $attributes = $this->parseParameters($attribs);
-                                $elementClass = $tag->class;
-                                $element = new $elementClass($function, $capture, '', $attributes);
-                                $element->execute();
+                            $tool = FunctionRegistry::get($function);
+                            if ($tool) {
+                                $this->params = $this->parseParameters($argChain[0] ?? $args ?? '');
+                                $value = $tool->execute($this->params);
+                                $result = $value;
+                                $callChain = [];
+                            } else {
+                                // Executable element tags run for side effects (no direct output here).
+                                $tag = TagRegistry::get($function);
+                                if ($tag && is_subclass_of($tag->class, IExecutableElement::class)) {
+                                    $capture = '';
+                                    $attributes = $this->parseParameters($attribs);
+                                    $elementClass = $tag->class;
+                                    $element = new $elementClass($function, $capture, '', $attributes);
+                                    $element->execute();
+                                    $callChain = [];
+                                }
                             }
                         } else {
                             $this->params = $this->parseParameters($args);

@@ -92,7 +92,19 @@ class Curl extends Connection implements IConfigurable
             return [];
         }
 
-        return Arr::grab();
+        $headers = Arr::grab();
+        if (Arr::isAssoc($headers)) {
+            $normalized = [];
+            foreach ($headers as $name => $value) {
+                if (is_array($value)) {
+                    $value = implode(', ', $value);
+                }
+                $normalized[] = $name . ': ' . $value;
+            }
+            $headers = $normalized;
+        }
+
+        return $headers;
     }
 
     /**
@@ -199,9 +211,13 @@ class Curl extends Connection implements IConfigurable
 
             //set the url, number of POST vars, POST data
             if ($method == 'post') {
-                if (Arr::size($data) > 0) {
-                    curl_setopt($curl, CURLOPT_POST, count($data));
-                    curl_setopt($curl, CURLOPT_POSTFIELDS, HTTP::jsonEncode($data));
+                if (Arr::size($data) > 0 || Str::is($data)) {
+                    $payload = $data;
+                    if (!Str::is($payload)) {
+                        $payload = HTTP::jsonEncode($data);
+                    }
+                    curl_setopt($curl, CURLOPT_POST, true);
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
                     $headers = $this->normalizeHeaders($this->config('headers'));
                     $headers = array_merge($headers, ['Content-Type: application/json']);
                     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
