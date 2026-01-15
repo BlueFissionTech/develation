@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../Support/TestEnvironment.php';
 
 class MemQueueTest extends TestCase {
     private static $testQueueName = 'testQueue';
+    private bool $memcachedEnabled = false;
 
     protected function setUp(): void {
         $config = TestEnvironment::memcachedConfig();
@@ -18,10 +19,14 @@ class MemQueueTest extends TestCase {
         }
 
         MemQueue::setMode(MemQueue::FIFO); // Default to FIFO for consistency in testing
+        $this->memcachedEnabled = true;
     }
 
     protected function tearDown(): void {
-        // Clean up the queue keys in Memcached after each test to prevent residue data affecting other tests
+        if (!$this->memcachedEnabled) {
+            return;
+        }
+
         while (!MemQueue::isEmpty(self::$testQueueName)) {
             MemQueue::dequeue(self::$testQueueName);
         }

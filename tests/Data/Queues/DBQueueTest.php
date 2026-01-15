@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../Support/TestEnvironment.php';
 class DBQueueTest extends TestCase {
     private $storage;
     private $queueName;
+    private bool $dbEnabled = false;
 
     protected function setUp(): void {
         $enabled = strtolower((string)getenv('DEV_ELATION_DBQUEUE_TESTS'));
@@ -46,6 +47,7 @@ class DBQueueTest extends TestCase {
         // Assuming DBQueue::setStorage could accept different storage types for testing
         DBQueue::setStorage($this->storage);
         $this->storage->activate(); // Ensure storage is activated
+        $this->dbEnabled = true;
     }
 
     public function testIsEmptyInitially() {
@@ -72,7 +74,10 @@ class DBQueueTest extends TestCase {
     }
 
     protected function tearDown(): void {
-        // Clean up if needed
+        if (!$this->dbEnabled || !$this->storage) {
+            return;
+        }
+
         $this->storage->clear()->order('message_id', 'DESC')->channel = $this->queueName;
         while ($this->storage->read()->id()) {
             $this->storage->delete();
