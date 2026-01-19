@@ -140,6 +140,13 @@ class Util {
             ]);
             $diskStorage->activate();
             $storedData = $diskStorage->read()->contents() ?? [];
+            if (is_string($storedData)) {
+                $decoded = json_decode($storedData, true);
+                $storedData = is_array($decoded) ? $decoded : [];
+            }
+            if (!is_array($storedData)) {
+                $storedData = [];
+            }
 
             if ($value === null) {
                 // Return the value if $value is null
