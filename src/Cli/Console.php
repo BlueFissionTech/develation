@@ -14,6 +14,7 @@ use BlueFission\Cli\Util\Table;
 use BlueFission\Cli\Util\ProgressBar;
 use BlueFission\Cli\Util\Prompt as PromptUtil;
 use BlueFission\Cli\Util\Cursor;
+use BlueFission\DevElation as Dev;
 
 class Console extends Obj
 {
@@ -37,48 +38,66 @@ class Console extends Obj
 
         $this->_prompt = new PromptUtil();
 
+        $config = Dev::apply('_in', $config);
         if (Val::isNotNull($config) && Arr::isAssoc($config)) {
             $this->assign($config);
         }
+
+        Dev::do('_after', [$this]);
     }
 
     public function supportsColors(?bool $value = null): bool
     {
+        $value = Dev::apply('_in', $value);
+        Dev::do('_before', [$value, $this]);
         if (Val::isNull($value)) {
             $supports = $this->_data['supportsColors'];
             if (Val::isNull($supports)) {
                 $supports = Ansi::supportsColors();
                 $this->_data['supportsColors'] = $supports;
             }
-            return (bool)$supports;
+            $supports = (bool)Dev::apply('_out', $supports);
+            $this->trigger(Event::PROCESSED, new Meta(data: $supports));
+            Dev::do('_after', [$supports, $this]);
+            return $supports;
         }
 
         $this->_data['supportsColors'] = $value;
-        return (bool)$value;
+        $value = (bool)Dev::apply('_out', $value);
+        $this->trigger(Event::PROCESSED, new Meta(data: $value));
+        Dev::do('_after', [$value, $this]);
+        return $value;
     }
 
     public function outputHandler(?callable $handler = null)
     {
+        $handler = Dev::apply('_in', $handler);
         if (Val::isNull($handler)) {
             return $this->_data['outputHandler'];
         }
 
         $this->_data['outputHandler'] = $handler;
+        Dev::do('_after', [$this]);
         return $this;
     }
 
     public function inputHandler(?callable $handler = null)
     {
+        $handler = Dev::apply('_in', $handler);
         if (Val::isNull($handler)) {
             return $this->_data['inputHandler'];
         }
 
         $this->_data['inputHandler'] = $handler;
+        Dev::do('_after', [$this]);
         return $this;
     }
 
     public function write(string $text, bool $newline = false): string
     {
+        $text = Dev::apply('_in', $text);
+        $newline = Dev::apply('_in', $newline);
+        Dev::do('_before', [$text, $newline, $this]);
         $payload = $newline ? $text . PHP_EOL : $text;
         $this->_data['lastOutput'] = $payload;
 
@@ -91,7 +110,10 @@ class Console extends Obj
             echo $payload;
         }
 
+        $payload = Dev::apply('_out', $payload);
         $this->trigger(Event::SENT, new Meta(data: $payload));
+        $this->trigger(Event::PROCESSED, new Meta(data: $payload));
+        Dev::do('_after', [$payload, $this]);
 
         return $payload;
     }
@@ -113,73 +135,139 @@ class Console extends Obj
 
     public function color(string $text, ?string $color = null, array $styles = []): string
     {
-        return Ansi::colorize($text, $color, $styles, $this->supportsColors());
+        $text = Dev::apply('_in', $text);
+        $color = Dev::apply('_in', $color);
+        $styles = Dev::apply('_in', $styles);
+        Dev::do('_before', [$text, $color, $styles, $this]);
+        $output = Ansi::colorize($text, $color, $styles, $this->supportsColors());
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function dim(string $text): string
     {
-        return Ansi::dim($text, $this->supportsColors());
+        $text = Dev::apply('_in', $text);
+        Dev::do('_before', [$text, $this]);
+        $output = Ansi::dim($text, $this->supportsColors());
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function gray(string $text): string
     {
-        return Ansi::gray($text, $this->supportsColors());
+        $text = Dev::apply('_in', $text);
+        Dev::do('_before', [$text, $this]);
+        $output = Ansi::gray($text, $this->supportsColors());
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function table(array $headers, array $rows, array $options = []): string
     {
+        $headers = Dev::apply('_in', $headers);
+        $rows = Dev::apply('_in', $rows);
+        $options = Dev::apply('_in', $options);
+        Dev::do('_before', [$headers, $rows, $options, $this]);
         $this->perform(new Action(Action::TRANSFORM), new Meta(data: ['headers' => $headers, 'rows' => $rows]));
         $output = Table::render($headers, $rows, $options);
+        $output = Dev::apply('_out', $output);
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
 
         return $output;
     }
 
     public function progress(int $total, int $current, int $width = 40): string
     {
+        $total = Dev::apply('_in', $total);
+        $current = Dev::apply('_in', $current);
+        $width = Dev::apply('_in', $width);
+        Dev::do('_before', [$total, $current, $width, $this]);
         $bar = new ProgressBar($total, $width);
         $bar->setCurrent($current);
 
-        return $bar->render();
+        $output = $bar->render();
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function prompt(string $message, $default = null, ?string $input = null): string
     {
+        $message = Dev::apply('_in', $message);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
+        Dev::do('_before', [$message, $default, $input, $this]);
         $inputValue = $input;
         if (Val::isNull($inputValue) && is_callable($this->_data['inputHandler'])) {
             $inputValue = call_user_func($this->_data['inputHandler'], $message);
         }
 
-        return $this->_prompt->askPrompt($message, $default, $inputValue);
+        $output = $this->_prompt->askPrompt($message, $default, $inputValue);
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function confirm(string $message, bool $default = false, ?string $input = null): bool
     {
+        $message = Dev::apply('_in', $message);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
+        Dev::do('_before', [$message, $default, $input, $this]);
         $inputValue = $input;
         if (Val::isNull($inputValue) && is_callable($this->_data['inputHandler'])) {
             $inputValue = call_user_func($this->_data['inputHandler'], $message);
         }
 
-        return $this->_prompt->confirmPrompt($message, $default, $inputValue);
+        $output = $this->_prompt->confirmPrompt($message, $default, $inputValue);
+        $output = (bool)Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function choice(string $message, array $choices, $default = null, ?string $input = null): string
     {
+        $message = Dev::apply('_in', $message);
+        $choices = Dev::apply('_in', $choices);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
+        Dev::do('_before', [$message, $choices, $default, $input, $this]);
         $inputValue = $input;
         if (Val::isNull($inputValue) && is_callable($this->_data['inputHandler'])) {
             $inputValue = call_user_func($this->_data['inputHandler'], $message);
         }
 
-        return $this->_prompt->choicePrompt($message, $choices, $default, $inputValue);
+        $output = $this->_prompt->choicePrompt($message, $choices, $default, $inputValue);
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     public function cursor(int $x = 1, int $y = 1, bool $visible = true): Cursor
     {
-        return new Cursor($x, $y, $visible);
+        $x = Dev::apply('_in', $x);
+        $y = Dev::apply('_in', $y);
+        $visible = Dev::apply('_in', $visible);
+        Dev::do('_before', [$x, $y, $visible, $this]);
+        $cursor = new Cursor($x, $y, $visible);
+        Dev::do('_after', [$cursor, $this]);
+        return $cursor;
     }
 
     public function lastOutput(): string
     {
-        return (string)$this->_data['lastOutput'];
+        $output = (string)$this->_data['lastOutput'];
+        return (string)Dev::apply('_out', $output);
     }
 }

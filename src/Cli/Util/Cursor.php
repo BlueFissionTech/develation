@@ -6,6 +6,7 @@ use BlueFission\DataTypes;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\DevElation as Dev;
 
 class Cursor extends Obj
 {
@@ -24,6 +25,10 @@ class Cursor extends Obj
     public function __construct(int $x = 1, int $y = 1, bool $visible = true)
     {
         parent::__construct();
+
+        $x = Dev::apply('_in', $x);
+        $y = Dev::apply('_in', $y);
+        $visible = Dev::apply('_in', $visible);
 
         $this->setValue('x', max(1, $x));
         $this->setValue('y', max(1, $y));
@@ -53,7 +58,9 @@ class Cursor extends Obj
 
     public function moveTo(int $x, int $y): self
     {
+        Dev::do('_before', [$this, $x, $y]);
         $this->perform(new Action(Action::UPDATE), new Meta(data: ['x' => $x, 'y' => $y]));
+        Dev::do('_after', [$this]);
         return $this;
     }
 
@@ -71,16 +78,24 @@ class Cursor extends Obj
 
     public function renderPosition(): string
     {
+        Dev::do('_before', [$this]);
         $output = Screen::moveCursor((int)$this->getValue('x'), (int)$this->getValue('y'));
+        $output = Dev::apply('_out', $output);
         $this->perform(new Action(Action::SEND), new Meta(data: $output));
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
 
         return $output;
     }
 
     public function renderVisibility(): string
     {
+        Dev::do('_before', [$this]);
         $output = $this->getValue('visible') ? Screen::showCursor() : Screen::hideCursor();
+        $output = Dev::apply('_out', $output);
         $this->perform(new Action(Action::SEND), new Meta(data: $output));
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
 
         return $output;
     }
