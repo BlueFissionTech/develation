@@ -13,6 +13,9 @@
 /tests/Parsing/_tmp/
 /tests/HTML/_tmp/
 
+# CLI storage artifacts
+/src/Utils/storage/data/
+
 # Blue Fission Codex harness
 /docker/
 /scripts/

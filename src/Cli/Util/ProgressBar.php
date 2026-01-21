@@ -7,6 +7,7 @@ use BlueFission\DataTypes;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\DevElation as Dev;
 
 class ProgressBar extends Obj
 {
@@ -33,6 +34,11 @@ class ProgressBar extends Obj
     public function __construct(int $total, int $width = 40, string $fillChar = '#', string $emptyChar = '-')
     {
         parent::__construct();
+
+        $total = Dev::apply('_in', $total);
+        $width = Dev::apply('_in', $width);
+        $fillChar = Dev::apply('_in', $fillChar);
+        $emptyChar = Dev::apply('_in', $emptyChar);
 
         $this->setValue('total', max(0, $total));
         $this->setValue('current', 0);
@@ -101,6 +107,7 @@ class ProgressBar extends Obj
 
     public function render(?int $current = null): string
     {
+        Dev::do('_before', [$this, $current]);
         if (Val::isNotNull($current)) {
             $this->setCurrent($current);
         }
@@ -129,7 +136,11 @@ class ProgressBar extends Obj
             $parts[] = '(' . min($currentValue, $total) . '/' . $total . ')';
         }
 
-        return implode(' ', $parts);
+        $output = implode(' ', $parts);
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     protected function setValue(string $field, $value): void

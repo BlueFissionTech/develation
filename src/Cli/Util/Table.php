@@ -3,11 +3,25 @@ namespace BlueFission\Cli\Util;
 
 use BlueFission\Obj;
 use BlueFission\Str;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\DevElation as Dev;
 
 class Table extends Obj
 {
     public static function render(array $headers, array $rows, array $options = []): string
     {
+        $table = new self();
+        return $table->renderTable($headers, $rows, $options);
+    }
+
+    public function renderTable(array $headers, array $rows, array $options = []): string
+    {
+        $headers = Dev::apply('_in', $headers);
+        $rows = Dev::apply('_in', $rows);
+        $options = Dev::apply('_in', $options);
+        Dev::do('_before', [$headers, $rows, $options, $this]);
+
         $padding = isset($options['padding']) ? (int)$options['padding'] : 1;
         $align = $options['align'] ?? [];
 
@@ -44,7 +58,11 @@ class Table extends Obj
         }
         $lines[] = self::borderLine($widths, $padding);
 
-        return implode(PHP_EOL, $lines);
+        $output = implode(PHP_EOL, $lines);
+        $output = Dev::apply('_out', $output);
+        $this->trigger(Event::PROCESSED, new Meta(data: $output));
+        Dev::do('_after', [$output, $this]);
+        return $output;
     }
 
     protected static function normalizeRow(array $row, int $colCount): array
@@ -70,7 +88,7 @@ class Table extends Obj
         $parts = [];
         foreach ($row as $index => $cell) {
             $text = (string)$cell;
-            $visible = strlen(Ansi::strip($text));
+            $visible = Str::len(Ansi::strip($text));
             $width = $widths[$index];
             $space = max(0, $width - $visible);
             $alignment = $align[$index] ?? 'left';

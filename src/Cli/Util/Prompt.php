@@ -9,6 +9,7 @@ use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\DevElation as Dev;
 
 class Prompt extends Obj
 {
@@ -54,28 +55,47 @@ class Prompt extends Obj
 
     public function askPrompt(string $message, $default = null, ?string $input = null, bool $trim = true): string
     {
+        $message = Dev::apply('_in', $message);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
+        Dev::do('_before', [$message, $default, $input, $this]);
         $this->perform(State::WAITING_FOR_INPUT);
         $response = self::ask($message, $default, $input, $trim);
         $this->perform(new Action(Action::INPUT), new Meta(data: ['prompt' => $message, 'response' => $response]));
         $this->perform(new Action(Action::PROCESS), new Meta(data: $response));
+        $response = Dev::apply('_out', $response);
+        Dev::do('_after', [$response, $this]);
         return $response;
     }
 
     public function confirmPrompt(string $message, bool $default = false, ?string $input = null): bool
     {
+        $message = Dev::apply('_in', $message);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
+        Dev::do('_before', [$message, $default, $input, $this]);
         $this->perform(State::WAITING_FOR_INPUT);
         $response = self::confirm($message, $default, $input);
         $this->perform(new Action(Action::INPUT), new Meta(data: ['prompt' => $message, 'response' => $response ? 'true' : 'false']));
         $this->perform(new Action(Action::PROCESS), new Meta(data: $response));
+        $response = (bool)Dev::apply('_out', $response);
+        Dev::do('_after', [$response, $this]);
         return $response;
     }
 
     public function choicePrompt(string $message, array $choices, $default = null, ?string $input = null): string
     {
+        $message = Dev::apply('_in', $message);
+        $choices = Dev::apply('_in', $choices);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
+        Dev::do('_before', [$message, $choices, $default, $input, $this]);
         $this->perform(State::WAITING_FOR_INPUT);
         $response = self::choice($message, $choices, $default, $input);
         $this->perform(new Action(Action::INPUT), new Meta(data: ['prompt' => $message, 'response' => $response]));
         $this->perform(new Action(Action::PROCESS), new Meta(data: $response));
+        $response = Dev::apply('_out', $response);
+        Dev::do('_after', [$response, $this]);
         return $response;
     }
 
@@ -90,6 +110,9 @@ class Prompt extends Obj
     }
     public static function ask(string $message, $default = null, ?string $input = null, bool $trim = true): string
     {
+        $message = Dev::apply('_in', $message);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
         $response = $input;
         if (Val::isNull($response)) {
             $response = self::readFromStdin($message);
@@ -103,11 +126,14 @@ class Prompt extends Obj
             return (string)$default;
         }
 
-        return (string)$response;
+        return (string)Dev::apply('_out', $response);
     }
 
     public static function confirm(string $message, bool $default = false, ?string $input = null): bool
     {
+        $message = Dev::apply('_in', $message);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
         $defaultValue = $default ? 'y' : 'n';
         $response = self::ask($message, $defaultValue, $input, true);
         $normalized = Str::lower(trim($response));
@@ -120,11 +146,15 @@ class Prompt extends Obj
             return false;
         }
 
-        return $default;
+        return (bool)Dev::apply('_out', $default);
     }
 
     public static function choice(string $message, array $choices, $default = null, ?string $input = null): string
     {
+        $message = Dev::apply('_in', $message);
+        $choices = Dev::apply('_in', $choices);
+        $default = Dev::apply('_in', $default);
+        $input = Dev::apply('_in', $input);
         $response = self::ask($message, $default, $input, true);
         $normalized = Str::lower(trim($response));
 
@@ -142,7 +172,7 @@ class Prompt extends Obj
             }
         }
 
-        return (string)$response;
+        return (string)Dev::apply('_out', $response);
     }
 
     protected static function readFromStdin(string $message): string
