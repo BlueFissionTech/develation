@@ -12,6 +12,8 @@ class TagRegistry {
     const ROOT = '__ROOT__';
 
     protected static array $definitions = [];
+    protected static array $groupMap = [];
+    protected static array $reverseGroupMap = [];
 
     public static function register(TagDefinition $definition): void {
         $definition = Dev::apply('_in', $definition);
@@ -39,10 +41,13 @@ class TagRegistry {
 
     public static function unifiedPattern(string $open = '{', string $close = '}'): string {
         $parts = [];
+        self::$groupMap = [];
+        self::$reverseGroupMap = [];
         foreach (self::all() as $tag => $def) {
             if ($def->pattern) {
                 $pattern = str_replace(['{open}', '{close}'], [preg_quote($open, '/'), preg_quote($close, '/')], $def->pattern);
-                $part = "(?P<{$tag}>{$pattern})";
+                $group = self::groupNameForTag($tag);
+                $part = "(?P<{$group}>{$pattern})";
                 if (@preg_match('/' . $part . '/sx', '') === false) {
                     throw new \RuntimeException("Invalid regex part: $part");
                 }
@@ -51,6 +56,35 @@ class TagRegistry {
         }
         $pattern = '/' . implode('|', $parts) . '/sx';
         return Dev::apply('_out', $pattern);
+    }
+
+    public static function groupMap(): array {
+        return Dev::apply('_out', self::$reverseGroupMap);
+    }
+
+    public static function groupNameForTag(string $tag): string {
+        if (isset(self::$groupMap[$tag])) {
+            return self::$groupMap[$tag];
+        }
+
+        $normalized = preg_replace('/[^A-Za-z0-9_]/', '_', $tag);
+        $normalized = trim($normalized, '_');
+        if ($normalized === '') {
+            $normalized = 'tag';
+        }
+        if (!preg_match('/^[A-Za-z_]/', $normalized)) {
+            $normalized = '_' . $normalized;
+        }
+
+        $group = $normalized;
+        if (isset(self::$reverseGroupMap[$group]) && self::$reverseGroupMap[$group] !== $tag) {
+            $group = $normalized . '_' . substr(md5($tag), 0, 8);
+        }
+
+        self::$groupMap[$tag] = $group;
+        self::$reverseGroupMap[$group] = $tag;
+
+        return $group;
     }
 
     public static function tagPattern(): string {
