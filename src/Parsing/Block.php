@@ -73,28 +73,29 @@ class Block extends Obj {
         $this->content = Dev::apply('_in', $this->content);
         Dev::do('_before', [$this->content, $this]);
         $pattern = TagRegistry::unifiedPattern();
+        $groupMap = TagRegistry::groupMap();
 
         if (preg_match_all($pattern, $this->content, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
             foreach ($matches as $match) {
-                foreach (TagRegistry::all() as $definition) {
-                    $tag = $definition->name;
-
-                    if (isset($match[$tag]) && !empty($match[$tag][0])) {
-                        $capture = $match[$tag][0];
-                        $raw = end($match)[0];
-                        $attributes = TagRegistry::extractAttributes($tag, $match[$tag][0]);
-                        $attributes = Dev::apply('_attributes', $attributes);
-                        $elementClass = TagRegistry::get($tag)->class;
-                        $element = new $elementClass($tag, $capture, $raw, $attributes);
-                        $element = Dev::apply('_element', $element);
-                        $this->prepareElement($element);
-                        $this->elements[] = $element;
-                        $this->perform(Event::ITEM_ADDED, new Meta(
-                            src: $this,
-                            data: $element,
-                        ));
-                        break;
+                foreach ($groupMap as $group => $tag) {
+                    if (!isset($match[$group]) || empty($match[$group][0])) {
+                        continue;
                     }
+
+                    $capture = $match[$group][0];
+                    $raw = end($match)[0];
+                    $attributes = TagRegistry::extractAttributes($tag, $capture);
+                    $attributes = Dev::apply('_attributes', $attributes);
+                    $elementClass = TagRegistry::get($tag)->class;
+                    $element = new $elementClass($tag, $capture, $raw, $attributes);
+                    $element = Dev::apply('_element', $element);
+                    $this->prepareElement($element);
+                    $this->elements[] = $element;
+                    $this->perform(Event::ITEM_ADDED, new Meta(
+                        src: $this,
+                        data: $element,
+                    ));
+                    break;
                 }
             }
         }
