@@ -42,6 +42,8 @@ $template->assign(['name' => 'World']);
 echo $template->render();
 ```
 
+Register defaults once per process (for example, during bootstrap) so custom tags and renderers are available everywhere.
+
 A simple Vibe layout pattern:
 
 ```vibe

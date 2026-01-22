@@ -1,0 +1,69 @@
+# Data Management
+
+DevElation data tools provide a consistent read/write interface across files, sessions, databases, queues, and logs. Most classes in `BlueFission\Data` are behavioral, so you can hook into `Event::SUCCESS`, `Event::FAILURE`, or `Event::PROCESSED` when you need instrumentation.
+
+## Core Building Blocks
+
+- `Data`: a behavior-aware base that standardizes read, write, save, and delete actions.
+- `Storage`: a concrete data layer with `activate()`, `read()`, `write()`, `delete()` and `contents()`.
+- `Datasource`: a lightweight adapter for external data sources.
+- `Queues`: in-memory and persistent queue options (FIFO and FILO).
+- `Log`: push structured messages to file, email, or system logs.
+
+## Quick Start: Disk Storage
+
+```php
+use BlueFission\Data\Storage\Disk;
+
+$store = new Disk([
+    'location' => __DIR__ . '/data',
+    'name' => 'cache.json',
+]);
+
+$store->activate()->read();
+$payload = (array)($store->contents() ?? []);
+$payload['last_run'] = time();
+
+$store->assign($payload);
+$store->write();
+```
+
+## Quick Start: Session Storage
+
+```php
+use BlueFission\Data\Storage\Session;
+
+$session = new Session(['name' => 'todos']);
+$session->activate()->read();
+
+$todos = (array)($session->contents() ?? []);
+$todos[] = ['task' => 'Ship docs'];
+
+$session->assign($todos);
+$session->write();
+```
+
+## Queue Example
+
+```php
+use BlueFission\Data\Queues\Queue;
+
+Queue::setMode(Queue::FIFO);
+Queue::enqueue('jobs', ['id' => 1, 'task' => 'sync']);
+$job = Queue::dequeue('jobs');
+```
+
+## Logging Example
+
+```php
+use BlueFission\Data\Log;
+
+$log = new Log(['file' => 'application.log']);
+$log->push('queue processed')->write();
+```
+
+## Related
+
+- Storage implementations live under `src/Data/Storage` (MySQL, SQLite, Mongo, Memcached, Disk, Session).
+- Queue implementations live under `src/Data/Queues`.
+- Optional integration test setup is documented in `tests.md`.

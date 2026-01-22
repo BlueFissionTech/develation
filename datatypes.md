@@ -6,6 +6,22 @@ The BlueFission Data Type Wrapper Classes provide a powerful and flexible way to
 
 The BlueFission Data Type Wrapper Classes aim to enhance PHP's native data types by encapsulating them in objects that offer additional functionality. These enhancements include event handling, constraints for data integrity, dynamic method slotting for runtime extensibility, and utility methods that augment or replace PHP's native functions for more intuitive and object-oriented data manipulation.
 
+## Quick Start
+
+```php
+use BlueFission\Arr;
+use BlueFission\Num;
+use BlueFission\Str;
+
+$title = Str::make('  hello world  ')->trim()->capitalize();
+$items = Arr::make(['alpha', 'beta'])->push('gamma');
+$count = Num::make(3)->val(4);
+
+echo $title(); // Hello world
+echo $items->count(); // 3
+echo $count(); // 4
+```
+
 ## Purpose
 
 The core purpose of these wrapper classes is to provide a structured, object-oriented approach to handling common data types in PHP. By wrapping data types in classes, it becomes possible to:
@@ -29,6 +45,8 @@ The core purpose of these wrapper classes is to provide a structured, object-ori
 - `Num`: Specialized class for numeric values.
 - `Str`: Specialized class for string values.
 - `Arr`: Specialized class for array values.
+
+Typed fields in `Obj` use the `DataTypes` enum to determine how values are cast and exposed. That means you can declare a field as `DataTypes::STRING` and the field behaves like a `Str` value object when `_exposeValueObject` is enabled.
 
 ## Key Methods
 
