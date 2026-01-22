@@ -94,6 +94,7 @@ echo $date->time(14, 30, 0); // Sets the time to 2:30 PM and outputs the result
 // Get the difference in days
 $anotherDate = new BlueFission\Date('2023-04-05');
 echo $date->difference($anotherDate->val(), 'days'); // Outputs the difference in days
+```
 
 # E-Commerce Example with BlueFission Date Wrapper
 

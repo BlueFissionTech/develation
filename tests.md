@@ -7,7 +7,8 @@ This project uses PHPUnit. The suite is split by feature area and includes optio
 1. Install dependencies: `composer install`
 2. Run all tests: `vendor/bin/phpunit --do-not-cache-result`
 3. Run a subset: `vendor/bin/phpunit --do-not-cache-result tests/Parsing`
-4. Run all tests inside Docker (php container only, lib mode):
+4. Run CLI suite: `vendor/bin/phpunit --do-not-cache-result tests/Cli`
+5. Run all tests inside Docker (php container only, lib mode):
 
 ```powershell
 $env:BF_MODE = 'lib'

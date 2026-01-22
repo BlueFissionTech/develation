@@ -13,7 +13,7 @@ The `Obj` class is part of the BlueFission framework, designed to encapsulate co
 ## Features
 
 - **Dynamic Fields**: Fields can be dynamically added, accessed, and modified using object attributes.
-- **Event Dispatching**: Leverages the `Dispatches` trait for event handling, allowing objects to react to and broadcast events on data changes.
+- **Event Dispatching**: Leverages the `Behaves` trait for event handling, allowing objects to react to and broadcast events on data changes.
 - **Data Type Flexibility**: Supports flexible data types for fields, with the capability to lock data types if needed.
 - **Serialization Support**: Provides methods for serializing object data to arrays or JSON strings.
 
@@ -110,7 +110,7 @@ echo $obj->field('name');
 
 ### Event Dispatching
 
-The `Obj` class can dispatch and respond to events, thanks to the `Dispatches` trait. This feature allows for complex interactions within and between objects, based on changes to their state or other triggers.
+The `Obj` class can dispatch and respond to events, thanks to the `Behaves` trait. This feature allows for complex interactions within and between objects, based on changes to their state or other triggers.
 
 ```php
 $obj->behavior('customEvent', function($args) {
@@ -162,9 +162,9 @@ class CustomObj extends BlueFission\Obj {
     ];
 
     protected $_types = [
-        'customField1' => BlueFission\DataTypes::STRING
-        'customField2' => BlueFission\DataTypes::INTEGER
-        'customField3' => BlueFission\DataTypes::STRING
+        'customField1' => BlueFission\DataTypes::STRING,
+        'customField2' => BlueFission\DataTypes::INTEGER,
+        'customField3' => BlueFission\DataTypes::STRING,
     
     ];
 
@@ -223,7 +223,7 @@ $obj->age = 'thirty'; // Throws exception
 
 ### Using Events
 
-Events can be used to trigger actions based on changes to the object's state. The `Dispatches` trait provides a simple way to manage event-driven programming within the object.
+Events can be used to trigger actions based on changes to the object's state. The `Behaves` trait provides a simple way to manage event-driven programming within the object.
 
 ```php
 use BlueFission\Behavioral\Behaviors\Meta;
@@ -268,7 +268,6 @@ class Person extends \BlueFission\Obj {
     public function __construct() {
         parent::__construct();
         $this->when(Event::CHANGE, function() {
-            if
             echo "My values have changed";
         });
     }

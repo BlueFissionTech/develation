@@ -18,6 +18,20 @@ The `Collection` class provides a flexible way to manage an array of items. It i
 - **first()**: Returns the first item in the collection.
 - **last()**: Returns the last item in the collection.
 
+### Quick Start
+
+```php
+use BlueFission\Collections\Collection;
+use BlueFission\Str;
+
+$collection = new Collection();
+$collection->add(Str::make('alpha'), 'first');
+$collection->add(Str::make('beta'), 'second');
+
+echo $collection->count(); // 2
+echo $collection->first()->val(); // alpha
+```
+
 ### Usage Scenario
 
 `Collection` is ideal for scenarios where you need to maintain a list of objects or values, such as managing a list of subscribers in an application or storing a set of configurations.

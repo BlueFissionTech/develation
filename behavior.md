@@ -24,6 +24,30 @@ $this->perform(State::PERFORMING_ACTION, new Meta(when: Action::READ, info: 'Ope
 
 In this example, `Meta` holds information about the action being performed, additional context (info), and relevant data (file path).
 
+### Quick Start (Behaves)
+
+```php
+use BlueFission\Behavioral\Behaves;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
+
+class Worker {
+    use Behaves;
+
+    public function __construct() {
+        $this->when(Event::PROCESSED, function($behavior, Meta $meta) {
+            echo "Processed: " . json_encode($meta->data) . PHP_EOL;
+        });
+    }
+
+    public function run(array $payload) {
+        $this->dispatch(Event::PROCESSED, new Meta(data: $payload));
+    }
+}
+
+(new Worker())->run(['id' => 42]);
+```
+
 ### Event-Driven Architecture
 
 #### Triggering Events
@@ -72,8 +96,8 @@ $object->when(Event::LOAD, function() {
 $object->dispatch(Event::LOAD);
 ```
 
-#### Example Usage
-Here’s an example of how an eCommerce checkout process might define and trigger behaviors within an application:
+#### Extended Example
+Here is an example of how an eCommerce checkout process might define and trigger behaviors within an application:
 
 ```php
 $order->behavior(new Event(Event::CHECKOUT_STARTED));
@@ -108,13 +132,10 @@ $order->when(Action::SEND_EMAIL, function($behavior, $meta) {
 
 ```
 
-### What’s Happening:
- CHECKOUT_STARTED event is dispatched.
+### What's Happening
 
- The system enters PROCESSING_PAYMENT state.
-
- It performs CHARGE_CARD action using card info.
-
- Once the card is charged, it triggers ORDER_CONFIRMED event.
-
- Then it performs SEND_EMAIL action to email the customer.
+- CHECKOUT_STARTED event is dispatched.
+- The system enters PROCESSING_PAYMENT state.
+- It performs CHARGE_CARD action using card info.
+- Once the card is charged, it triggers ORDER_CONFIRMED event.
+- Then it performs SEND_EMAIL action to email the customer.

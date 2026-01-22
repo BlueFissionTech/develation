@@ -34,6 +34,17 @@ This directory contains small, self-contained example apps that are meant to dou
 - **How to run**:
   - From the project root: `php examples/game/gangs.php` in a terminal.
 
+### 4. CLI Status Report – `examples/cli/report.php`
+
+- **Purpose**: Compact CLI demo for argument parsing, output formatting, and progress updates.
+- **Key DevElation concepts**:
+  - `Cli\Args` + `OptionDefinition`: parse short/long flags and generate usage text.
+  - `Cli\Console`: colorized output, tables, progress bars, and prompts.
+  - `Cli\Util\StatusBar`: quick status line composed from labeled values.
+- **How to run**:
+  - From the project root: `php examples/cli/report.php --limit 3 --delay 50`
+  - Add `--ask` to prompt for a custom title.
+
 ### Additional Ideas to Explore
 
 These examples intentionally stay small, but there are several DevElation features that could be layered in when you want to go deeper:

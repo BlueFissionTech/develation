@@ -57,6 +57,26 @@ Implements `Connection` to handle stream-based communications. Uses PHP's stream
 
 To utilize these classes, ensure your application configuration includes parameters suited for each type of connection. For instance, when using `Curl`, configure endpoints and authentication details. For `Socket` or `Stream`, specify the target and parameters like port numbers or stream contexts.
 
+### Quick Start (Curl)
+
+```php
+use BlueFission\Connections\Curl;
+use BlueFission\Behavioral\Behaviors\Event;
+
+$curl = new Curl([
+    'target' => 'https://api.example.com/users',
+    'method' => 'GET',
+]);
+
+$curl->when(Event::SUCCESS, function() {
+    echo "Request completed.";
+});
+
+$curl->open();
+$response = $curl->query(null)->result();
+$curl->close();
+```
+
 ### Example
 
 ```php

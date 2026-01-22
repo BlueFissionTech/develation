@@ -76,7 +76,7 @@ Beginnings of an application framework, offering service and routing management 
 - [Application Framework Documentation](app_framework.md)
 
 ### System Tools
-A suite of tools for interacting with the operating system, managing command-line interfaces, machine-specific details, statistics, processes, and asynchronous operations.
+A suite of tools for interacting with the operating system, including CLI utilities, process control, machine details, statistics, and asynchronous operations.
 
 - [System Tools Documentation](system_tools.md)
 
@@ -96,6 +96,56 @@ Sample applications that demonstrate DevElation’s flexibility:
 - Session-backed todo list using `Arr`, `Date`, `Session` storage, HTML helpers, and Vibe templates: `examples/todo/index.php`
 - Simple comment thread with voting using `Arr`, `Str`, `Session` storage, HTML helpers, and Vibe templates: `examples/comments/index.php`
 - CLI territory game using the behavioral engine (`Behaves`) and an `Arr`-backed log: `examples/game/gangs.php`
+- CLI status report using args, tables, and progress bars: `examples/cli/report.php`
+- Additional walkthroughs live in `examples/README.md`
+
+## Quick Start Examples
+
+### CLI utilities: args, tables, and progress
+
+```php
+use BlueFission\Cli\Args;
+use BlueFission\Cli\Args\OptionDefinition;
+use BlueFission\Cli\Console;
+
+$args = (new Args())
+    ->addOption(new OptionDefinition('limit', [
+        'short' => 'l',
+        'type' => 'int',
+        'default' => 5,
+        'description' => 'Number of rows to show.',
+    ]))
+    ->parse($argv);
+
+$options = $args->options();
+$limit = $options['limit'] ?? 5;
+
+$console = new Console();
+$console->writeln($console->color('Report', 'cyan', ['bold']));
+$console->writeln($console->table(['Item', 'Count'], [
+    ['alpha', $limit],
+]));
+
+for ($i = 1; $i <= $limit; $i++) {
+    $console->rewriteLine($console->progress($limit, $i));
+}
+$console->writeln('');
+```
+
+### Storage pipeline: session-backed data
+
+```php
+use BlueFission\Data\Storage\Session;
+
+$store = new Session(['name' => 'todos']);
+$store->activate()->read();
+
+$todos = (array)($store->contents() ?? []);
+$todos[] = ['task' => 'Ship docs', 'due' => '2026-01-10'];
+
+$store->assign($todos);
+$store->write();
+```
 
 ## Usage
 
