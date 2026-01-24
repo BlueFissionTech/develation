@@ -54,6 +54,7 @@ Facilitate connectivity to various data sources and services, such as MySQL, cUR
 Handle queues, storage solutions, databases, Redis, MemQ, files, and logs with a unified approach to data manipulation and persistence.
 
 - [Data Management Documentation](data_management.md)
+- [Schema Documentation](schema.md)
 
 ### HTML Building Tools
 Construct HTML elements for forms, tables, and templating with ease, improving the speed of frontend development.
@@ -84,6 +85,11 @@ A suite of tools for interacting with the operating system, including CLI utilit
 A set of utility functions and tools for administrative alerts, logging, IP blocking, and safeguards against runaway scripts.
 
 - [Utilities Documentation](utilities.md)
+
+### Security Tools
+Hashing helpers for checksums, content IDs, and signatures.
+
+- [Security Documentation](security.md)
 
 ### Testing
 Guidance for running PHPUnit tests and enabling optional integration coverage.
