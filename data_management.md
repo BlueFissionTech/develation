@@ -28,6 +28,33 @@ $store->assign($payload);
 $store->write();
 ```
 
+## Schema Validation
+
+`BlueFission\Data\Schema` lets you define typed fields, cast input, and validate structured data.
+
+```php
+use BlueFission\Data\Schema;
+
+$schema = new Schema([
+    'name' => ['type' => 'string', 'required' => true],
+    'age' => ['type' => 'int', 'default' => 0],
+    'active' => ['type' => 'bool', 'default' => true],
+    'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
+], ['strict' => true]);
+
+$result = $schema->transform([
+    'name' => 123,
+    'age' => '42',
+    'tags' => ['alpha', 9],
+]);
+
+if ($schema->errors()) {
+    // handle validation errors
+}
+```
+
+See `schema.md` for nested schemas, arrays, and constraint patterns.
+
 ## Quick Start: Session Storage
 
 ```php

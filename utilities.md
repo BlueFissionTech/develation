@@ -40,6 +40,16 @@ Mem::assess();
 Mem::flush();
 ```
 
+## Hash Utilities
+
+```php
+use BlueFission\Security\Hash;
+
+$hash = new Hash('sha256');
+$digest = $hash->hash('payload');
+$valid = $hash->verify('payload', $digest);
+```
+
 ## Related
 
 Storage paths for CLI sessions live under `src/Utils/storage`.
