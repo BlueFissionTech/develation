@@ -95,6 +95,7 @@ Hashing helpers for checksums, content IDs, and signatures.
 Guidance for running PHPUnit tests and enabling optional integration coverage.
 
 - [Testing Documentation](tests.md)
+- [Coding Standards](coding_standards.md)
 
 ### Examples
 Sample applications that demonstrate DevElation’s flexibility:
