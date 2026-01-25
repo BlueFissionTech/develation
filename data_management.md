@@ -55,6 +55,25 @@ if ($schema->errors()) {
 
 See `schema.md` for nested schemas, arrays, and constraint patterns.
 
+## Graph Utilities
+
+`BlueFission\Data\Graph` provides lightweight node/edge helpers and a
+shortest-path utility when you need an in-memory graph structure.
+
+```php
+use BlueFission\Data\Graph\Graph;
+
+$graph = new Graph([], false);
+$graph->connect('a', 'b', ['weight' => 2]);
+$graph->connect('b', 'c', ['weight' => 1]);
+
+$path = $graph->shortestPath('a', 'c', function (array $edge): int {
+    return (int)($edge['weight'] ?? 1);
+});
+```
+
+See `graph.md` for more examples and event hooks.
+
 ## Quick Start: Session Storage
 
 ```php

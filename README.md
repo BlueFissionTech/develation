@@ -55,6 +55,7 @@ Handle queues, storage solutions, databases, Redis, MemQ, files, and logs with a
 
 - [Data Management Documentation](data_management.md)
 - [Schema Documentation](schema.md)
+- [Graph Documentation](graph.md)
 
 ### HTML Building Tools
 Construct HTML elements for forms, tables, and templating with ease, improving the speed of frontend development.
