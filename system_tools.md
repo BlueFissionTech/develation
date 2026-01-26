@@ -5,7 +5,7 @@ System tools cover CLI interactions, OS-level process control, machine inspectio
 ## Key Areas
 
 - `Cli`: terminal utilities (Console, Args, Ansi, Table, ProgressBar, Prompt, Cursor).
-- `System`: process control and machine details (`Process`, `System`, `Machine`).
+- `System`: process control and machine details (`Process`, `System`, `Machine`) plus binary discovery (`CommandLocator`).
 - `Async`: promises, forks, sockets, and basic async helpers.
 - `IPC`: lightweight inter-process communication helper.
 
@@ -33,6 +33,17 @@ $output = $process->output();
 $process->stop();
 
 echo $output;
+```
+
+## Quick Start: Command Locator
+
+```php
+use BlueFission\System\CommandLocator;
+
+$ffmpeg = CommandLocator::find('ffmpeg');
+if ($ffmpeg) {
+    // enable optional media tooling
+}
 ```
 
 ## Related
