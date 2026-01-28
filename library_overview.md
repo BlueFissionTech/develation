@@ -196,20 +196,23 @@ $names = collect(['Ada', 'Grace'])
     ->all();
 ```
 
-DevElation-style:
+DevElation-style (using `map`):
 
 ```php
 use BlueFission\Collections\Collection;
 use BlueFission\Str;
 
 $names = new Collection(['Ada', 'Grace']);
-$upper = [];
-foreach ($names as $name) {
-    $upper[] = Str::make($name)->upper()->val();
-}
+$upper = $names->map(function ($name) {
+    return Str::make($name)->upper()->val();
+})->toArray();
 ```
 
 This split is intentional: **Collections store**, value objects **transform**.
+
+Another major difference: DevElation includes `Group`, which can enforce a
+target **type** and cast values on access—Laravel collections do not natively
+enforce a type contract for collection items.
 
 ### 2b) DevElation Arr vs PHP Array Helpers
 
