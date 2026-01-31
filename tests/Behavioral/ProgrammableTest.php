@@ -9,6 +9,26 @@ class ProgrammableTest extends ConfigurableTest
 {
     public static $classname = 'BlueFission\Behavioral\Programmable';
 
+    public function setUp(): void
+    {
+        $traitName = static::$classname;
+        $this->object = eval("
+            return new class extends BlueFission\\Obj implements BlueFission\\Behavioral\\IDispatcher {
+                use BlueFission\\Behavioral\\Configurable;
+                use $traitName;
+
+                protected \$_config = [];
+
+                public function __construct()
+                {
+                    parent::__construct();
+                    \$this->bootstrapConfig();
+                    \$this->bootstrapProgrammable();
+                }
+            };
+        ");
+    }
+
     public function testAddMethodWithLearn()
     {
         $this->expectOutputString('This is a test');

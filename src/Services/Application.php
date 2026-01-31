@@ -2,6 +2,7 @@
 namespace BlueFission\Services;
 
 use BlueFission\Behavioral\Programmable;
+use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\IBehavioral;
 use BlueFission\Behavioral\IConfigurable;
@@ -24,9 +25,7 @@ use Exception;
  * @package BlueFission\Services
  */
 class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral {
-	use Programmable {
-        Programmable::__construct as private __tConstruct;
-    }
+	use Configurable, Programmable;
 
 	/**
 	 * A collection of instances of this class
@@ -203,8 +202,8 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
         }
 
         parent::__construct();
-        $this->__tConstruct(); // Call trait constructor
-        $this->config($config);
+        $this->bootstrapConfig($config);
+        $this->bootstrapProgrammable();
         $this->_services = new Collection();
         $this->_broadcastedEvents[$name] = [];
 
@@ -675,7 +674,14 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		if ( Val::isNull($this->$name)) {
 			// Create anonymous class
 			$object = new class extends Obj {
-				use Programmable;
+				use Configurable, Programmable;
+
+				public function __construct($config = null)
+				{
+					parent::__construct();
+					$this->bootstrapConfig($config);
+					$this->bootstrapProgrammable();
+				}
 			};
 			$object->config( $configuration );
 			if (Val::isNotNull($data)) {

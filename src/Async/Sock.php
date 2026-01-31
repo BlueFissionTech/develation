@@ -5,20 +5,23 @@ namespace BlueFission\Async;
 use Ratchet\Server\IoServer;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
+use BlueFission\Behavioral\Behaves;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\IBehavioral;
 use BlueFission\Behavioral\Behaviors\Event;
 
 /**
  * Sock class sets up a WebSocket server using Ratchet.
  * It supports configuration for host, port, and handler class.
  */
-class Sock implements IDispatcher, IConfigurable
+class Sock implements IDispatcher, IConfigurable, IBehavioral
 {
-    use Configurable {
-        Configurable::__construct as private __configConstruct;
+    use Behaves {
+        Behaves::__construct as private __behavesConstruct;
     }
+    use Configurable;
 
     private $_server;
     private $_port;
@@ -38,7 +41,8 @@ class Sock implements IDispatcher, IConfigurable
      */
     public function __construct(int $port = 8080, array $config = [])
     {
-        $this->__configConstruct($config);
+        $this->__behavesConstruct();
+        $this->bootstrapConfig($config);
 
         $this->_port = $port;
         $this->config($config);

@@ -79,3 +79,21 @@ setx DEV_ELATION_EMAIL_TESTS 1
 
 - Skipped tests indicate optional integrations are not configured.
 - If a full suite run is slow, run feature suites individually from `tests/`.
+
+## CI Parity (Local)
+
+To mirror the CI pipeline locally, run:
+
+```
+vendor/bin/phpunit --do-not-cache-result
+```
+
+Static checks used in CI:
+
+```
+find src tests -name "*.php" -print0 | xargs -0 -n 1 php -l
+php artifacts/phpmd.phar src,tests text phpmd.xml
+```
+
+CI also uses integration services (MySQL, MongoDB, Redis, Memcached, Elasticsearch).
+Set the environment variables above to enable those tests locally.

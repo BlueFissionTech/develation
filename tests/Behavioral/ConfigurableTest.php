@@ -18,6 +18,12 @@ class ConfigurableTest extends BehavioralTest
 	            use $traitName;
 
 	            protected \$_config = [];
+
+                public function __construct()
+                {
+                    parent::__construct();
+                    \$this->bootstrapConfig();
+                }
 	        };
 	    ");
     }
