@@ -18,9 +18,7 @@ use BlueFission\Arr;
  */
 class Email extends Obj implements IConfigurable, IEmail
 {	
-    use Configurable {
-        Configurable::__construct as private __configConstruct;
-    }
+    use Configurable;
 
     /**
      * An array that stores the email configurations.
@@ -110,8 +108,8 @@ class Email extends Obj implements IConfigurable, IEmail
      */
     public function __construct($recipient = null, $from = null, $subject = null, $message = null, $cc = null, $bcc = null, $html = false, $headers_r = null, $additional = null, $attachments = null)
     {
-    	$this->__configConstruct();
 		parent::__construct();
+    	$this->bootstrapConfig();
 
 		$recipient = Arr::toArray($recipient);
 		$cc = Arr::toArray($cc);

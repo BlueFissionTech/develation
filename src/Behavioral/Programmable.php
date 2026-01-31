@@ -11,6 +11,7 @@ use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaviors\Handler;
 
 /**
  * Trait Programmable
@@ -19,12 +20,6 @@ use BlueFission\Behavioral\Behaviors\State;
  */
 trait Programmable
 {
-	use Configurable {
-        Configurable::__construct as private __configConstruct;
-        Configurable::behavior as private configBehavior;
-        Configurable::field as private configField;
-    }
-
 	/**
 	 * An array of tasks that can be performed by the object.
 	 * 
@@ -33,15 +28,14 @@ trait Programmable
 	protected $_tasks;
 
 	/**
-	 * Programmable constructor.
-	 * 
-	 * Calls the parent constructor and initializes the `$_tasks` array.
+	 * Initialize programmable task storage.
 	 */
-	public function __construct()
+	protected function bootstrapProgrammable(): void
 	{
-		$this->__configConstruct();
 		$this->_tasks = new Arr();
-		$this->echo($this->_tasks, [Event::CHANGE]);
+		if (method_exists($this, 'echo')) {
+			$this->echo($this->_tasks, [Event::CHANGE]);
+		}
 	}
 
 	/**
@@ -95,7 +89,7 @@ trait Programmable
 			}
 		}
 
-		$this->configBehavior($behavior, $callback);
+		$this->registerBehavior($behavior, $callback);
 
 		return $this;
 	}
@@ -170,7 +164,24 @@ trait Programmable
 		if (is_callable($value)) {
 			$this->learn($field, $value);
 		} else {
-			$this->configField($field, $value);
+			$this->field($field, $value);
+		}
+	}
+
+	private function registerBehavior($behavior, $callback = null): void
+	{
+		if (!($behavior instanceof Behavior)) {
+			throw new \InvalidArgumentException("Invalid Behavior Type");
+		}
+
+		if (!property_exists($this, '_behaviors')) {
+			throw new RuntimeException("Behavior collection not initialized");
+		}
+
+		$this->_behaviors->add($behavior);
+
+		if ($callback) {
+			$this->handler(new Handler($behavior, $callback));
 		}
 	}
 }

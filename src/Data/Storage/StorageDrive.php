@@ -6,16 +6,22 @@ use BlueFission\IObj;
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Behavioral\Behaves;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\IConfigurable;
+use BlueFission\Behavioral\IDispatcher;
+use BlueFission\Behavioral\IBehavioral;
 
 /**
  * Class StorageDrive
  *
  * @package BlueFission\Data\Storage
  */
-class StorageDrive implements IConfigurable
+class StorageDrive implements IConfigurable, IDispatcher, IBehavioral
 {
+    use Behaves {
+        Behaves::__construct as private __behavesConstruct;
+    }
     use Configurable;
     /**
      * An array of storage devices in the drive
@@ -29,6 +35,12 @@ class StorageDrive implements IConfigurable
      * @var
      */
     protected $_active_bay;
+
+    public function __construct($config = null)
+    {
+        $this->__behavesConstruct();
+        $this->bootstrapConfig($config);
+    }
 
     /**
      * Add a storage device to the drive

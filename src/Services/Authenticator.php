@@ -19,9 +19,7 @@ use BlueFission\Data\Storage\Storage;
 
 class Authenticator extends Service
 {
-    use Configurable {
-        Configurable::__construct as private __configConstruct;
-    }
+    use Configurable;
     /**
      * Default configuration values
      *
@@ -81,8 +79,8 @@ class Authenticator extends Service
      */
     public function __construct(Storage $session, Storage $datasource, $config = null)
     {
-        $this->__configConstruct($config);
         parent::__construct();
+        $this->bootstrapConfig($config);
         // if (is_array($config)) {
         // 	$this->config($config);
         // }

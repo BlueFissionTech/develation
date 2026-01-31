@@ -64,6 +64,12 @@ class ServiceTest extends \PHPUnit\Framework\TestCase
 
         $this->object->type = new class () extends Obj {
             use Configurable;
+
+            public function __construct()
+            {
+                parent::__construct();
+                $this->bootstrapConfig();
+            }
         };
 
         $behavior = new Behavior('Test behavior');
@@ -83,6 +89,12 @@ class ServiceTest extends \PHPUnit\Framework\TestCase
 
         $this->object->type = new class () extends Obj {
             use Configurable;
+
+            public function __construct()
+            {
+                parent::__construct();
+                $this->bootstrapConfig();
+            }
         };
 
         $behavior = new Behavior('Test behavior');
@@ -102,6 +114,12 @@ class ServiceTest extends \PHPUnit\Framework\TestCase
 
         $this->object->type = new class () extends Obj {
             use Configurable;
+
+            public function __construct()
+            {
+                parent::__construct();
+                $this->bootstrapConfig();
+            }
         };
 
         $behavior = new Behavior('Test behavior');
@@ -127,6 +145,12 @@ class ServiceTest extends \PHPUnit\Framework\TestCase
 
         $this->object->type = new class () extends Obj {
             use Configurable;
+
+            public function __construct()
+            {
+                parent::__construct();
+                $this->bootstrapConfig();
+            }
         };
 
         $behavior = new Behavior('Test behavior');
@@ -183,6 +207,12 @@ class ServiceTest extends \PHPUnit\Framework\TestCase
 
         $this->object->type = new class () extends Obj {
             use Configurable;
+
+            public function __construct()
+            {
+                parent::__construct();
+                $this->bootstrapConfig();
+            }
         };
 
         $this->object->instance();

@@ -8,18 +8,28 @@ use BlueFission\Arr;
 
 class XMLTest extends TestCase
 {
-    public static $testdirectory = '../../testdirectory';
+    public static $testdirectory = 'develation_xml_testdirectory';
     public static $file = 'test.xml';
 
     public static $classname = 'BlueFission\HTML\XML';
 
     protected $object;
 
+    private function baseDir(): string
+    {
+        $baseDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.static::$testdirectory;
+        if (!is_dir($baseDir)) {
+            @mkdir($baseDir, 0777, true);
+        }
+
+        return $baseDir;
+    }
+
     public function setUp(): void
     {
-        chdir(__DIR__);
-
-        touch(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
+        $baseDir = $this->baseDir();
+        $filePath = $baseDir.DIRECTORY_SEPARATOR.static::$file;
+        touch($filePath);
 
         $data = '<?xml version="1.0" encoding="UTF-8"?>
             <library>
@@ -40,23 +50,28 @@ class XMLTest extends TestCase
                 </book>
             </library>';
 
-        file_put_contents(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file, $data);
+        file_put_contents($filePath, $data);
 
         $this->object = new static::$classname();
     }
 
     public function tearDown(): void
     {
-        if (file_exists(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file)) {
-            @unlink(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
+        $baseDir = $this->baseDir();
+        $filePath = $baseDir.DIRECTORY_SEPARATOR.static::$file;
+        if (file_exists($filePath)) {
+            @unlink($filePath);
         }
+
+        @rmdir($baseDir);
     }
 
     public function testParseXML()
     {
-        $this->object = new static::$classname(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
+        $baseDir = $this->baseDir();
+        $this->object = new static::$classname($baseDir.DIRECTORY_SEPARATOR.static::$file);
 
-        $this->assertEquals(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file, $this->object->file());
+        $this->assertEquals($baseDir.DIRECTORY_SEPARATOR.static::$file, $this->object->file());
         $this->assertEquals(XML::STATUS_SUCCESS, $this->object->status());
         $this->assertEquals(1, Arr::size($this->object->data()));
         $this->assertEquals('The Great Gatsby', $this->object->data()[0]['child'][0]['child'][0]['content']);
@@ -64,7 +79,8 @@ class XMLTest extends TestCase
 
     public function testFileMethod()
     {
-        $this->object->file(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
-        $this->assertEquals(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file, $this->object->file());
+        $baseDir = $this->baseDir();
+        $this->object->file($baseDir.DIRECTORY_SEPARATOR.static::$file);
+        $this->assertEquals($baseDir.DIRECTORY_SEPARATOR.static::$file, $this->object->file());
     }
 }

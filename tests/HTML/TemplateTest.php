@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class TemplateTest extends TestCase {
 
-    static $testdirectory = '../../testdirectory';
+    static $testdirectory = 'develation_template_testdirectory';
 
     static $classname = 'BlueFission\HTML\Template';
 
@@ -21,7 +21,7 @@ class TemplateTest extends TestCase {
 
     static $configuration = [
         'file' => 'sample.txt',
-        'template_directory' => '../../testdirectory',
+        'template_directory' => '',
         'cache' => true,
         'cache_expire' => 60,
         'cache_directory' => 'cache',
@@ -38,24 +38,27 @@ class TemplateTest extends TestCase {
 
     private function baseDir(): string
     {
-        $baseDir = realpath(__DIR__.DIRECTORY_SEPARATOR.static::$testdirectory);
-        if (!$baseDir) {
-            $baseDir = realpath(static::$testdirectory);
+        $baseDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.static::$testdirectory;
+        if (!is_dir($baseDir)) {
+            @mkdir($baseDir, 0777, true);
         }
 
-        return $baseDir ?: '';
+        return $baseDir;
     }
 
     public function setUp() :void {
-        chdir(__DIR__);
-
-        touch(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
+        $baseDir = $this->baseDir();
+        $filePath = $baseDir.DIRECTORY_SEPARATOR.static::$file;
+        touch($filePath);
 
         $data = 'This is a sample text file';
 
-        file_put_contents(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file, $data);
+        file_put_contents($filePath, $data);
 
-        $this->object = new static::$classname(static::$configuration);
+        $config = static::$configuration;
+        $config['template_directory'] = $baseDir;
+        $config['module_directory'] = $baseDir;
+        $this->object = new static::$classname($config);
     }
 
     public function tearDown() :void {
@@ -67,15 +70,18 @@ class TemplateTest extends TestCase {
             'cache'
         ];
 
+        $baseDir = $this->baseDir();
         foreach ($testfiles as $file) {
-            if (is_dir(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file)) {
-                @rmdir(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file);
+            if (is_dir($baseDir.DIRECTORY_SEPARATOR.$file)) {
+                @rmdir($baseDir.DIRECTORY_SEPARATOR.$file);
             }
 
-            if (file_exists(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file)) {
-                @unlink(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file);
+            if (file_exists($baseDir.DIRECTORY_SEPARATOR.$file)) {
+                @unlink($baseDir.DIRECTORY_SEPARATOR.$file);
             }
         }
+
+        @rmdir($baseDir);
     }
 
     public function testConstructor() {

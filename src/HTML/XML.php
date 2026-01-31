@@ -30,9 +30,7 @@ use BlueFission\Behavioral\Configurable;
  * @method string buildXML($data = null, $indent = 0) Builds an XML structure from the data obtained from parsing the XML file.
  */
 class XML extends Obj {
-	use Configurable {
-		Configurable::__construct as private __configConstruct;
-	}
+	use Configurable;
 
 	private $_filename;
 	private $_parser;
@@ -54,7 +52,8 @@ class XML extends Obj {
 	 */
 	public function __construct($file = null) 
 	{
-		$this->__configConstruct();
+		parent::__construct();
+		$this->bootstrapConfig();
 		$this->_parser = \xml_parser_create();
 		\xml_parser_set_option($this->_parser, XML_OPTION_CASE_FOLDING, true);
 		\xml_set_object($this->_parser, $this);
@@ -106,6 +105,8 @@ class XML extends Obj {
 					return $this;
 				}
 			}
+
+			fclose($stream);
 		} else {
 			$this->status($status);
 			
@@ -129,9 +130,11 @@ class XML extends Obj {
 	 * @return void
 	 */
 	public function startHandler($parser, $name = null, $attributes = null) {
-		$data['name'] = $name;
-		if ($attributes) $data['attributes'] = $attributes;
-		$this->_data[] = $data;
+		$data = ['name' => $name];
+		if ($attributes) {
+			$data['attributes'] = $attributes;
+		}
+		$this->_data->push($data);
 	}
 
 	/**
@@ -146,9 +149,10 @@ class XML extends Obj {
 	 */
 	public function dataHandler($parser, $data = null) {
 		if ($data = trim($data)) {
-			$index = count($this->_data)-1;
-			if (!isset($this->_data[$index]['content'])) $this->_data[$index]['content'] = "";
-			$this->_data[$index]['content'] .= $data;
+			$index = $this->_data->count() - 1;
+			$item = $this->_data[$index] ?? [];
+			$item['content'] = ($item['content'] ?? '') . $data;
+			$this->_data[$index] = $item;
 		}
 	}
 
@@ -163,10 +167,14 @@ class XML extends Obj {
 	 * @return void
 	 */
 	public function endHandler($parser, $name = null) {
-		if (count($this->_data) > 1) {
-			$data = array_pop($this->_data);
-			$index = count($this->_data)-1;
-			$this->_data[$index]['child'][] = $data;
+		if ($this->_data->count() > 1) {
+			$data = $this->_data->pop();
+			$index = $this->_data->count() - 1;
+			$item = $this->_data[$index] ?? [];
+			$children = $item['child'] ?? [];
+			$children[] = $data;
+			$item['child'] = $children;
+			$this->_data[$index] = $item;
 		}
 	}
 
