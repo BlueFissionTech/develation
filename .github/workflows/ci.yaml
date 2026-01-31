@@ -81,15 +81,36 @@ jobs:
         run: php -v
       - uses: php-actions/composer@v6
       - run: echo "Composer dependencies have been installed"
+      - name: Prepare CI logs
+        run: mkdir -p artifacts/ci
+      - name: Download PHPMD
+        run: |
+          mkdir -p artifacts
+          curl -Ls -o artifacts/phpmd.phar https://github.com/phpmd/phpmd/releases/latest/download/phpmd.phar
+          php artifacts/phpmd.phar --version
       - name: Lint PHP
-        run: find src tests -name "*.php" -print0 | xargs -0 -n 1 php -l
+        run: |
+          set -o pipefail
+          find src tests -name "*.php" -print0 | xargs -0 -n 1 php -l | tee artifacts/ci/php-lint.log
       - name: PHPMD (complexity baseline)
         run: |
+          set -o pipefail
           for d in Async Behavioral Cli Collections Connections Data Exceptions HTML IPC Net Parsing Security Services System Utils; do
-            php artifacts/phpmd.phar "src/$d" text phpmd.xml
+            php artifacts/phpmd.phar "src/$d" text phpmd.xml | tee -a artifacts/ci/phpmd.log
           done
-          php artifacts/phpmd.phar tests text phpmd.xml
+          php artifacts/phpmd.phar tests text phpmd.xml | tee -a artifacts/ci/phpmd.log
       - name: PHPUnit
-        run: vendor/bin/phpunit --do-not-cache-result
+        run: |
+          set -o pipefail
+          vendor/bin/phpunit --do-not-cache-result --log-junit artifacts/ci/junit.xml | tee artifacts/ci/phpunit.log
       - name: Run CLI example
-        run: php examples/cli/report.php --limit 2 --delay 0
+        run: |
+          set -o pipefail
+          php examples/cli/report.php --limit 2 --delay 0 | tee artifacts/ci/cli-example.log
+      - name: Upload CI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs
+          path: artifacts/ci
+          retention-days: 14
