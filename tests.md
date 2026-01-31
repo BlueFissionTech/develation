@@ -16,6 +16,13 @@ $env:BF_SERVICES = 'mysql,redis'
 powershell -File scripts/bf-test.ps1
 ```
 
+## CLI Request Mapping
+
+CLI option parsing is tested alongside Services:
+
+- `vendor/bin/phpunit --do-not-cache-result tests/Services/RequestTest.php`
+- `vendor/bin/phpunit --do-not-cache-result tests/Services/ApplicationTest.php`
+
 ## Optional Integrations
 
 Some tests require external services or PHP extensions. These are skipped by default and only run when the relevant environment variables are set.
