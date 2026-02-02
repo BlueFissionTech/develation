@@ -21,7 +21,11 @@ class Tty extends Obj
         Dev::do('_before', [$stream, $this]);
 
         if ($stream === null) {
-            $stream = STDOUT;
+            if (defined('STDOUT')) {
+                $stream = STDOUT;
+            } else {
+                $stream = fopen('php://output', 'w');
+            }
         }
 
         if (function_exists('stream_isatty')) {

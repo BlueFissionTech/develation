@@ -97,7 +97,7 @@ class CommandLocator
 
     protected static function isAbsolutePath(string $command): bool
     {
-        if (Str::contains($command, '://')) {
+        if (Str::has($command, '://')) {
             return true;
         }
 
