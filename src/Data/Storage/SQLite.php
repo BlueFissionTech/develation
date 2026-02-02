@@ -117,9 +117,9 @@ class SQLite extends Storage implements IData
         $table = $tables[0];
 
         foreach ($this->fields() as $field => $column) {
-            $name = $column['Field'];
+            $name = $this->columnName($column, $field);
             if ($this->validate($name, $table)) {
-                if ($column['Key'] == 'PRI' || $column['Key'] == 'UNI') {
+                if ($this->isKeyColumn($column, ['PRI', 'UNI'])) {
                     if (!isset($keys[$table])) {
                         $keys[$table] = $name;
                     }
@@ -161,13 +161,13 @@ class SQLite extends Storage implements IData
         $table = isset($tables[0]) ? $tables[0] : $this->config(self::NAME_FIELD);
 
         foreach ($this->fields() as $field => $column) {
-            $name = $column['Field'];
-            if ($column['Key'] == 'PRI' || $column['Key'] == 'UNI' || $column['Key'] == 'MUL') {
+            $name = $this->columnName($column, $field);
+            if ($this->isKeyColumn($column)) {
                 if (!isset($keys[$table])) {
                     $keys[$table] = $name;
                 }
             }
-            if (is_array($this->config('fields')) && count($this->config('fields')) > 0 && !in_array($field, $this->config('fields'))) {
+            if (is_array($this->config('fields')) && count($this->config('fields')) > 0 && !in_array($name, $this->config('fields'))) {
                 continue;
             }
 
@@ -192,11 +192,11 @@ class SQLite extends Storage implements IData
             $data = [];
             $fields = $this->_fields[$table] ?? $this->_data;
 
-            foreach ($fields as $column) {
-                $field = $column['Field'];
+            foreach ($fields as $fieldKey => $column) {
+                $field = Arr::is($column) ? $this->columnName($column, (string)$fieldKey) : (string)$fieldKey;
                 if (is_array($this->config('fields')) && count($this->config('fields')) > 0
                     && (!in_array($field, $this->config('fields')) ||
-                    ($column['Default'] !== null && $this->field($field) === null))) {
+                    ((Arr::is($column) && array_key_exists('Default', $column) && $column['Default'] !== null) && $this->field($field) === null))) {
                     continue;
                 }
                 $data[$field] = $this->field($field);
@@ -207,7 +207,8 @@ class SQLite extends Storage implements IData
             $this->_query = $db->stats()['query'];
 
             if (!$affected_row && $success && $key) {
-                $affected_row = Val::isNotNull($this->_data[$key]) ? $this->_data[$key] : $db->last_row();
+                $lastRow = method_exists($db, 'lastRow') ? $db->lastRow() : null;
+                $affected_row = Val::isNotNull($this->_data[$key]) ? $this->_data[$key] : $lastRow;
                 $this->_last_row_affected = $affected_row;
             }
 
@@ -849,6 +850,7 @@ class SQLite extends Storage implements IData
                     }
                 }
             }
+            return false;
         }
         if (Val::isNotEmpty($value)) {
             if (!Arr::is($condition) && !Arr::has($values, Str::upper($condition))) {
@@ -866,6 +868,33 @@ class SQLite extends Storage implements IData
         }
 
         return $this;
+    }
+
+    private function columnName($column, string $fallback): string
+    {
+        if (Arr::is($column)) {
+            if (array_key_exists('Field', $column) && Val::isNotEmpty($column['Field'])) {
+                return (string)$column['Field'];
+            }
+            if (array_key_exists('name', $column) && Val::isNotEmpty($column['name'])) {
+                return (string)$column['name'];
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function isKeyColumn($column, array $keyFlags = ['PRI', 'UNI', 'MUL']): bool
+    {
+        if (Arr::is($column) && array_key_exists('Key', $column) && Val::isNotNull($column['Key'])) {
+            return in_array($column['Key'], $keyFlags, true);
+        }
+
+        if (Arr::is($column) && array_key_exists('pk', $column)) {
+            return (int)$column['pk'] === 1;
+        }
+
+        return false;
     }
 
     /**
