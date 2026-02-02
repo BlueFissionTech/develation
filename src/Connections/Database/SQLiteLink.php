@@ -295,7 +295,9 @@ class SQLiteLink extends Connection implements IConfigurable
                 $result = $db->exec($query);
                 $success = ($result) ? true : false;
                 $status = ($success) ? self::STATUS_SUCCESS : ($db->lastErrorMsg() ?? self::STATUS_FAILED);
-                $this->assign($db->lastInsertRowID());
+                $lastRow = $db->lastInsertRowID();
+                $this->_last_row = $lastRow;
+                $this->_data['last_row'] = $lastRow;
             } catch (\Exception $e) {
                 error_log($e->getMessage());
                 $status = self::STATUS_FAILED;
@@ -377,7 +379,7 @@ class SQLiteLink extends Connection implements IConfigurable
                 $result = $db->exec($query);
                 $success = ($result) ? true : false;
                 $status = ($success) ? self::STATUS_SUCCESS : ($db->lastErrorMsg() ?? self::STATUS_FAILED);
-                $this->assign($result);
+                $this->_result = $result;
             } catch (\Exception $e) {
                 error_log($e->getMessage());
                 $status = self::STATUS_FAILED;

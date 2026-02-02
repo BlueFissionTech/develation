@@ -117,6 +117,10 @@ class SQLiteField
     public function autoincrement($isTrue = true)
     {
         $this->_autoincrement = $isTrue;
+        if ($isTrue) {
+            $this->_primary = true;
+            $this->_null = false;
+        }
 
         return $this;
     }
@@ -210,18 +214,20 @@ class SQLiteField
                 break;
         }
 
-        if ($this->_default !== null) {
+        if ($this->_default !== null && !$this->_autoincrement) {
             $definition[] = "DEFAULT " . SQLiteLink::sanitize((string)$this->_default);
         }
 
-        if (!$this->_null) {
-            $definition[] = "NOT";
+        if (!$this->_autoincrement) {
+            if (!$this->_null) {
+                $definition[] = "NOT";
+            }
+
+            $definition[] = "NULL";
         }
 
-        $definition[] = "NULL";
-
         if ($this->_autoincrement) {
-            $definition[] = "AUTOINCREMENT";
+            $definition[] = "PRIMARY KEY AUTOINCREMENT";
         }
 
         $definition_string = implode(' ', $definition);
@@ -238,7 +244,7 @@ class SQLiteField
     {
         $extras = [];
 
-        if ($this->_primary) {
+        if ($this->_primary && !$this->_autoincrement) {
             $extras[] = "PRIMARY KEY (`{$this->_name}`)";
         }
 
