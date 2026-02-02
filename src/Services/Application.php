@@ -9,6 +9,8 @@ use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Utils\Util;
 use BlueFission\Collections\Collection;
 use BlueFission\Services\Mapping;
+use BlueFission\Cli\Args;
+use BlueFission\Cli\Args\OptionDefinition;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
@@ -187,6 +189,27 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
     private $_cmdpath = "";
 
     /**
+     * CLI option definitions for argument parsing.
+     *
+     * @var array
+     */
+    private $_cliOptions = [];
+
+    /**
+     * Optional CLI argument parser override.
+     *
+     * @var Args|null
+     */
+    private $_cliParser = null;
+
+    /**
+     * Store the active request instance.
+     *
+     * @var Request|null
+     */
+    private $_request = null;
+
+    /**
      * The class constructor
      *
      * @return void
@@ -268,8 +291,24 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 		if ( $argc > 1 ) {
 			$this->_arguments[$this->_parameters[0]] = 'console';
-			for ( $i = 1; $i <= $argc-1; $i++) {
-				$this->_arguments[$this->_parameters[$i]] = $argv[$i];
+			$parser = $this->cliParser();
+			$definitions = $this->buildCliDefinitions($argv);
+			if (!empty($definitions)) {
+				$parser->addOptions($definitions);
+			}
+
+			$parser->parse($argv);
+			$positionals = $parser->positionals();
+			$options = $parser->options();
+
+			$this->_arguments[$this->_parameters[1]] = $positionals[0] ?? $this->name();
+			$this->_arguments[$this->_parameters[2]] = $positionals[1] ?? '';
+			$this->_arguments[$this->_parameters[3]] = array_slice($positionals, 2);
+			$this->_arguments['query'] = $options;
+
+			if (!empty($options)) {
+				$_GET = array_merge($_GET ?? [], $options);
+				$_REQUEST = array_merge($_REQUEST ?? [], $options);
 			}
 		} elseif ( count( $_GET ) > 0 || count( $_POST ) > 0 ) {
 			$args = $this->_parameters;
@@ -395,6 +434,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$mapping = $this->_mappings[$this->_arguments['_method']][$this->_cmdpath];
 
 			$request = new Request();
+			$this->_request = $request;
 
 			foreach ($mapping->gateways() as $gatewayName) {
 				if ( isset( $this->_gateways[$gatewayName] ) ) {
@@ -579,6 +619,46 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	public function bindArgs( array $arguments, string $classname = '_' )
 	{
 		$this->_boundArguments[$classname] = $arguments;
+	}
+
+	/**
+	 * Get the current request instance.
+	 *
+	 * @return Request|null
+	 */
+	public function request(): ?Request
+	{
+		return $this->_request;
+	}
+
+	/**
+	 * Register CLI option definitions.
+	 *
+	 * @param array $definitions
+	 * @return self
+	 */
+	public function cliOptions(array $definitions): self
+	{
+		$this->_cliOptions = $definitions;
+		return $this;
+	}
+
+	/**
+	 * Provide a custom CLI argument parser.
+	 *
+	 * @param Args $parser
+	 * @return self
+	 */
+	public function cliParser(Args $parser = null): Args
+	{
+		if ($parser instanceof Args) {
+			$this->_cliParser = $parser;
+		}
+
+		return $this->_cliParser ?? new Args([
+			'allowUnknown' => true,
+			'autoHelp' => false,
+		]);
 	}
 
 	/**
@@ -1187,6 +1267,11 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			// Merge the arguments with the application registered named bindings by class
 			$arguments = array_merge($this->boundArguments($callingClass), $arguments);
 
+			if ($dependencyClass === Request::class && $this->_request) {
+				$dependencies[$dependencyName] = $this->_request;
+				continue;
+			}
+
 			// Check if the argument exists for the current dependency
 			if ( isset($arguments[$dependencyName]) ) {
 				$dependencies[$dependencyName] = $arguments[$dependencyName];
@@ -1240,5 +1325,67 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		if ( \is_callable($callable) ) {
 			return $callable;
 		}
+	}
+
+	/**
+	 * Build CLI option definitions from registered options and argv inspection.
+	 *
+	 * @param array $argv
+	 * @return array
+	 */
+	private function buildCliDefinitions(array $argv): array
+	{
+		$definitions = [];
+
+		foreach ($this->_cliOptions as $definition) {
+			if ($definition instanceof OptionDefinition) {
+				$definitions[$definition->name()] = $definition;
+			}
+		}
+
+		$count = count($argv);
+		for ($i = 1; $i < $count; $i++) {
+			$arg = $argv[$i];
+			if (!Str::is($arg) || Str::pos($arg, '--') !== 0) {
+				continue;
+			}
+
+			$name = substr($arg, 2);
+			if ($name === '') {
+				continue;
+			}
+
+			$value = null;
+			$eqPos = Str::pos($name, '=');
+			if ($eqPos !== false) {
+				$value = substr($name, $eqPos + 1);
+				$name = substr($name, 0, $eqPos);
+			}
+
+			if ($name === '') {
+				continue;
+			}
+
+			$type = 'string';
+			if (Str::pos($name, 'no-') === 0) {
+				$name = substr($name, 3);
+				$type = 'bool';
+			} elseif ($value === null) {
+				$next = $argv[$i + 1] ?? null;
+				$type = ($next !== null && Str::pos((string)$next, '-') !== 0) ? 'string' : 'bool';
+			}
+
+			if ($name === '') {
+				continue;
+			}
+
+			if (!isset($definitions[$name])) {
+				$definitions[$name] = new OptionDefinition($name, [
+					'type' => $type,
+				]);
+			}
+		}
+
+		return array_values($definitions);
 	}
 }

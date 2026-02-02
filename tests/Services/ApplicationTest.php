@@ -104,4 +104,32 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $this->expectOutputString('Start Continue End');
         $this->object->perform(new Event('StartEvent'));
     }
+
+    public function testCliOptionsMapToRequest()
+    {
+        global $argv, $argc;
+
+        $originalArgv = $argv ?? [];
+        $originalArgc = $argc ?? 0;
+        $originalGet = $_GET ?? [];
+        $originalRequest = $_REQUEST ?? [];
+
+        $_GET = [];
+        $_REQUEST = [];
+
+        $argv = ['app.php', 'service', 'behavior', 'item', '--foo=bar', '--flag'];
+        $argc = count($argv);
+
+        $app = Application::getInstance('CliArgsTest');
+        $app->args();
+
+        $request = new \BlueFission\Services\Request();
+        $this->assertEquals('bar', $request->all()['foo']);
+        $this->assertEquals(true, $request->all()['flag']);
+
+        $argv = $originalArgv;
+        $argc = $originalArgc;
+        $_GET = $originalGet;
+        $_REQUEST = $originalRequest;
+    }
 }

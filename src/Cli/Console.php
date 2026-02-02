@@ -12,6 +12,8 @@ use BlueFission\Cli\Util\Ansi;
 use BlueFission\Cli\Util\Screen;
 use BlueFission\Cli\Util\Table;
 use BlueFission\Cli\Util\ProgressBar;
+use BlueFission\Cli\Util\Spinner;
+use BlueFission\Cli\Util\Working;
 use BlueFission\Cli\Util\Prompt as PromptUtil;
 use BlueFission\Cli\Util\Cursor;
 use BlueFission\DevElation as Dev;
@@ -197,6 +199,46 @@ class Console extends Obj
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
         Dev::do('_after', [$output, $this]);
         return $output;
+    }
+
+    public function spinner(string $label = '', ?array $frames = null, int $intervalMs = 120): Spinner
+    {
+        $label = Dev::apply('_in', $label);
+        $frames = Dev::apply('_in', $frames);
+        $intervalMs = Dev::apply('_in', $intervalMs);
+        Dev::do('_before', [$label, $frames, $intervalMs, $this]);
+        $spinner = new Spinner($label, $frames, $intervalMs);
+        $this->trigger(Event::PROCESSED, new Meta(data: $spinner));
+        Dev::do('_after', [$spinner, $this]);
+        return $spinner;
+    }
+
+    /**
+     * Run a task while showing a spinner (DevOps request).
+     * If no task is provided, returns a Working instance for manual control.
+     */
+    public function working(string $label = '', ?callable $work = null, int $intervalMs = 120, ?array $frames = null)
+    {
+        $label = Dev::apply('_in', $label);
+        $work = Dev::apply('_in', $work);
+        $intervalMs = Dev::apply('_in', $intervalMs);
+        $frames = Dev::apply('_in', $frames);
+        Dev::do('_before', [$label, $work, $intervalMs, $frames, $this]);
+
+        $working = new Working($label, $frames, $intervalMs, function ($text) {
+            $this->write($text);
+        });
+
+        if (Val::isNotNull($work)) {
+            $result = $working->run($work);
+            $this->trigger(Event::PROCESSED, new Meta(data: $result));
+            Dev::do('_after', [$result, $this]);
+            return $result;
+        }
+
+        $this->trigger(Event::PROCESSED, new Meta(data: $working));
+        Dev::do('_after', [$working, $this]);
+        return $working;
     }
 
     public function prompt(string $message, $default = null, ?string $input = null): string

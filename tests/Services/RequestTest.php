@@ -15,6 +15,25 @@ class RequestTest extends TestCase
         $this->assertIsArray($request->all());
     }
 
+    public function testAllFallsBackToGet()
+    {
+        $originalGet = $_GET ?? [];
+        $originalMethod = $_SERVER['REQUEST_METHOD'] ?? null;
+
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_GET = ['cli_option' => 'value'];
+
+        $request = new Request();
+        $this->assertEquals('value', $request->all()['cli_option']);
+
+        $_GET = $originalGet;
+        if ($originalMethod === null) {
+            unset($_SERVER['REQUEST_METHOD']);
+        } else {
+            $_SERVER['REQUEST_METHOD'] = $originalMethod;
+        }
+    }
+
     public function testType()
     {
         $request = new Request();

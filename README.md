@@ -139,6 +139,20 @@ for ($i = 1; $i <= $limit; $i++) {
     $console->rewriteLine($console->progress($limit, $i));
 }
 $console->writeln('');
+
+$spinner = $console->spinner('Working');
+for ($i = 0; $i < 12; $i++) {
+    $console->rewriteLine($spinner->tick());
+    usleep(120000);
+}
+$spinner->stop();
+$console->writeln('');
+
+$result = $console->working('Fetching', function () {
+    usleep(250000);
+    return 'ok';
+});
+$console->writeln('Result: ' . $result);
 ```
 
 ### Storage pipeline: session-backed data

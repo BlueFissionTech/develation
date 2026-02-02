@@ -35,14 +35,27 @@ class Request extends Obj
         switch ($this->type()) {
             case 'GET':
                 $request = filter_input_array(INPUT_GET);
+                if ($request === null || $request === false) {
+                    $request = $_GET ?? [];
+                }
                 break;
             case 'POST':
                 $request = filter_input_array(INPUT_POST);
+                if ($request === null || $request === false) {
+                    $request = $_POST ?? [];
+                }
                 break;
             default:
                 // $request = filter_input_array(INPUT_REQUEST); // Awaiting implmentation
                 $get = filter_input_array(INPUT_GET) ?? [];
                 $post = filter_input_array(INPUT_POST) ?? [];
+
+                if ($get === [] && !empty($_GET)) {
+                    $get = $_GET;
+                }
+                if ($post === [] && !empty($_POST)) {
+                    $post = $_POST;
+                }
 
                 $request = array_merge($get, $post);
                 break;
