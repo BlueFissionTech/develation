@@ -86,9 +86,9 @@ class Flag extends Val implements IVal
      *
      * @return bool The boolean representation of the given value
      */
-    public static function _toBool($value): bool
+    public static function _toBool(): bool
     {
-        return (bool) $value;
+        return (bool) $this->_data;
     }
     /**
      * Check if the stored value is empty
