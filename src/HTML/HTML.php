@@ -39,7 +39,20 @@ class HTML
                 $href .= $_SERVER['REQUEST_URI'] ?? '';
             }
         } else {
-            if (Str::pos($href, 'http') === false) {
+            if (Str::sub((string)$href, 0, 1) === '/') {
+                return $href;
+            }
+            if (Str::pos((string)$href, '://') !== false) {
+                return $href;
+            }
+            if (Str::pos((string)$href, 'http') === 0) {
+                return $href;
+            }
+            if (Str::sub((string)$href, 0, 1) === '#' || Str::sub((string)$href, 0, 1) === '?') {
+                return $href;
+            }
+
+            if (Str::pos((string)$href, 'http') === false) {
                 $protocol = isset($_SERVER['HTTPS']) ? 'https' : 'http';
                 $href = $protocol . '://' . $href;
             }

@@ -15,6 +15,10 @@ class HTMLTest extends \PHPUnit\Framework\TestCase
         $expected = '';
         $result = HTML::href(null, false);
         $this->assertEquals($expected, $result);
+
+        $expected = '/';
+        $result = HTML::href('/');
+        $this->assertEquals($expected, $result);
     }
 
     public function testFormatMethod()

@@ -15,6 +15,7 @@ use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
 use BlueFission\Obj;
+use BlueFission\DevElation as Dev;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Handler;

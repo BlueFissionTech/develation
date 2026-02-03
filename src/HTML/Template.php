@@ -232,7 +232,7 @@ class Template extends Obj {
 
 		if (Str::is($var))
 		{
-			if ( !$content )
+			if ( Val::isNull($content) )
 			{
 				throw new InvalidArgumentException( 'Cannot assign empty value.');
 			}
