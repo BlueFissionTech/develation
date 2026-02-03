@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<ruleset name="DevElation PHPMD Rules"
+         xmlns="http://pmd.sf.net/ruleset/1.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0
+                             http://pmd.sf.net/ruleset_xml_schema.xsd">
+    <description>
+        Baseline rules for complexity and size. Thresholds are intentionally
+        lenient to establish CI coverage, with plans to tighten over time.
+    </description>
+
+    <exclude-pattern>*/Services/Application.php</exclude-pattern>
+
+    <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
+        <properties>
+            <property name="reportLevel" value="80" />
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/NPathComplexity">
+        <properties>
+            <property name="minimum" value="200000000" />
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/ExcessiveMethodLength">
+        <properties>
+            <property name="minimum" value="350" />
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/ExcessiveClassLength">
+        <properties>
+            <property name="minimum" value="5000" />
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/ExcessiveParameterList">
+        <properties>
+            <property name="minimum" value="14" />
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/ExcessivePublicCount">
+        <properties>
+            <property name="minimum" value="100" />
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="50" />
+        </properties>
+    </rule>
+</ruleset>

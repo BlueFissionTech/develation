@@ -1,0 +1,100 @@
+name: General Issue
+description: Bugs, tasks, refactors, improvements
+title: "[Issue]: "
+labels: ["triage"]
+body:
+  - type: textarea
+    id: one_sentence
+    attributes:
+      label: One-sentence description
+      description: Summarize the problem in one sentence.
+      placeholder: "PDF upload fails for vendors in DocumentResource."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_vs_actual
+    attributes:
+      label: Expected vs actual (user story)
+      description: Explain why it's a problem using a short user story.
+      placeholder: |
+        User story:
+        As a <role>, I want <goal>, so that <benefit>.
+
+        Expected:
+        <what should happen>
+
+        Actual:
+        <what happened instead>
+    validations:
+      required: true
+
+  - type: textarea
+    id: errors
+    attributes:
+      label: Errors / logs / outputs
+      description: Paste any relevant stack traces, console output, screenshots, request payloads, etc.
+      placeholder: |
+        - Error message:
+        - Stack trace:
+        - Request/response:
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Where/when it occurred
+      description: Provide environment and location in the code/UI.
+      placeholder: |
+        Environment: local | dev | staging | production
+        App/module/page:
+        Endpoint/job/command:
+        First observed: YYYY-MM-DD
+        Frequency: always | intermittent
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Give exact steps to reproduce (include data prerequisites if any).
+      placeholder: |
+        1) ...
+        2) ...
+        3) ...
+        Expected result: ...
+        Actual result: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: suspects
+    attributes:
+      label: Suspicions / diagnosis / notes
+      description: Any hypotheses, suspected files, related PRs, prior commits, or known constraints.
+      placeholder: |
+        - Suspected cause:
+        - Suspected files:
+        - Related issues/PRs:
+        - Workarounds:
+    validations:
+      required: false
+
+  - type: input
+    id: severity
+    attributes:
+      label: Severity
+      description: Choose one.
+      placeholder: "blocker | high | medium | low"
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: Suggested owner (optional)
+      placeholder: "@username"
+    validations:
+      required: false

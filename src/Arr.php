@@ -800,9 +800,9 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
         }
 
         if (is_null($offset)) {
-            while (array_key_exists($offset, $this->_data) || !$offset) {
-                $offset = count($this->_data);
-            }
+            $this->_data[] = $value;
+            $this->trigger(Event::CHANGE);
+            return;
         }
 
         $this->set($offset, $value);

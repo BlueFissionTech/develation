@@ -19,14 +19,12 @@ use BlueFission\Behavioral\Behaviors\Meta;
  */
 class Data extends Obj implements IData
 {
-    use Configurable {
-        Configurable::__construct as private __configConstruct;
-    }
+    use Configurable;
 
     public function __construct( $config = null )
     {
         parent::__construct();
-        $this->__configConstruct($config);
+        $this->bootstrapConfig($config);
 
         $this->behavior(new Action( Action::CREATE ), function($behavior) {
             $this->write();

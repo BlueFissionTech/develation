@@ -25,10 +25,6 @@ use BlueFission\Behavioral\Behaviors\Meta;
  */
 trait Configurable
 {
-    use Behaves {
-        Behaves::__construct as private __behavesConstruct;
-    }
-
     /**
      * @var array $_config The configuration for the object.
      */
@@ -40,13 +36,12 @@ trait Configurable
     protected $_status;
 
     /**
-     * Constructor for the Configurable trait. Initializes the parent trait, and sets
-     * the _config and _status properties to arrays if they are not already set.
-     * Dispatches the State::NORMAL event.
+     * Initialize configuration defaults and status collection.
+     *
+     * @param array|null $config
      */
-    public function __construct($config = null)
+    protected function bootstrapConfig($config = null): void
     {
-        $this->__behavesConstruct();
         if (!Val::is($this->_config)) {
             $this->_config = [];
         }

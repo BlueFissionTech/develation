@@ -27,6 +27,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
 
 - [Data Types Documentation](datatypes.md)
+- [Library Overview](library_overview.md)
 
 Static helpers: most `Val`/`Obj`-based classes expose their underscored instance helpers as static shorthand. For example, `Str` has an internal `_pluralize()` instance method which can be invoked statically via `Str::pluralize('comment')` thanks to `Val::__callStatic`. This pattern is used throughout the library and examples.
 

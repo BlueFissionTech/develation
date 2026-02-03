@@ -8,9 +8,7 @@ use BlueFission\Obj;
 
 class Credentials extends Obj
 {
-    use Configurable {
-        Configurable::__construct as private __configConstruct;
-    }
+    use Configurable;
 
     /**
      * Error message for an empty username
@@ -34,7 +32,8 @@ class Credentials extends Obj
 
     public function __construct()
     {
-        $this->__configConstruct();
+        parent::__construct();
+        $this->bootstrapConfig();
     }
 
     /**
