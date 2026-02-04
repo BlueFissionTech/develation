@@ -47,8 +47,8 @@ trait StateMachine
     private function behaviorIsDenied($behaviorName)
     {
         foreach ($this->_state as $state => $args) {
-            if ((Val::is($this->_deniedBehaviors[$state]) && Arr::count($this->_deniedBehaviors[$state] > 0)) &&
-                in_array($behaviorName, $this->_deniedBehaviors[$state])) {
+            if ((Val::is($this->_deniedBehaviors[$state]) && Arr::size($this->_deniedBehaviors[$state] > 0)) &&
+                Arr::has($behaviorName, $this->_deniedBehaviors[$state])) {
                 return true;
             }
         }
@@ -64,9 +64,12 @@ trait StateMachine
      */
     private function behaviorIsAllowed($behaviorName)
     {
+        if (Val::isNot($this->_allowedBehaviors[$state]) || !Arr::size($this->_allowedBehaviors[$state])) {
+            return true;
+        }
+        
         foreach ($this->_state as $state => $args) {
-            if ((Val::is($this->_allowedBehaviors[$state]) && Arr::count($this->_allowedBehaviors[$state] > 0)) &&
-                !in_array($behaviorName, $this->_allowedBehaviors[$state])) {
+            if (!Arr::has($behaviorName, $this->_allowedBehaviors[$state])) {
                 return false;
             }
         }
@@ -82,11 +85,24 @@ trait StateMachine
      */
     public function can($behaviorName)
     {
-        if ($this->behaviorIsAllowed($behaviorName) && !$this->behaviorIsDenied($behaviorName)) {
-            return parent::can($behaviorName);
-        } else {
+        if (!parent::can($behaviorName)) {
             return false;
         }
+
+        $states = $this->_state->contents();
+        foreach ($states as $state => $value) {
+            $denied = $this->_deniedBehaviors[$state] ?? [];
+            if (Arr::is($denied) && Arr::has($denied, $behaviorName)) {
+                return false;
+            }
+
+            $allowed = $this->_allowedBehaviors[$state] ?? [];
+            if (Arr::is($allowed) && Arr::size($allowed) > 0 && !Arr::has($allowed, $behaviorName)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
