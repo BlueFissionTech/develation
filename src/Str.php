@@ -405,6 +405,35 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Check if the current string starts with the given needle.
+	 *
+	 * @param string $needle
+	 * @return bool
+	 */
+	public function _startsWith(string $needle): bool
+	{
+		$haystack = (string)$this->_data;
+		$needle = (string)$needle;
+
+		if ($needle === '') {
+			return true;
+		}
+
+		return strncmp($haystack, $needle, strlen($needle)) === 0;
+	}
+
+	/**
+	 * Normalize common string tokens into strict booleans.
+	 *
+	 * @param bool $default
+	 * @return bool
+	 */
+	public function _toBoolStrict($default = false): bool
+	{
+		return Flag::parseBool($this->_data, $default);
+	}
+
+	/**
      * Calculates the similarity between two strings
      *
      * @param string $string

@@ -86,9 +86,54 @@ class Flag extends Val implements IVal
      *
      * @return bool The boolean representation of the given value
      */
-    public static function _toBool(): bool
+    public function _toBool($default = false): bool
     {
-        return (bool) $this->_data;
+        return $this->_parseBool($default);
+    }
+
+    /**
+     * Parse the current value into a boolean using normalized token sets.
+     *
+     * @param bool $default Value used when input is empty or null.
+     * @return bool
+     */
+    public function _parseBool($default = false): bool
+    {
+        $value = $this->_data;
+
+        if ($value instanceof IVal) {
+            $value = $value->val();
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return ((float)$value) != 0.0;
+        }
+
+        if (is_null($value)) {
+            return (bool)$default;
+        }
+
+        if (Str::is($value)) {
+            $token = Str::lower(Str::trim($value));
+
+            if ($token === '') {
+                return (bool)$default;
+            }
+
+            if (in_array($token, ['1', 'true', 'yes', 'on', 'y'], true)) {
+                return true;
+            }
+
+            if (in_array($token, ['0', 'false', 'no', 'off', 'n'], true)) {
+                return false;
+            }
+        }
+
+        return (bool)$value;
     }
     /**
      * Check if the stored value is empty
