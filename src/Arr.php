@@ -95,13 +95,37 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
      * @param  mixed  $value the value to find
      * @return bool        true if value is found
      */
-    public function _has(mixed $value): bool
+    public function _has(mixed $value, bool $strict = false): bool
     {
         if (!$this->is($this->_data)) {
             return false;
         }
 
-        return in_array($value, $this->_data);
+        return in_array($value, $this->_data, $strict);
+    }
+
+    /**
+     * Alias for value-existence checks to reduce ambiguity with hasKey.
+     *
+     * @param mixed $value
+     * @param bool $strict
+     * @return bool
+     */
+    public function _hasValue(mixed $value, bool $strict = false): bool
+    {
+        return $this->_has($value, $strict);
+    }
+
+    /**
+     * Alias for value-existence checks to mirror common collection naming.
+     *
+     * @param mixed $value
+     * @param bool $strict
+     * @return bool
+     */
+    public function _contains(mixed $value, bool $strict = false): bool
+    {
+        return $this->_has($value, $strict);
     }
 
     /**
@@ -132,6 +156,57 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
         }
 
         return array_key_exists($key, $this->_data);
+    }
+
+    /**
+     * Safely read nested values using dot-paths (or an array of path segments).
+     *
+     * @param string|array $path
+     * @param mixed $default
+     * @return mixed
+     */
+    public function _getPath(string|array $path, mixed $default = null): mixed
+    {
+        $segments = is_array($path) ? $path : explode('.', (string)$path);
+        $cursor = $this->_data;
+
+        foreach ($segments as $segment) {
+            if (is_array($cursor) && array_key_exists($segment, $cursor)) {
+                $cursor = $cursor[$segment];
+                continue;
+            }
+
+            if (is_object($cursor) && isset($cursor->{$segment})) {
+                $cursor = $cursor->{$segment};
+                continue;
+            }
+
+            return $default;
+        }
+
+        return $cursor;
+    }
+
+    /**
+     * Return a nested value coerced as an array.
+     *
+     * @param string|array $path
+     * @param array $default
+     * @return array
+     */
+    public function _arrayAtPath(string|array $path, array $default = []): array
+    {
+        $value = $this->_getPath($path, $default);
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_null($value)) {
+            return $default;
+        }
+
+        return [$value];
     }
 
     /**

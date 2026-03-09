@@ -114,4 +114,20 @@ class StrTest extends ValTest {
 
 		$this->assertEquals('Hello, World', $greeting);
 	}
+
+	public function testStartsWithWorks()
+	{
+		$this->assertTrue($this->object->startsWith('My Name'));
+		$this->assertFalse($this->object->startsWith('Your Name'));
+		$this->assertTrue(Str::startsWith('prefix-value', 'prefix'));
+		$this->assertFalse(Str::startsWith('prefix-value', 'value'));
+	}
+
+	public function testToBoolStrictParsesTokens()
+	{
+		$this->assertFalse(Str::toBoolStrict('false'));
+		$this->assertFalse(Str::toBoolStrict('off'));
+		$this->assertTrue(Str::toBoolStrict('true'));
+		$this->assertTrue(Str::toBoolStrict('yes'));
+	}
 }

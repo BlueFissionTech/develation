@@ -169,4 +169,20 @@ class FlagTest extends ValTest
         $this->assertTrue($trueResult);
         $this->assertFalse($falseResult);
     }
+
+    public function testToBoolParsesCommonTokensStatically()
+    {
+        $this->assertFalse(Flag::toBool('false'));
+        $this->assertFalse(Flag::toBool('off'));
+        $this->assertFalse(Flag::toBool('0'));
+        $this->assertTrue(Flag::toBool('true'));
+        $this->assertTrue(Flag::toBool('on'));
+        $this->assertTrue(Flag::toBool('1'));
+    }
+
+    public function testParseBoolSupportsDefaultOnNull()
+    {
+        $this->assertTrue(Flag::parseBool(null, true));
+        $this->assertFalse(Flag::parseBool(null, false));
+    }
 }

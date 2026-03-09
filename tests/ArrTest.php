@@ -271,4 +271,29 @@ class ArrTest extends ValTest {
 			$this->assertFalse( $falseResult );
 		}
 	}
+
+	public function testHasValueAndContainsSupportStrictMatching()
+	{
+		$values = ['1', 1, true];
+		$this->assertTrue(Arr::has($values, 1));
+		$this->assertTrue(Arr::hasValue($values, 1, true));
+		$this->assertFalse(Arr::hasValue($values, false, true));
+		$this->assertTrue(Arr::contains($values, '1', true));
+	}
+
+	public function testGetPathReadsNestedValuesSafely()
+	{
+		$data = [
+			'meta' => [
+				'profile' => [
+					'name' => 'Ada',
+					'roles' => ['admin', 'editor'],
+				],
+			],
+		];
+
+		$this->assertEquals('Ada', Arr::getPath($data, 'meta.profile.name'));
+		$this->assertEquals('fallback', Arr::getPath($data, 'meta.profile.email', 'fallback'));
+		$this->assertEquals(['admin', 'editor'], Arr::arrayAtPath($data, 'meta.profile.roles'));
+	}
 }

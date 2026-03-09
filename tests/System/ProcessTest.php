@@ -7,9 +7,14 @@ use BlueFission\System\Process;
 
 class ProcessTest extends \PHPUnit\Framework\TestCase
 {
+    private function command(): string
+    {
+        return 'php -v';
+    }
+
     public function testStartProcess()
     {
-        $process = new Process("ls");
+        $process = new Process($this->command());
         $process->start();
 
         $this->assertTrue(is_resource($process->process));
@@ -17,7 +22,7 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
 
     public function testOutput()
     {
-        $process = new Process("ls");
+        $process = new Process($this->command());
         $process->start();
 
         $this->assertTrue(is_string($process->output()));
@@ -25,9 +30,20 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
 
     public function testStatus()
     {
-        $process = new Process("ls");
+        $process = new Process($this->command());
         $process->start();
 
         $this->assertTrue(is_bool($process->status()));
+    }
+
+    public function testWindowsSafeModeOptionDoesNotBreakOutput()
+    {
+        $process = new Process($this->command(), null, null, null, ['windows_safe' => true]);
+        $process->start();
+        $output = $process->output();
+        $process->stop();
+
+        $this->assertTrue(is_string($output));
+        $this->assertNotNull($output);
     }
 }
