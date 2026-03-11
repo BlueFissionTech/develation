@@ -84,6 +84,7 @@ class SQLite extends Storage implements IData
     {
         $this->_source = new SQLiteLink();
         $this->_source->database($this->config('location'));
+        $this->_source->open();
         // load object fields and related data
         $this->fields();
 
@@ -555,7 +556,7 @@ class SQLite extends Storage implements IData
                     if (is_numeric($b)) {
                         $type = is_float($b) ? "REAL" : "INTEGER";
                     } elseif (is_string($b)) {
-                        if (Date::is($b)) {
+                        if ($this->looksLikeDateValue($b)) {
                             $type = "DATETIME";
                         } else {
                             $length = Val::isNotNull($b) ? (int)(strlen($b) * 1.3) : 90;
@@ -659,6 +660,7 @@ class SQLite extends Storage implements IData
             $this->perform(State::DRAFT);
             $active_fields = Arr::toArray($this->config('fields'));
             foreach ($tables as $table) {
+                $fields = [];
                 $query = "PRAGMA table_info(`$table`)";
                 $result = false;
                 if ($db) {
@@ -675,7 +677,6 @@ class SQLite extends Storage implements IData
                     }
                     $this->_fields[$table] = $fields;
                 }
-                $fields = null;
             }
 
             $this->halt(State::DRAFT);
@@ -1211,6 +1212,40 @@ class SQLite extends Storage implements IData
             }
         }
         return $array;
+    }
+
+    /**
+     * Determine whether a scalar string should be treated as a date-like value
+     * during SQLite auto-create inference without invoking exception-prone parsing.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    private function looksLikeDateValue($value): bool
+    {
+        if (!Str::is($value)) {
+            return false;
+        }
+
+        $value = Str::trim((string)$value);
+        if ($value === '') {
+            return false;
+        }
+
+        $patterns = [
+            '/^\d{4}-\d{2}-\d{2}$/',
+            '/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/',
+            '/^\d{1,2}\/\d{1,2}\/\d{4}$/',
+            '/^\d{1,2}-\d{1,2}-\d{4}$/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $value)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
