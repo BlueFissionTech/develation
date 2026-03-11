@@ -5,8 +5,7 @@ namespace BlueFission\Data\Storage;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Str;
-use BlueFission\Date
-;
+use BlueFission\Date;
 use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Connections\Database\SQLiteLink;
@@ -84,6 +83,7 @@ class SQLite extends Storage implements IData
     {
         $this->_source = new SQLiteLink();
         $this->_source->database($this->config('location'));
+        $this->_source->open();
         // load object fields and related data
         $this->fields();
 
@@ -379,6 +379,63 @@ class SQLite extends Storage implements IData
         $this->run($query);
 
         return $this;
+    }
+
+    /**
+     * Remove row limits for the next read operation.
+     *
+     * @return IObj
+     */
+    public function noLimit(): IObj
+    {
+        $this->_row_start = null;
+        $this->_row_end = null;
+
+        return $this;
+    }
+
+    /**
+     * Read all matching rows without the default single-row limit.
+     *
+     * @return IObj
+     */
+    public function readAll(): IObj
+    {
+        return $this->noLimit()->read();
+    }
+
+    /**
+     * Fetch all rows from the active result set.
+     *
+     * @return array
+     */
+    public function fetchRows(): array
+    {
+        $rows = [];
+
+        if ($this->_result && is_object($this->_result)) {
+            $this->_result->reset();
+
+            while ($row = $this->_result->fetchArray(SQLITE3_ASSOC)) {
+                $rows[] = $row;
+            }
+
+            $this->_result->reset();
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Convenience list helper that reads and returns all matching rows.
+     *
+     * @return array
+     */
+    public function all(): array
+    {
+        $this->readAll();
+
+        return $this->fetchRows();
     }
 
     /**
