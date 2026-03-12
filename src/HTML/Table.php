@@ -16,9 +16,7 @@ use BlueFission\Behavioral\Configurable;
  */
 class Table extends Obj
 {
-    use Configurable {
-        Configurable::__construct as private __configConstruct;
-    }
+    use Configurable;
 
 
     /**
@@ -51,7 +49,8 @@ class Table extends Obj
      */
     public function __construct($config = null)
     {
-        $this->__configConstruct($config);
+        parent::__construct();
+        $this->bootstrapConfig($config);
     }
 
     /**

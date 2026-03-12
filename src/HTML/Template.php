@@ -28,9 +28,7 @@ use \InvalidArgumentException;
  * This class provides functionality for handling templates. It extends the Configurable class to handle configuration.
  */
 class Template extends Obj {
-	use Configurable {
-		Configurable::__construct as private __configConstruct;
-	}
+	use Configurable;
 
     /**
      * @var string $_template The contents of the template file
@@ -84,7 +82,7 @@ class Template extends Obj {
             $config = ['file'=>$config];
         }
 
-    	$this->__configConstruct($config);
+    	$this->bootstrapConfig($config);
     	$this->load();
         
         $this->_cached = false;

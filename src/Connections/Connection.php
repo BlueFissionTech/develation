@@ -2,7 +2,6 @@
 
 namespace BlueFission\Connections;
 
-use BlueFission\Arr;
 use BlueFission\Obj;
 use BlueFission\IObj;
 use BlueFission\Behavioral\IConfigurable;
@@ -19,9 +18,7 @@ use BlueFission\Behavioral\Behaviors\Meta;
  */
 abstract class Connection extends Obj implements IConfigurable
 {
-    use Configurable {
-        Configurable::__construct as private __configConstruct;
-    }
+    use Configurable;
     /**
      * Connection resource
      *
@@ -68,12 +65,8 @@ abstract class Connection extends Obj implements IConfigurable
      */
     public function __construct($config = null)
     {
-        $this->__configConstruct();
         parent::__construct();
-
-        if (Arr::is($config)) {
-            $this->config($config);
-        }
+        $this->bootstrapConfig($config);
 
         $this->status(self::STATUS_NOTCONNECTED);
 
