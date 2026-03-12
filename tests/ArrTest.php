@@ -32,6 +32,14 @@ class ArrTest extends ValTest {
 		$this->assertEquals('Second Item', $this->object[1]);
 	}
 
+	public function testAppendingToEmptyArrayWithBlankOffset()
+	{
+		$object = new static::$classname([]);
+		$object[] = 'First Item';
+
+		$this->assertEquals('First Item', $object[0]);
+	}
+
 	public function testAppendingWithNumericOffset()
 	{
 		$this->object[] = 'Second Item';

@@ -36,6 +36,7 @@ class Socket extends Connection implements IConfigurable
         'target' => '',
         'port' => '8080',
         'method' => 'GET',
+        'timeout' => 5,
     ];
     /**
      * @var string $host The host name
@@ -78,12 +79,19 @@ class Socket extends Connection implements IConfigurable
             $target = parse_url($this->config('target'));
 
             $status = '';
+            $scheme = $target['scheme'] ?? 'http';
 
             $this->_host = $target['host'] ?? HTTP::domain();
-            $this->_url = $target['path'] ?? '';
-            $port = $target['port'] ?? $this->config('port');
+            $this->_url = ltrim((string)($target['path'] ?? ''), '/');
+            $port = $target['port'] ?? (($scheme === 'https') ? 443 : $this->config('port'));
+            $timeout = (float)$this->config('timeout');
+            $endpoint = $scheme === 'https' ? "ssl://{$this->_host}" : $this->_host;
 
-            $this->_connection = fsockopen($this->_host, $port, $error_number, $error_string, 30);
+            $this->_connection = fsockopen($endpoint, $port, $error_number, $error_string, $timeout);
+
+            if ($this->_connection) {
+                stream_set_timeout($this->_connection, (int)$timeout);
+            }
 
             $status = ($this->_connection)
             ? self::STATUS_CONNECTED : (($error_string) ? ($error_string . ': ' . $error_number) : self::STATUS_NOTCONNECTED);
@@ -136,6 +144,7 @@ class Socket extends Connection implements IConfigurable
             $method = $this->config('method');
 
             $data = HTTP::query($this->_data);
+            $this->_result = '';
 
             if (Val::is($data)) {
                 $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
@@ -176,6 +185,17 @@ class Socket extends Connection implements IConfigurable
 
             while (!feof($socket)) {
                 $chunk = fgets($socket, 1024);
+                $meta = stream_get_meta_data($socket);
+
+                if (($meta['timed_out'] ?? false) === true) {
+                    $this->perform(Event::ERROR, new Meta(when: Action::RECEIVE, info: "Socket read timed out"));
+                    break;
+                }
+
+                if ($chunk === false) {
+                    break;
+                }
+
                 $this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
 
                 $this->_result .= $chunk;
