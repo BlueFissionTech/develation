@@ -542,7 +542,7 @@ class SQLite extends Storage implements IData
         $tables = Arr::toArray($this->config(self::NAME_FIELD));
         $this->config(self::NAME_FIELD, $tables);
 
-        if (SQLiteLink::tableExists(current($this->config(self::NAME_FIELD)))) {
+        if (SQLiteLink::tableExists(current($this->config(self::NAME_FIELD)), $this->config('location'))) {
             return $this;
         }
 

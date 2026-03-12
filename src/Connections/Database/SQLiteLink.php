@@ -28,9 +28,10 @@ class SQLiteLink extends Connection implements IConfigurable
     public const UPDATE_SPECIFIED = 3;
 
     // protected property to store the database connection
-    protected static $_database;
+    protected static $_database = [];
     private $_query;
     private $_last_row;
+    protected $_database_key = null;
 
     // property to store the configuration
     protected $_config = [
@@ -51,11 +52,9 @@ class SQLiteLink extends Connection implements IConfigurable
     public function __construct($config = null)
     {
         parent::__construct($config);
-        if (Val::isNull(self::$_database)) {
-            self::$_database = [];
-        } else {
-            $this->_connection = end(self::$_database);
-        }
+
+        $this->syncConnection();
+
         return $this;
     }
 
@@ -69,22 +68,27 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     protected function _open(): void
     {
-        if ($this->_connection) {
+        $database = $this->config('database');
+        $databaseKey = self::databaseKey($database);
+
+        if ($this->_connection && $this->_database_key === $databaseKey) {
             return;
         }
-
-        $database = $this->config('database');
-
-        $connection_id = Arr::size(self::$_database);
 
         if (!class_exists('SQLite3')) {
             throw new \Exception("SQLite3 not found");
         }
 
-        $db = $connection_id > 0 ? end(self::$_database) : new \SQLite3($database);
+        $db = self::connectionFor($database);
+
+        if (!$db) {
+            $db = new \SQLite3($database);
+        }
 
         if ($db) {
-            self::$_database[$connection_id] = $this->_connection = $db;
+            self::$_database[$databaseKey] = $db;
+            $this->_connection = $db;
+            $this->_database_key = $databaseKey;
             $status = self::STATUS_CONNECTED;
 
             $this->perform($this->_connection
@@ -105,6 +109,12 @@ class SQLiteLink extends Connection implements IConfigurable
         if ($this->_connection) {
             $this->_connection->close();
         }
+
+        if ($this->_database_key && Arr::hasKey(self::$_database, $this->_database_key)) {
+            unset(self::$_database[$this->_database_key]);
+        }
+
+        $this->_database_key = null;
         $this->perform(State::DISCONNECTED);
     }
 
@@ -494,7 +504,14 @@ class SQLiteLink extends Connection implements IConfigurable
             return $this->config('database');
         }
 
+        $previousKey = $this->_database_key;
         $this->config('database', $database);
+        $databaseKey = self::databaseKey($database);
+
+        if ($previousKey !== $databaseKey) {
+            $this->_database_key = $databaseKey;
+            $this->_connection = self::connectionFor($database);
+        }
 
         return $this;
     }
@@ -516,9 +533,9 @@ class SQLiteLink extends Connection implements IConfigurable
      * @param boolean $datetime Indicates if the string is a datetime value
      * @return string The sanitized string
      */
-    public static function sanitize($string, $datetime = false)
+    public static function sanitize($string, $datetime = false, $database = null)
     {
-        $db = end(self::$_database);
+        $db = self::connectionFor($database);
         $pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
         $replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', '' ];
 
@@ -571,14 +588,21 @@ class SQLiteLink extends Connection implements IConfigurable
      *
      * @return bool true if the table exists, false otherwise
      */
-    public static function tableExists($table)
+    public static function tableExists($table, $database = null)
     {
-        $db = end(self::$_database);
+        $db = self::connectionFor($database);
+
+        if (!$db && Val::isNotEmpty($database) && class_exists('SQLite3')) {
+            $databaseKey = self::databaseKey($database);
+            $db = new \SQLite3($database);
+            self::$_database[$databaseKey] = $db;
+        }
+
         if (!$db) {
             return false;
         }
 
-        $table = self::sanitize($table);
+        $table = self::sanitize($table, false, $database);
         $result = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name={$table}");
 
         if ($result && $result->fetchArray()) {
@@ -586,5 +610,49 @@ class SQLiteLink extends Connection implements IConfigurable
         } else {
             return false;
         }
+    }
+
+    protected function syncConnection(): void
+    {
+        $database = $this->config('database');
+        $this->_database_key = self::databaseKey($database);
+        $this->_connection = self::connectionFor($database);
+    }
+
+    protected static function connectionFor($database = null)
+    {
+        if (Val::isNull(self::$_database)) {
+            self::$_database = [];
+        }
+
+        if (Val::isEmpty($database)) {
+            return Arr::size(self::$_database) > 0 ? end(self::$_database) : null;
+        }
+
+        $databaseKey = self::databaseKey($database);
+
+        return Arr::hasKey(self::$_database, $databaseKey) ? self::$_database[$databaseKey] : null;
+    }
+
+    protected static function databaseKey($database): string
+    {
+        if (Val::isNull($database)) {
+            return '';
+        }
+
+        $database = (string)$database;
+
+        if ($database === ':memory:') {
+            return $database;
+        }
+
+        $directory = dirname($database);
+        $resolvedDirectory = realpath($directory);
+
+        if ($resolvedDirectory !== false) {
+            $database = $resolvedDirectory . DIRECTORY_SEPARATOR . basename($database);
+        }
+
+        return $database;
     }
 }
