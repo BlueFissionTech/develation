@@ -215,7 +215,7 @@ class SQLiteField
         }
 
         if ($this->_default !== null && !$this->_autoincrement) {
-            $definition[] = "DEFAULT " . SQLiteLink::sanitize((string)$this->_default);
+            $definition[] = "DEFAULT " . SQLiteLink::sanitize($this->_default);
         }
 
         if (!$this->_autoincrement) {

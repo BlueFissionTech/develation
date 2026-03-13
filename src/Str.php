@@ -405,6 +405,17 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Compatibility alias for substring checks.
+	 *
+	 * @param string $needle
+	 * @return bool
+	 */
+	public function _contains(string $needle): bool
+	{
+		return $this->_has($needle);
+	}
+
+	/**
 	 * Check if the current string starts with the given needle.
 	 *
 	 * @param string $needle

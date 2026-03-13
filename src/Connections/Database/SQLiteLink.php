@@ -536,49 +536,42 @@ class SQLiteLink extends Connection implements IConfigurable
     public static function sanitize($string, $datetime = false, $database = null)
     {
         $db = self::connectionFor($database);
-        $pattern = [ '/\'/', '/^([\w\W\d\D\s]+)$/', '/(\d+)\/(\d+)\/(\d{4})/', '/\'(\d)\'/', '/\$/', '/^\'\'$/' ];
-        $replacement = [ '\'', '\'$1\'', '$3-$1-$2', '\'$1\'', '$', '' ];
 
-        if ($datetime === true) {
-            $replacement = [ '\'', '\'$1\'', '$3-$1-$2 12:00:00', '$1', '$', '' ];
+        if ($string instanceof \BlueFission\IVal) {
+            $string = $string->val();
         }
 
-        $string = new Str($string, true);
+        if (Val::isNull($string)) {
+            return 'NULL';
+        }
 
-        $string->constraint(function (&$value) {
-            if (Val::isNull($value)) {
-                $value = 'NULL';
-            }
-        });
+        if (is_bool($string)) {
+            return $string ? '1' : '0';
+        }
 
-        $string->constraint(function (&$value) {
-            if (Val::isNull($value) || Val::isEmpty($value) || Str::len($value) <= 0) {
-                $value = '';
-            }
-        });
+        if (is_int($string) || is_float($string)) {
+            return (string)$string;
+        }
 
-        $string->constraint(function (&$value) use ($db, $pattern, $replacement) {
-            if (Val::isNotNull($value)) {
-                if ($db) {
-                    $value = $db->escapeString(stripslashes($value));
-                }
-                $value = preg_replace($pattern, $replacement, $value);
-            }
-        });
+        $value = (string)$string;
 
-        $string->constraint(function (&$value) {
-            if ($value == '\'NOW()\'') {
-                $value = 'NOW()';
-            }
-        });
+        if ($datetime === true && preg_match('/^(\d+)\/(\d+)\/(\d{4})$/', $value, $matches)) {
+            $value = "{$matches[3]}-{$matches[1]}-{$matches[2]} 12:00:00";
+        } elseif (preg_match('/^(\d+)\/(\d+)\/(\d{4})$/', $value, $matches)) {
+            $value = "{$matches[3]}-{$matches[1]}-{$matches[2]}";
+        }
 
-        $string->constraint(function (&$value) {
-            if ($value == '\'NULL\'') {
-                $value = 'NULL';
-            }
-        });
+        if ($value === 'NOW()' || $value === 'NULL') {
+            return $value;
+        }
 
-        return $string();
+        if ($db) {
+            $value = $db->escapeString(stripslashes($value));
+        } elseif (class_exists('SQLite3')) {
+            $value = \SQLite3::escapeString(stripslashes($value));
+        }
+
+        return "'" . $value . "'";
     }
 
     /**

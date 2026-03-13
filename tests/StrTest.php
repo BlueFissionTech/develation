@@ -130,4 +130,10 @@ class StrTest extends ValTest {
 		$this->assertTrue(Str::toBoolStrict('true'));
 		$this->assertTrue(Str::toBoolStrict('yes'));
 	}
+
+	public function testContainsProvidesCompatibilityAlias()
+	{
+		$this->assertTrue(Str::contains('orchestrate', 'strate'));
+		$this->assertFalse(Str::contains('orchestrate', 'matrix'));
+	}
 }
