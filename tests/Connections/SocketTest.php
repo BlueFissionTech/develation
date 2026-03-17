@@ -51,7 +51,7 @@ class SocketTest extends ConnectionTest
     {
         $this->object->open();
         $this->object->close();
-        $this->assertEquals(Connection::STATUS_DISCONNECTED, $this->object->status(), "Socket should be disconnected successfully.");
+        $this->assertEquals(Connection::STATUS_NOTCONNECTED, $this->object->status(), "Socket should end in the base not-connected state after close().");
     }
 
     public function testFailToConnect()
