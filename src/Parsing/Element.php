@@ -271,15 +271,19 @@ class Element extends Obj {
 
     public function resolveValue(string $value, ?string $type = null): mixed
     {
-        $firstChar = substr($value, 0, 1);
-        $lastChar = substr($value, -1);
+        $value = Str::trim($value);
+        $firstChar = Str::sub($value, 0, 1);
+        $lastChar = Str::sub($value, -1);
 
         $parsed = match (true) {
             $firstChar === '"' || $firstChar === "'" => trim($value, "'\""),
             $firstChar === '[' => json_decode(str_replace("'", '"', $value), true),
             $firstChar === '{' => json_decode($value, true),
-            (bool)preg_match('/(^[a-zA-Z_]+)/', $value) => $this->getScopeVariable($value),
-            default => (float)$value,
+            (bool)preg_match('/^\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/', $value) => $this->getNestedValue("current{$value}", 'current'),
+            (bool)preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)+$/', $value) => $this->getNestedValue($value),
+            (bool)preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $value) => $this->getScopeVariable($value),
+            is_numeric($value) => (float)$value,
+            default => $value,
         };
 
         if ($type === 'json') {

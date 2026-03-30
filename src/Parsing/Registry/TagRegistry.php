@@ -154,7 +154,7 @@ class TagRegistry {
         preg_match('/
             ^[{@]?
             (?<tag_open>[\#=\$])\s*?                            # tag type
-            (?<tag_name>\$?[a-zA-Z_][a-zA-Z0-9_-]*)          # tag or variable
+            (?<tag_name>\$?[a-zA-Z_][a-zA-Z0-9_.-]*)         # tag or variable
             (?:\((?<function_args>[^)]*)\))?               # optional func args
             (?:\s*->\s*(?<assign_target>[a-zA-Z_][a-zA-Z0-9_-]*))? # optional assignment
             (?<raw_attributes>.*)?                          # the rest = attributes
@@ -248,7 +248,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'var',
-            pattern: '{open}\\$(\\w+){close}',
+            pattern: '{open}\\$([a-zA-Z_][a-zA-Z0-9_.-]*){close}',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\VarElement::class
@@ -337,6 +337,14 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'current',
             pattern: '{open}@current\.?(.*?){close}',
+            attributes: ['name'],
+            interface: Contracts\IRenderableElement::class,
+            class: Elements\CurrentElement::class
+        ));
+
+        self::register(new TagDefinition(
+            name: 'current_alias',
+            pattern: '{open}\.(.*?){close}',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\CurrentElement::class

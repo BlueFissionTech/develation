@@ -11,9 +11,10 @@ class VarElement extends Element implements IRenderableElement
     public function render(): string
     {
         Dev::do('_before', [$this]);
-        $name = $this->attributes['name'] ?? '';
+        $name = ltrim($this->attributes['name'] ?? '', '$');
+        $value = $name ? $this->resolveValue($name) : null;
 
-        $output = (string) ($this->block->getVar($name) ?? '');
+        $output = (string) ($value ?? '');
         $output = Dev::apply('_out', $output);
         Dev::do('_after', [$output, $this]);
         return $output;
