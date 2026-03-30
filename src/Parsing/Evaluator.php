@@ -30,7 +30,7 @@ class Evaluator implements IDispatcher
     protected array $params;
     protected string $var;
     protected string $type;
-    protected string $value = '';
+    protected mixed $value = null;
     protected $generatorDriver;
 
     public function __construct($element = null)
@@ -79,7 +79,7 @@ class Evaluator implements IDispatcher
         $value = $this->process();
         $value = Dev::apply('_out', $value);
 
-        $this->value = $value ?? '';
+        $this->value = $value;
 
         if ($append) {
             if (!$this->element->hasScopeVariable($this->var)) {
@@ -464,14 +464,20 @@ class Evaluator implements IDispatcher
     protected function useGenerator(string $expression): mixed
     {
         // Generators are used when a variable is a content-producing tag.
-        try {
-            $generator = GeneratorRegistry::get();
-            $generator->setDriver($this->generatorDriver);
-            return $generator->generate($this->element);
+        $generator = GeneratorRegistry::get();
+
+        if (!$generator) {
+            throw new \RuntimeException(
+                sprintf(
+                    "No generator registered for expression '%s'.",
+                    $expression
+                )
+            );
         }
-        catch (\Exception $e) {
-            return "[Generation Error]";
-        }
+
+        $generator->setDriver($this->generatorDriver);
+
+        return $generator->generate($this->element);
     }
 
     protected function call($classOrObject, $method, $args = []): mixed

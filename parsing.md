@@ -55,6 +55,14 @@ echo $template->render();
 
 Register defaults once per process (for example, during bootstrap) so custom tags and renderers are available everywhere.
 
+Current `#let` typed-value contract:
+
+```vibe
+{#let settings:json='{"theme":"dark"}'}
+```
+
+Treat `name:type=value` as the supported syntax today. Do not document or depend on `name:type=json = ...` style attribute syntax unless it is separately implemented and covered by tests.
+
 A simple Vibe layout pattern:
 
 ```vibe
