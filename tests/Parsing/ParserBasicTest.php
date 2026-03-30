@@ -50,6 +50,52 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('0:a,1:b', $output);
     }
 
+    public function testEachExposesCurrentAsScopedVariableForNestedIterationInPartials()
+    {
+        $dir = $this->createTempDir('nested_sections');
+        $partialPath = $dir . DIRECTORY_SEPARATOR . 'sections.vibe';
+        file_put_contents($partialPath, '{#each items=current.sections glue=","}{.title}{/each}');
+
+        $template = '{#each items=chapters glue="|"}{$current.title}:@include(\'sections.vibe\'){/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'chapters' => [
+                [
+                    'title' => 'Chapter 1',
+                    'sections' => [
+                        ['title' => 'Section 1'],
+                        ['title' => 'Section 2'],
+                    ],
+                ],
+                [
+                    'title' => 'Chapter 2',
+                    'sections' => [
+                        ['title' => 'Section 3'],
+                    ],
+                ],
+            ],
+        ]);
+        $parser->setIncludePaths(['modules' => $dir]);
+        $output = $parser->render();
+
+        $this->assertSame('Chapter 1:Section 1,Section 2|Chapter 2:Section 3', $output);
+    }
+
+    public function testEachSupportsCurrentAliasShorthand()
+    {
+        $template = '{#each items=items glue=","}{.title}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['title' => 'Alpha'],
+                ['title' => 'Beta'],
+            ],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('Alpha,Beta', $output);
+    }
+
     public function testEvalAssignsVariableForLaterUse()
     {
         $template = '{=foo}{$foo}';

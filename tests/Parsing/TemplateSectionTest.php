@@ -36,4 +36,25 @@ class TemplateSectionTest extends ParsingTestCase
 
         $this->assertSame('Header:Hello World:Footer', $output);
     }
+
+    public function testTemplateSectionCanIncludeExternalPartial()
+    {
+        $dir = $this->createTempDir('template_include');
+        $layoutPath = $dir . DIRECTORY_SEPARATOR . 'layout.vibe';
+        $partialPath = $dir . DIRECTORY_SEPARATOR . 'partial.vibe';
+
+        file_put_contents($layoutPath, "Header:@output('main'):Footer");
+        file_put_contents($partialPath, 'Hi {$name}');
+
+        $template = "@template('layout.vibe')@section('main')@include('partial.vibe')@endsection";
+        $parser = new Parser($template);
+        $parser->setIncludePaths([
+            'templates' => $dir,
+            'modules' => $dir,
+        ]);
+        $parser->setVariables(['name' => 'World']);
+        $output = $parser->render();
+
+        $this->assertSame('Header:Hi World:Footer', $output);
+    }
 }

@@ -115,11 +115,19 @@ class Template extends Obj {
     	$info = pathinfo($file);
 
     	$file = $info['basename'];
+        $path = $info['dirname'] ?? '.';
+        $isAbsolutePath = (bool)preg_match('/^(?:[A-Za-z]:[\\\\\\/]|[\\\\\\/]{2}|\/)/', $path);
 
-    	$path_r = [];
-    	$path_r[] = $this->config('template_directory');
-    	$path_r[] = $info['dirname'];
-    	$path = implode(DIRECTORY_SEPARATOR, $path_r);
+        if (!$isAbsolutePath) {
+        	$path_r = [];
+            if ( Val::isNotEmpty($this->config('template_directory')) ) {
+        	    $path_r[] = $this->config('template_directory');
+            }
+            if ( Val::isNotEmpty($path) && $path !== '.' ) {
+        	    $path_r[] = $path;
+            }
+        	$path = implode(DIRECTORY_SEPARATOR, $path_r);
+        }
 
         if ( Val::isNotNull($file)) {
             $this->_file = (new FileSystem(['root'=>$path]))->open($file);

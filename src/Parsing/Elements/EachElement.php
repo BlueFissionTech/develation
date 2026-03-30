@@ -17,6 +17,9 @@ class EachElement extends Element implements ILoopElement
         Dev::do('_before', [$vars, $this]);
         $glue = $this->getAttribute('glue') ?: '';
         $results = [];
+        $previousCurrent = $this->getScopeVariable('current');
+        $previousCurrentPath = $this->getScopeVariable('current_path');
+        $previousIndex = $this->getScopeVariable('index');
 
         $this->parse();
 
@@ -28,6 +31,9 @@ class EachElement extends Element implements ILoopElement
                 $this->block->setContent($this->getRaw());
                 $this->index = $index;
                 $this->current = $current.'.'.$index;
+                $this->setScopeVariable('index', $index);
+                $this->setScopeVariable('current', $item);
+                $this->setScopeVariable('current_path', $this->current);
 
                 $this->block->process();
 
@@ -39,10 +45,16 @@ class EachElement extends Element implements ILoopElement
                 $this->block->setContent($this->getRaw());
                 $this->index = $i;
                 $this->block->setVar('index', $i);
+                $this->setScopeVariable('current', null);
+                $this->setScopeVariable('current_path', null);
                 $this->block->process();
                 $results[] = $this->block->content;
             }
         }
+
+        $this->setScopeVariable('current', $previousCurrent);
+        $this->setScopeVariable('current_path', $previousCurrentPath);
+        $this->setScopeVariable('index', $previousIndex);
 
         $output = implode($glue, $results);
         $output = Dev::apply('_out', $output);

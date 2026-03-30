@@ -42,6 +42,17 @@ $template->assign(['name' => 'World']);
 echo $template->render();
 ```
 
+`Template` can now safely load from either a configured relative file path or an absolute file path:
+
+```php
+use BlueFission\HTML\Template;
+
+$template = new Template(__DIR__ . '/templates/page.vibe');
+$template->assign(['name' => 'World']);
+
+echo $template->render();
+```
+
 Register defaults once per process (for example, during bootstrap) so custom tags and renderers are available everywhere.
 
 A simple Vibe layout pattern:
@@ -76,7 +87,7 @@ Default tags are registered by `TagRegistry::registerDefaults()`:
 - Template tags: `@template`, `@section`, `@output`
 - Includes: `@include`, `@import`
 - Macros/tools: `@macro`, `@invoke`
-- Loop helpers: `{@current}`, `{@index}`
+- Loop helpers: `{@current}`, `{@index}`, `{.field}`
 
 See `parse.php` and `templates/` for working examples.
 
@@ -88,6 +99,34 @@ See `parse.php` and `templates/` for working examples.
 - `@include('file.vibe')` and `@import('file.vibe')` load external content.
 
 Include search paths are set via `Parser::setIncludePaths()` or by configuring `Template` with `template_directory` and `module_directory`.
+
+## Loop Scope and Nested Composition
+
+Within `#each`, DevElation now exposes the active item as a normal scoped variable named `current`.
+
+That means all of the following are valid inside a loop body:
+
+- `{$current.title}` for explicit scoped access
+- `items=current.sections` when a nested include or partial needs to loop child items
+- `{@current}` for legacy loop-item output
+- `{.title}` as shorthand for the active loop item
+
+Example:
+
+```vibe
+{#each items=chapters glue="|"}
+{$current.title}
+@include('sections.vibe')
+{/each}
+```
+
+`sections.vibe`:
+
+```vibe
+{#each items=current.sections glue=","}{.title}{/each}
+```
+
+This is the currently supported growth path for nested iteration. It keeps loop scoping explicit and reusable without forcing deeper same-block recursive parsing changes into the core parser.
 
 ## Extending the Parser
 
