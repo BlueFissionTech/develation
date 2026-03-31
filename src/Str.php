@@ -293,6 +293,52 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Append a value to the end of the current string.
+	 *
+	 * @param mixed $suffix
+	 * @return IVal
+	 */
+	public function _append($suffix): IVal {
+		$string = $this->_data . $this->stringifySegment($suffix);
+
+		$this->alter($string);
+
+		return $this;
+	}
+
+	/**
+	 * Prepend a value to the beginning of the current string.
+	 *
+	 * @param mixed $prefix
+	 * @return IVal
+	 */
+	public function _prepend($prefix): IVal {
+		$string = $this->stringifySegment($prefix) . $this->_data;
+
+		$this->alter($string);
+
+		return $this;
+	}
+
+	/**
+	 * Concatenate one or more values onto the current string.
+	 *
+	 * @param mixed ...$parts
+	 * @return IVal
+	 */
+	public function _concat(...$parts): IVal {
+		$string = $this->_data;
+
+		foreach ($parts as $part) {
+			$string .= $this->stringifySegment($part);
+		}
+
+		$this->alter($string);
+
+		return $this;
+	}
+
+	/**
 	 * Searches for a specified value and replaces it with another value
 	 *
 	 * @param string $search The value to search for
@@ -306,6 +352,73 @@ class Str extends Val implements IVal {
 		$this->alter($string);
 
 		return $this;
+	}
+
+	/**
+	 * Check whether the current string matches a PCRE pattern.
+	 *
+	 * @param string $pattern
+	 * @return bool
+	 */
+	public function _matches(string $pattern): bool {
+		return preg_match($pattern, $this->_data) === 1;
+	}
+
+	/**
+	 * Return the first PCRE match and capture groups for the current string.
+	 *
+	 * @param string $pattern
+	 * @param int $flags
+	 * @param int $offset
+	 * @return array|null
+	 */
+	public function _matchPattern(string $pattern, int $flags = 0, int $offset = 0): ?array {
+		$matches = [];
+		$result = preg_match($pattern, $this->_data, $matches, $flags, $offset);
+
+		if ($result === false) {
+			throw new \RuntimeException("Invalid pattern '{$pattern}'.");
+		}
+
+		return $result === 1 ? $matches : null;
+	}
+
+	/**
+	 * Replace the current string using a PCRE pattern.
+	 *
+	 * @param string $pattern
+	 * @param string $replacement
+	 * @param int $limit
+	 * @return IVal
+	 */
+	public function _replacePattern(string $pattern, string $replacement, int $limit = -1): IVal {
+		$string = preg_replace($pattern, $replacement, $this->_data, $limit);
+
+		if ($string === null) {
+			throw new \RuntimeException("Invalid pattern '{$pattern}'.");
+		}
+
+		$this->alter($string);
+
+		return $this;
+	}
+
+	/**
+	 * Split the current string using a PCRE pattern delimiter.
+	 *
+	 * @param string $pattern
+	 * @param int $limit
+	 * @param int $flags
+	 * @return Arr
+	 */
+	public function _splitBy(string $pattern, int $limit = -1, int $flags = 0): Arr {
+		$split = preg_split($pattern, $this->_data, $limit, $flags);
+
+		if ($split === false) {
+			throw new \RuntimeException("Invalid pattern '{$pattern}'.");
+		}
+
+		return new Arr($split);
 	}
 
 	/**
@@ -589,6 +702,35 @@ class Str extends Val implements IVal {
 		$plural = Dev::apply('_post', $plural);
 
 	    return $plural;
+	}
+
+	/**
+	 * Normalize a value into a string-safe segment for concatenation.
+	 *
+	 * @param mixed $value
+	 * @return string
+	 */
+	protected function stringifySegment($value): string
+	{
+		if ( $value instanceof IVal ) {
+			$value = $value->val();
+		}
+
+		if ( $value === null ) {
+			return '';
+		}
+
+		if ( is_scalar($value) ) {
+			return (string)$value;
+		}
+
+		if ( is_object($value) && method_exists($value, '__toString') ) {
+			return (string)$value;
+		}
+
+		$encoded = json_encode($value);
+
+		return $encoded === false ? '' : $encoded;
 	}
 
 	/**
