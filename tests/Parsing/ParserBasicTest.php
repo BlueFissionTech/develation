@@ -31,6 +31,35 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('bar', $output);
     }
 
+    public function testTypedLetSupportsInlineJsonLiterals()
+    {
+        $template = '{#let settings:json=\'{"theme":"dark","layout":"wide"}\'}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('', $output);
+        $this->assertSame(
+            ['theme' => 'dark', 'layout' => 'wide'],
+            $parser->root()->getScopeVariable('settings')
+        );
+    }
+
+    public function testTypedLetSupportsNestedInlineJsonLiterals()
+    {
+        $template = '{#let settings:json=\'{"theme":"dark","layout":{"width":"wide","columns":2}}\'}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('', $output);
+        $this->assertSame(
+            [
+                'theme' => 'dark',
+                'layout' => ['width' => 'wide', 'columns' => 2],
+            ],
+            $parser->root()->getScopeVariable('settings')
+        );
+    }
+
     public function testIfConditionOutputsMatchingBlock()
     {
         $template = '{#let status="ok"}{#if var=status equals="ok"}yes{/if}{#if var=status equals="no"}no{/if}';

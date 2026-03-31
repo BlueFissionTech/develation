@@ -30,4 +30,26 @@ class TagRegistryPatternTest extends ParsingTestCase
 
         $this->assertSame('', $output);
     }
+
+    public function testUnifiedPatternSupportsQuotedJsonInLetTags()
+    {
+        $pattern = TagRegistry::unifiedPattern();
+        $template = '{#let settings:json=\'{"theme":"dark","layout":{"width":"wide"}}\'}';
+
+        $matched = preg_match($pattern, $template, $matches);
+
+        $this->assertSame(1, $matched);
+        $this->assertSame($template, $matches['let']);
+    }
+
+    public function testExtractAttributesPreservesTypedLetVariableNames()
+    {
+        $template = '{#let settings:json=\'{"theme":"dark"}\'}';
+        $attributes = TagRegistry::extractAttributes('let', $template);
+
+        $this->assertSame(
+            ['settings:json' => '\'{"theme":"dark"}\''],
+            $attributes
+        );
+    }
 }
