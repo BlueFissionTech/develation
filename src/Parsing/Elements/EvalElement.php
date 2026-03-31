@@ -22,7 +22,7 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
     protected array $params;
     protected string $var;
     protected string $type;
-    protected string $value = '';
+    protected mixed $value = null;
     protected $generatorDriver;
 
     public function __construct(string $tag, string $match, string $raw, array $attributes = [])
