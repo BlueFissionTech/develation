@@ -4,6 +4,11 @@ namespace BlueFission\Parsing;
 
 use BlueFission\Obj;
 use BlueFission\Str;
+use BlueFission\Num;
+use BlueFission\Arr;
+use BlueFission\Val;
+use BlueFission\Flag;
+use BlueFission\IVal;
 use BlueFission\Collections\Collection;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Dispatches;
@@ -250,36 +255,195 @@ class Element extends Obj {
         return $current ?: new Element(TagRegistry::ROOT, '', []);
     }
 
-    protected function getNestedValue($dotNotationString, $varName = null): mixed
+    public function hasPathValue(string $path): bool
     {
-        $parts = explode('.', $dotNotationString);
-        $name = array_shift($parts);
-        $varName = $varName ?? $name;
-        $value = $this->block->getVar($varName);
-        foreach ($parts as $part) {
-            if (is_array($value) && array_key_exists($part, $value)) {
-                $value = $value[$part];
-            } elseif (is_object($value) && property_exists($value, $part)) {
-                $value = $value->$part;
-            } else {
-                return null; // Return null if the path does not exist
+        $segments = Str::make($path)->split('.')->val();
+        $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
+
+        if (empty($segments)) {
+            return false;
+        }
+
+        $value = $this->block->getVar(array_shift($segments));
+        if ($value === null) {
+            return false;
+        }
+
+        foreach ($segments as $segment) {
+            if (is_array($value) && array_key_exists($segment, $value)) {
+                $value = $value[$segment];
+                continue;
             }
+
+            if ($value instanceof Obj) {
+                $data = $value->toArray();
+                if (array_key_exists($segment, $data)) {
+                    $value = $value->$segment;
+                    continue;
+                }
+            }
+
+            if (is_object($value) && (property_exists($value, $segment) || isset($value->$segment))) {
+                $value = $value->$segment;
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getPathValue(string $path, bool $throw = false): mixed
+    {
+        $segments = Str::make($path)->split('.')->val();
+        $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
+
+        if (empty($segments)) {
+            if ($throw) {
+                throw new \RuntimeException("Undefined value path '{$path}'.");
+            }
+
+            return null;
+        }
+
+        $value = $this->block->getVar(array_shift($segments));
+
+        foreach ($segments as $segment) {
+            if (is_array($value) && array_key_exists($segment, $value)) {
+                $value = $value[$segment];
+                continue;
+            }
+
+            if ($value instanceof Obj) {
+                $data = $value->toArray();
+                if (array_key_exists($segment, $data)) {
+                    $value = $value->$segment;
+                    continue;
+                }
+            }
+
+            if (is_object($value) && (property_exists($value, $segment) || isset($value->$segment))) {
+                $value = $value->$segment;
+                continue;
+            }
+
+            if ($throw) {
+                throw new \RuntimeException("Undefined value path '{$path}'.");
+            }
+
+            return null;
         }
 
         return $value;
     }
 
+    public function setPathValue(string $path, mixed $value): void
+    {
+        $segments = Str::make($path)->split('.')->val();
+        $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
+
+        if (empty($segments)) {
+            return;
+        }
+
+        $root = array_shift($segments);
+
+        if (empty($segments)) {
+            $this->setScopeVariable($root, $value);
+            return;
+        }
+
+        $container = $this->getScopeVariable($root);
+        if ($container === null) {
+            throw new \RuntimeException("Undefined value path '{$path}'.");
+        }
+
+        $container = $this->setNestedPathValue($container, $segments, $value, $path);
+        $this->setScopeVariable($root, $container);
+    }
+
+    public function parseScopedTransform(string $expression): array
+    {
+        $expression = Str::trim($expression);
+        $result = [
+            'path' => $expression,
+            'chain' => '',
+            'clone' => false,
+            'mutate' => false,
+        ];
+
+        if (preg_match('/^(?<path>[a-zA-Z_][a-zA-Z0-9_.-]*)\s*->\s*\$(?<chain>(?:\.[a-zA-Z_][a-zA-Z0-9_-]*\([^)]*\))+)$/', $expression, $matches)) {
+            $result['path'] = $matches['path'];
+            $result['chain'] = $matches['chain'];
+            $result['clone'] = true;
+
+            return $result;
+        }
+
+        if (preg_match('/^(?<path>[a-zA-Z_][a-zA-Z0-9_.-]*?)(?<chain>(?:\.[a-zA-Z_][a-zA-Z0-9_-]*\([^)]*\))+)$/', $expression, $matches)) {
+            $result['path'] = $matches['path'];
+            $result['chain'] = $matches['chain'];
+            $result['mutate'] = true;
+        }
+
+        return $result;
+    }
+
+    public function applyScopedTransform(mixed $value, string $chain): mixed
+    {
+        if ($chain === '') {
+            return $value;
+        }
+
+        $target = $this->wrapTransformValue($value);
+
+        preg_match_all('/\.([a-zA-Z_][a-zA-Z0-9_-]*)\(([^)]*)\)/', $chain, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $method = $match[1];
+            $args = $this->parseTransformArguments($match[2] ?? '');
+
+            if (!is_object($target) || (!method_exists($target, $method) && !method_exists($target, Val::PRIVATE_PREFIX . $method))) {
+                $type = is_object($target) ? get_class($target) : gettype($target);
+                throw new \RuntimeException("Method '{$method}' not found on {$type}.");
+            }
+
+            $result = $target->$method(...$args);
+            if ($result !== null) {
+                $target = $result;
+            }
+        }
+
+        if ($target instanceof IVal) {
+            return $target->val();
+        }
+
+        return $target;
+    }
+
+    protected function getNestedValue($dotNotationString, $varName = null): mixed
+    {
+        if ($varName !== null && Str::pos($dotNotationString, '.') === false) {
+            return $this->getPathValue($varName);
+        }
+
+        return $this->getPathValue($dotNotationString);
+    }
+
     public function resolveValue(string $value, ?string $type = null): mixed
     {
+        $value = Str::trim($value);
         $firstChar = substr($value, 0, 1);
-        $lastChar = substr($value, -1);
 
         $parsed = match (true) {
             $firstChar === '"' || $firstChar === "'" => trim($value, "'\""),
             $firstChar === '[' => json_decode(str_replace("'", '"', $value), true),
             $firstChar === '{' => json_decode($value, true),
-            (bool)preg_match('/(^[a-zA-Z_]+)/', $value) => $this->getScopeVariable($value),
-            default => (float)$value,
+            (bool)preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)+$/', $value) => $this->getPathValue($value),
+            (bool)preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $value) => $this->getScopeVariable($value),
+            is_numeric($value) => (float)$value,
+            default => $value,
         };
 
         if ($type === 'json') {
@@ -292,5 +456,90 @@ class Element extends Obj {
     public function resolveCastClass(string $cast): string
     {
         return Dev::apply('_cast', DatatypeRegistry::get($cast));
+    }
+
+    protected function setNestedPathValue(mixed $target, array $segments, mixed $value, string $path): mixed
+    {
+        $segment = array_shift($segments);
+
+        if ($segment === null) {
+            return $value;
+        }
+
+        if (empty($segments)) {
+            if (is_array($target)) {
+                $target[$segment] = $value;
+                return $target;
+            }
+
+            if ($target instanceof Obj || is_object($target)) {
+                $target->$segment = $value;
+                return $target;
+            }
+
+            throw new \RuntimeException("Undefined value path '{$path}'.");
+        }
+
+        if (is_array($target)) {
+            if (!array_key_exists($segment, $target)) {
+                throw new \RuntimeException("Undefined value path '{$path}'.");
+            }
+
+            $target[$segment] = $this->setNestedPathValue($target[$segment], $segments, $value, $path);
+            return $target;
+        }
+
+        if ($target instanceof Obj) {
+            $data = $target->toArray();
+            if (!array_key_exists($segment, $data)) {
+                throw new \RuntimeException("Undefined value path '{$path}'.");
+            }
+
+            $target->$segment = $this->setNestedPathValue($target->$segment, $segments, $value, $path);
+            return $target;
+        }
+
+        if (is_object($target)) {
+            if (!(property_exists($target, $segment) || isset($target->$segment))) {
+                throw new \RuntimeException("Undefined value path '{$path}'.");
+            }
+
+            $target->$segment = $this->setNestedPathValue($target->$segment, $segments, $value, $path);
+            return $target;
+        }
+
+        throw new \RuntimeException("Undefined value path '{$path}'.");
+    }
+
+    protected function wrapTransformValue(mixed $value): mixed
+    {
+        if ($value instanceof IVal) {
+            return $value;
+        }
+
+        return match (true) {
+            is_string($value) => Str::make($value),
+            is_bool($value) => Flag::make($value),
+            is_int($value), is_float($value) => Num::make($value),
+            is_array($value) => Arr::make($value),
+            default => Val::make($value),
+        };
+    }
+
+    protected function parseTransformArguments(string $arguments): array
+    {
+        $arguments = Str::trim($arguments);
+        if ($arguments === '') {
+            return [];
+        }
+
+        preg_match_all('/"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'|\[[^\]]*\]|[^,\s][^,]*/', $arguments, $matches);
+        $params = [];
+
+        foreach ($matches[0] ?? [] as $argument) {
+            $params[] = $this->resolveValue(Str::trim($argument));
+        }
+
+        return $params;
     }
 }
