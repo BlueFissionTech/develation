@@ -151,6 +151,14 @@ class TagRegistry {
         $clean = preg_replace('/^[{@]?#?' . preg_quote($tag, '/') . '\s*/i', '', $raw);
         $clean = preg_replace('/[{}]$/', '', $clean); // trailing brace
 
+        if ($tag === 'let') {
+            if (preg_match('/^\{\#let\s+([a-zA-Z_][a-zA-Z0-9_]*(?::[a-zA-Z_][a-zA-Z0-9_]*)?)\s*=\s*(.+)\}$/s', $raw, $letMatch)) {
+                $attributes[$letMatch[1]] = $letMatch[2];
+            }
+
+            return Dev::apply('_attributes', $attributes);
+        }
+
         preg_match('/
             ^[{@]?
             (?<tag_open>[\#=\$])\s*?                            # tag type
@@ -232,7 +240,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'let',
-            pattern: '{open}\#let (.*?)=(.*?){close}',
+            pattern: '{open}\#let\s+(?:[^{}\'"]+|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\')+{close}',
             attributes: ['*'],
             interface: Contracts\IExecutableElement::class,
             class: Elements\LetElement::class
