@@ -132,4 +132,17 @@ class ParserBasicTest extends ParsingTestCase
 
         $this->assertSame('bar', $output);
     }
+
+    public function testEvalCanLoadSourceFromIncludePaths()
+    {
+        $dir = $this->createTempDir('eval_src');
+        $sourcePath = $dir . DIRECTORY_SEPARATOR . 'note.txt';
+        file_put_contents($sourcePath, 'Loaded from file');
+
+        $parser = new Parser("{=data src='note.txt'}");
+        $parser->setIncludePaths(['includes' => $dir]);
+        $parser->render();
+
+        $this->assertSame('Loaded from file', $parser->root()->getScopeVariable('data'));
+    }
 }

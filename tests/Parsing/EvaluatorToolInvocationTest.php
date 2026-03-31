@@ -75,4 +75,26 @@ class EvaluatorToolInvocationTest extends TestCase
 
         $evaluator->evaluate('headline');
     }
+
+    public function testSourceAssignmentSupportsStructuredData(): void
+    {
+        $dir = __DIR__ . DIRECTORY_SEPARATOR . '_tmp';
+        if (!is_dir($dir)) {
+            mkdir($dir);
+        }
+
+        $file = $dir . DIRECTORY_SEPARATOR . 'source_' . uniqid() . '.json';
+        file_put_contents($file, '{"a":1,"b":{"title":"Loaded"}}');
+
+        $element = new Element('eval', '', '', [
+            'expression' => 'data',
+            'src' => $file,
+        ]);
+        $evaluator = new Evaluator($element);
+
+        $result = $evaluator->evaluate('data');
+
+        $this->assertSame(['a' => 1, 'b' => ['title' => 'Loaded']], $result);
+        $this->assertSame('Loaded', $element->resolveValue('data.b.title'));
+    }
 }
