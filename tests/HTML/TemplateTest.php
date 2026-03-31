@@ -136,6 +136,37 @@ class TemplateTest extends TestCase {
         $this->assertSame('Hello World', $template->render());
     }
 
+    public function testConstructWithAbsoluteFilePathLoadsAndRenders()
+    {
+        $baseDir = $this->baseDir();
+        $this->assertNotSame('', $baseDir);
+        $absolutePath = $baseDir.DIRECTORY_SEPARATOR.static::$pageFile;
+
+        file_put_contents($absolutePath, 'Hello {$name}');
+
+        $template = new Template($absolutePath);
+        $template->assign(['name' => 'World']);
+
+        $this->assertSame('Hello World', $template->render());
+    }
+
+    public function testConstructWithAbsoluteFilePathInConfigLoadsAndRenders()
+    {
+        $baseDir = $this->baseDir();
+        $this->assertNotSame('', $baseDir);
+        $absolutePath = $baseDir.DIRECTORY_SEPARATOR.static::$pageFile;
+
+        file_put_contents($absolutePath, 'Hello {$name}');
+
+        $template = new Template([
+            'file' => $absolutePath,
+            'module_directory' => $baseDir,
+        ]);
+        $template->assign(['name' => 'World']);
+
+        $this->assertSame('Hello World', $template->render());
+    }
+
     public function testRenderParsesTemplateSectionsFromFiles()
     {
         $baseDir = $this->baseDir();

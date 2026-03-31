@@ -159,10 +159,18 @@ class TagRegistry {
             return Dev::apply('_attributes', $attributes);
         }
 
+        if ($tag === 'let') {
+            if (preg_match('/^\{\#let\s+([a-zA-Z_][a-zA-Z0-9_]*(?::[a-zA-Z_][a-zA-Z0-9_]*)?)\s*=\s*(.+)\}$/s', $raw, $letMatch)) {
+                $attributes[$letMatch[1]] = $letMatch[2];
+            }
+
+            return Dev::apply('_attributes', $attributes);
+        }
+
         preg_match('/
             ^[{@]?
             (?<tag_open>[\#=\$])\s*?                            # tag type
-            (?<tag_name>\$?[a-zA-Z_][a-zA-Z0-9_-]*)          # tag or variable
+            (?<tag_name>\$?[a-zA-Z_][a-zA-Z0-9_.-]*)         # tag or variable
             (?:\((?<function_args>[^)]*)\))?               # optional func args
             (?:\s*->\s*(?<assign_target>[a-zA-Z_][a-zA-Z0-9_-]*))? # optional assignment
             (?<raw_attributes>.*)?                          # the rest = attributes
@@ -240,7 +248,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'let',
-            pattern: '{open}\#let (.*?)=(.*?){close}',
+            pattern: '{open}\#let\s+(?:[^{}\'"]+|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\')+{close}',
             attributes: ['*'],
             interface: Contracts\IExecutableElement::class,
             class: Elements\LetElement::class
@@ -249,7 +257,7 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'eval',
             pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
-            attributes: ['expression', 'params', 'assign', 'silent', 'default'],
+            attributes: ['expression', 'params', 'assign', 'silent', 'default', 'src'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\EvalElement::class
         ));
@@ -345,6 +353,14 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'current',
             pattern: '{open}@current\.?(.*?){close}',
+            attributes: ['name'],
+            interface: Contracts\IRenderableElement::class,
+            class: Elements\CurrentElement::class
+        ));
+
+        self::register(new TagDefinition(
+            name: 'current_alias',
+            pattern: '{open}\.(.*?){close}',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\CurrentElement::class

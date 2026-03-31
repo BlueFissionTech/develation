@@ -63,7 +63,7 @@ Construct HTML elements for forms, tables, and templating with ease, improving t
 - [HTML Tools Documentation](html_tools.md)
 
 ### Parsing & Templating
-Vibe parsing, tag execution, includes, and template sections for declarative templating workflows.
+Vibe parsing, tag execution, includes, template sections, and scoped loop helpers for declarative templating workflows.
 
 - [Parsing & Templating Documentation](parsing.md)
 
@@ -168,6 +168,39 @@ $todos[] = ['task' => 'Ship docs', 'due' => '2026-01-10'];
 $store->assign($todos);
 $store->write();
 ```
+
+### Vibe loops: scoped current items and nested partials
+
+```php
+use BlueFission\Parsing\Parser;
+use BlueFission\Parsing\Registry\TagRegistry;
+use BlueFission\Parsing\Registry\RendererRegistry;
+use BlueFission\Parsing\Registry\ExecutorRegistry;
+use BlueFission\Parsing\Registry\PreparerRegistry;
+
+TagRegistry::registerDefaults();
+RendererRegistry::registerDefaults();
+ExecutorRegistry::registerDefaults();
+PreparerRegistry::registerDefaults();
+
+$parser = new Parser('{#each items=chapters glue="|"}{$current.title}:@include(\'sections.vibe\'){/each}');
+$parser->setVariables([
+    'chapters' => [
+        [
+            'title' => 'Chapter 1',
+            'sections' => [
+                ['title' => 'Section 1'],
+                ['title' => 'Section 2'],
+            ],
+        ],
+    ],
+]);
+$parser->setIncludePaths(['modules' => __DIR__ . '/templates']);
+
+echo $parser->render();
+```
+
+Inside `#each`, the current item is available as a scoped `current` value, so `{$current.title}`, `items=current.sections`, `{@current}`, and the shorthand `{.title}` all resolve against the active loop item. For deeper compositions, prefer nested iteration through partials and includes instead of depending on same-block recursive `#each` parsing.
 
 ## Usage
 

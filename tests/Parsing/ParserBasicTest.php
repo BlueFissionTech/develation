@@ -139,6 +139,35 @@ class ParserBasicTest extends ParsingTestCase
         $parser->render();
     }
 
+    public function testTypedLetSupportsInlineJsonLiterals()
+    {
+        $template = '{#let settings:json=\'{"theme":"dark","layout":"wide"}\'}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('', $output);
+        $this->assertSame(
+            ['theme' => 'dark', 'layout' => 'wide'],
+            $parser->root()->getScopeVariable('settings')
+        );
+    }
+
+    public function testTypedLetSupportsNestedInlineJsonLiterals()
+    {
+        $template = '{#let settings:json=\'{"theme":"dark","layout":{"width":"wide","columns":2}}\'}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('', $output);
+        $this->assertSame(
+            [
+                'theme' => 'dark',
+                'layout' => ['width' => 'wide', 'columns' => 2],
+            ],
+            $parser->root()->getScopeVariable('settings')
+        );
+    }
+
     public function testIfConditionOutputsMatchingBlock()
     {
         $template = '{#let status="ok"}{#if var=status equals="ok"}yes{/if}{#if var=status equals="no"}no{/if}';
@@ -156,6 +185,52 @@ class ParserBasicTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame('0:a,1:b', $output);
+    }
+
+    public function testEachExposesCurrentAsScopedVariableForNestedIterationInPartials()
+    {
+        $dir = $this->createTempDir('nested_sections');
+        $partialPath = $dir . DIRECTORY_SEPARATOR . 'sections.vibe';
+        file_put_contents($partialPath, '{#each items=current.sections glue=","}{.title}{/each}');
+
+        $template = '{#each items=chapters glue="|"}{$current.title}:@include(\'sections.vibe\'){/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'chapters' => [
+                [
+                    'title' => 'Chapter 1',
+                    'sections' => [
+                        ['title' => 'Section 1'],
+                        ['title' => 'Section 2'],
+                    ],
+                ],
+                [
+                    'title' => 'Chapter 2',
+                    'sections' => [
+                        ['title' => 'Section 3'],
+                    ],
+                ],
+            ],
+        ]);
+        $parser->setIncludePaths(['modules' => $dir]);
+        $output = $parser->render();
+
+        $this->assertSame('Chapter 1:Section 1,Section 2|Chapter 2:Section 3', $output);
+    }
+
+    public function testEachSupportsCurrentAliasShorthand()
+    {
+        $template = '{#each items=items glue=","}{.title}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['title' => 'Alpha'],
+                ['title' => 'Beta'],
+            ],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('Alpha,Beta', $output);
     }
 
     public function testEvalAssignsVariableForLaterUse()
@@ -193,5 +268,18 @@ class ParserBasicTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame('bar', $output);
+    }
+
+    public function testEvalCanLoadSourceFromIncludePaths()
+    {
+        $dir = $this->createTempDir('eval_src');
+        $sourcePath = $dir . DIRECTORY_SEPARATOR . 'note.txt';
+        file_put_contents($sourcePath, 'Loaded from file');
+
+        $parser = new Parser("{=data src='note.txt'}");
+        $parser->setIncludePaths(['includes' => $dir]);
+        $parser->render();
+
+        $this->assertSame('Loaded from file', $parser->root()->getScopeVariable('data'));
     }
 }

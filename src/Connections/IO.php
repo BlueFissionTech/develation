@@ -55,7 +55,7 @@ class IO
      */
     public static function fetch(string $url, array $config = []): mixed
     {
-        $curl = new Curl(array_merge(['target' => $url], $config));
+        $curl = new Curl(array_merge(['target' => $url, 'timeout' => 5, 'connect_timeout' => 3], $config));
         $curl
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to remote", $b))
             ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
@@ -74,7 +74,7 @@ class IO
      */
     public static function stream(string $url, array $config = []): mixed
     {
-        $stream = new Stream(array_merge(['target' => $url], $config));
+        $stream = new Stream(array_merge(['target' => $url, 'timeout' => 5], $config));
         $stream
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stream", $b))
             ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
@@ -93,7 +93,7 @@ class IO
      */
     public static function sock(string $url, array $config = []): mixed
     {
-        $socket = new Socket(array_merge(['target' => $url], $config));
+        $socket = new Socket(array_merge(['target' => $url, 'timeout' => 5], $config));
         $socket
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to socket", $b))
             ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))

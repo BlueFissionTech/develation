@@ -31,6 +31,8 @@ class Stream extends Connection implements IConfigurable
         'wrapper' => 'http', // wrapper for the stream context
         'method' => 'GET',  // HTTP method for the stream connection
         'header' => "Content-type: application/x-www-form-urlencoded\r\n", // header for the stream connection
+        'timeout' => 5,
+        'protocol_version' => 1.0,
     ];
 
     /**
@@ -64,6 +66,19 @@ class Stream extends Connection implements IConfigurable
         $method = $this->config('method');
         $header = $this->config('header');
         $wrapper = $this->config('wrapper');
+        $timeout = (float)$this->config('timeout');
+        $protocolVersion = (float)$this->config('protocol_version');
+
+        if (Val::isEmpty($target)) {
+            $status = self::STATUS_NOTCONNECTED;
+            $this->perform([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
+            $this->status($status);
+            return;
+        }
+
+        if (!Str::has(Str::lower($header), 'connection: close')) {
+            $header .= "Connection: close\r\n";
+        }
 
         // Check if target URL exists
         if (HTTP::urlExists($target)) {
@@ -73,6 +88,9 @@ class Stream extends Connection implements IConfigurable
                 $wrapper => [
                     'header'	=>	$header,
                     'method'	=>	$method,
+                    'timeout'   =>  $timeout,
+                    'protocol_version' => $protocolVersion,
+                    'ignore_errors' => true,
                 ],
             ];
             $this->_connection = stream_context_create($options);
@@ -112,11 +130,17 @@ class Stream extends Connection implements IConfigurable
         $context = $this->_connection;
         $wrapper = $this->config('wrapper');
         $target = $this->config('target');
+        $timeout = (int)$this->config('timeout');
 
         $this->_result = false;
 
         // If the stream context exists
         if ($context) {
+            if ($this->_handle) {
+                fclose($this->_handle);
+                $this->_handle = null;
+            }
+
             // If a query is not null
             if (Val::isNotNull($query)) {
                 if (Arr::isAssoc($query)) {
@@ -140,9 +164,17 @@ class Stream extends Connection implements IConfigurable
             }
 
             if ($this->_handle) {
+                stream_set_timeout($this->_handle, $timeout);
                 $this->perform([Action::RECEIVE, State::RECEIVING, State::PROCESSING, State::BUSY]);
                 while (!feof($this->_handle)) {
                     $chunk = fread($this->_handle, 8192);
+                    $meta = stream_get_meta_data($this->_handle);
+
+                    if (($meta['timed_out'] ?? false) === true) {
+                        $this->perform(Event::ERROR, new Meta(when: Action::RECEIVE, info: "Stream read timed out"));
+                        break;
+                    }
+
                     $this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
 
                     $this->_result .= $chunk;
@@ -152,7 +184,8 @@ class Stream extends Connection implements IConfigurable
                 $this->perform(Event::ERROR, new Meta(when: Action::RECEIVE, info: "Failed to open stream"));
             }
 
-            $this->status($this->_result !== false ? self::STATUS_SUCCESS : self::STATUS_FAILED);
+            $status = $this->_result !== false ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+            $this->status($status);
 
             $this->perform(
                 $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE],

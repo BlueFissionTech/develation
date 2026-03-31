@@ -50,6 +50,8 @@ class Curl extends Connection implements IConfigurable
         'validate_host' => false,
         'verify_ssl' => true,
         'verbose' => false,
+        'timeout' => 5,
+        'connect_timeout' => 3,
     ];
 
     /**
@@ -145,6 +147,8 @@ class Curl extends Connection implements IConfigurable
 
             curl_setopt($this->_connection, CURLOPT_URL, $target);
             curl_setopt($this->_connection, CURLOPT_COOKIESESSION, $refresh);
+            curl_setopt($this->_connection, CURLOPT_TIMEOUT, (int)$this->config('timeout'));
+            curl_setopt($this->_connection, CURLOPT_CONNECTTIMEOUT, (int)$this->config('connect_timeout'));
             $headers = $this->normalizeHeaders($this->config('headers'));
             if (Arr::isNotEmpty($headers)) {
                 curl_setopt($this->_connection, CURLOPT_HTTPHEADER, $headers);
@@ -258,9 +262,9 @@ class Curl extends Connection implements IConfigurable
             //execute post
             $this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
             $this->_result = curl_exec($curl);
+            $httpCode = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
             if ($this->_result === false) {
                 $error = curl_error($curl);
-                error_log('CURL Error: ' . $error);
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $error));
             }
 
@@ -270,10 +274,13 @@ class Curl extends Connection implements IConfigurable
             $this->perform([Action::RECEIVE]);
             $this->perform(Event::RECEIVED, new Meta(data: $this->_result));
 
-            $status = ($this->_result) ? self::STATUS_SUCCESS : ($error ?? self::STATUS_FAILED);
+            $isHttpError = $httpCode >= 400;
+            $status = ($this->_result !== false && !$isHttpError)
+                ? self::STATUS_SUCCESS
+                : ($isHttpError ? "HTTP request failed: ({$httpCode})" : ($error ?? self::STATUS_FAILED));
 
             $this->perform(
-                $this->_result ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE],
+                ($this->_result !== false && !$isHttpError) ? [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED] : [Event::ACTION_FAILED, Event::FAILURE],
                 new Meta(when: Action::PROCESS, info: $status)
             );
         } else {
