@@ -13,6 +13,7 @@ use BlueFission\Parsing\Registry\StandardRegistry;
 use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
+use BlueFission\Data\FileSystem;
 use BlueFission\Val;
 use BlueFission\Obj;
 use BlueFission\Behavioral\IDispatcher;
@@ -163,7 +164,9 @@ class Evaluator implements IDispatcher
 
                     $this->var = $var;
 
-                    if (isset($call) && !empty($call) && $call != "") {
+                    if (isset($options['src']) && !empty($options['src'])) {
+                        $value = $this->loadSourceValue((string)$options['src']);
+                    } elseif (isset($call) && !empty($call) && $call != "") {
                         
                         // Split chained calls while keeping argument groups.
                         preg_match_all('/((?<call>[a-zA-Z_][a-zA-Z0-9_-]*(\((?<arguments>[^)]*)\))?))/', $call, $callMatch);
@@ -351,6 +354,64 @@ class Evaluator implements IDispatcher
         }
 
         return $value;
+    }
+
+    protected function loadSourceValue(string $source): mixed
+    {
+        $resolved = $this->resolveSourcePath($source);
+        $directory = dirname($resolved);
+        $file = basename($resolved);
+
+        $filesystem = new FileSystem(['root' => $directory]);
+        $filesystem->open($file)->read();
+        $contents = $filesystem->contents();
+
+        if (!is_string($contents)) {
+            return $contents;
+        }
+
+        return $this->element->resolveValue($contents);
+    }
+
+    protected function resolveSourcePath(string $source): string
+    {
+        $source = trim($source, "'\"");
+        $candidates = [];
+
+        if ($this->isAbsolutePath($source)) {
+            $candidates[] = $source;
+        } else {
+            $paths = $this->element->getIncludePaths();
+
+            foreach (['includes', 'modules', 'templates'] as $key) {
+                if (isset($paths[$key]) && is_string($paths[$key]) && $paths[$key] !== '') {
+                    $candidates[] = rtrim($paths[$key], '\\/') . DIRECTORY_SEPARATOR . $source;
+                }
+            }
+
+            foreach ($paths as $path) {
+                if (is_string($path) && $path !== '') {
+                    $candidates[] = rtrim($path, '\\/') . DIRECTORY_SEPARATOR . $source;
+                }
+            }
+
+            $candidates[] = $source;
+        }
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        throw new \RuntimeException(
+            sprintf("Unable to resolve src file '%s'.", $source)
+        );
+    }
+
+    protected function isAbsolutePath(string $path): bool
+    {
+        return (bool)preg_match('/^(?:[A-Za-z]:[\\\\\\/]|[\\\\\\/]{2}|\/)/', $path);
     }
 
     protected function match($expression, &$matches): bool

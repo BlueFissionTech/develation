@@ -63,6 +63,22 @@ Current `#let` typed-value contract:
 
 Treat `name:type=value` as the supported syntax today. Do not document or depend on `name:type=json = ...` style attribute syntax unless it is separately implemented and covered by tests.
 
+## Phase 1 `src` Loading
+
+The current safe `src` contract is content-oriented:
+
+```vibe
+{=data src="notes.txt"}
+```
+
+Behavior:
+
+- `src` resolves against existing include paths (`includes`, `modules`, `templates`) and explicit absolute paths.
+- the file contents are loaded into the eval result and assigned variable on the direct eval-assignment path.
+- JSON files hydrate through the existing value-resolution behavior when the loaded content begins with `{` or `[`.
+
+This is intentionally narrower than a full filesystem contract. It does not yet promise template-native file handles, directory iteration, or `.vibe.gen` execution semantics.
+
 A simple Vibe layout pattern:
 
 ```vibe

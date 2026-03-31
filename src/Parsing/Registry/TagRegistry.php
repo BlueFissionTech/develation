@@ -241,7 +241,7 @@ class TagRegistry {
         self::register(new TagDefinition(
             name: 'eval',
             pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
-            attributes: ['expression', 'params', 'assign', 'silent', 'default'],
+            attributes: ['expression', 'params', 'assign', 'silent', 'default', 'src'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\EvalElement::class
         ));
