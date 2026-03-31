@@ -151,6 +151,14 @@ class TagRegistry {
         $clean = preg_replace('/^[{@]?#?' . preg_quote($tag, '/') . '\s*/i', '', $raw);
         $clean = preg_replace('/[{}]$/', '', $clean); // trailing brace
 
+        if ($tag === 'var') {
+            if (preg_match('/^\{\$(.+)\}$/s', $raw, $varMatch)) {
+                $attributes['name'] = trim($varMatch[1]);
+            }
+
+            return Dev::apply('_attributes', $attributes);
+        }
+
         if ($tag === 'let') {
             if (preg_match('/^\{\#let\s+([a-zA-Z_][a-zA-Z0-9_]*(?::[a-zA-Z_][a-zA-Z0-9_]*)?)\s*=\s*(.+)\}$/s', $raw, $letMatch)) {
                 $attributes[$letMatch[1]] = $letMatch[2];
@@ -256,7 +264,7 @@ class TagRegistry {
 
         self::register(new TagDefinition(
             name: 'var',
-            pattern: '{open}\\$([a-zA-Z_][a-zA-Z0-9_.-]*){close}',
+            pattern: '{open}\\$(.+?){close}',
             attributes: ['name'],
             interface: Contracts\IRenderableElement::class,
             class: Elements\VarElement::class

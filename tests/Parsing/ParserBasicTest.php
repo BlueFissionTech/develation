@@ -31,6 +31,114 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('bar', $output);
     }
 
+    public function testVarArrowRendersTransformedCloneWithoutMutatingBaseVariable()
+    {
+        $template = '{#let name="  john  "}{$name -> $.trim().capitalize()}|{$name}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('John|  john  ', $output);
+        $this->assertSame('  john  ', $parser->root()->getScopeVariable('name'));
+    }
+
+    public function testVarChainMutatesBaseVariable()
+    {
+        $template = '{#let name="  john  "}{$name.trim().capitalize()}|{$name}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('John|John', $output);
+        $this->assertSame('John', $parser->root()->getScopeVariable('name'));
+    }
+
+    public function testVarArrowRendersNestedMemberCloneWithoutMutation()
+    {
+        $template = '{$profile.value -> $.trim().capitalize()}|{$profile.value}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'profile' => ['value' => '  john  '],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('John|  john  ', $output);
+        $this->assertSame(['value' => '  john  '], $parser->root()->getScopeVariable('profile'));
+    }
+
+    public function testVarChainMutatesNestedMemberPath()
+    {
+        $template = '{$profile.value.trim().capitalize()}|{$profile.value}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'profile' => ['value' => '  john  '],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('John|John', $output);
+        $this->assertSame(['value' => 'John'], $parser->root()->getScopeVariable('profile'));
+    }
+
+    public function testVarArrowRendersObjectMemberCloneWithoutMutation()
+    {
+        $profile = new \stdClass();
+        $profile->value = '  john  ';
+
+        $template = '{$profile.value -> $.trim().capitalize()}|{$profile.value}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'profile' => $profile,
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('John|  john  ', $output);
+        $this->assertSame('  john  ', $parser->root()->getScopeVariable('profile')->value);
+    }
+
+    public function testVarChainMutatesObjectMemberPath()
+    {
+        $profile = new \stdClass();
+        $profile->value = '  john  ';
+
+        $template = '{$profile.value.trim().capitalize()}|{$profile.value}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'profile' => $profile,
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('John|John', $output);
+        $this->assertSame('John', $parser->root()->getScopeVariable('profile')->value);
+    }
+
+    public function testLetCanAssignTransformedExistingValueWithoutMutatingSource()
+    {
+        $template = '{#let name="  john  "}{#let title=name.trim().capitalize()}{$title}|{$name}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('John|  john  ', $output);
+        $this->assertSame('John', $parser->root()->getScopeVariable('title'));
+        $this->assertSame('  john  ', $parser->root()->getScopeVariable('name'));
+    }
+
+    public function testLetCanAssignBackToExistingValue()
+    {
+        $template = '{#let name="  john  "}{#let name=name.trim().capitalize()}{$name}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('John', $output);
+        $this->assertSame('John', $parser->root()->getScopeVariable('name'));
+    }
+
+    public function testLetTransformThrowsWhenSourceValueIsMissing()
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage("Cannot transform undefined value 'name'.");
+
+        $parser = new Parser('{#let title=name.trim()}');
+        $parser->render();
+    }
+
     public function testTypedLetSupportsInlineJsonLiterals()
     {
         $template = '{#let settings:json=\'{"theme":"dark","layout":"wide"}\'}';

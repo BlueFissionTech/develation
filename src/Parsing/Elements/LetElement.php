@@ -23,7 +23,19 @@ class LetElement extends Element implements IExecutableElement
 	            $type = 'string';
 	        }
 
-        	$parsed = $this->resolveValue($value, $type);
+            $expression = trim((string)$value);
+            $transform = $this->parseScopedTransform($expression);
+
+            if ($transform['chain'] !== '') {
+                if (!$this->hasPathValue($transform['path'])) {
+                    throw new \RuntimeException("Cannot transform undefined value '{$transform['path']}'.");
+                }
+
+                $source = $this->getPathValue($transform['path'], true);
+                $parsed = $this->applyScopedTransform($source, $transform['chain']);
+            } else {
+            	$parsed = $this->resolveValue($value, $type);
+            }
 	        $this->block->setVar($var, $parsed);
         }
 
