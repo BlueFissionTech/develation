@@ -11,6 +11,24 @@ use PHPUnit\Framework\TestCase;
 
 class EvaluatorToolInvocationTest extends TestCase
 {
+    public function testParseParametersHandlesNullAndFalsyResolvedValuesSafely(): void
+    {
+        $element = new Element('root', '', '', []);
+        $element->setScopeVariable('maybeNull', null);
+        $element->setScopeVariable('zero', 0);
+        $element->setScopeVariable('disabled', false);
+
+        $evaluator = new class($element) extends Evaluator {
+            public function parsePublic(?string $params): array
+            {
+                return $this->parseParameters($params);
+            }
+        };
+
+        $this->assertSame([], $evaluator->parsePublic(null));
+        $this->assertSame([null, 0, false], $evaluator->parsePublic('maybeNull, zero, disabled'));
+    }
+
     public function testToolInvocationAssignsVariable(): void
     {
         FunctionRegistry::register(new class implements IToolFunction {

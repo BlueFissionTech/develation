@@ -14,6 +14,7 @@ use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
 use BlueFission\Data\FileSystem;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\Obj;
 use BlueFission\Behavioral\IDispatcher;
@@ -469,8 +470,13 @@ class Evaluator implements IDispatcher
         return $additional;
     }
 
-    protected function parseParameters(string $params): array
+    protected function parseParameters(?string $params): array
     {
+        $params = $params ?? '';
+        if (Str::trim($params) === '') {
+            return [];
+        }
+
         // Parse loosely-typed arguments; resolved values can be vars, strings, or bracketed values.
         $pattern = '/(?:
             (?<param>
@@ -491,11 +497,17 @@ class Evaluator implements IDispatcher
             return [];
 
         foreach ($matches as $match) {
-            if (!isset($match['param']) || trim($match['param']) === '') {
+            $param = $match['param'] ?? null;
+            if (!is_string($param) || Str::trim($param) === '') {
                 continue;
             }
-            $arg = trim($this->element->resolveValue($match['param']));
-            $arg = (empty($arg)) ? null : $arg;
+
+            $arg = $this->element->resolveValue($param);
+
+            if (is_string($arg)) {
+                $arg = Str::trim($arg);
+                $arg = $arg === '' ? null : $arg;
+            }
 
             $args[] = $arg;
         }
