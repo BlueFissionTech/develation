@@ -74,29 +74,37 @@ class Block extends Obj {
         Dev::do('_before', [$this->content, $this]);
         $pattern = TagRegistry::unifiedPattern();
         $groupMap = TagRegistry::groupMap();
+        $offset = 0;
+        $length = Str::len($this->content);
 
-        if (preg_match_all($pattern, $this->content, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
-            foreach ($matches as $match) {
-                foreach ($groupMap as $group => $tag) {
-                    if (!isset($match[$group]) || empty($match[$group][0])) {
-                        continue;
-                    }
-
-                    $capture = $match[$group][0];
-                    $raw = end($match)[0];
-                    $attributes = TagRegistry::extractAttributes($tag, $capture);
-                    $attributes = Dev::apply('_attributes', $attributes);
-                    $elementClass = TagRegistry::get($tag)->class;
-                    $element = new $elementClass($tag, $capture, $raw, $attributes);
-                    $element = Dev::apply('_element', $element);
-                    $this->prepareElement($element);
-                    $this->elements[] = $element;
-                    $this->perform(Event::ITEM_ADDED, new Meta(
-                        src: $this,
-                        data: $element,
-                    ));
-                    break;
+        while ($offset < $length && preg_match($pattern, $this->content, $match, PREG_OFFSET_CAPTURE, $offset)) {
+            foreach ($groupMap as $group => $tag) {
+                if (!isset($match[$group]) || empty($match[$group][0])) {
+                    continue;
                 }
+
+                $capture = $match[$group][0];
+                $start = $match[$group][1];
+                $raw = end($match)[0];
+                $nextOffset = $start + Str::len($capture);
+
+                if ($tag === 'each') {
+                    [$capture, $raw, $nextOffset] = $this->extractBalancedLoop($tag, $start);
+                }
+
+                $attributes = TagRegistry::extractAttributes($tag, $capture);
+                $attributes = Dev::apply('_attributes', $attributes);
+                $elementClass = TagRegistry::get($tag)->class;
+                $element = new $elementClass($tag, $capture, $raw, $attributes);
+                $element = Dev::apply('_element', $element);
+                $this->prepareElement($element);
+                $this->elements[] = $element;
+                $this->perform(Event::ITEM_ADDED, new Meta(
+                    src: $this,
+                    data: $element,
+                ));
+                $offset = $nextOffset;
+                break;
             }
         }
         Dev::do('_after', [$this->elements, $this]);
@@ -214,5 +222,49 @@ class Block extends Obj {
                 $preparer->prepare($element);
             }
         }
+    }
+
+    protected function extractBalancedLoop(string $tag, int $start): array
+    {
+        $open = preg_quote($this->open, '/');
+        $close = preg_quote($this->close, '/');
+        $openPattern = '/'.$open.'\#'.$tag.'(?:.*?)?'.$close.'/s';
+        $closePattern = '/'.$open.'\/'.$tag.$close.'/s';
+
+        if (!preg_match($openPattern, $this->content, $opening, PREG_OFFSET_CAPTURE, $start) || $opening[0][1] !== $start) {
+            return ['', '', $start];
+        }
+
+        $openingTag = $opening[0][0];
+        $contentStart = $start + Str::len($openingTag);
+        $cursor = $contentStart;
+        $depth = 1;
+        $closeStart = $contentStart;
+        $closeEnd = $contentStart;
+
+        while ($depth > 0) {
+            $nextOpen = preg_match($openPattern, $this->content, $openMatch, PREG_OFFSET_CAPTURE, $cursor) ? $openMatch[0] : null;
+            $nextClose = preg_match($closePattern, $this->content, $closeMatch, PREG_OFFSET_CAPTURE, $cursor) ? $closeMatch[0] : null;
+
+            if (!$nextClose) {
+                break;
+            }
+
+            if ($nextOpen && $nextOpen[1] < $nextClose[1]) {
+                $depth++;
+                $cursor = $nextOpen[1] + Str::len($nextOpen[0]);
+                continue;
+            }
+
+            $depth--;
+            $closeStart = $nextClose[1];
+            $closeEnd = $nextClose[1] + Str::len($nextClose[0]);
+            $cursor = $closeEnd;
+        }
+
+        $inner = Str::sub($this->content, $contentStart, $closeStart - $contentStart);
+        $full = Str::sub($this->content, $start, $closeEnd - $start);
+
+        return [$full, $inner, $closeEnd];
     }
 }

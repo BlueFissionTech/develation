@@ -220,6 +220,63 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('Chapter 1:Section 1,Section 2|Chapter 2:Section 3', $output);
     }
 
+    public function testNestedEachRendersCorrectlyInSameFile()
+    {
+        $template = '{#each items=chapters glue="|"}{$current.title}:{#each items=current.sections glue=","}{.title}{/each}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'chapters' => [
+                [
+                    'title' => 'Chapter 1',
+                    'sections' => [
+                        ['title' => 'Section 1'],
+                        ['title' => 'Section 2'],
+                    ],
+                ],
+                [
+                    'title' => 'Chapter 2',
+                    'sections' => [
+                        ['title' => 'Section 3'],
+                    ],
+                ],
+            ],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('Chapter 1:Section 1,Section 2|Chapter 2:Section 3', $output);
+    }
+
+    public function testNestedEachWithIncludesRendersCorrectlyInSameFile()
+    {
+        $dir = $this->createTempDir('nested_same_file_include');
+        $partialPath = $dir . DIRECTORY_SEPARATOR . 'section_label.vibe';
+        file_put_contents($partialPath, '[{.title}]');
+
+        $template = '{#each items=chapters glue="|"}{$current.title}:{#each items=current.sections glue=","}@include(\'section_label.vibe\'){/each}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'chapters' => [
+                [
+                    'title' => 'Chapter 1',
+                    'sections' => [
+                        ['title' => 'Section 1'],
+                        ['title' => 'Section 2'],
+                    ],
+                ],
+                [
+                    'title' => 'Chapter 2',
+                    'sections' => [
+                        ['title' => 'Section 3'],
+                    ],
+                ],
+            ],
+        ]);
+        $parser->setIncludePaths(['modules' => $dir]);
+        $output = $parser->render();
+
+        $this->assertSame('Chapter 1:[Section 1],[Section 2]|Chapter 2:[Section 3]', $output);
+    }
+
     public function testEachSupportsCurrentAliasShorthand()
     {
         $template = '{#each items=items glue=","}{.title}{/each}';
