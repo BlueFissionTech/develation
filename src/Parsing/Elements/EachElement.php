@@ -15,7 +15,7 @@ class EachElement extends Element implements ILoopElement
     public function run(array $vars): string
     {
         Dev::do('_before', [$vars, $this]);
-        $glue = $this->getAttribute('glue') ?: '';
+        $glue = $this->decodeGlue($this->getAttribute('glue') ?: '');
         $results = [];
         $previousCurrent = $this->getScopeVariable('current');
         $previousCurrentPath = $this->getScopeVariable('current_path');
@@ -79,5 +79,15 @@ class EachElement extends Element implements ILoopElement
         $this->description = $descriptionString;
 
         return $this->description;
+    }
+
+    protected function decodeGlue(string $glue): string
+    {
+        $glue = Str::replace($glue, '\r\n', "\r\n");
+        $glue = Str::replace($glue, '\n', "\n");
+        $glue = Str::replace($glue, '\t', "\t");
+        $glue = Str::replace($glue, '\r', "\r");
+
+        return $glue;
     }
 }
