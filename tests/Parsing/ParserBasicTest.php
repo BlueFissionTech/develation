@@ -235,6 +235,36 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('Alpha,Beta', $output);
     }
 
+    public function testEachGlueDecodesEscapedNewlines()
+    {
+        $template = '{#each items=items glue="\\n"}- {@current}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables(['items' => ['A', 'B']]);
+        $output = $parser->render();
+
+        $this->assertSame("- A\n- B", $output);
+    }
+
+    public function testEachGlueDecodesEscapedDoubleNewlines()
+    {
+        $template = '{#each items=items glue="\\r\\n\\r\\n"}{@current}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables(['items' => ['A', 'B']]);
+        $output = $parser->render();
+
+        $this->assertSame("A\r\n\r\nB", $output);
+    }
+
+    public function testEachGlueDecodesEscapedTabs()
+    {
+        $template = '{#each items=items glue="\\t"}{@current}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables(['items' => ['A', 'B']]);
+        $output = $parser->render();
+
+        $this->assertSame("A\tB", $output);
+    }
+
     public function testEvalAssignsVariableForLaterUse()
     {
         $template = '{=foo}{$foo}';
@@ -242,6 +272,67 @@ class ParserBasicTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame('foogenerated', $output);
+        $this->assertSame('generated', $parser->root()->getScopeVariable('foo'));
+    }
+
+    public function testAssignedEvalDoesNotRenderRawExpressionText()
+    {
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'capturePair';
+            }
+
+            public function execute(array $args): mixed
+            {
+                return implode(':', $args);
+            }
+        });
+
+        $template = '{#let glossaryEntries=[]}{=capturePair(left, right) -> glossaryEntries[]}AFTER';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'left' => 'Alpha',
+            'right' => 'Beta',
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame(['Alpha:Beta'], $parser->root()->getScopeVariable('glossaryEntries'));
+    }
+
+    public function testAssignedEvalWithoutPushDoesNotRenderRawExpressionText()
+    {
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'capturePairSingle';
+            }
+
+            public function execute(array $args): mixed
+            {
+                return implode(':', $args);
+            }
+        });
+
+        $template = '{=capturePairSingle(left, right) -> glossaryEntry}AFTER';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'left' => 'Alpha',
+            'right' => 'Beta',
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame('Alpha:Beta', $parser->root()->getScopeVariable('glossaryEntry'));
+    }
+
+    public function testSilentEvalSuppressesOutput()
+    {
+        $parser = new Parser('{=foo silent=true}');
+        $output = $parser->render();
+
+        $this->assertSame('', $output);
         $this->assertSame('generated', $parser->root()->getScopeVariable('foo'));
     }
 
