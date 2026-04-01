@@ -149,8 +149,10 @@ class Evaluator implements IDispatcher
 
             if ($step === '') continue;
 
+            $matchSource = $first ? $expression : $step;
+
             // Handle function calls or method chains across the pipeline.
-            if ($this->match($step, $m)) {
+            if ($this->match($matchSource, $m)) {
                 $var = $m['var'] ?: ($m['assignment'] ?? $this->var);
                 $call = $m['call'] ?? '';
                 $args = $m['arguments'] ?? '';
@@ -339,7 +341,7 @@ class Evaluator implements IDispatcher
                 }
             } else {
                 // Treat as final assignment or terminal variable name.
-                $this->var = trim($step);
+                $this->var = Str::trim($step);
                 if ($append) {
                     if (!$this->element->hasScopeVariable($this->var)) {
                         $this->element->setScopeVariable($this->var, '');
