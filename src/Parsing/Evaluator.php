@@ -66,7 +66,7 @@ class Evaluator implements IDispatcher
         $push = false;
 
         if ($this->match($this->expression, $m)) {
-            $this->var = $m['var'] ?? $m['assignment'];
+            $this->var = $m['var'] ?: ($m['assignment'] ?? '');
             $this->type = $m['castv'] ?? $m['casta'] ?? $this->type;
             $append = (isset($m['appendv']) && $m['appendv'] == '&') || (isset($m['appenda']) && $m['appenda'] == '&');
             $push = (isset($m['pushv']) && $m['pushv'] == '[]') || (isset($m['pusha']) && $m['pusha'] == '[]');
@@ -119,12 +119,21 @@ class Evaluator implements IDispatcher
 
     public function process(): mixed
     {
-        $expression = trim($this->expression);
+        $expression = Str::trim($this->expression);
 
         // Strip surrounding ={} if present
         $expression = ltrim($expression, '= ');
         $expression = Dev::apply('_in', $expression);
-        $steps = preg_split('/->/', $expression);
+        $pipelineExpression = preg_replace(
+            '/\s*->\s*(?!\$\.)' .
+            '(?<assignment>\$?[a-zA-Z_][a-zA-Z0-9_-]*)' .
+            '(?:(?<push>\[\]))?' .
+            '(?:(?<append>\&))?' .
+            '(?::(?<cast>[a-zA-Z_][a-zA-Z0-9_-]*))?\s*$/',
+            '',
+            $expression
+        );
+        $steps = preg_split('/->(?=\s*\$\.)/', $pipelineExpression);
 
         // Merge element attributes with inline call options so extensions can override behavior.
         $additional = $this->parseAdditional();
@@ -136,13 +145,13 @@ class Evaluator implements IDispatcher
         $first = true;
 
         foreach ($steps as $step) {
-            $step = trim($step);
+            $step = Str::trim($step);
 
             if ($step === '') continue;
 
             // Handle function calls or method chains across the pipeline.
-            if ($this->match($this->expression, $m)) {
-                $var = $m['var'] ?: $m['assignment'] ?? '';
+            if ($this->match($step, $m)) {
+                $var = $m['var'] ?: ($m['assignment'] ?? $this->var);
                 $call = $m['call'] ?? '';
                 $args = $m['arguments'] ?? '';
                 $append = (isset($m['appendv']) && $m['appendv'] == '&') || (isset($m['appenda']) && $m['appenda'] == '&');
@@ -163,17 +172,30 @@ class Evaluator implements IDispatcher
                         }
                     }
 
-                    $this->var = $var;
+                    if ($var !== '') {
+                        $this->var = $var;
+                    }
 
                     if (isset($options['src']) && !empty($options['src'])) {
                         $value = $this->loadSourceValue((string)$options['src']);
                     } elseif (isset($call) && !empty($call) && $call != "") {
                         
-                        // Split chained calls while keeping argument groups.
-                        preg_match_all('/((?<call>[a-zA-Z_][a-zA-Z0-9_-]*(\((?<arguments>[^)]*)\))?))/', $call, $callMatch);
+                        $callChain = [];
+                        $argChain = [];
 
-                        $callChain = $callMatch['call'] ?? [];
-                        $argChain = $callMatch['arguments'] ?? [];
+                        if (Str::has($call, '.')) {
+                            preg_match_all(
+                                '/(?:^|\.)' .
+                                '(?<call>[a-zA-Z_][a-zA-Z0-9_-]*(?:\((?<arguments>[^)]*)\))?)/',
+                                $call,
+                                $callMatch
+                            );
+
+                            $callChain = $callMatch['call'] ?? [];
+                            $argChain = $callMatch['arguments'] ?? [];
+                        } elseif (preg_match('/^[a-zA-Z_][a-zA-Z0-9_-]*\((?<arguments>[^)]*)\)$/', $call, $callMatch)) {
+                            $argChain = [$callMatch['arguments'] ?? ''];
+                        }
 
                         $result = null;
                         if (count($callChain) > 1) {
@@ -439,7 +461,7 @@ class Evaluator implements IDispatcher
                 )
             )?
             \s*(?<attributes>(([a-zA-Z_][a-zA-Z0-9_-]*)\s?=\s?(.*?)))?    # Attributes or assignment (e.g., key=value)
-            $/xsm', $this->expression, $matches)) {
+            $/xsm', $expression, $matches)) {
             return true;
         }
 

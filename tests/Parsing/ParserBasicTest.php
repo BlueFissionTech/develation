@@ -1,7 +1,9 @@
 <?php
 namespace BlueFission\Tests\Parsing;
 
+use BlueFission\Parsing\Contracts\IToolFunction;
 use BlueFission\Parsing\Parser;
+use BlueFission\Parsing\Registry\FunctionRegistry;
 
 class ParserBasicTest extends ParsingTestCase
 {
@@ -268,6 +270,58 @@ class ParserBasicTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame('bar', $output);
+    }
+
+    public function testImportMakesAssignedValuesVisibleToLaterSiblingEvalInSamePass()
+    {
+        $dir = $this->createTempDir('import_same_pass');
+        $importPath = $dir . DIRECTORY_SEPARATOR . 'vars.vibe';
+        file_put_contents($importPath, '{#let bookBlueprint=\'{"title":"Guide"}\'}');
+
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'captureValue';
+            }
+
+            public function execute(array $args): mixed
+            {
+                return $args[0] ?? null;
+            }
+        });
+
+        $parser = new Parser("@import('vars.vibe'){=captureValue(bookBlueprint) -> decodedBlueprint}");
+        $parser->setIncludePaths(['includes' => $dir]);
+        $parser->render();
+
+        $this->assertSame('{"title":"Guide"}', $parser->root()->getScopeVariable('bookBlueprint'));
+        $this->assertSame('{"title":"Guide"}', $parser->root()->getScopeVariable('decodedBlueprint'));
+    }
+
+    public function testImportMakesEvalAssignedValuesVisibleToLaterSiblingEvalInSamePass()
+    {
+        $dir = $this->createTempDir('import_eval_same_pass');
+        $importPath = $dir . DIRECTORY_SEPARATOR . 'vars.vibe';
+        file_put_contents($importPath, '{=bookBlueprint}');
+
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'captureGenerated';
+            }
+
+            public function execute(array $args): mixed
+            {
+                return $args[0] ?? null;
+            }
+        });
+
+        $parser = new Parser("@import('vars.vibe'){=captureGenerated(bookBlueprint) -> copiedBlueprint}");
+        $parser->setIncludePaths(['includes' => $dir]);
+        $parser->render();
+
+        $this->assertSame('generated', $parser->root()->getScopeVariable('bookBlueprint'));
+        $this->assertSame('generated', $parser->root()->getScopeVariable('copiedBlueprint'));
     }
 
     public function testEvalCanLoadSourceFromIncludePaths()
