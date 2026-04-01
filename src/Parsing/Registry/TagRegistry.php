@@ -5,6 +5,7 @@ namespace BlueFission\Parsing\Registry;
 use BlueFission\Parsing\TagDefinition;
 use BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Contracts;
+use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
 class TagRegistry {
@@ -133,7 +134,18 @@ class TagRegistry {
         $raw = $match ?? '';
 
         // Remove outer delimiters if they exist (e.g., {#if ...}, @template(...))
-        $raw = trim($raw);
+        $raw = Str::trim($raw);
+        $isBlockTag = match ($tag) {
+            'if', 'each', 'while', 'until', 'await' => true,
+            default => false,
+        };
+
+        if ($isBlockTag && Str::sub($raw, 0, 1) === '{') {
+            $openingEnd = Str::pos($raw, '}');
+            if ($openingEnd !== false) {
+                $raw = Str::sub($raw, 0, $openingEnd + 1);
+            }
+        }
 
         // Extract inner expression — e.g. from {#if var="x"} or @template("main")
         if (preg_match('/^[{@]?\#?[a-z]+\s*(?:\((.*?)\))?/i', $raw, $inner)) {
