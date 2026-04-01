@@ -136,4 +136,42 @@ class StrTest extends ValTest {
 		$this->assertTrue(Str::contains('orchestrate', 'strate'));
 		$this->assertFalse(Str::contains('orchestrate', 'matrix'));
 	}
+
+	public function testAppendPrependAndConcatMutateString()
+	{
+		$object = new Str('john');
+
+		$object->prepend('mr. ')->append(' doe')->concat(' ', new Str('jr.'));
+
+		$this->assertSame('mr. john doe jr.', $object->val());
+		$this->assertSame('foobar', Str::concat('foo', 'bar'));
+	}
+
+	public function testMatchesAndMatchPatternSupportRegexChecks()
+	{
+		$this->assertTrue($this->object->matches('/^My Name/'));
+		$this->assertFalse($this->object->matches('/^Your Name/'));
+
+		$matches = $this->object->matchPattern('/Name Is (\w+)/');
+
+		$this->assertSame(['Name Is John', 'John'], $matches);
+	}
+
+	public function testReplacePatternSupportsRegexReplacement()
+	{
+		$object = new Str('My   Name   Is   John');
+
+		$object->replacePattern('/\s+/', '-');
+
+		$this->assertSame('My-Name-Is-John', $object->val());
+		$this->assertSame('prefix-suffix', Str::replacePattern('prefix suffix', '/\s+/', '-'));
+	}
+
+	public function testSplitByUsesRegexDelimiter()
+	{
+		$object = new Str('My   Name	Is John');
+		$parts = $object->splitBy('/\s+/');
+
+		$this->assertSame(['My', 'Name', 'Is', 'John'], $parts->val());
+	}
 }
