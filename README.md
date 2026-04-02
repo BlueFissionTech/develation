@@ -200,7 +200,7 @@ $parser->setIncludePaths(['modules' => __DIR__ . '/templates']);
 echo $parser->render();
 ```
 
-Inside `#each`, the current item is available as a scoped `current` value, so `{$current.title}`, `items=current.sections`, `{@current}`, and the shorthand `{.title}` all resolve against the active loop item. For deeper compositions, prefer nested iteration through partials and includes instead of depending on same-block recursive `#each` parsing.
+Inside `#each`, the current item is available as a scoped `current` value, so `{$current.title}`, `items=current.sections`, `{@current}`, and the shorthand `{.title}` all resolve against the active loop item. Nested `#each` blocks in the same file are supported, and partial/include-based nesting remains the cleaner path when you want reusable template boundaries. Quoted attribute strings can also interpolate scoped values with `[[...]]`, for example `thread="book:[[book.slug|slug]]:chapter:[[chapter|pad:2]]"`.
 
 ## Usage
 

@@ -27,6 +27,20 @@ class ParserBasicTest extends ParsingTestCase
         return $dir;
     }
 
+    private function registerExtendedEvalTag(array $attributes = []): void
+    {
+        TagRegistry::register(new TagDefinition(
+            name: 'eval',
+            pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
+            attributes: array_merge(
+                ['expression', 'params', 'assign', 'silent', 'default', 'src', 'ref', 'profile', 'phase', 'label'],
+                $attributes
+            ),
+            interface: \BlueFission\Parsing\Contracts\IRenderableElement::class,
+            class: Elements\EvalElement::class
+        ));
+    }
+
     public function testLetAndVarOutput()
     {
         $template = '{#let foo="bar"}{$foo}';
@@ -441,13 +455,7 @@ class ParserBasicTest extends ParsingTestCase
 
     public function testGeneratorEvalWithExtendedAttributesStillAssignsTarget()
     {
-        TagRegistry::register(new TagDefinition(
-            name: 'eval',
-            pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
-            attributes: ['expression', 'params', 'assign', 'silent', 'default', 'src', 'ref', 'profile', 'phase', 'label'],
-            interface: \BlueFission\Parsing\Contracts\IRenderableElement::class,
-            class: Elements\EvalElement::class
-        ));
+        $this->registerExtendedEvalTag();
 
         $template = '{=bookBlueprint -> generatedBook ref="example.ref" profile="editorial" phase="draft" label="Book"}AFTER';
         $parser = new Parser($template);
@@ -459,13 +467,7 @@ class ParserBasicTest extends ParsingTestCase
 
     public function testGeneratorEvalWithAttributesBeforeAssignmentStillAssignsTarget()
     {
-        TagRegistry::register(new TagDefinition(
-            name: 'eval',
-            pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
-            attributes: ['expression', 'params', 'assign', 'silent', 'default', 'src', 'ref', 'profile', 'phase', 'label'],
-            interface: \BlueFission\Parsing\Contracts\IRenderableElement::class,
-            class: Elements\EvalElement::class
-        ));
+        $this->registerExtendedEvalTag();
 
         $template = '{=bookBlueprint ref="example.ref" profile="editorial" phase="draft" label="Book" -> generatedBook}AFTER';
         $parser = new Parser($template);
@@ -473,6 +475,59 @@ class ParserBasicTest extends ParsingTestCase
 
         $this->assertSame('AFTER', $output);
         $this->assertSame('generated', $parser->root()->getScopeVariable('generatedBook'));
+    }
+
+    public function testQuotedEvalAttributesSupportScopedInterpolationFilters()
+    {
+        $this->registerExtendedEvalTag(['thread', 'session']);
+
+        $template = '{=bookBlueprint -> generatedBook thread="book:[[book.slug|slug]]:chapter:[[chapter|pad:2]]:section:[[section.slug|slug]]" session="draft:[[section.title|trim|lower]]" label="Chapter [[chapter|pad:2]] / [[section.title|default:Untitled]]"}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'book' => ['slug' => 'My Great Book'],
+            'chapter' => 3,
+            'section' => [
+                'slug' => 'Intro Section',
+                'title' => '  Opening  ',
+            ],
+        ]);
+        $parser->render();
+
+        $element = $parser->root()->children()[0];
+
+        $this->assertSame('book:my-great-book:chapter:03:section:intro-section', $element->getAttribute('thread'));
+        $this->assertSame('draft:opening', $element->getAttribute('session'));
+        $this->assertSame('Chapter 03 /   Opening  ', $element->getAttribute('label'));
+    }
+
+    public function testQuotedEvalAttributesUseDefaultsAndIgnoreUnknownFilters()
+    {
+        $this->registerExtendedEvalTag(['thread', 'session']);
+
+        $template = '{=bookBlueprint -> generatedBook thread="book:[[book.title|unknown]]" session="section:[[section.title|default:Untitled]]"}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'book' => ['title' => 'My Book'],
+        ]);
+        $parser->render();
+
+        $element = $parser->root()->children()[0];
+
+        $this->assertSame('book:My Book', $element->getAttribute('thread'));
+        $this->assertSame('section:Untitled', $element->getAttribute('session'));
+    }
+
+    public function testQuotedEachGlueAttributesSupportInterpolation()
+    {
+        $template = '{#each items=items glue="[[separator|default:,]]"}{@current}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => ['A', 'B'],
+            'separator' => '|',
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('A|B', $output);
     }
 
     public function testSilentEvalSuppressesOutput()

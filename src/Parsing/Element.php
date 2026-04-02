@@ -25,6 +25,8 @@ class Element extends Obj {
         Dispatches::__construct as private __dispatchConstruct;
     }
 
+    protected const ATTRIBUTE_INTERPOLATION_PATTERN = '/\[\[\s*(.*?)\s*\]\]/';
+
     protected string $tag;
     protected string $raw;
     protected string $match;
@@ -213,9 +215,13 @@ class Element extends Obj {
             return null;
         }
 
-        $value = $this->attributes[$name];
+        $raw = $this->attributes[$name];
+        $value = $this->resolveValue($raw);
 
-        $value = $this->resolveValue($value);
+        if ($this->shouldInterpolateAttribute($raw, $value)) {
+            $value = $this->interpolateAttributeString((string)$value);
+        }
+
         return Dev::apply('_attribute', $value);
     }
 
@@ -223,7 +229,13 @@ class Element extends Obj {
     {
         $attributes = [];
         foreach ($this->attributes as $key => $value) {
-            $attributes[$key] = $this->resolveValue($value);
+            $resolved = $this->resolveValue($value);
+
+            if ($this->shouldInterpolateAttribute($value, $resolved)) {
+                $resolved = $this->interpolateAttributeString((string)$resolved);
+            }
+
+            $attributes[$key] = $resolved;
         }
 
         return Dev::apply('_attributes', $attributes);
@@ -429,6 +441,192 @@ class Element extends Obj {
         }
 
         return $this->getPathValue($dotNotationString);
+    }
+
+    protected function shouldInterpolateAttribute(mixed $raw, mixed $value): bool
+    {
+        if (!Str::is($raw) || !Str::is($value)) {
+            return false;
+        }
+
+        $raw = Str::trim((string)$raw);
+        $firstChar = Str::sub($raw, 0, 1);
+        $lastChar = Str::sub($raw, -1);
+
+        if (!(($firstChar === '"' && $lastChar === '"') || ($firstChar === "'" && $lastChar === "'"))) {
+            return false;
+        }
+
+        return Str::has((string)$value, '[[');
+    }
+
+    protected function interpolateAttributeString(string $value): string
+    {
+        if (!Str::has($value, '[[')) {
+            return $value;
+        }
+
+        $interpolated = preg_replace_callback(
+            self::ATTRIBUTE_INTERPOLATION_PATTERN,
+            function (array $matches): string {
+                $expression = Str::trim((string)($matches[1] ?? ''));
+
+                if ($expression === '') {
+                    return '';
+                }
+
+                return $this->resolveInterpolationExpression($expression);
+            },
+            $value
+        );
+
+        $interpolated = Dev::apply('parsing.element.interpolate_attribute', $interpolated);
+
+        Dev::do('parsing.element.interpolate_attribute.action1', [
+            'element' => $this,
+            'value' => $value,
+            'interpolated' => $interpolated,
+        ]);
+
+        return (string)$interpolated;
+    }
+
+    protected function resolveInterpolationExpression(string $expression): string
+    {
+        $segments = Str::make($expression)->split('|')->val();
+        $base = Str::trim((string)array_shift($segments));
+        $value = $this->resolveInterpolationValue($base);
+
+        foreach ($segments as $segment) {
+            $segment = Str::trim((string)$segment);
+
+            if ($segment === '') {
+                continue;
+            }
+
+            [$filter, $arguments] = $this->parseInterpolationFilter($segment);
+            $value = $this->applyInterpolationFilter($value, $filter, $arguments);
+        }
+
+        return $this->stringifyInterpolatedValue($value);
+    }
+
+    protected function resolveInterpolationValue(string $expression): mixed
+    {
+        if ($expression === '') {
+            return '';
+        }
+
+        if ((bool)preg_match('/^(["\']).*\\1$/', $expression)) {
+            return Str::trim($expression, '\'"');
+        }
+
+        return $this->resolveValue($expression);
+    }
+
+    protected function parseInterpolationFilter(string $segment): array
+    {
+        $parts = Str::make($segment)->split(':')->val();
+        $filter = Str::lower(Str::trim((string)array_shift($parts)));
+
+        if ($filter === 'default' && count($parts) > 1) {
+            $parts = [implode(':', $parts)];
+        }
+
+        $arguments = [];
+        foreach ($parts as $argument) {
+            $argument = Str::trim((string)$argument);
+            $arguments[] = $this->normalizeInterpolationArgument($argument);
+        }
+
+        return [$filter, $arguments];
+    }
+
+    protected function applyInterpolationFilter(mixed $value, string $filter, array $arguments = []): mixed
+    {
+        return match ($filter) {
+            'slug', 'slugify' => Str::slugify($this->stringifyInterpolatedValue($value)),
+            'lower' => Str::lower($this->stringifyInterpolatedValue($value)),
+            'upper' => Str::upper($this->stringifyInterpolatedValue($value)),
+            'trim' => Str::trim($this->stringifyInterpolatedValue($value)),
+            'pad' => $this->applyPadInterpolationFilter($value, $arguments),
+            'default' => $this->applyDefaultInterpolationFilter($value, $arguments),
+            default => $value,
+        };
+    }
+
+    protected function applyPadInterpolationFilter(mixed $value, array $arguments = []): string
+    {
+        $string = $this->stringifyInterpolatedValue($value);
+        $length = isset($arguments[0]) && is_numeric($arguments[0]) ? (int)$arguments[0] : 2;
+        $pad = isset($arguments[1]) && $arguments[1] !== '' ? (string)$arguments[1] : '0';
+        $direction = isset($arguments[2]) && Str::lower((string)$arguments[2]) === 'right'
+            ? STR_PAD_RIGHT
+            : STR_PAD_LEFT;
+
+        return str_pad($string, $length, $pad, $direction);
+    }
+
+    protected function applyDefaultInterpolationFilter(mixed $value, array $arguments = []): mixed
+    {
+        $default = $arguments[0] ?? '';
+
+        if ($value === null) {
+            return $default;
+        }
+
+        if (Str::is($value) && Str::trim((string)$value) === '') {
+            return $default;
+        }
+
+        return $value;
+    }
+
+    protected function normalizeInterpolationArgument(string $argument): mixed
+    {
+        if ($argument === '') {
+            return '';
+        }
+
+        if ((bool)preg_match('/^(["\']).*\\1$/', $argument)) {
+            return Str::trim($argument, '\'"');
+        }
+
+        return $argument;
+    }
+
+    protected function stringifyInterpolatedValue(mixed $value): string
+    {
+        if ($value instanceof IVal) {
+            $value = $value->val();
+        }
+
+        if ($value instanceof Obj) {
+            $value = $value->toArray();
+        }
+
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_scalar($value)) {
+            return (string)$value;
+        }
+
+        if (is_array($value)) {
+            $stringified = [];
+            foreach ($value as $item) {
+                $stringified[] = $this->stringifyInterpolatedValue($item);
+            }
+
+            return implode(',', $stringified);
+        }
+
+        if (is_object($value) && method_exists($value, '__toString')) {
+            return (string)$value;
+        }
+
+        return '';
     }
 
     public function resolveValue(string $value, ?string $type = null): mixed
