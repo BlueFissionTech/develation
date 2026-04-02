@@ -88,6 +88,49 @@ class TagRegistry {
         return $group;
     }
 
+    public static function isBalancedBlockTag(string $tag): bool
+    {
+        return in_array($tag, ['if', 'each', 'while', 'until', 'await', 'format'], true);
+    }
+
+    public static function findOpeningTagEnd(string $content, string $open = '{', string $close = '}'): int|bool
+    {
+        $length = Str::len($content);
+        $inSingleQuote = false;
+        $inDoubleQuote = false;
+        $isEscaped = false;
+
+        for ($index = 0; $index < $length; $index++) {
+            $character = Str::sub($content, $index, 1);
+
+            if ($isEscaped) {
+                $isEscaped = false;
+                continue;
+            }
+
+            if (($inSingleQuote || $inDoubleQuote) && $character === '\\') {
+                $isEscaped = true;
+                continue;
+            }
+
+            if (!$inDoubleQuote && $character === "'") {
+                $inSingleQuote = !$inSingleQuote;
+                continue;
+            }
+
+            if (!$inSingleQuote && $character === '"') {
+                $inDoubleQuote = !$inDoubleQuote;
+                continue;
+            }
+
+            if (!$inSingleQuote && !$inDoubleQuote && $character === $close) {
+                return $index;
+            }
+        }
+
+        return false;
+    }
+
     public static function tagPattern(): string {
         return '/
             (?<full_tag>                                        # entire tag block
@@ -135,13 +178,10 @@ class TagRegistry {
 
         // Remove outer delimiters if they exist (e.g., {#if ...}, @template(...))
         $raw = Str::trim($raw);
-        $isBlockTag = match ($tag) {
-            'if', 'each', 'while', 'until', 'await' => true,
-            default => false,
-        };
+        $isBlockTag = self::isBalancedBlockTag($tag);
 
         if ($isBlockTag && Str::sub($raw, 0, 1) === '{') {
-            $openingEnd = Str::pos($raw, '}');
+            $openingEnd = self::findOpeningTagEnd($raw);
             if ($openingEnd !== false) {
                 $raw = Str::sub($raw, 0, $openingEnd + 1);
             }
@@ -304,6 +344,14 @@ class TagRegistry {
             attributes: ['event'],
             interface: Contracts\IExecutableElement::class,
             class: Elements\AwaitElement::class
+        ));
+
+        self::register(new TagDefinition(
+            name: 'format',
+            pattern: '{open}\#format(.*?)?{close}(.*?){open}\/format{close}',
+            attributes: ['type', 'validator', 'retries', 'schema', 'tool', 'pattern'],
+            interface: Contracts\IRenderableElement::class,
+            class: Elements\FormatElement::class
         ));
 
         self::register(new TagDefinition(

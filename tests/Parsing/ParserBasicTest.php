@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Tests\Parsing;
 
+use BlueFission\Str;
 use BlueFission\Parsing\Contracts\IToolFunction;
 use BlueFission\Parsing\Parser;
 use BlueFission\Parsing\Registry\TagRegistry;
@@ -394,6 +395,31 @@ class ParserBasicTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame("A\tB", $output);
+    }
+
+    public function testFormatBlockDoesNotLeakInlineSchemaAttributesIntoOutput()
+    {
+        $template = '{#format type="json" validator="notEmpty" retries=1 schema=\'{"type":"object","required":["title"]}\'}
+OK
+{/format}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('OK', Str::trim($output));
+        $this->assertStringNotContainsString('required', $output);
+        $this->assertStringNotContainsString('schema=', $output);
+    }
+
+    public function testFormatBlockExecutesNestedAssignmentWithoutLeakingAttributes()
+    {
+        $template = '{#format type="json" validator="notEmpty" retries=1 schema=\'{"type":"object","required":["title"]}\'}
+{=bookBlueprint -> blueprint silent=true}{/format}{$blueprint}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('generated', Str::trim($output));
+        $this->assertSame('generated', $parser->root()->getScopeVariable('blueprint'));
+        $this->assertStringNotContainsString('schema=', $output);
     }
 
     public function testEvalAssignsVariableForLaterUse()
