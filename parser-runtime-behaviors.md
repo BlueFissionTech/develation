@@ -423,6 +423,341 @@ Examples:
 
 This phase should remain additive and optional.
 
+## Advanced Use Cases
+
+The following use cases show how a formal parser/runtime lifecycle can support real applications without changing Vibe syntax or breaking current parser consumers.
+
+Each use case includes:
+
+- the application or runtime type
+- the behaviors/events that matter most
+- an acceptance story
+- a concrete Vibe or runtime example
+
+### 1. Editorial Publishing Pipeline
+
+Application:
+
+- long-form article, chapter, glossary, or book assembly
+
+Why the runtime lifecycle matters:
+
+- publishers need provenance
+- editors need section-level traceability
+- generation and authored content must be distinguishable
+
+Key runtime behaviors:
+
+- `OnParseStarted`
+- `OnElementDiscovered`
+- `OnEvaluationCompleted`
+- `OnGeneratorInvoked`
+- `OnRenderCompleted`
+- `OnTraceRecorded`
+
+Acceptance story:
+
+- As an editorial runtime, I want every generated chapter block and imported glossary section to emit lifecycle metadata, so that I can audit what was authored, imported, and generated in a single render pass.
+
+Example Vibe template:
+
+```vibe
+{#let book='{"slug":"resilient-systems"}'}
+{#let chapter=3}
+{#let glossaryEntries=[]}
+
+{=chapterBlueprint
+    -> generatedChapter
+    thread="book:[[book.slug|slug]]:chapter:[[chapter|pad:2]]"
+    label="Chapter [[chapter|pad:2]]"
+}
+
+{=captureGlossary(generatedChapter) -> glossaryEntries[] silent=true}
+
+@include('chapter-layout.vibe')
+```
+
+Example runtime observer intent:
+
+```php
+$runtime->when('OnGeneratorInvoked', function ($meta) use ($auditLog) {
+    $auditLog[] = [
+        'phase' => $meta->phase,
+        'tag' => $meta->tag,
+        'thread' => $meta->data['thread'] ?? null,
+        'assignmentTarget' => $meta->assignmentTarget,
+    ];
+});
+```
+
+### 2. CLI Runbook / Agent Orchestration
+
+Application:
+
+- CLI task manifests
+- command runbooks
+- agent workflow shells
+
+Why the runtime lifecycle matters:
+
+- a CLI runtime needs deterministic tracing
+- tool calls must be observable
+- replay is more important than rich rendering
+
+Key runtime behaviors:
+
+- `OnRuntimeBooted`
+- `OnValidationStarted`
+- `OnToolInvoked`
+- `OnEvaluationCompleted`
+- `OnReplayStarted`
+- `IsExecuting`
+
+Acceptance story:
+
+- As a CLI runtime, I want tool invocations and assignment writes to be traced in a stable order, so that I can replay a failed runbook with the same inputs and inspect the exact step that failed.
+
+Example Vibe template:
+
+```vibe
+{#let branch="issue/75-assess-behavior-native-runtime"}
+{#let report=[]}
+
+{=checkBranch(branch) -> branchState silent=true}
+{=collectChecks(branchState) -> report[] silent=true}
+{=renderSummary(report) -> output}
+
+{$output}
+```
+
+Example runtime observer intent:
+
+```php
+$runtime->when('OnToolInvoked', function ($meta) use ($trace) {
+    $trace->record([
+        'phase' => $meta->phase,
+        'expression' => $meta->expression,
+        'assignmentTarget' => $meta->assignmentTarget,
+        'timestamp' => $meta->timestamp,
+    ]);
+});
+```
+
+### 3. Multi-tenant Prompt / Chat Session Assembly
+
+Application:
+
+- chatbot prompt composition
+- tenant-specific support policies
+- conversation-state rendering
+
+Why the runtime lifecycle matters:
+
+- prompt fragments come from multiple modules
+- tenant overrides must be visible
+- runtime validation should block missing session context
+
+Key runtime behaviors:
+
+- `OnIncludeResolved`
+- `OnImportResolved`
+- `OnValidationFailed`
+- `OnEvaluationStarted`
+- `OnRenderCompleted`
+
+Acceptance story:
+
+- As a prompt runtime, I want included policy fragments, imported memory blocks, and final prompt renders to emit structured lifecycle metadata, so that I can debug tenant overrides without patching prompt tags downstream.
+
+Example Vibe template:
+
+```vibe
+{#let tenant='{"slug":"acme-support"}'}
+{#let session='{"id":"sess_42","tier":"gold"}'}
+
+@import('memory.vibe')
+@include('base-policy.vibe')
+@include('tenant-policy.vibe')
+
+{=supportPrompt
+    -> finalPrompt
+    thread="tenant:[[tenant.slug|slug]]:session:[[session.id]]"
+    label="Support session [[session.id]]"
+}
+
+{$finalPrompt}
+```
+
+Example runtime observer intent:
+
+```php
+$runtime->when('OnIncludeResolved', function ($meta) use ($resolverLog) {
+    $resolverLog[] = [
+        'includePath' => $meta->includePath,
+        'parentUuid' => $meta->parentUuid,
+        'tag' => $meta->tag,
+    ];
+});
+```
+
+### 4. Adaptive Learning / Curriculum Rendering
+
+Application:
+
+- lesson plans
+- quizzes
+- adaptive curriculum modules
+
+Why the runtime lifecycle matters:
+
+- selected content needs to remain explainable
+- generated hints must be traceable
+- different learner states should be replayable
+
+Key runtime behaviors:
+
+- `OnParseCompleted`
+- `OnElementPrepared`
+- `OnGeneratorInvoked`
+- `OnValidationCompleted`
+- `OnTraceRecorded`
+
+Acceptance story:
+
+- As a learning runtime, I want selected lesson branches, generated hints, and validation checkpoints to be traceable, so that an instructor can review how a learner-specific lesson was assembled.
+
+Example Vibe template:
+
+```vibe
+{#let learner='{"name":"Sam","level":"intermediate"}'}
+{#let module='{"slug":"fractions"}'}
+
+@include('lesson-header.vibe')
+{=lessonBody -> body label="[[learner.name]]:[[module.slug]]"}
+{=generateHints(body, learner.level) -> hints}
+
+{$body}
+{$hints}
+```
+
+Example runtime observer intent:
+
+```php
+$runtime->when('OnTraceRecorded', function ($meta) use ($timeline) {
+    $timeline[] = [
+        'phase' => $meta->phase,
+        'tag' => $meta->tag,
+        'message' => $meta->message,
+        'durationMs' => $meta->durationMs,
+    ];
+});
+```
+
+### 5. Compliance-safe Document and Disclosure Rendering
+
+Application:
+
+- contracts
+- disclosures
+- regulated reports
+
+Why the runtime lifecycle matters:
+
+- missing clauses must block output
+- imports and section output need audit trails
+- final renders should carry structured validation evidence
+
+Key runtime behaviors:
+
+- `OnValidationStarted`
+- `OnValidationFailed`
+- `OnValidationCompleted`
+- `OnRenderStarted`
+- `OnRenderCompleted`
+
+Acceptance story:
+
+- As a compliance runtime, I want required disclosures and imported jurisdiction clauses to be validated before final render, so that missing sections stop the document rather than silently producing invalid output.
+
+Example Vibe template:
+
+```vibe
+{#let jurisdiction="ny"}
+@include('agreement-core.vibe')
+@include('disclosures/[[jurisdiction|lower]].vibe')
+
+{=validateAgreement(jurisdiction) -> validation silent=true}
+{#if var=validation equals="ok"}
+@include('signature-block.vibe')
+{/if}
+```
+
+Example runtime observer intent:
+
+```php
+$runtime->when('OnValidationFailed', function ($meta) use ($errors) {
+    $errors[] = [
+        'tag' => $meta->tag,
+        'message' => $meta->message,
+        'scopeKeys' => $meta->scopeKeys,
+    ];
+});
+```
+
+## Phase 1 Acceptance Stories
+
+If Phase 1 is implemented correctly, the following should be true.
+
+### Story 1: Stable Runtime Vocabulary
+
+- As a downstream runtime maintainer, I can subscribe to parser-specific event/state names without relying on generic `_before` and `_after` hooks alone.
+
+Acceptance criteria:
+
+- parser runtime event constants exist
+- parser runtime state constants exist
+- names are scoped to parsing/runtime concerns rather than generic application concerns
+
+### Story 2: Structured Runtime Metadata
+
+- As a downstream runtime maintainer, I receive structured runtime metadata for major lifecycle events, so I can inspect expression, assignment, element identity, and timing without parsing log strings.
+
+Acceptance criteria:
+
+- runtime metadata exposes run id, phase, tag, element identity, and timing
+- runtime metadata can optionally carry assignment and include/import details
+- metadata shape is additive and does not break current listeners
+
+### Story 3: Non-breaking Observer Layer
+
+- As an existing parser consumer, I can ignore the new runtime behavior layer and keep using current parser hooks without changing my templates or parser setup.
+
+Acceptance criteria:
+
+- current parser APIs continue to work unchanged
+- `Dev::do` and `Dev::apply` remain available
+- runtime behavior support is opt-in
+
+### Story 4: Trace-ready Execution Surface
+
+- As a runtime integrator, I can record ordered lifecycle entries for parse, execute, and render phases without modifying core parser logic.
+
+Acceptance criteria:
+
+- an observer or bridge can subscribe to lifecycle phases
+- trace entries preserve ordering
+- tracing can be disabled with negligible cost
+
+### Story 5: Downstream-friendly Extension Point
+
+- As a downstream library maintainer, I can build policy, auditing, and replay tooling on top of the parser runtime without carrying a private parser fork.
+
+Acceptance criteria:
+
+- runtime vocabulary is documented
+- lifecycle phases map cleanly to current parser classes
+- the phased rollout leaves room for direct emissions later without forcing them immediately
+
 ## Immediate Follow-Up Tasks
 
 The next implementation work should be split into smaller issues:
