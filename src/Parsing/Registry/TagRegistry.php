@@ -5,6 +5,7 @@ namespace BlueFission\Parsing\Registry;
 use BlueFission\Parsing\TagDefinition;
 use BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Contracts;
+use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
@@ -69,7 +70,7 @@ class TagRegistry {
         }
 
         $normalized = preg_replace('/[^A-Za-z0-9_]/', '_', $tag);
-        $normalized = trim($normalized, '_');
+        $normalized = Str::trim($normalized, '_');
         if ($normalized === '') {
             $normalized = 'tag';
         }
@@ -79,7 +80,7 @@ class TagRegistry {
 
         $group = $normalized;
         if (isset(self::$reverseGroupMap[$group]) && self::$reverseGroupMap[$group] !== $tag) {
-            $group = $normalized . '_' . substr(md5($tag), 0, 8);
+            $group = $normalized . '_' . Str::sub(md5($tag), 0, 8);
         }
 
         self::$groupMap[$tag] = $group;
@@ -90,7 +91,7 @@ class TagRegistry {
 
     public static function isBalancedBlockTag(string $tag): bool
     {
-        return in_array($tag, ['if', 'each', 'while', 'until', 'await', 'format'], true);
+        return Arr::contains(['if', 'each', 'while', 'until', 'await'], $tag, true);
     }
 
     public static function findOpeningTagEnd(string $content, string $open = '{', string $close = '}'): int|bool
@@ -267,7 +268,7 @@ class TagRegistry {
 
         foreach ($matches as $m) {
             $key = $m['key'];
-            if ($definition->attributes[0] == '*' || in_array($key, $definition->attributes)) {
+            if ($definition->attributes[0] == '*' || Arr::contains($definition->attributes, $key, true)) {
                 $value =  $m['value'];
                 $attributes[$key] = $value;
             }
@@ -344,14 +345,6 @@ class TagRegistry {
             attributes: ['event'],
             interface: Contracts\IExecutableElement::class,
             class: Elements\AwaitElement::class
-        ));
-
-        self::register(new TagDefinition(
-            name: 'format',
-            pattern: '{open}\#format(.*?)?{close}(.*?){open}\/format{close}',
-            attributes: ['type', 'validator', 'retries', 'schema', 'tool', 'pattern'],
-            interface: Contracts\IRenderableElement::class,
-            class: Elements\FormatElement::class
         ));
 
         self::register(new TagDefinition(

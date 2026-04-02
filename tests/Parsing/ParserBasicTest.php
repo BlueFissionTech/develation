@@ -397,29 +397,28 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame("A\tB", $output);
     }
 
-    public function testFormatBlockDoesNotLeakInlineSchemaAttributesIntoOutput()
+    public function testBalancedIfBlockDoesNotLeakQuotedJsonAttributesIntoOutput()
     {
-        $template = '{#format type="json" validator="notEmpty" retries=1 schema=\'{"type":"object","required":["title"]}\'}
-OK
-{/format}';
+        $template = '{#let schema=\'{"type":"object","required":["title"]}\'}
+{#if var=schema equals=\'{"type":"object","required":["title"]}\'}OK{/if}';
         $parser = new Parser($template);
         $output = $parser->render();
 
         $this->assertSame('OK', Str::trim($output));
         $this->assertStringNotContainsString('required', $output);
-        $this->assertStringNotContainsString('schema=', $output);
+        $this->assertStringNotContainsString('type":"object"', $output);
     }
 
-    public function testFormatBlockExecutesNestedAssignmentWithoutLeakingAttributes()
+    public function testBalancedIfBlockProcessesNestedAssignmentWithQuotedJsonAttributes()
     {
-        $template = '{#format type="json" validator="notEmpty" retries=1 schema=\'{"type":"object","required":["title"]}\'}
-{=bookBlueprint -> blueprint silent=true}{/format}{$blueprint}';
+        $template = '{#let schema=\'{"type":"object","required":["title"]}\'}
+{#if var=schema equals=\'{"type":"object","required":["title"]}\'}{=bookBlueprint -> blueprint silent=true}{/if}{$blueprint}';
         $parser = new Parser($template);
         $output = $parser->render();
 
         $this->assertSame('generated', Str::trim($output));
         $this->assertSame('generated', $parser->root()->getScopeVariable('blueprint'));
-        $this->assertStringNotContainsString('schema=', $output);
+        $this->assertStringNotContainsString('type":"object"', $output);
     }
 
     public function testEvalAssignsVariableForLaterUse()
