@@ -3,7 +3,10 @@ namespace BlueFission\Tests\Parsing;
 
 use BlueFission\Parsing\Contracts\IToolFunction;
 use BlueFission\Parsing\Parser;
+use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Registry\FunctionRegistry;
+use BlueFission\Parsing\TagDefinition;
+use BlueFission\Parsing\Elements;
 
 class ParserBasicTest extends ParsingTestCase
 {
@@ -382,6 +385,94 @@ class ParserBasicTest extends ParsingTestCase
 
         $this->assertSame('AFTER', $output);
         $this->assertSame('Alpha:Beta', $parser->root()->getScopeVariable('glossaryEntry'));
+    }
+
+    public function testAssignedEvalWithAttributesStillPushesIntoTarget()
+    {
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'captureAttributedPair';
+            }
+
+            public function execute(array $args): mixed
+            {
+                return implode(':', $args);
+            }
+        });
+
+        $template = '{#let glossaryEntries=[]}{=captureAttributedPair(left, right) -> glossaryEntries[] ref="book" profile="main" phase="draft" label="Glossary"}AFTER';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'left' => 'Alpha',
+            'right' => 'Beta',
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame(['Alpha:Beta'], $parser->root()->getScopeVariable('glossaryEntries'));
+    }
+
+    public function testAssignedEvalWithAttributesStillAssignsScalarTarget()
+    {
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'captureAttributedSingle';
+            }
+
+            public function execute(array $args): mixed
+            {
+                return implode(':', $args);
+            }
+        });
+
+        $template = '{=captureAttributedSingle(left, right) -> glossaryEntry ref="book" profile="main" phase="draft" label="Glossary"}AFTER';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'left' => 'Alpha',
+            'right' => 'Beta',
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame('Alpha:Beta', $parser->root()->getScopeVariable('glossaryEntry'));
+    }
+
+    public function testGeneratorEvalWithExtendedAttributesStillAssignsTarget()
+    {
+        TagRegistry::register(new TagDefinition(
+            name: 'eval',
+            pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
+            attributes: ['expression', 'params', 'assign', 'silent', 'default', 'src', 'ref', 'profile', 'phase', 'label'],
+            interface: \BlueFission\Parsing\Contracts\IRenderableElement::class,
+            class: Elements\EvalElement::class
+        ));
+
+        $template = '{=bookBlueprint -> generatedBook ref="example.ref" profile="editorial" phase="draft" label="Book"}AFTER';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame('generated', $parser->root()->getScopeVariable('generatedBook'));
+    }
+
+    public function testGeneratorEvalWithAttributesBeforeAssignmentStillAssignsTarget()
+    {
+        TagRegistry::register(new TagDefinition(
+            name: 'eval',
+            pattern: '{open}=(.*?)(?:->(\\w+))?(?:\\s+silent=[\'\"]?(true|false)[\'\"]?)?{close}',
+            attributes: ['expression', 'params', 'assign', 'silent', 'default', 'src', 'ref', 'profile', 'phase', 'label'],
+            interface: \BlueFission\Parsing\Contracts\IRenderableElement::class,
+            class: Elements\EvalElement::class
+        ));
+
+        $template = '{=bookBlueprint ref="example.ref" profile="editorial" phase="draft" label="Book" -> generatedBook}AFTER';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame('generated', $parser->root()->getScopeVariable('generatedBook'));
     }
 
     public function testSilentEvalSuppressesOutput()
