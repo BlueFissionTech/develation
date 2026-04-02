@@ -291,6 +291,254 @@ This matters because parser runtimes need terms like:
 
 Those concepts are more specific than the current generic `OnProcessed`, `OnStarted`, or `IsRunning`.
 
+### Public Naming Grammar
+
+The PHP classes can stay PHP-native. The runtime-visible names should not.
+
+Recommended split:
+
+- PHP class names: `RuntimeEvent`, `RuntimeState`, `RuntimeAction`, `RuntimeMeta`
+- emitted/runtime-visible names: lowercase, namespaced, and hierarchy-oriented
+
+Recommended public grammar:
+
+- events: `on:<domain>.<phase>`
+- states: `is:<domain>.<state>`
+- actions: `do:<domain>.<action>`
+- metadata keys: lowercase dotted keys such as `run.id`, `element.uuid`, `assignment.target`
+
+Examples:
+
+- `on:parse.start`
+- `on:parse.complete`
+- `on:element.discover`
+- `on:evaluate.complete`
+- `on:render.complete`
+- `is:parsing`
+- `is:rendering`
+- `is:tracing`
+- `do:trace.record`
+- `do:policy.validate`
+
+This aligns better with:
+
+- Vibe’s lowercase authored surface
+- colon-based namespacing already familiar from tags like `mix:scene`
+- dot-based property paths already familiar from `current.title`, `data.schema.name`, and `[[book.slug|slug]]`
+- the existing intentional Blue Fission behavioral prefixes `On`, `Is`, and `Do`, translated into language-native runtime strings as `on:`, `is:`, and `do:`
+
+### Naming Rules
+
+Recommended public/runtime naming rules:
+
+1. Use lowercase only.
+2. Use one reserved prefix family: `on:`, `is:`, `do:`.
+3. Use dot segments after the prefix to express hierarchy.
+4. Keep event names phase-oriented, not implementation-oriented.
+5. Keep metadata keys dotted and structural.
+6. Keep PHP constant names stable even if public runtime strings evolve.
+
+Examples:
+
+- good: `on:include.resolve`
+- good: `on:policy.validate.fail`
+- good: `is:runtime.booting`
+- bad: `OnIncludeResolved`
+- bad: `ParserIncludeResolved`
+- bad: `include_resolved`
+
+### Alignment With Vibe Syntax
+
+This naming system should inform adjacent runtime-facing surfaces over time:
+
+- reserved runtime values: `@current`, `@index`, later possibly `@runtime.phase`, `@trace.id`, `@element.uuid`
+- metadata keys and trace payloads: `trace.id`, `run.id`, `source.path`, `scope.keys`
+- runtime-facing attribute names where behavior is exposed declaratively
+- policy/filter routing names in downstream interpreters
+
+It should not force PHP class names, method names, or file names to abandon normal PHP conventions.
+
+## Naming Collisions and Early Carve-Outs
+
+If we adopt public runtime names too casually, we will lock ourselves in at the wrong layer.
+
+The main risk is not parser syntax. The main risk is downstream contract shape.
+
+### Collision 1: PHP Class Names vs Runtime Names
+
+Risk:
+
+- using PHP-style runtime names like `OnParseStarted` in public payloads makes trace data and policy hooks feel like PHP internals instead of language/runtime constructs
+
+Early carve-out:
+
+- keep PHP class names conventional
+- treat emitted values as a separate authored/runtime grammar
+- never assume constant name and emitted string must match stylistically
+
+### Collision 2: Colon Namespaces vs Tag Namespaces
+
+Risk:
+
+- Vibe already uses colon in tag namespaces such as `mix:scene`
+- if runtime names also use colons, we must avoid making them look like element names
+
+Early carve-out:
+
+- reserve `on:`, `is:`, and `do:` exclusively for behavior identifiers
+- reserve tag namespaces like `mix:`, `html:`, `spec:` for authored elements/directives
+- document that behavior identifiers are values, not tags
+
+This preserves a readable distinction:
+
+- tag: `mix:scene`
+- event: `on:scene.enter`
+
+### Collision 3: Dot Paths vs Metadata Keys vs Variable Paths
+
+Risk:
+
+- dot notation already means property access in Vibe and parser expressions
+- if metadata and events also use dots, tools may confuse a key path with a runtime event name
+
+Early carve-out:
+
+- only allow dots after a reserved behavior prefix in behavior identifiers
+- treat metadata keys as payload keys, not expressions
+- avoid using bare dotted names with no prefix for runtime events
+
+Examples:
+
+- variable path: `current.seed.title`
+- metadata key: `assignment.target`
+- event name: `on:evaluate.complete`
+
+These remain visually related but grammatically distinct.
+
+### Collision 4: Reserved Runtime Values vs User Variables
+
+Risk:
+
+- new reserved values like `@runtime.phase` or `@trace.id` can collide conceptually with user-defined values named `runtime` or `trace`
+
+Early carve-out:
+
+- keep all engine-reserved runtime values behind `@`
+- continue allowing bare user variables like `runtime` or `trace`
+- do not silently reserve bare names that are not prefixed
+
+This matches the direction already reinforced by `@current` and `@index`.
+
+### Collision 5: Behavior Phases vs Implementation Details
+
+Risk:
+
+- names like `on:block.before_element` or `on:evaluator.process.start` leak current class boundaries into the public contract
+- that makes refactoring harder because internal class names become public API
+
+Early carve-out:
+
+- name public behaviors after conceptual lifecycle phases, not classes
+- keep implementation-specific hooks internal
+
+Prefer:
+
+- `on:parse.start`
+- `on:element.discover`
+- `on:evaluate.complete`
+
+Avoid:
+
+- `on:block.parse.start`
+- `on:evaluator.process.start`
+- `on:default-renderer.after`
+
+### Collision 6: Roadmap Pressure From Vibrato
+
+`vibe-interpreter` is already moving toward:
+
+- units
+- interfaces
+- actions
+- views
+- flows
+- policies
+- specs
+- mix namespaced tags
+- strict vs loose runtime modes
+- project-scale generation and review flows
+
+Risk:
+
+- if parser runtime names are too parser-specific, they will not scale to interpreter/runtime orchestration
+- if they are too generic, they will become vague and unusable for debugging or policy enforcement
+
+Early carve-out:
+
+- keep the first lifecycle vocabulary parser/runtime-oriented, but domain-neutral enough to sit beneath Vibrato features
+- avoid hard-coding content-generation assumptions into the core names
+
+Good foundational names:
+
+- `on:parse.start`
+- `on:prepare.complete`
+- `on:evaluate.start`
+- `on:render.complete`
+- `on:validate.fail`
+- `on:trace.record`
+
+These can sit below later higher-order interpreter events such as:
+
+- `on:unit.compile`
+- `on:policy.apply`
+- `on:flow.transition`
+- `on:spec.serialize`
+
+### Collision 7: HTML/XML Influence Can Help, but Also Mislead
+
+HTML/XML conventions are useful here because they reinforce:
+
+- lowercase authored syntax
+- colon namespace families
+- hierarchical naming
+
+But there is a trap:
+
+- DOM events are often imperative and UI-centric
+- XML namespaces are usually static type markers, not lifecycle markers
+
+Early carve-out:
+
+- borrow the readability, not the whole model
+- let Vibe/runtime names feel authored and namespaced
+- do not overfit them to DOM event habits or XML schema naming
+
+## Roadmap Guidance
+
+To avoid premature lock-in, the roadmap should explicitly separate:
+
+1. Internal PHP implementation names
+2. Public runtime-emitted identifiers
+3. Future interpreter-level lifecycle names
+
+Recommended rule:
+
+- parser/runtime layer defines the base lifecycle grammar
+- Vibrato and later runtimes build on it, but do not rename it ad hoc
+- any public identifier introduced now must be assumed durable in traces, policies, tests, and integrations
+
+## Provisions to Carve Out Now
+
+These should be stated early so future work has room to move.
+
+1. Public runtime names may have aliases during early rollout.
+2. PHP constant names and emitted runtime strings are intentionally different layers.
+3. Reserved runtime values always use `@`.
+4. Behavior identifiers always use `on:`, `is:`, or `do:`.
+5. Bare dotted identifiers are never behavior identifiers.
+6. Public lifecycle names describe concepts, not classes.
+7. Future interpreter-specific domains may extend the grammar, but should not break the base parser/runtime prefixes.
+
 ### Runtime Metadata Envelope
 
 Add a parser/runtime-specific metadata object, likely extending or complementing `Behavioral\Behaviors\Meta`.
