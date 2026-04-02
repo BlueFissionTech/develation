@@ -124,6 +124,36 @@ See `parse.php` and `templates/` for working examples.
 
 Include search paths are set via `Parser::setIncludePaths()` or by configuring `Template` with `template_directory` and `module_directory`.
 
+## Quoted Attribute Interpolation
+
+Quoted attribute strings can interpolate scoped values with `[[...]]` placeholders.
+
+Example:
+
+```vibe
+{=bookBlueprint
+    -> generatedBook
+    thread="book:[[book.slug|slug]]:chapter:[[chapter|pad:2]]"
+    label="Chapter [[chapter|pad:2]] / [[section.title|default:Untitled]]"
+}
+```
+
+Supported first-pass filters:
+
+- `trim`
+- `lower`
+- `upper`
+- `slug` / `slugify`
+- `pad:length[:character[:left|right]]`
+- `default:value`
+
+Behavior:
+
+- interpolation is applied only inside quoted attribute strings
+- missing values resolve to an empty string unless `default:...` is present
+- unknown filters safely leave the current value unchanged
+- attribute interpolation is value-oriented only; it does not execute arbitrary functions
+
 ## Loop Scope and Nested Composition
 
 Within `#each`, DevElation now exposes the active item as a normal scoped variable named `current`.
@@ -150,7 +180,10 @@ Example:
 {#each items=current.sections glue=","}{.title}{/each}
 ```
 
-This is the currently supported growth path for nested iteration. It keeps loop scoping explicit and reusable without forcing deeper same-block recursive parsing changes into the core parser.
+Nested `#each` blocks in the same file are also supported now, so both of these patterns are valid:
+
+- same-file nested loops when you want direct local composition
+- partial/include-based nested loops when you want reuse and clearer template boundaries
 
 ## Extending the Parser
 
