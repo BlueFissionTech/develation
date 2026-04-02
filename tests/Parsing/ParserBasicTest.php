@@ -149,6 +149,63 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('John', $parser->root()->getScopeVariable('name'));
     }
 
+    public function testLetSupportsAtCurrentRuntimeValueInsideLoop()
+    {
+        $template = '{#each items=items glue="|"}{#let chapterSeed=@current.seed}{$chapterSeed.title}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['seed' => ['title' => 'Hello']],
+                ['seed' => ['title' => 'World']],
+            ],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('Hello|World', $output);
+    }
+
+    public function testIfSupportsAtIndexRuntimeValueInsideLoop()
+    {
+        $template = '{#each items=items}{#if var=@index equals="1"}{@current}{/if}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => ['A', 'B', 'C'],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('B', $output);
+    }
+
+    public function testEvalSupportsAtCurrentRuntimeValueAsParameterInsideLoop()
+    {
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'captureSeedTitle';
+            }
+
+            public function execute(array $args): mixed
+            {
+                $seed = $args[0] ?? [];
+
+                return is_array($seed) ? ($seed['title'] ?? null) : null;
+            }
+        });
+
+        $template = '{#let titles=[]}{#each items=items}{=captureSeedTitle(@current.seed) -> titles[] silent=true}{/each}{$titles.0}|{$titles.1}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['seed' => ['title' => 'Hello']],
+                ['seed' => ['title' => 'World']],
+            ],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('Hello|World', $output);
+        $this->assertSame(['Hello', 'World'], $parser->root()->getScopeVariable('titles'));
+    }
+
     public function testLetTransformThrowsWhenSourceValueIsMissing()
     {
         $this->expectException(\RuntimeException::class);

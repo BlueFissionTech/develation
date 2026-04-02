@@ -269,7 +269,7 @@ class Element extends Obj {
 
     public function hasPathValue(string $path): bool
     {
-        $segments = Str::make($path)->split('.')->val();
+        $segments = Str::make($this->normalizeScopedPath($path))->split('.')->val();
         $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
 
         if (empty($segments)) {
@@ -308,7 +308,7 @@ class Element extends Obj {
 
     public function getPathValue(string $path, bool $throw = false): mixed
     {
-        $segments = Str::make($path)->split('.')->val();
+        $segments = Str::make($this->normalizeScopedPath($path))->split('.')->val();
         $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
 
         if (empty($segments)) {
@@ -352,7 +352,7 @@ class Element extends Obj {
 
     public function setPathValue(string $path, mixed $value): void
     {
-        $segments = Str::make($path)->split('.')->val();
+        $segments = Str::make($this->normalizeScopedPath($path))->split('.')->val();
         $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
 
         if (empty($segments)) {
@@ -385,7 +385,7 @@ class Element extends Obj {
             'mutate' => false,
         ];
 
-        if (preg_match('/^(?<path>[a-zA-Z_][a-zA-Z0-9_.-]*)\s*->\s*\$(?<chain>(?:\.[a-zA-Z_][a-zA-Z0-9_-]*\([^)]*\))+)$/', $expression, $matches)) {
+        if (preg_match('/^(?<path>\@?[a-zA-Z_][a-zA-Z0-9_.-]*)\s*->\s*\$(?<chain>(?:\.[a-zA-Z_][a-zA-Z0-9_-]*\([^)]*\))+)$/', $expression, $matches)) {
             $result['path'] = $matches['path'];
             $result['chain'] = $matches['chain'];
             $result['clone'] = true;
@@ -393,7 +393,7 @@ class Element extends Obj {
             return $result;
         }
 
-        if (preg_match('/^(?<path>[a-zA-Z_][a-zA-Z0-9_.-]*?)(?<chain>(?:\.[a-zA-Z_][a-zA-Z0-9_-]*\([^)]*\))+)$/', $expression, $matches)) {
+        if (preg_match('/^(?<path>\@?[a-zA-Z_][a-zA-Z0-9_.-]*?)(?<chain>(?:\.[a-zA-Z_][a-zA-Z0-9_-]*\([^)]*\))+)$/', $expression, $matches)) {
             $result['path'] = $matches['path'];
             $result['chain'] = $matches['chain'];
             $result['mutate'] = true;
@@ -436,11 +436,24 @@ class Element extends Obj {
 
     protected function getNestedValue($dotNotationString, $varName = null): mixed
     {
+        $dotNotationString = $this->normalizeScopedPath($dotNotationString);
+
         if ($varName !== null && Str::pos($dotNotationString, '.') === false) {
-            return $this->getPathValue($varName);
+            return $this->getPathValue($this->normalizeScopedPath($varName));
         }
 
         return $this->getPathValue($dotNotationString);
+    }
+
+    protected function normalizeScopedPath(string $path): string
+    {
+        $path = Str::trim($path);
+
+        if (!Str::startsWith($path, '@')) {
+            return $path;
+        }
+
+        return Str::sub($path, 1);
     }
 
     protected function shouldInterpolateAttribute(mixed $raw, mixed $value): bool
@@ -639,6 +652,7 @@ class Element extends Obj {
             $firstChar === '"' || $firstChar === "'" => trim($value, "'\""),
             $firstChar === '[' => json_decode(str_replace("'", '"', $value), true),
             $firstChar === '{' => json_decode($value, true),
+            (bool)preg_match('/^\@[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)*$/', $value) => $this->getPathValue($this->normalizeScopedPath($value)),
             (bool)preg_match('/^\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/', $value) => $this->getNestedValue("current{$value}", 'current'),
             (bool)preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)+$/', $value) => $this->getPathValue($value),
             (bool)preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $value) => $this->getScopeVariable($value),

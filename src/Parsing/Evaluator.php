@@ -524,7 +524,7 @@ class Evaluator implements IDispatcher
                 |
                 \[(.*?)\]                            # bracketed
                 |
-                [a-zA-Z_][a-zA-Z0-9_-]*                         # unquoted
+                \@?[a-zA-Z_][a-zA-Z0-9_.-]*                     # unquoted
             )([,\s])?
         )*/x';
 
