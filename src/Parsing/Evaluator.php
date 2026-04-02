@@ -66,14 +66,21 @@ class Evaluator implements IDispatcher
         $push = false;
 
         if ($this->match($this->expression, $m)) {
-            $this->var = $m['var'] ?: ($m['assignment'] ?? '');
-            $this->type = $m['castv'] ?? $m['casta'] ?? $this->type;
-            $append = (isset($m['appendv']) && $m['appendv'] == '&') || (isset($m['appenda']) && $m['appenda'] == '&');
-            $push = (isset($m['pushv']) && $m['pushv'] == '[]') || (isset($m['pusha']) && $m['pusha'] == '[]');
+            $source = $m['var'] ?? '';
+            $assignment = $m['assignment'] ?? '';
+
+            $this->var = $assignment !== '' ? $assignment : $source;
+            $this->type = $assignment !== '' ? ($m['casta'] ?? $this->type) : ($m['castv'] ?? $this->type);
+            $append = $assignment !== ''
+                ? (isset($m['appenda']) && $m['appenda'] == '&')
+                : (isset($m['appendv']) && $m['appendv'] == '&');
+            $push = $assignment !== ''
+                ? (isset($m['pusha']) && $m['pusha'] == '[]')
+                : (isset($m['pushv']) && $m['pushv'] == '[]');
         }
 
-        if (strpos($this->var, '$') === 0) {
-            $var = substr($this->var, 1);
+        if (Str::startsWith($this->var, '$')) {
+            $var = Str::sub($this->var, 1);
 
             $this->var = $this->element->resolveValue($var);
         }
@@ -153,20 +160,27 @@ class Evaluator implements IDispatcher
 
             // Handle function calls or method chains across the pipeline.
             if ($this->match($matchSource, $m)) {
-                $var = $m['var'] ?: ($m['assignment'] ?? $this->var);
+                $source = $m['var'] ?? '';
+                $assignment = $m['assignment'] ?? '';
+                $var = $source !== '' ? $source : ($assignment !== '' ? $assignment : $this->var);
+                $target = $assignment !== '' ? $assignment : ($source !== '' ? $source : $this->var);
                 $call = $m['call'] ?? '';
                 $args = $m['arguments'] ?? '';
-                $append = (isset($m['appendv']) && $m['appendv'] == '&') || (isset($m['appenda']) && $m['appenda'] == '&');
-                $push = (isset($m['pushv']) && $m['pushv'] == '[]') || (isset($m['pusha']) && $m['pusha'] == '[]');
-                $cast = $m['castv'] ?? $m['casta'] ?? 'val';
+                $append = $assignment !== ''
+                    ? (isset($m['appenda']) && $m['appenda'] == '&')
+                    : (isset($m['appendv']) && $m['appendv'] == '&');
+                $push = $assignment !== ''
+                    ? (isset($m['pusha']) && $m['pusha'] == '[]')
+                    : (isset($m['pushv']) && $m['pushv'] == '[]');
+                $cast = $assignment !== '' ? ($m['casta'] ?? 'val') : ($m['castv'] ?? 'val');
                 $chain = $m['chain'] ?? '';
                 $attribs = $m['attributes'] ?? '';
 
                 if ($first) {
                     $first = false;
 
-                    if (str_starts_with($var, '$')) {
-                        $varName = substr($var, 1);
+                    if (Str::startsWith($var, '$')) {
+                        $varName = Str::sub($var, 1);
                         if ($this->element->hasScopeVariable($varName)) {
                             $var = $this->element->getScopeVariable($varName);
                         } else {
@@ -174,8 +188,8 @@ class Evaluator implements IDispatcher
                         }
                     }
 
-                    if ($var !== '') {
-                        $this->var = $var;
+                    if ($target !== '') {
+                        $this->var = $target;
                     }
 
                     if (isset($options['src']) && !empty($options['src'])) {
