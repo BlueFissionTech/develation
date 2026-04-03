@@ -675,6 +675,44 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('generated', $parser->root()->getScopeVariable('copiedBlueprint'));
     }
 
+    public function testImportSeedsParentContextAndMergesGeneratedStructuredValuesBackIntoParentScope()
+    {
+        $dir = $this->createTempDir('import_parent_scope');
+        $importPath = $dir . DIRECTORY_SEPARATOR . 'section_package.vibe';
+        file_put_contents($importPath, '{=buildSectionPackage(sectionTitle) -> sectionPackage}');
+
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'buildSectionPackage';
+            }
+
+            public function execute(array $args): mixed
+            {
+                $title = $args[0] ?? 'Untitled';
+
+                return [
+                    'title' => $title,
+                    'summary' => "Summary for {$title}",
+                ];
+            }
+        });
+
+        $parser = new Parser("@import('section_package.vibe'){#let generatedSectionSummary=sectionPackage.summary}{\$generatedSectionSummary}");
+        $parser->setVariables([
+            'sectionTitle' => 'Alpha',
+        ]);
+        $parser->setIncludePaths(['includes' => $dir]);
+        $output = $parser->render();
+
+        $this->assertSame('Summary for Alpha', $output);
+        $this->assertSame(
+            ['title' => 'Alpha', 'summary' => 'Summary for Alpha'],
+            $parser->root()->getScopeVariable('sectionPackage')
+        );
+        $this->assertSame('Summary for Alpha', $parser->root()->getScopeVariable('generatedSectionSummary'));
+    }
+
     public function testEvalCanLoadSourceFromIncludePaths()
     {
         $dir = $this->createTempDir('eval_src');
