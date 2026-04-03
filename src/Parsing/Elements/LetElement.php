@@ -4,6 +4,7 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\IExecutableElement;
+use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
 class LetElement extends Element implements IExecutableElement
@@ -16,14 +17,14 @@ class LetElement extends Element implements IExecutableElement
         foreach ($this->attributes as $key=>$value) {
         	$type = '';
 
-	        if (strpos($key, ':')) {
+	        if (Str::has($key, ':')) {
 	            [$var, $type] = explode(':', $key, 2);
 	        } else {
 	            $var = $key;
 	            $type = 'string';
 	        }
 
-            $expression = trim((string)$value);
+            $expression = Str::trim((string)$value);
             $transform = $this->parseScopedTransform($expression);
 
             if ($transform['chain'] !== '') {
