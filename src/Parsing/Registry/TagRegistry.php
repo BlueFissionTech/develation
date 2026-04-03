@@ -210,13 +210,19 @@ class TagRegistry {
         $assign_target = $meta['assign_target'] ?? '';
 
         if (isset($meta['tag_open']) && $meta['tag_open'] === '=') {
+            $invoked = (bool)preg_match(
+                '/^[{@]?[=#]?\s*\$?[a-zA-Z_][a-zA-Z0-9_.-]*\([^)]*\)/',
+                $raw
+            );
+
             // If it's a variable tag, we only care about the variable name
             $attributes['expression'] = $tag_name;
             if ($assign_target !== '') {
                 $attributes['assign'] = $assign_target;
             }
-            if ($function_args !== '') {
+            if ($invoked) {
                 $attributes['params'] = $function_args;
+                $attributes['invoked'] = true;
             }
         }
 

@@ -3,6 +3,7 @@ namespace BlueFission\Tests\Parsing;
 
 use BlueFission\Parsing\Contracts\IToolFunction;
 use BlueFission\Parsing\Parser;
+use BlueFission\Parsing\Registry\StandardRegistry;
 use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\TagDefinition;
@@ -532,6 +533,22 @@ class ParserBasicTest extends ParsingTestCase
 
         $this->assertSame('AFTER', $output);
         $this->assertSame('generated', $parser->root()->getScopeVariable('generatedBook'));
+    }
+
+    public function testZeroArgDottedStandardEvalAssignsTargetVariable()
+    {
+        StandardRegistry::register('system', new class {
+            public function os(): string
+            {
+                return 'TestOS';
+            }
+        });
+
+        $parser = new Parser('{=system.os() -> operatingSystem}AFTER');
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame('TestOS', $parser->root()->getScopeVariable('operatingSystem'));
     }
 
     public function testQuotedEvalAttributesSupportScopedInterpolationFilters()
