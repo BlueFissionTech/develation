@@ -88,8 +88,8 @@ class Block extends Obj {
                 $raw = end($match)[0];
                 $nextOffset = $start + Str::len($capture);
 
-                if ($tag === 'each') {
-                    [$capture, $raw, $nextOffset] = $this->extractBalancedLoop($tag, $start);
+                if (TagRegistry::isBalancedBlockTag($tag)) {
+                    [$capture, $raw, $nextOffset] = $this->extractBalancedBlock($tag, $start);
                 }
 
                 $attributes = TagRegistry::extractAttributes($tag, $capture);
@@ -224,18 +224,26 @@ class Block extends Obj {
         }
     }
 
-    protected function extractBalancedLoop(string $tag, int $start): array
+    protected function extractBalancedBlock(string $tag, int $start): array
     {
         $open = preg_quote($this->open, '/');
         $close = preg_quote($this->close, '/');
-        $openPattern = '/'.$open.'\#'.$tag.'(?:.*?)?'.$close.'/s';
+        $openPrefixPattern = '/'.$open.'\#'.$tag.'\b/s';
         $closePattern = '/'.$open.'\/'.$tag.$close.'/s';
 
-        if (!preg_match($openPattern, $this->content, $opening, PREG_OFFSET_CAPTURE, $start) || $opening[0][1] !== $start) {
+        $remaining = Str::sub($this->content, $start);
+        $openingPrefix = "{$this->open}#{$tag}";
+
+        if (!Str::startsWith($remaining, $openingPrefix)) {
             return ['', '', $start];
         }
 
-        $openingTag = $opening[0][0];
+        $openingEnd = TagRegistry::findOpeningTagEnd($remaining, $this->open, $this->close);
+        if ($openingEnd === false) {
+            return ['', '', $start];
+        }
+
+        $openingTag = Str::sub($remaining, 0, $openingEnd + 1);
         $contentStart = $start + Str::len($openingTag);
         $cursor = $contentStart;
         $depth = 1;
@@ -243,7 +251,7 @@ class Block extends Obj {
         $closeEnd = $contentStart;
 
         while ($depth > 0) {
-            $nextOpen = preg_match($openPattern, $this->content, $openMatch, PREG_OFFSET_CAPTURE, $cursor) ? $openMatch[0] : null;
+            $nextOpen = preg_match($openPrefixPattern, $this->content, $openMatch, PREG_OFFSET_CAPTURE, $cursor) ? $openMatch[0] : null;
             $nextClose = preg_match($closePattern, $this->content, $closeMatch, PREG_OFFSET_CAPTURE, $cursor) ? $closeMatch[0] : null;
 
             if (!$nextClose) {
@@ -252,7 +260,14 @@ class Block extends Obj {
 
             if ($nextOpen && $nextOpen[1] < $nextClose[1]) {
                 $depth++;
-                $cursor = $nextOpen[1] + Str::len($nextOpen[0]);
+                $nestedRemaining = Str::sub($this->content, $nextOpen[1]);
+                $nestedOpeningEnd = TagRegistry::findOpeningTagEnd($nestedRemaining, $this->open, $this->close);
+
+                if ($nestedOpeningEnd === false) {
+                    break;
+                }
+
+                $cursor = $nextOpen[1] + $nestedOpeningEnd + 1;
                 continue;
             }
 
