@@ -4,6 +4,7 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
 class VarElement extends Element implements IRenderableElement
@@ -11,7 +12,7 @@ class VarElement extends Element implements IRenderableElement
     public function render(): string
     {
         Dev::do('_before', [$this]);
-        $name = trim((string)($this->attributes['name'] ?? ''));
+        $name = Str::trim((string)($this->attributes['name'] ?? ''));
 
         if ($name === '') {
             return '';
@@ -20,7 +21,7 @@ class VarElement extends Element implements IRenderableElement
         $parsed = $this->parseScopedTransform($name);
         $path = $parsed['path'];
         $chain = $parsed['chain'];
-        $requiresValue = $parsed['clone'] || $parsed['mutate'] || strpos($path, '.') !== false;
+        $requiresValue = $parsed['clone'] || $parsed['mutate'] || Str::has($path, '.');
 
         if ($requiresValue && !$this->hasPathValue($path)) {
             throw new \RuntimeException("Cannot transform undefined value '{$path}'.");

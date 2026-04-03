@@ -150,6 +150,26 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('John', $parser->root()->getScopeVariable('name'));
     }
 
+    public function testLetCanTransformExistingRuntimeObjectWithoutRecastingItToVal()
+    {
+        $writtenFile = new class {
+            public function lines(): array
+            {
+                return ['alpha', 'beta'];
+            }
+        };
+
+        $template = '{#let fileLines=writtenFile -> $.lines()}{$fileLines.0}|{$fileLines.1}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'writtenFile' => $writtenFile,
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('alpha|beta', $output);
+        $this->assertSame(['alpha', 'beta'], $parser->root()->getScopeVariable('fileLines'));
+    }
+
     public function testLetSupportsAtCurrentRuntimeValueInsideLoop()
     {
         $template = '{#each items=items glue="|"}{#let chapterSeed=@current.seed}{$chapterSeed.title}{/each}';
