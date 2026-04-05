@@ -234,6 +234,8 @@ Parsing classes are hookable via `BlueFission\DevElation`:
 
 These hooks allow you to instrument parsing, alter attributes, or inject custom behavior without modifying core classes.
 
+For the planned non-breaking path toward a clearer Behavior-native runtime lifecycle, see `parser-runtime-behaviors.md`.
+
 ## Testing
 
 Parsing tests live under `tests/Parsing` and cover loops, conditionals, templates, and includes. They are designed to be red-green-refactor ready for extending tag behavior.
