@@ -106,8 +106,9 @@ class EvalElement extends Element implements IExecutableElement, IRenderableElem
     {
         $expression = (string)($this->attributes['expression'] ?? '');
         $params = (string)($this->attributes['params'] ?? '');
+        $invoked = Flag::parseBool($this->attributes['invoked'] ?? false, false);
 
-        if ($params !== '') {
+        if ($invoked) {
             return "{$expression}({$params})";
         }
 
