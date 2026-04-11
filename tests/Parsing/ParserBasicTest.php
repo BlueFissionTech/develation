@@ -263,6 +263,41 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('0:a,1:b', $output);
     }
 
+    public function testEachSupportsDottedAtCurrentPlaceholderAccess()
+    {
+        $template = '{#each items=items glue=","}{@current.title}:{@current.seed.number}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['title' => 'Alpha', 'seed' => ['number' => 1]],
+                ['title' => 'Beta', 'seed' => ['number' => 2]],
+            ],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('Alpha:1,Beta:2', $output);
+    }
+
+    public function testIncludeCanRenderDottedAtCurrentPlaceholderFromScopedLoopContext()
+    {
+        $dir = $this->createTempDir('current_reserved_include');
+        $partialPath = $dir . DIRECTORY_SEPARATOR . 'current-label.vibe';
+        file_put_contents($partialPath, '{@index}:{@current.title}:{@current.seed.number}');
+
+        $template = '{#each items=items glue="|"}@include(\'current-label.vibe\'){/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['title' => 'Alpha', 'seed' => ['number' => 1]],
+                ['title' => 'Beta', 'seed' => ['number' => 2]],
+            ],
+        ]);
+        $parser->setIncludePaths(['modules' => $dir]);
+        $output = $parser->render();
+
+        $this->assertSame('0:Alpha:1|1:Beta:2', $output);
+    }
+
     public function testEachExposesCurrentAsScopedVariableForNestedIterationInPartials()
     {
         $dir = $this->createTempDir('nested_sections');

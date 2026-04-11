@@ -5,6 +5,7 @@ namespace BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\ILoopElement;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
 class CurrentElement extends Element implements IRenderableElement
@@ -29,45 +30,33 @@ class CurrentElement extends Element implements IRenderableElement
         $match = $this->getMatch();
 
         if (preg_match('/^\{@current\.?(.*?)\}$/', $match, $matches)) {
-            return trim($matches[1] ?? '');
+            return Str::trim((string)($matches[1] ?? ''));
         }
 
         if (preg_match('/^\{\.(.*?)\}$/', $match, $matches)) {
-            return trim($matches[1] ?? '');
+            return Str::trim((string)($matches[1] ?? ''));
         }
 
         return '';
     }
 
-    protected function resolveCurrentValue(mixed $value, string $path = ''): mixed
-    {
-        if (!$path) {
-            return $value;
-        }
-
-        foreach (explode('.', $path) as $part) {
-            if (is_array($value) && array_key_exists($part, $value)) {
-                $value = $value[$part];
-            } elseif (is_object($value) && property_exists($value, $part)) {
-                $value = $value->$part;
-            } else {
-                return null;
-            }
-        }
-
-        return $value;
-    }
-
     public function render(): string
     {
         Dev::do('_before', [$this]);
-        $loop = $this->getLoopContext();
-        if (!$loop) {
+        $path = $this->getCurrentPath();
+        $value = $this->getScopeVariable('current');
+
+        if ($value === null) {
+            $value = $this->getLoopContext()?->getScopeVariable('current');
+        }
+
+        if ($value === null) {
             return '';
         }
 
-        $path = $this->getCurrentPath();
-        $value = $this->resolveCurrentValue($loop->getScopeVariable('current'), $path);
+        if ($path !== '') {
+            $value = $this->getPathValue("current.{$path}");
+        }
 
         $output = (string)$value;
         $output = Dev::apply('_out', $output);

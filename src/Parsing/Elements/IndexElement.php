@@ -4,6 +4,7 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\IRenderableElement;
+use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
 class IndexElement extends Element implements IRenderableElement
@@ -26,7 +27,13 @@ class IndexElement extends Element implements IRenderableElement
     public function render(): string
     {
         Dev::do('_before', [$this]);
-        $output = (string) ($this->getLoopContext()?->getIndex() ?? '');
+        $index = $this->getScopeVariable('index');
+
+        if ($index === null) {
+            $index = $this->getLoopContext()?->getIndex();
+        }
+
+        $output = Str::is($index) || is_numeric($index) ? (string)$index : '';
         $output = Dev::apply('_out', $output);
         Dev::do('_after', [$output, $this]);
         return $output;
