@@ -12,8 +12,20 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Meta;
 use LogicException;
 
+/**
+ * PrototypeTools
+ *
+ * Internal helper trait shared by the public prototype traits. It provides
+ * `Obj`-backed storage helpers, normalization, hook emission, and optional
+ * behavioral dispatch without introducing constructor coupling.
+ */
 trait PrototypeTools
 {
+    /**
+     * Ensure prototype traits are only used on `Obj` carriers.
+     *
+     * @return void
+     */
     protected function prototypeAssertCarrier(): void
     {
         if (!$this instanceof Obj) {
@@ -23,6 +35,12 @@ trait PrototypeTools
         }
     }
 
+    /**
+     * Seed the carrier with default prototype fields and optional kind.
+     *
+     * @param string|null $kind
+     * @return void
+     */
     protected function prototypeBoot(?string $kind = null): void
     {
         $this->prototypeAssertCarrier();
@@ -58,6 +76,13 @@ trait PrototypeTools
         }
     }
 
+    /**
+     * Read one prototype field from the underlying `Obj` data payload.
+     *
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
     protected function prototypeGet(string $key, mixed $default = null): mixed
     {
         $this->prototypeBoot();
@@ -75,6 +100,14 @@ trait PrototypeTools
         return $value;
     }
 
+    /**
+     * Set one prototype field and emit the matching hooks/events.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @param string|null $hook
+     * @return static
+     */
     protected function prototypeSet(string $key, mixed $value, ?string $hook = null): static
     {
         $this->prototypeBoot();
@@ -86,6 +119,15 @@ trait PrototypeTools
         return $this;
     }
 
+    /**
+     * Append a value to a list-like prototype field.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @param bool $distinct
+     * @param string|null $hook
+     * @return static
+     */
     protected function prototypeAppend(string $key, mixed $value, bool $distinct = false, ?string $hook = null): static
     {
         $values = Arr::toArray($this->prototypeGet($key, []));
@@ -98,6 +140,15 @@ trait PrototypeTools
         return $this->prototypeSet($key, $values, $hook);
     }
 
+    /**
+     * Set one named entry on an associative prototype field.
+     *
+     * @param string $key
+     * @param string $name
+     * @param mixed $value
+     * @param string|null $hook
+     * @return static
+     */
     protected function prototypeAssocSet(string $key, string $name, mixed $value, ?string $hook = null): static
     {
         $values = Arr::toArray($this->prototypeGet($key, []));
@@ -106,6 +157,13 @@ trait PrototypeTools
         return $this->prototypeSet($key, $values, $hook);
     }
 
+    /**
+     * Emit a DevElation hook and optional behavioral events for prototype changes.
+     *
+     * @param string $hook
+     * @param array<string, mixed> $data
+     * @return void
+     */
     protected function prototypeSignal(string $hook, array $data = []): void
     {
         Dev::do($hook, $data);
@@ -119,6 +177,12 @@ trait PrototypeTools
         }
     }
 
+    /**
+     * Normalize values into snapshot-safe scalars or arrays.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
     protected function prototypeSnapshotValue(mixed $value): mixed
     {
         if ($value instanceof IVal) {
@@ -150,11 +214,27 @@ trait PrototypeTools
         return $value;
     }
 
+    /**
+     * Resolve a dotted path from a runtime context payload.
+     *
+     * @param array<string, mixed> $context
+     * @param string $path
+     * @param mixed $default
+     * @return mixed
+     */
     protected function prototypeContextValue(array $context, string $path, mixed $default = null): mixed
     {
         return Arr::getPath($context, $path, $default);
     }
 
+    /**
+     * Compare actual and expected values using a normalized operator string.
+     *
+     * @param mixed $actual
+     * @param mixed $expected
+     * @param string $operator
+     * @return bool
+     */
     protected function prototypeCompare(mixed $actual, mixed $expected, string $operator = 'requires'): bool
     {
         return match ($operator) {
@@ -173,6 +253,12 @@ trait PrototypeTools
         };
     }
 
+    /**
+     * Sort weighted records in descending weight/confidence order.
+     *
+     * @param array<int, array<string, mixed>> $records
+     * @return array<int, array<string, mixed>>
+     */
     protected function prototypeSortByWeight(array $records): array
     {
         usort($records, function (array $a, array $b): int {
@@ -185,6 +271,12 @@ trait PrototypeTools
         return $records;
     }
 
+    /**
+     * Merge array payloads recursively while preserving unique list members.
+     *
+     * @param array<string|int, mixed> ...$arrays
+     * @return array<string|int, mixed>
+     */
     protected function prototypeMergeArrays(array ...$arrays): array
     {
         $merged = [];

@@ -6,8 +6,21 @@ use BlueFission\Arr;
 use BlueFission\DevElation as Dev;
 use BlueFission\Prototypes\Contracts\Causal;
 
+/**
+ * IsCausal
+ *
+ * Records candidate causes and effects and exposes deterministic filtering
+ * hooks so more advanced inference systems can consume the same metadata later.
+ */
 trait IsCausal
 {
+    /**
+     * Add one possible cause record.
+     *
+     * @param mixed $cause
+     * @param array<string, mixed> $meta
+     * @return static
+     */
     public function addCause(mixed $cause, array $meta = []): static
     {
         $causes = Arr::toArray($this->prototypeGet('causes', []));
@@ -16,6 +29,13 @@ trait IsCausal
         return $this->prototypeSet('causes', $causes, 'prototypes.causal.cause_added');
     }
 
+    /**
+     * Add one possible effect record.
+     *
+     * @param mixed $effect
+     * @param array<string, mixed> $meta
+     * @return static
+     */
     public function addEffect(mixed $effect, array $meta = []): static
     {
         $effects = Arr::toArray($this->prototypeGet('effects', []));
@@ -24,6 +44,14 @@ trait IsCausal
         return $this->prototypeSet('effects', $effects, 'prototypes.causal.effect_added');
     }
 
+    /**
+     * Link one cause and optional effect in a single call.
+     *
+     * @param mixed $cause
+     * @param mixed $effect
+     * @param array<string, mixed> $meta
+     * @return static
+     */
     public function because(mixed $cause, mixed $effect = null, array $meta = []): static
     {
         $this->addCause($cause, $meta);
@@ -35,26 +63,55 @@ trait IsCausal
         return $this;
     }
 
+    /**
+     * Return all registered cause records.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function causes(): array
     {
         return Arr::toArray($this->prototypeGet('causes', []));
     }
 
+    /**
+     * Return all registered effect records.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function effects(): array
     {
         return Arr::toArray($this->prototypeGet('effects', []));
     }
 
+    /**
+     * Filter and rank candidate causes against the supplied context.
+     *
+     * @param array<string, mixed> $context
+     * @return array<int, array<string, mixed>>
+     */
     public function inferCauses(array $context = []): array
     {
         return $this->prototypeInferCausalRecords($this->causes(), $context, 'prototypes.causal.causes_inferred');
     }
 
+    /**
+     * Filter and rank candidate effects against the supplied context.
+     *
+     * @param array<string, mixed> $context
+     * @return array<int, array<string, mixed>>
+     */
     public function inferEffects(array $context = []): array
     {
         return $this->prototypeInferCausalRecords($this->effects(), $context, 'prototypes.causal.effects_inferred');
     }
 
+    /**
+     * Normalize shorthand causal values or resolvers into a standard record.
+     *
+     * @param mixed $record
+     * @param array<string, mixed> $meta
+     * @return array<string, mixed>
+     */
     protected function normalizeCausalRecord(mixed $record, array $meta = []): array
     {
         if (is_callable($record)) {
@@ -84,6 +141,14 @@ trait IsCausal
         ], $meta);
     }
 
+    /**
+     * Apply condition-aware filtering and weight sorting to causal candidates.
+     *
+     * @param array<int, array<string, mixed>> $records
+     * @param array<string, mixed> $context
+     * @param string $hook
+     * @return array<int, array<string, mixed>>
+     */
     protected function prototypeInferCausalRecords(array $records, array $context, string $hook): array
     {
         $records = Dev::apply('prototypes.causal.infer.in', $records);

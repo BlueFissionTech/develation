@@ -7,8 +7,22 @@ use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 use BlueFission\Prototypes\Contracts\Conditional;
 
+/**
+ * HasConditions
+ *
+ * Provides normalized condition registration and lightweight evaluation
+ * against runtime context, state, and object properties. This is intentionally
+ * generic so downstream systems can layer richer reasoning on top.
+ */
 trait HasConditions
 {
+    /**
+     * Add one condition record, shorthand string, or resolver callback.
+     *
+     * @param mixed $condition
+     * @param array<string, mixed> $meta
+     * @return static
+     */
     public function addCondition(mixed $condition, array $meta = []): static
     {
         $conditions = Arr::toArray($this->prototypeGet('conditions', []));
@@ -17,11 +31,22 @@ trait HasConditions
         return $this->prototypeSet('conditions', $conditions, 'prototypes.conditions.added');
     }
 
+    /**
+     * Return all normalized condition records.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function conditions(): array
     {
         return Arr::toArray($this->prototypeGet('conditions', []));
     }
 
+    /**
+     * Determine whether a named condition is registered.
+     *
+     * @param string $name
+     * @return bool
+     */
     public function hasCondition(string $name): bool
     {
         $name = Str::trim($name);
@@ -34,6 +59,12 @@ trait HasConditions
         return false;
     }
 
+    /**
+     * Determine whether every registered condition is satisfied.
+     *
+     * @param array<string, mixed> $context
+     * @return bool
+     */
     public function conditionsMet(array $context = []): bool
     {
         foreach ($this->conditions() as $condition) {
@@ -45,6 +76,12 @@ trait HasConditions
         return true;
     }
 
+    /**
+     * Return only the conditions that are not satisfied by the current context.
+     *
+     * @param array<string, mixed> $context
+     * @return array<int, array<string, mixed>>
+     */
     public function unmetConditions(array $context = []): array
     {
         $unmet = [];
@@ -58,6 +95,13 @@ trait HasConditions
         return $unmet;
     }
 
+    /**
+     * Normalize shorthand conditions into a common record structure.
+     *
+     * @param mixed $condition
+     * @param array<string, mixed> $meta
+     * @return array<string, mixed>
+     */
     protected function normalizeConditionRecord(mixed $condition, array $meta = []): array
     {
         if (is_callable($condition)) {
@@ -88,6 +132,13 @@ trait HasConditions
         ], $meta);
     }
 
+    /**
+     * Evaluate one normalized condition record against runtime context.
+     *
+     * @param array<string, mixed> $condition
+     * @param array<string, mixed> $context
+     * @return bool
+     */
     protected function prototypeEvaluateConditionRecord(array $condition, array $context = []): bool
     {
         $condition = Dev::apply('prototypes.conditions.evaluate.in', $condition);

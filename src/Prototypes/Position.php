@@ -5,8 +5,22 @@ namespace BlueFission\Prototypes;
 use BlueFission\Arr;
 use BlueFission\Val;
 
+/**
+ * Position
+ *
+ * Multi-dimensional locator substrate that can describe physical, conceptual,
+ * or workflow-relative placement without hardcoding a specific coordinate
+ * system.
+ */
 trait Position
 {
+    /**
+     * Define metadata for one named position dimension.
+     *
+     * @param string $name
+     * @param array<string, mixed> $descriptor
+     * @return static
+     */
     public function defineDimension(string $name, array $descriptor = []): static
     {
         $dimensions = Arr::toArray($this->prototypeGet('dimensions', []));
@@ -23,11 +37,23 @@ trait Position
         return $this->prototypeSet('dimensions', $dimensions, 'prototypes.position.dimension_defined');
     }
 
+    /**
+     * Return all defined position dimensions.
+     *
+     * @return array<string, array<string, mixed>>
+     */
     public function dimensions(): array
     {
         return Arr::toArray($this->prototypeGet('dimensions', []));
     }
 
+    /**
+     * Get or assign one coordinate value.
+     *
+     * @param string $dimension
+     * @param mixed $value
+     * @return mixed
+     */
     public function coordinate(string $dimension, mixed $value = null): mixed
     {
         $coordinates = Arr::toArray($this->prototypeGet('coordinates', []));
@@ -41,11 +67,22 @@ trait Position
         return $this->prototypeSet('coordinates', $coordinates, 'prototypes.position.coordinate_changed');
     }
 
+    /**
+     * Return the complete coordinate bag.
+     *
+     * @return array<string, mixed>
+     */
     public function coordinates(): array
     {
         return Arr::toArray($this->prototypeGet('coordinates', []));
     }
 
+    /**
+     * Get or assign the frame of reference used by the position.
+     *
+     * @param mixed $frame
+     * @return mixed
+     */
     public function frame(mixed $frame = null): mixed
     {
         if (Val::isNull($frame)) {
@@ -55,6 +92,12 @@ trait Position
         return $this->prototypeSet('frame', $this->prototypeSnapshotValue($frame), 'prototypes.position.frame_set');
     }
 
+    /**
+     * Get or assign an anchor value for relative positioning.
+     *
+     * @param mixed $anchor
+     * @return mixed
+     */
     public function anchor(mixed $anchor = null): mixed
     {
         if (Val::isNull($anchor)) {
@@ -64,6 +107,12 @@ trait Position
         return $this->prototypeSet('anchor', $this->prototypeSnapshotValue($anchor), 'prototypes.position.anchor_set');
     }
 
+    /**
+     * Translate current coordinates by a delta payload.
+     *
+     * @param array<string, mixed> $delta
+     * @return static
+     */
     public function translate(array $delta): static
     {
         $coordinates = $this->coordinates();
@@ -83,6 +132,13 @@ trait Position
         return $this;
     }
 
+    /**
+     * Calculate numeric distance or per-dimension deltas to another position.
+     *
+     * @param mixed $other
+     * @param array<int, string>|null $dimensions
+     * @return float|array<string, mixed>|null
+     */
     public function distanceTo(mixed $other, ?array $dimensions = null): float|array|null
     {
         $otherCoordinates = [];

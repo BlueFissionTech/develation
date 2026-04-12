@@ -6,8 +6,21 @@ use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\Prototypes\Contracts\CollectiveAware;
 
+/**
+ * HasCollectives
+ *
+ * Tracks membership in one or more collectives while keeping membership data
+ * snapshot-friendly for storage, tracing, and downstream world modeling.
+ */
 trait HasCollectives
 {
+    /**
+     * Join a collective and optionally attach membership metadata.
+     *
+     * @param mixed $collective
+     * @param array<string, mixed> $meta
+     * @return static
+     */
     public function joinCollective(mixed $collective, array $meta = []): static
     {
         $memberships = Arr::toArray($this->prototypeGet('collective_memberships', []));
@@ -19,6 +32,12 @@ trait HasCollectives
         return $this->prototypeSet('collective_memberships', $memberships, 'prototypes.collectives.joined');
     }
 
+    /**
+     * Remove one collective membership by matching the collective snapshot.
+     *
+     * @param mixed $collective
+     * @return static
+     */
     public function leaveCollective(mixed $collective): static
     {
         $needle = $this->prototypeSnapshotValue($collective);
@@ -34,11 +53,22 @@ trait HasCollectives
         return $this->prototypeSet('collective_memberships', $memberships, 'prototypes.collectives.left');
     }
 
+    /**
+     * Return all collective membership records.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function collectives(): array
     {
         return Arr::toArray($this->prototypeGet('collective_memberships', []));
     }
 
+    /**
+     * Determine whether the carrier belongs to a named collective.
+     *
+     * @param string $name
+     * @return bool
+     */
     public function inCollective(string $name): bool
     {
         $name = Str::trim($name);

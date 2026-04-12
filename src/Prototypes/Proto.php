@@ -8,10 +8,23 @@ use BlueFission\Val;
 use BlueFission\DevElation as Dev;
 use BlueFission\Prototypes\Support\PrototypeTools;
 
+/**
+ * Proto
+ *
+ * Base prototype substrate for objects that need stable identity, metadata,
+ * state, relations, and snapshot-friendly records that other Develation
+ * systems can inspect without knowing domain-specific logic.
+ */
 trait Proto
 {
     use PrototypeTools;
 
+    /**
+     * Get or assign the stable prototype identifier.
+     *
+     * @param string|null $id
+     * @return mixed
+     */
     public function protoId(?string $id = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -24,6 +37,12 @@ trait Proto
         return $this->prototypeSet('id', $id, 'prototypes.proto.id_set');
     }
 
+    /**
+     * Get or assign the semantic kind of prototype carrier.
+     *
+     * @param string|null $kind
+     * @return mixed
+     */
     public function kind(?string $kind = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -35,6 +54,12 @@ trait Proto
         return $this->prototypeSet('kind', Str::trim($kind), 'prototypes.proto.kind_set');
     }
 
+    /**
+     * Get or assign the human-readable prototype name.
+     *
+     * @param string|null $name
+     * @return mixed
+     */
     public function name(?string $name = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -46,6 +71,12 @@ trait Proto
         return $this->prototypeSet('name', Str::trim($name), 'prototypes.proto.name_set');
     }
 
+    /**
+     * Get or replace the flat label list carried by the prototype.
+     *
+     * @param array<int, string>|null $labels
+     * @return mixed
+     */
     public function labels(?array $labels = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -57,6 +88,12 @@ trait Proto
         return $this->prototypeSet('labels', Arr::toArray($labels), 'prototypes.proto.labels_set');
     }
 
+    /**
+     * Add a distinct label to the prototype metadata.
+     *
+     * @param string $label
+     * @return static
+     */
     public function addLabel(string $label): static
     {
         $label = Str::trim($label);
@@ -67,6 +104,12 @@ trait Proto
         return $this->prototypeAppend('labels', $label, true, 'prototypes.proto.label_added');
     }
 
+    /**
+     * Get or replace named traits/capabilities associated with the prototype.
+     *
+     * @param array<string|int, mixed>|null $traits
+     * @return mixed
+     */
     public function traits(?array $traits = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -78,6 +121,13 @@ trait Proto
         return $this->prototypeSet('traits', Arr::toArray($traits), 'prototypes.proto.traits_set');
     }
 
+    /**
+     * Add or update a named trait marker on the prototype.
+     *
+     * @param string $trait
+     * @param mixed $value
+     * @return static
+     */
     public function addTrait(string $trait, mixed $value = true): static
     {
         $trait = Str::trim($trait);
@@ -88,6 +138,13 @@ trait Proto
         return $this->prototypeAssocSet('traits', $trait, $value, 'prototypes.proto.trait_added');
     }
 
+    /**
+     * Get the full state bag, a specific state value, or set one state value.
+     *
+     * @param string|null $key
+     * @param mixed $value
+     * @return mixed
+     */
     public function stateValue(?string $key = null, mixed $value = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -106,6 +163,13 @@ trait Proto
         return $this->prototypeSet('state', $state, 'prototypes.proto.state_changed');
     }
 
+    /**
+     * Get or assign one arbitrary property.
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return mixed
+     */
     public function property(string $name, mixed $value = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -120,6 +184,12 @@ trait Proto
         return $this->prototypeSet('properties', $properties, 'prototypes.proto.property_changed');
     }
 
+    /**
+     * Get or replace the entire property bag.
+     *
+     * @param array<string, mixed>|null $properties
+     * @return mixed
+     */
     public function properties(?array $properties = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -131,6 +201,13 @@ trait Proto
         return $this->prototypeSet('properties', Arr::toArray($properties), 'prototypes.proto.properties_set');
     }
 
+    /**
+     * Get or assign one measurable numeric or descriptive metric.
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return mixed
+     */
     public function measure(string $name, mixed $value = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -145,6 +222,12 @@ trait Proto
         return $this->prototypeSet('measures', $measures, 'prototypes.proto.measure_changed');
     }
 
+    /**
+     * Get or replace the entire measurement bag.
+     *
+     * @param array<string, mixed>|null $measures
+     * @return mixed
+     */
     public function measures(?array $measures = null): mixed
     {
         $this->prototypeBoot('proto');
@@ -156,6 +239,14 @@ trait Proto
         return $this->prototypeSet('measures', Arr::toArray($measures), 'prototypes.proto.measures_set');
     }
 
+    /**
+     * Record a relation between this prototype and another target.
+     *
+     * @param string $relation
+     * @param mixed $target
+     * @param array<string, mixed> $meta
+     * @return static
+     */
     public function relate(string $relation, mixed $target, array $meta = []): static
     {
         $relation = Str::trim($relation);
@@ -173,6 +264,12 @@ trait Proto
         return $this->prototypeSet('relations', $relations, 'prototypes.proto.related');
     }
 
+    /**
+     * Return all relations, or only relations for a named channel.
+     *
+     * @param string|null $relation
+     * @return array<string|int, mixed>
+     */
     public function relations(?string $relation = null): array
     {
         $relations = Arr::toArray($this->prototypeGet('relations', []));
@@ -184,6 +281,12 @@ trait Proto
         return Arr::toArray($relations[$relation] ?? []);
     }
 
+    /**
+     * Get or assign a confidence score for the prototype snapshot.
+     *
+     * @param float|null $confidence
+     * @return mixed
+     */
     public function confidence(?float $confidence = null): mixed
     {
         if (Val::isNull($confidence)) {
@@ -193,6 +296,12 @@ trait Proto
         return $this->prototypeSet('confidence', $confidence, 'prototypes.proto.confidence_changed');
     }
 
+    /**
+     * Get or assign the current domain reference for this prototype.
+     *
+     * @param mixed $domain
+     * @return mixed
+     */
     public function domain(mixed $domain = null): mixed
     {
         if (Val::isNull($domain)) {
@@ -202,6 +311,12 @@ trait Proto
         return $this->prototypeSet('domain', $this->prototypeSnapshotValue($domain), 'prototypes.proto.domain_assigned');
     }
 
+    /**
+     * Get or assign the current position payload for this prototype.
+     *
+     * @param mixed $position
+     * @return mixed
+     */
     public function position(mixed $position = null): mixed
     {
         if (Val::isNull($position)) {
@@ -211,6 +326,13 @@ trait Proto
         return $this->prototypeSet('position', Arr::toArray($this->prototypeSnapshotValue($position)), 'prototypes.proto.position_set');
     }
 
+    /**
+     * Append an event record to the prototype history.
+     *
+     * @param mixed $event
+     * @param array<string, mixed> $meta
+     * @return static
+     */
     public function record(mixed $event, array $meta = []): static
     {
         $history = Arr::toArray($this->prototypeGet('history', []));
@@ -222,11 +344,22 @@ trait Proto
         return $this->prototypeSet('history', $history, 'prototypes.proto.history_recorded');
     }
 
+    /**
+     * Return the normalized history stream for the prototype.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function history(): array
     {
         return Arr::toArray($this->prototypeGet('history', []));
     }
 
+    /**
+     * Get or assign a human-readable summary string.
+     *
+     * @param string|null $summary
+     * @return mixed
+     */
     public function summary(?string $summary = null): mixed
     {
         if (Val::isNull($summary)) {
@@ -236,6 +369,11 @@ trait Proto
         return $this->prototypeSet('summary', $summary, 'prototypes.proto.summary_set');
     }
 
+    /**
+     * Produce the canonical array representation of the prototype.
+     *
+     * @return array<string, mixed>
+     */
     public function snapshot(): array
     {
         $this->prototypeBoot('proto');
@@ -302,6 +440,11 @@ trait Proto
         return $snapshot;
     }
 
+    /**
+     * Build a concise human-readable explanation of the prototype state.
+     *
+     * @return string
+     */
     public function explain(): string
     {
         $snapshot = $this->snapshot();
