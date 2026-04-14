@@ -72,6 +72,22 @@ class ArrTest extends ValTest {
 		$this->assertTrue($this->object->isAssoc());
 	}
 
+	public function testReturnsKeysAsArrayObject()
+	{
+		$object = new static::$classname(['first' => 'foo', 'second' => 'bar']);
+
+		$this->assertEquals(['first', 'second'], $object->keys()->val());
+		$this->assertEquals(['first', 'second'], static::$classname::keys(['first' => 'foo', 'second' => 'bar']));
+	}
+
+	public function testFlipsKeysAndValues()
+	{
+		$object = new static::$classname(['first' => 'foo', 'second' => 'bar']);
+
+		$this->assertEquals(['foo' => 'first', 'bar' => 'second'], $object->flip()->val());
+		$this->assertEquals(['foo' => 'first', 'bar' => 'second'], static::$classname::flip(['first' => 'foo', 'second' => 'bar']));
+	}
+
 	public function testsRemovesDuplicates()
 	{
 		$object = new static::$classname(['foo', 'bar', 'foo']);

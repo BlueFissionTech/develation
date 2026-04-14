@@ -80,8 +80,12 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
-	 * Check the value of the var against multiple functions
+	 * Check the value against one or more validator names or callables.
 	 *
+	 * Accepts internal helper names, public method names, global function names,
+	 * or arbitrary callables. Evaluation stops on the first failing validator.
+	 *
+	 * @param mixed $functions
 	 * @return bool
 	 */
 	public function _check($functions = null): bool
