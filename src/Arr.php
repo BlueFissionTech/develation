@@ -709,7 +709,8 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
-     * flip the keys and values of the $_data array
+     * Flip the keys and values of the current array.
+     *
      * @return Arr
      */
     public function _flip(): Arr
@@ -724,7 +725,8 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
-     * get the keys of the $_data array
+     * Return the keys of the current array as a new Arr value object.
+     *
      * @return Arr
      */
     public function _keys(): Arr
@@ -735,6 +737,22 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
         $keys = array_keys($this->_data);
 
         return Arr::make($keys);
+    }
+
+    /**
+     * Get the values of the $_data array with numeric reindexing.
+     *
+     * @return Arr
+     */
+    public function _values(): Arr
+    {
+        if (!$this->is($this->_data)) {
+            return Arr::make();
+        }
+
+        $values = array_values($this->_data);
+
+        return Arr::make($values);
     }
 
     /**

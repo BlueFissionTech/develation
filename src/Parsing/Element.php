@@ -731,6 +731,10 @@ class Element extends Obj {
             return $value;
         }
 
+        if (is_object($value)) {
+            return $value;
+        }
+
         return match (true) {
             is_string($value) => Str::make($value),
             is_bool($value) => Flag::make($value),

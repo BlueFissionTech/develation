@@ -80,8 +80,12 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
-	 * Check the value of the var against multiple functions
+	 * Check the value against one or more validator names or callables.
 	 *
+	 * Accepts internal helper names, public method names, global function names,
+	 * or arbitrary callables. Evaluation stops on the first failing validator.
+	 *
+	 * @param mixed $functions
 	 * @return bool
 	 */
 	public function _check($functions = null): bool
@@ -285,6 +289,16 @@ class Val implements IVal, IDispatcher {
 	public function _is( ): bool
 	{
 		return isset($this->_data);
+	}
+
+	/**
+	 * Check if the current value is scalar.
+	 *
+	 * @return bool
+	 */
+	public function _scalar(): bool
+	{
+		return is_scalar($this->_data);
 	}
 	
 	/**

@@ -14,6 +14,13 @@ use BlueFission\Behavioral\Behaves;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\IBehavioral;
 
+/**
+ * Obj
+ *
+ * Dynamic object substrate backed by Arr and optional IVal field typing. It is
+ * intended as a lightweight structured carrier that still participates in
+ * Develation behavioral events.
+ */
 class Obj implements IObj, IDispatcher, IBehavioral
 {
     use Behaves {
@@ -154,7 +161,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
     }
 
     /**
-     * This method is used to get the data.
+     * Return the underlying data payload, unwrapping IVal-backed storage.
      *
      * @return mixed
      */
@@ -190,7 +197,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
     }
 
     /**
-     * Method to expose IVal members when called as methods
+     * Expose field-backed callables or IVal members when called as methods.
      *
      * @param string $method
      * @param array $args
@@ -272,7 +279,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
         return $this->_type;
     }  
 
-     /**
+    /**
      * Convert the object data into an array
      * 
      * @return array The object data as an array

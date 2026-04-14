@@ -191,6 +191,31 @@ class ValTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($trueResult);
     }
 
+    public function testCheckSupportsInternalAndCallableValidators()
+    {
+        $truthy = new Val(1);
+        $emptyString = new Val('');
+        $blank = new Val();
+
+        $this->assertTrue($truthy->check(['isNotNull', 'isTruthy']));
+        $this->assertTrue($emptyString->check(fn ($value) => is_string($value)));
+        $this->assertFalse($blank->check(['isNotNull', fn ($value) => !is_null($value)]));
+    }
+
+    public function testRecognizesScalars()
+    {
+        $this->assertTrue((new Val(1))->scalar());
+        $this->assertTrue((new Val('value'))->scalar());
+        $this->assertFalse((new Val(null))->scalar());
+    }
+
+    public function testRecognizesScalarsStatically()
+    {
+        $this->assertTrue(Val::scalar(1));
+        $this->assertTrue(Val::scalar('value'));
+        $this->assertFalse(Val::scalar(['value']));
+    }
+
     // Static Empty Test
     public function testRecognizesBlankAsEmptyStatically()
     {
