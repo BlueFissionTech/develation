@@ -131,4 +131,27 @@ class FuncTest extends ValTest
         $func = new Func(function (): int { return 1; });
         $this->assertEquals('int', (string) $func->returns());
     }
+
+    public function testSignatureAndParametersExposeMetadata()
+    {
+        $func = (new Func(function ($value) {
+            return $value;
+        }))->signature([
+            ['name' => 'value', 'type' => 'string'],
+        ]);
+
+        $this->assertSame([['name' => 'value', 'type' => 'string']], $func->parameters());
+        $this->assertSame([['name' => 'value', 'type' => 'string']], $func->expects());
+    }
+
+    public function testBodyCanBuildCallableFromTrustedString()
+    {
+        $func = (new Func())
+            ->signature(['value'])
+            ->type('string')
+            ->body('return strtoupper($value);');
+
+        $this->assertSame('HELLO', $func->call('hello'));
+        $this->assertSame('string', $func->returns());
+    }
 }

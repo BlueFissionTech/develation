@@ -709,7 +709,8 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
-     * flip the keys and values of the $_data array
+     * Flip the keys and values of the current array.
+     *
      * @return Arr
      */
     public function _flip(): Arr
@@ -724,7 +725,8 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
-     * get the keys of the $_data array
+     * Return the keys of the current array as a new Arr value object.
+     *
      * @return Arr
      */
     public function _keys(): Arr

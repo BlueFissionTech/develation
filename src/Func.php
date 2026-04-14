@@ -4,6 +4,13 @@ namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
 
+/**
+ * Func
+ *
+ * Callable value object with optional signature metadata and support for
+ * runtime-bound closures. It exposes reflection-friendly helper methods around
+ * existing callables rather than acting as a full compiler.
+ */
 class Func extends Val implements IVal {
 	/**
 	 *
@@ -54,6 +61,12 @@ class Func extends Val implements IVal {
 		return $this;
 	}
 
+	/**
+	 * Define the expected parameter signature metadata.
+	 *
+	 * @param array<int, string|array<string, mixed>> $params
+	 * @return self
+	 */
 	public function signature(array $params): self
 	{
 	    $this->_signature = array_map(function($param) {
@@ -63,19 +76,39 @@ class Func extends Val implements IVal {
 	    return $this;
 	}
 
+	/**
+	 * Define the expected return type metadata.
+	 *
+	 * @param string $type
+	 * @return self
+	 */
 	public function type(string $type): self
 	{
 	    $this->_returnType = $type;
 	    return $this;
 	}
 
+    /**
+     * Set the callable body from a closure or trusted string body.
+     *
+     * @param callable|string $logic
+     * @return self
+     */
     public function body(callable|string $logic): self
     {
         if (is_callable($logic)) {
             $this->_data = \Closure::fromCallable($logic);
         } elseif (is_string($logic)) {
             // Create closure from string-based body using eval (only for trusted input).
-            $paramList = implode(', ', array_map(fn($p) => $p['name'], $this->_signature));
+            $paramList = implode(', ', array_map(function ($param) {
+                $name = (string) ($param['name'] ?? '');
+
+                if (Str::startsWith($name, '$')) {
+                    return $name;
+                }
+
+                return '$' . $name;
+            }, $this->_signature));
             $return = $this->_returnType ? ": {$this->_returnType}" : '';
             $code = "return function($paramList)$return { $logic };";
 
@@ -85,6 +118,11 @@ class Func extends Val implements IVal {
 	    return $this;
 	}
 
+	/**
+	 * Restore a previously compiled callable if one has been stored.
+	 *
+	 * @return self
+	 */
 	public function compile(): self
 	{
 	    if (!$this->_data && $this->_compiled) {
@@ -93,6 +131,11 @@ class Func extends Val implements IVal {
 	    return $this;
 	}
 
+	/**
+	 * Return the explicit parameter metadata if one was provided.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function parameters(): array
 	{
 	    return $this->_signature;
@@ -158,6 +201,12 @@ class Func extends Val implements IVal {
 	    return null;
 	}
 
+	/**
+	 * Invoke the callable with argument forwarding and reference preservation.
+	 *
+	 * @return mixed
+	 * @throws \Exception
+	 */
 	public function call()
 	{
 		$args = func_get_args();

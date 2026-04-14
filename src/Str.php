@@ -61,11 +61,17 @@ class Str extends Val implements IVal {
      * 
      * @return bool
      */
-    public function _is( ): bool
+	public function _is( ): bool
     {
     	return is_string($this->_data);
 	}
 
+	/**
+	 * Split the string into an Arr using the provided delimiter.
+	 *
+	 * @param string $delimiter
+	 * @return Arr
+	 */
 	public function _split( $delimiter = ' ' ): Arr
 	{
 		$string = $this->_data;

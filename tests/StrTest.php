@@ -38,6 +38,12 @@ class StrTest extends ValTest {
 		$this->assertTrue($sim < 1);
 	}
 
+	public function testSplitReturnsArrayValueObject()
+	{
+		$this->assertEquals(['My', 'Name', 'Is', 'John'], $this->object->split()->val());
+		$this->assertEquals(['a', 'b', 'c'], Str::split('a,b,c', ','));
+	}
+
 	public function testSetsValue()
 	{
 		$object = new static::$classname();
