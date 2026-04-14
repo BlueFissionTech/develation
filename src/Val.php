@@ -286,6 +286,16 @@ class Val implements IVal, IDispatcher {
 	{
 		return isset($this->_data);
 	}
+
+	/**
+	 * Check if the current value is scalar.
+	 *
+	 * @return bool
+	 */
+	public function _scalar(): bool
+	{
+		return is_scalar($this->_data);
+	}
 	
 	/**
 	 * Check if var is a valid instance of $_type
