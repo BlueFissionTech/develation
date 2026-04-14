@@ -5,6 +5,7 @@ namespace BlueFission\Parsing\Registry;
 use BlueFission\Parsing\TagDefinition;
 use BlueFission\Parsing\Elements;
 use BlueFission\Parsing\Contracts;
+use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
@@ -69,7 +70,7 @@ class TagRegistry {
         }
 
         $normalized = preg_replace('/[^A-Za-z0-9_]/', '_', $tag);
-        $normalized = trim($normalized, '_');
+        $normalized = Str::trim($normalized, '_');
         if ($normalized === '') {
             $normalized = 'tag';
         }
@@ -79,13 +80,56 @@ class TagRegistry {
 
         $group = $normalized;
         if (isset(self::$reverseGroupMap[$group]) && self::$reverseGroupMap[$group] !== $tag) {
-            $group = $normalized . '_' . substr(md5($tag), 0, 8);
+            $group = $normalized . '_' . Str::sub(md5($tag), 0, 8);
         }
 
         self::$groupMap[$tag] = $group;
         self::$reverseGroupMap[$group] = $tag;
 
         return $group;
+    }
+
+    public static function isBalancedBlockTag(string $tag): bool
+    {
+        return Arr::contains(['if', 'each', 'while', 'until', 'await'], $tag, true);
+    }
+
+    public static function findOpeningTagEnd(string $content, string $open = '{', string $close = '}'): int|bool
+    {
+        $length = Str::len($content);
+        $inSingleQuote = false;
+        $inDoubleQuote = false;
+        $isEscaped = false;
+
+        for ($index = 0; $index < $length; $index++) {
+            $character = Str::sub($content, $index, 1);
+
+            if ($isEscaped) {
+                $isEscaped = false;
+                continue;
+            }
+
+            if (($inSingleQuote || $inDoubleQuote) && $character === '\\') {
+                $isEscaped = true;
+                continue;
+            }
+
+            if (!$inDoubleQuote && $character === "'") {
+                $inSingleQuote = !$inSingleQuote;
+                continue;
+            }
+
+            if (!$inSingleQuote && $character === '"') {
+                $inDoubleQuote = !$inDoubleQuote;
+                continue;
+            }
+
+            if (!$inSingleQuote && !$inDoubleQuote && $character === $close) {
+                return $index;
+            }
+        }
+
+        return false;
     }
 
     public static function tagPattern(): string {
@@ -135,13 +179,10 @@ class TagRegistry {
 
         // Remove outer delimiters if they exist (e.g., {#if ...}, @template(...))
         $raw = Str::trim($raw);
-        $isBlockTag = match ($tag) {
-            'if', 'each', 'while', 'until', 'await' => true,
-            default => false,
-        };
+        $isBlockTag = self::isBalancedBlockTag($tag);
 
         if ($isBlockTag && Str::sub($raw, 0, 1) === '{') {
-            $openingEnd = Str::pos($raw, '}');
+            $openingEnd = self::findOpeningTagEnd($raw);
             if ($openingEnd !== false) {
                 $raw = Str::sub($raw, 0, $openingEnd + 1);
             }
@@ -210,13 +251,19 @@ class TagRegistry {
         $assign_target = $meta['assign_target'] ?? '';
 
         if (isset($meta['tag_open']) && $meta['tag_open'] === '=') {
+            $invoked = (bool)preg_match(
+                '/^[{@]?[=#]?\s*\$?[a-zA-Z_][a-zA-Z0-9_.-]*\([^)]*\)/',
+                $raw
+            );
+
             // If it's a variable tag, we only care about the variable name
             $attributes['expression'] = $tag_name;
             if ($assign_target !== '') {
                 $attributes['assign'] = $assign_target;
             }
-            if ($function_args !== '') {
+            if ($invoked) {
                 $attributes['params'] = $function_args;
+                $attributes['invoked'] = true;
             }
         }
 
@@ -227,7 +274,7 @@ class TagRegistry {
 
         foreach ($matches as $m) {
             $key = $m['key'];
-            if ($definition->attributes[0] == '*' || in_array($key, $definition->attributes)) {
+            if ($definition->attributes[0] == '*' || Arr::contains($definition->attributes, $key, true)) {
                 $value =  $m['value'];
                 $attributes[$key] = $value;
             }

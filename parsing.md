@@ -122,6 +122,12 @@ See `parse.php` and `templates/` for working examples.
 - `@output('name')` injects the captured section into the layout.
 - `@include('file.vibe')` and `@import('file.vibe')` load external content.
 
+`@import(...)` is the execution-oriented form. The supported parent-scope contract is:
+
+- imported content executes with access to the importing scope's current variables
+- variables assigned or generated inside the imported file become available to later sibling expressions in the parent render pass
+- structured imported values can be consumed immediately through normal dotted access such as `sectionPackage.summary`
+
 Include search paths are set via `Parser::setIncludePaths()` or by configuring `Template` with `template_directory` and `module_directory`.
 
 ## Quoted Attribute Interpolation
@@ -227,6 +233,8 @@ Parsing classes are hookable via `BlueFission\DevElation`:
 - `Block` triggers `parsing.block.before_element` and `parsing.block.after_element` for each tag.
 
 These hooks allow you to instrument parsing, alter attributes, or inject custom behavior without modifying core classes.
+
+For the planned non-breaking path toward a clearer Behavior-native runtime lifecycle, see `parser-runtime-behaviors.md`.
 
 ## Testing
 

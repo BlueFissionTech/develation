@@ -7,6 +7,7 @@ use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Evaluator;
 use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\Registry\GeneratorRegistry;
+use BlueFission\Parsing\Registry\StandardRegistry;
 use PHPUnit\Framework\TestCase;
 
 class EvaluatorToolInvocationTest extends TestCase
@@ -76,6 +77,24 @@ class EvaluatorToolInvocationTest extends TestCase
         $this->assertSame(['a' => 1, 'b' => 2], $result);
         $this->assertSame(['a' => 1, 'b' => 2], $element->getScopeVariable('data'));
         $this->assertSame(1, $element->resolveValue('data.a'));
+    }
+
+    public function testZeroArgDottedStandardCallAssignsTargetVariable(): void
+    {
+        StandardRegistry::register('system', new class {
+            public function os(): string
+            {
+                return 'TestOS';
+            }
+        });
+
+        $element = new Element('root', '', '', []);
+        $evaluator = new Evaluator($element);
+
+        $result = $evaluator->evaluate('system.os() -> operatingSystem');
+
+        $this->assertSame('TestOS', $result);
+        $this->assertSame('TestOS', $element->getScopeVariable('operatingSystem'));
     }
 
     public function testEvaluateWithoutGeneratorFailsPredictably(): void

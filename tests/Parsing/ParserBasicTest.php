@@ -1,8 +1,10 @@
 <?php
 namespace BlueFission\Tests\Parsing;
 
+use BlueFission\Str;
 use BlueFission\Parsing\Contracts\IToolFunction;
 use BlueFission\Parsing\Parser;
+use BlueFission\Parsing\Registry\StandardRegistry;
 use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\TagDefinition;
@@ -149,6 +151,26 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('John', $parser->root()->getScopeVariable('name'));
     }
 
+    public function testLetCanTransformExistingRuntimeObjectWithoutRecastingItToVal()
+    {
+        $writtenFile = new class {
+            public function lines(): array
+            {
+                return ['alpha', 'beta'];
+            }
+        };
+
+        $template = '{#let fileLines=writtenFile -> $.lines()}{$fileLines.0}|{$fileLines.1}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'writtenFile' => $writtenFile,
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('alpha|beta', $output);
+        $this->assertSame(['alpha', 'beta'], $parser->root()->getScopeVariable('fileLines'));
+    }
+
     public function testLetSupportsAtCurrentRuntimeValueInsideLoop()
     {
         $template = '{#each items=items glue="|"}{#let chapterSeed=@current.seed}{$chapterSeed.title}{/each}';
@@ -261,6 +283,41 @@ class ParserBasicTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame('0:a,1:b', $output);
+    }
+
+    public function testEachSupportsDottedAtCurrentPlaceholderAccess()
+    {
+        $template = '{#each items=items glue=","}{@current.title}:{@current.seed.number}{/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['title' => 'Alpha', 'seed' => ['number' => 1]],
+                ['title' => 'Beta', 'seed' => ['number' => 2]],
+            ],
+        ]);
+        $output = $parser->render();
+
+        $this->assertSame('Alpha:1,Beta:2', $output);
+    }
+
+    public function testIncludeCanRenderDottedAtCurrentPlaceholderFromScopedLoopContext()
+    {
+        $dir = $this->createTempDir('current_reserved_include');
+        $partialPath = $dir . DIRECTORY_SEPARATOR . 'current-label.vibe';
+        file_put_contents($partialPath, '{@index}:{@current.title}:{@current.seed.number}');
+
+        $template = '{#each items=items glue="|"}@include(\'current-label.vibe\'){/each}';
+        $parser = new Parser($template);
+        $parser->setVariables([
+            'items' => [
+                ['title' => 'Alpha', 'seed' => ['number' => 1]],
+                ['title' => 'Beta', 'seed' => ['number' => 2]],
+            ],
+        ]);
+        $parser->setIncludePaths(['modules' => $dir]);
+        $output = $parser->render();
+
+        $this->assertSame('0:Alpha:1|1:Beta:2', $output);
     }
 
     public function testEachExposesCurrentAsScopedVariableForNestedIterationInPartials()
@@ -394,6 +451,30 @@ class ParserBasicTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame("A\tB", $output);
+    }
+
+    public function testBalancedIfBlockDoesNotLeakQuotedJsonAttributesIntoOutput()
+    {
+        $template = '{#let schema=\'{"type":"object","required":["title"]}\'}
+{#if var=schema equals=\'{"type":"object","required":["title"]}\'}OK{/if}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('OK', Str::trim($output));
+        $this->assertStringNotContainsString('required', $output);
+        $this->assertStringNotContainsString('type":"object"', $output);
+    }
+
+    public function testBalancedIfBlockProcessesNestedAssignmentWithQuotedJsonAttributes()
+    {
+        $template = '{#let schema=\'{"type":"object","required":["title"]}\'}
+{#if var=schema equals=\'{"type":"object","required":["title"]}\'}{=bookBlueprint -> blueprint silent=true}{/if}{$blueprint}';
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertSame('generated', Str::trim($output));
+        $this->assertSame('generated', $parser->root()->getScopeVariable('blueprint'));
+        $this->assertStringNotContainsString('type":"object"', $output);
     }
 
     public function testEvalAssignsVariableForLaterUse()
@@ -532,6 +613,22 @@ class ParserBasicTest extends ParsingTestCase
 
         $this->assertSame('AFTER', $output);
         $this->assertSame('generated', $parser->root()->getScopeVariable('generatedBook'));
+    }
+
+    public function testZeroArgDottedStandardEvalAssignsTargetVariable()
+    {
+        StandardRegistry::register('system', new class {
+            public function os(): string
+            {
+                return 'TestOS';
+            }
+        });
+
+        $parser = new Parser('{=system.os() -> operatingSystem}AFTER');
+        $output = $parser->render();
+
+        $this->assertSame('AFTER', $output);
+        $this->assertSame('TestOS', $parser->root()->getScopeVariable('operatingSystem'));
     }
 
     public function testQuotedEvalAttributesSupportScopedInterpolationFilters()
@@ -673,6 +770,44 @@ class ParserBasicTest extends ParsingTestCase
 
         $this->assertSame('generated', $parser->root()->getScopeVariable('bookBlueprint'));
         $this->assertSame('generated', $parser->root()->getScopeVariable('copiedBlueprint'));
+    }
+
+    public function testImportSeedsParentContextAndMergesGeneratedStructuredValuesBackIntoParentScope()
+    {
+        $dir = $this->createTempDir('import_parent_scope');
+        $importPath = $dir . DIRECTORY_SEPARATOR . 'section_package.vibe';
+        file_put_contents($importPath, '{=buildSectionPackage(sectionTitle) -> sectionPackage}');
+
+        FunctionRegistry::register(new class implements IToolFunction {
+            public function name(): string
+            {
+                return 'buildSectionPackage';
+            }
+
+            public function execute(array $args): mixed
+            {
+                $title = $args[0] ?? 'Untitled';
+
+                return [
+                    'title' => $title,
+                    'summary' => "Summary for {$title}",
+                ];
+            }
+        });
+
+        $parser = new Parser("@import('section_package.vibe'){#let generatedSectionSummary=sectionPackage.summary}{\$generatedSectionSummary}");
+        $parser->setVariables([
+            'sectionTitle' => 'Alpha',
+        ]);
+        $parser->setIncludePaths(['includes' => $dir]);
+        $output = $parser->render();
+
+        $this->assertSame('Summary for Alpha', $output);
+        $this->assertSame(
+            ['title' => 'Alpha', 'summary' => 'Summary for Alpha'],
+            $parser->root()->getScopeVariable('sectionPackage')
+        );
+        $this->assertSame('Summary for Alpha', $parser->root()->getScopeVariable('generatedSectionSummary'));
     }
 
     public function testEvalCanLoadSourceFromIncludePaths()
