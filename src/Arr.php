@@ -738,6 +738,22 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
+     * Get the values of the $_data array with numeric reindexing.
+     *
+     * @return Arr
+     */
+    public function _values(): Arr
+    {
+        if (!$this->is($this->_data)) {
+            return Arr::make();
+        }
+
+        $values = array_values($this->_data);
+
+        return Arr::make($values);
+    }
+
+    /**
      * Return a count of the base array
      * @return int the number of elements in $_data
      */

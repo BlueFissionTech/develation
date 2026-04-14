@@ -72,6 +72,17 @@ class ArrTest extends ValTest {
 		$this->assertTrue($this->object->isAssoc());
 	}
 
+	public function testReturnsValuesAsReindexedArray()
+	{
+		$object = new static::$classname(['first' => 'foo', 'second' => 'bar']);
+		$this->assertEquals(['foo', 'bar'], $object->values()->val());
+	}
+
+	public function testReturnsValuesStatically()
+	{
+		$this->assertEquals(['foo', 'bar'], static::$classname::values(['first' => 'foo', 'second' => 'bar']));
+	}
+
 	public function testsRemovesDuplicates()
 	{
 		$object = new static::$classname(['foo', 'bar', 'foo']);
