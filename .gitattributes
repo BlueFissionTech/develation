@@ -1,0 +1,17 @@
+/.codex export-ignore
+/.github export-ignore
+/.idea export-ignore
+/.phpunit.cache export-ignore
+/.phpunit.result.cache export-ignore
+/AGENTS.behavior.md export-ignore
+/AGENTS.md export-ignore
+/SPEC.md export-ignore
+/artifacts export-ignore
+/composer.lock export-ignore
+/docker export-ignore
+/examples export-ignore
+/harness.json export-ignore
+/phpunit.xml export-ignore
+/scripts export-ignore
+/tests export-ignore
+/tests.md export-ignore

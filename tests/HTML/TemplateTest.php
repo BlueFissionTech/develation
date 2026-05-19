@@ -46,14 +46,25 @@ class TemplateTest extends TestCase {
         return $baseDir ?: '';
     }
 
+    private function ensureBaseDir(): string
+    {
+        $path = __DIR__.DIRECTORY_SEPARATOR.static::$testdirectory;
+        if (!is_dir($path)) {
+            mkdir($path, 0777, true);
+        }
+
+        return realpath($path) ?: $path;
+    }
+
     public function setUp() :void {
         chdir(__DIR__);
 
-        touch(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
+        $baseDir = $this->ensureBaseDir();
+        touch($baseDir.DIRECTORY_SEPARATOR.static::$file);
 
         $data = 'This is a sample text file';
 
-        file_put_contents(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file, $data);
+        file_put_contents($baseDir.DIRECTORY_SEPARATOR.static::$file, $data);
 
         $this->object = new static::$classname(static::$configuration);
     }
@@ -67,13 +78,18 @@ class TemplateTest extends TestCase {
             'cache'
         ];
 
+        $baseDir = $this->baseDir();
+        if ($baseDir === '') {
+            return;
+        }
+
         foreach ($testfiles as $file) {
-            if (is_dir(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file)) {
-                @rmdir(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file);
+            if (is_dir($baseDir.DIRECTORY_SEPARATOR.$file)) {
+                @rmdir($baseDir.DIRECTORY_SEPARATOR.$file);
             }
 
-            if (file_exists(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file)) {
-                @unlink(realpath(static::$testdirectory).DIRECTORY_SEPARATOR.$file);
+            if (file_exists($baseDir.DIRECTORY_SEPARATOR.$file)) {
+                @unlink($baseDir.DIRECTORY_SEPARATOR.$file);
             }
         }
     }

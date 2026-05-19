@@ -1,6 +1,8 @@
 {
     "name": "bluefission/develation",
+    "type": "library",
     "description": "Core Framework for BlueFission.com internal PHP Projects",
+    "homepage": "https://github.com/BlueFissionTech/develation",
     "license": "MIT",
     "keywords": ["develation", "framework", "core", "bluefission", "php"],
     "authors": [
@@ -11,16 +13,12 @@
             "role": "Developer"
         }
     ],
-    "minimum-stability": "dev",
     "require": {
-        "php": "*",
+        "php": ">=8.2",
         "cboden/ratchet": "^0.4.4",
-        "psr/http-message": "^2.0@dev",
-        "psr/http-client": "^1.0@dev",
-        "php-http/discovery": "1.x-dev"
-    },
-    "git": {
-        "platform-check": true
+        "psr/http-message": "^2.0",
+        "psr/http-client": "^1.0",
+        "php-http/discovery": "^1.0"
     },
     "autoload": {
         "psr-4": {
@@ -36,13 +34,18 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.1@dev",
-        "phpstan/phpstan": "2.1.x-dev",
-        "friendsofphp/php-cs-fixer": "dev-master"
+        "phpunit/phpunit": "^11.5",
+        "phpstan/phpstan": "^2.1",
+        "friendsofphp/php-cs-fixer": "^3.0"
     },
     "config": {
+        "platform-check": true,
         "allow-plugins": {
             "php-http/discovery": true
         }
+    },
+    "support": {
+        "issues": "https://github.com/BlueFissionTech/develation/issues",
+        "source": "https://github.com/BlueFissionTech/develation"
     }
 }

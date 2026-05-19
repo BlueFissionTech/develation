@@ -4,7 +4,6 @@ namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
 use ArrayAccess;
-use Countable;
 use IteratorAggregate;
 use Traversable;
 
@@ -43,7 +42,7 @@ use Traversable;
 //  Always make sure the value is actually an array before doing array stuff like looping or modifying. This prevents unexpected errors.
 
 
-class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
+class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
 {
     protected $_type = DataTypes::ARRAY;
 
@@ -759,7 +758,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
      * Return a count of the base array
      * @return int the number of elements in $_data
      */
-    public function count(): int
+    public function _count(): int
     {
         if (!$this->is($this->_data)) {
             return 0;
@@ -946,7 +945,7 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
 
     /**
      * Magic method for handling static calls.
-     * Overrides to specially handle the 'count' method due to Countable interface.
+     * Keeps count available as a static helper despite the instance dynamic helper.
      *
      * @param string $method The name of the method being called.
      * @param array $args The arguments passed to the method.
@@ -955,11 +954,11 @@ class Arr extends Val implements IVal, ArrayAccess, Countable, IteratorAggregate
      */
     public static function __callStatic($method, $args)
     {
-        if (strtolower($method) === 'count' && empty($args)) {
-            // Instantiate the object to access its non-static context.
-            $object = new static();
-            // Return the count result directly.
-            return $object->count();
+        if (strtolower($method) === 'count') {
+            $value = $args[0] ?? null;
+            $object = new static($value, false, false);
+
+            return $object->_count();
         }
 
         // Fallback to parent handling for all other methods.
