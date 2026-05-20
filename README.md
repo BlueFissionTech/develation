@@ -205,10 +205,16 @@ Inside `#each`, the current item is available as a scoped `current` value, so `{
 
 ## Usage
 
-As of now, DevElation does not have a composer package and is not available on Packagist. It can be utilized by cloning the repository `bluefission/develation` from GitHub.
+Install DevElation with Composer:
 
 ```bash
-git clone https://github.com/bluefission/develation.git
+composer require bluefission/develation
+```
+
+The canonical source repository is `BlueFissionTech/develation` on GitHub.
+
+```bash
+git clone https://github.com/BlueFissionTech/develation.git
 ```
 
 ## Contributions

@@ -15,11 +15,22 @@ class XMLTest extends TestCase
 
     protected $object;
 
+    private function ensureBaseDir(): string
+    {
+        $path = __DIR__.DIRECTORY_SEPARATOR.static::$testdirectory;
+        if (!is_dir($path)) {
+            mkdir($path, 0777, true);
+        }
+
+        return realpath($path) ?: $path;
+    }
+
     public function setUp(): void
     {
         chdir(__DIR__);
 
-        touch(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file);
+        $baseDir = $this->ensureBaseDir();
+        touch($baseDir.DIRECTORY_SEPARATOR.static::$file);
 
         $data = '<?xml version="1.0" encoding="UTF-8"?>
             <library>
@@ -40,7 +51,7 @@ class XMLTest extends TestCase
                 </book>
             </library>';
 
-        file_put_contents(static::$testdirectory.DIRECTORY_SEPARATOR.static::$file, $data);
+        file_put_contents($baseDir.DIRECTORY_SEPARATOR.static::$file, $data);
 
         $this->object = new static::$classname();
     }

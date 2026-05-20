@@ -26,6 +26,23 @@ class ArrTest extends ValTest {
 		$this->assertEquals('First Item', $this->object[0]);
 	}
 
+	public function testCountsInstanceValuesThroughDynamicHelper()
+	{
+		$object = new static::$classname(['first', 'second']);
+
+		$this->assertSame(2, $object->count());
+	}
+
+	public function testCountsStaticArrayValues()
+	{
+		$this->assertSame(3, static::$classname::count(['first', 'second', 'third']));
+	}
+
+	public function testStaticCountReturnsZeroWithoutValue()
+	{
+		$this->assertSame(0, static::$classname::count());
+	}
+
 	public function testAppendingWithBlankOffset()
 	{
 		$this->object[] = 'Second Item';

@@ -1,5 +1,6 @@
 # Dependencies
 /vendor/
+/composer.lock
 
 # IDE/editor
 /.idea/
@@ -12,9 +13,14 @@
 # Test temp artifacts
 /tests/Parsing/_tmp/
 /tests/HTML/_tmp/
+/testdirectory/
 
 # CLI storage artifacts
 /src/Utils/storage/data/
+
+# Local scratch/log artifacts
+/.localappdata/
+/application.log
 
 # Blue Fission Codex harness
 /docker/

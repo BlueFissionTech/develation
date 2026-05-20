@@ -133,6 +133,7 @@ class System implements IDispatcher {
 
 		$this->_processes[] = $process;
 		end($this->_processes)->start();
+		$this->waitForProcess(end($this->_processes));
 
 		$this->_response = end($this->_processes)->output();
 
@@ -330,5 +331,18 @@ class System implements IDispatcher {
 	*/
 	public function status() {
 		return $this->_status;
+	}
+
+	protected function waitForProcess(Process $process): void
+	{
+		$deadline = microtime(true) + $this->_timeout;
+
+		while ($process->status() === true) {
+			if (microtime(true) >= $deadline) {
+				break;
+			}
+
+			usleep(10000);
+		}
 	}
 }
