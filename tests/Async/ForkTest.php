@@ -5,6 +5,7 @@ namespace BlueFission\Async\Tests;
 use PHPUnit\Framework\TestCase;
 use BlueFission\Data\Queues\SplPriorityQueue;
 use BlueFission\Async\Fork;
+use BlueFission\Tests\Support\TestEnvironment;
 
 class ForkTest extends TestCase
 {
@@ -16,23 +17,27 @@ class ForkTest extends TestCase
 
         Fork::setQueue(SplPriorityQueue::class);
 
-        $result = [];
+        $tempDir = TestEnvironment::tempDir('bf_fork');
+        $resultFile = $tempDir . DIRECTORY_SEPARATOR . 'result.txt';
 
-        // Mock task that modifies an array
-        $task = function () use (&$result) {
-            $result[] = 'executed';
-        };
+        try {
+            $processId = null;
 
-        // Since actual forking cannot be tested easily in PHPUnit (because it would fork the test runner process),
-        // we can check if the method completes without errors and simulate the expected behavior.
-        Fork::do($task);
+            $task = function () use ($resultFile) {
+                file_put_contents($resultFile, 'executed');
+            };
 
-        // Run the fork tasks
-        Fork::run();
+            Fork::do($task, 10, $processId);
+            Fork::run();
 
-        // We check if the task was supposedly "executed"
-        // In real unit tests, we might only check if the right methods were called or the right classes were used.
-        $this->assertNotEmpty($result, 'The task should modify the result array');
-        $this->assertEquals('executed', $result[0], 'The task should execute and modify the result array as expected');
+            if ($processId) {
+                pcntl_waitpid($processId, $status);
+            }
+
+            $this->assertFileExists($resultFile, 'The forked task should write its result file');
+            $this->assertSame('executed', file_get_contents($resultFile));
+        } finally {
+            TestEnvironment::removeDir($tempDir);
+        }
     }
 }

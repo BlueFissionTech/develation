@@ -40,7 +40,7 @@ class SystemTest extends TestCase
         // Test with additional options
         // Only run if Linux
         if (PHP_OS_FAMILY === 'Linux') {
-            $system->run($command, ['-n']);
+            $system->run('printf', ['Hello World']);
             $this->assertNotEmpty($system->process());
             $this->assertEquals('Hello World', $system->response());
         }
