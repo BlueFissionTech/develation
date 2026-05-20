@@ -135,4 +135,65 @@ class NumTest extends ValTest
         $roman = Num::rom(756);
         $this->assertEquals('DCCLVI', $roman);
     }
+
+    public function testArithmeticHelpersMutateValue()
+    {
+        $number = new Num(10);
+
+        $this->assertEquals(15, $number->add(5)->val());
+        $this->assertEquals(12, $number->sub(3)->val());
+        $this->assertEquals(24, $number->multiply(2)->val());
+        $this->assertEquals(6, $number->divide(4)->val());
+    }
+
+    public function testPowerAndRootHelpersMutateValue()
+    {
+        $number = new Num(9);
+
+        $this->assertEquals(81, $number->sq()->val());
+        $this->assertEquals(9, $number->sqrt()->val());
+        $this->assertEquals(729, $number->pow(3)->val());
+        $this->assertEquals(log(729), $number->log()->val());
+        $this->assertEquals(exp(log(729)), $number->exp()->val());
+    }
+
+    public function testAbsoluteRoundAndIntegerHelpers()
+    {
+        $number = new Num(-12.75);
+
+        $this->assertSame(12.75, $number->abs()->val());
+        $this->assertSame(12.8, $number->round(1)->val());
+        $this->assertSame(12, $number->int());
+    }
+
+    public function testIncrementAndDecrementHelpers()
+    {
+        $number = new Num(3);
+
+        $this->assertSame(4, $number->increment()->val());
+        $this->assertSame(3, $number->decrement()->val());
+    }
+
+    public function testBaseConversionHelpersRoundTrip()
+    {
+        $number = new Num(42);
+
+        $this->assertSame('101010', $number->bin());
+        $this->assertSame('2a', $number->hex());
+        $this->assertSame('52', $number->oct());
+
+        $this->assertSame(42, (new Num())->bin('101010')->val());
+        $this->assertSame(42, (new Num())->hex('2a')->val());
+        $this->assertSame(42, (new Num())->oct('52')->val());
+        $this->assertSame(42, (new Num())->rom('XLII')->val());
+    }
+
+    public function testFormattingAffectsStringOutput()
+    {
+        $number = new Num(1234.5);
+
+        $this->assertSame('1,234.50', (string)$number);
+        $this->assertSame('1 234,5', (string)$number->precision(1)->decimal(',')->thousands(' '));
+        $this->assertSame('1234.500', (string)$number->format('%.3f'));
+    }
 }

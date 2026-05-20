@@ -395,7 +395,7 @@ class Num extends Val implements IVal {
     public function _dec(): mixed
     {
     	$values = func_get_args();
-    	if ( Arr::count($values) ) {
+    	if ( Arr::size($values) ) {
     		$this->_data = $values[0];
     		return $this;
     	}
@@ -411,7 +411,7 @@ class Num extends Val implements IVal {
     public function _bin(): string|Num
     {
     	$values = func_get_args();
-    	if ( Arr::count($values) ) {
+    	if ( Arr::size($values) ) {
 			$this->_data = bindec($values[0]);
 			return $this;
 		}
@@ -427,7 +427,7 @@ class Num extends Val implements IVal {
 	public function _hex(): string|Num
 	{
 		$values = func_get_args();
-		if ( Arr::count($values) ) {
+		if ( Arr::size($values) ) {
 			$this->_data = hexdec($values[0]);
 			return $this;
 		}
@@ -443,7 +443,7 @@ class Num extends Val implements IVal {
 	public function _oct(): string|Num
 	{
 		$values = func_get_args();
-		if ( Arr::count($values) ) {
+		if ( Arr::size($values) ) {
 			$this->_data = octdec($values[0]);
 			return $this;
 		}
