@@ -1,28 +1,33 @@
 ## Purpose
 
-This branch starts the Composer and Packagist readiness pass while fixing the `Arr::count($array)` static helper contract. The goal is to keep the first release-hygiene PR narrow: make the package metadata publishable, make CI failures visible, and cover the static count behavior that internal helpers already expect.
+Issue `#100` publishes the DevElation-owned capability contract for room `#7`,
+where DevElation, vibe, Vibrato (`vibe-interpreter`), and Reactor are aligning
+on a production-grade Vibe language construct that can surface DevElation
+features through Vibrato.
 
 ## Scope
 
-- allow `Arr::count($array)` through the DevElation static helper path
-- keep `$arr->count()` available through the existing dynamic helper dispatch
-- update package metadata so `composer validate --strict` accepts the package shape
-- update public installation docs for Composer and the canonical GitHub source
-- add release archive excludes for development-only files
-- remove CI's PHPUnit `continue-on-error` setting
+- document the stable DevElation type surface for Vibe and Vibrato
+- define invocation, chaining, hook, event, JSON, and diagnostic expectations
+- create the first shared contract matrix requested in Keryx room `#7`
+- link the contract from the public README
+- keep this branch documentation-only
 
 ## Out of Scope
 
-- broad datatype refactors outside `Arr`
-- changing optional service test behavior
-- running dependency installs or updates without explicit approval
-- changing Packagist account or webhook settings from this branch
+- implementing new DevElation runtime behavior
+- changing Vibe grammar
+- changing Vibrato parser/runtime implementation
+- changing Reactor bindings
+- enabling optional network, process, database, or service tests by default
 
 ## Acceptance Criteria
 
-- `Arr::count(['a', 'b'])` returns `2`
-- `$arr->count()` still returns the instance array count
-- Composer metadata has no publish-blocking schema errors
-- Composer install instructions point at `bluefission/develation`
-- CI treats PHPUnit failures as failures
-- package archives omit tests, CI config, local harness files, and other development-only artifacts
+- `vibe_vibrato_contract.md` exists and names the cross-repo ownership split
+- the contract matrix includes DevElation feature, Vibe construct, adapter,
+  expected result, errors, hooks/events, fixture, and owning issue columns
+- Vibrato's current asks are answered: capability inventory, signatures,
+  object-preserving chained transforms, hook/event payloads, JSON helpers, and
+  `#format` ownership boundaries
+- `README.md` links to the contract document
+- no runtime source files are changed

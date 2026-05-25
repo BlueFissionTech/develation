@@ -67,6 +67,7 @@ Construct HTML elements for forms, tables, and templating with ease, improving t
 Vibe parsing, tag execution, includes, template sections, and scoped loop helpers for declarative templating workflows.
 
 - [Parsing & Templating Documentation](parsing.md)
+- [Vibe and Vibrato DevElation Capability Contract](vibe_vibrato_contract.md)
 
 ### Network Services
 Tools for handling email, HTTP requests, and IP operations, essential for developing web services and networked applications.
