@@ -64,6 +64,53 @@ class File extends Hierarchical implements IDispatcher
     }
 
     /**
+     * Check whether a filesystem file target exists without creating it.
+     *
+     * @param string|null $path
+     * @return bool
+     */
+    public function exists(?string $path = null): bool
+    {
+        $target = $this->targetPath($path);
+
+        return Val::isNotNull($target) && is_file($target);
+    }
+
+    /**
+     * Check whether a filesystem file target exists and is readable.
+     *
+     * @param string|null $path
+     * @return bool
+     */
+    public function isReachable(?string $path = null): bool
+    {
+        $target = $this->targetPath($path);
+
+        return Val::isNotNull($target) && is_file($target) && is_readable($target);
+    }
+
+    /**
+     * Resolve the explicit path or the hierarchical label path.
+     *
+     * @param string|null $path
+     * @return string|null
+     */
+    private function targetPath(?string $path = null): ?string
+    {
+        if (Val::isNotNull($path)) {
+            return $path;
+        }
+
+        $segments = array_filter($this->path(), fn ($segment) => Val::isNotNull($segment) && $segment !== '');
+
+        if (empty($segments)) {
+            return null;
+        }
+
+        return implode(static::PATH_SEPARATOR, $segments);
+    }
+
+    /**
      * Append content to the file.
      *
      * @param string $data Content to append.
