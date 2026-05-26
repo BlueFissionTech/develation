@@ -131,6 +131,24 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['meta' => ['tags' => ['alpha', 'beta'], 'status' => 'ready']], $merged);
 	}
 
+	public function testReversesValues()
+	{
+		$object = new static::$classname(['foo', 'bar', 'baz']);
+
+		$this->assertSame($object, $object->reverse());
+		$this->assertEquals(['baz', 'bar', 'foo'], $object->val());
+	}
+
+	public function testReversesValuesStatically()
+	{
+		$this->assertEquals(['baz', 'bar', 'foo'], static::$classname::reverse(['foo', 'bar', 'baz']));
+	}
+
+	public function testReversesAndPreservesNumericKeys()
+	{
+		$this->assertEquals([5 => 'five', 2 => 'two'], static::$classname::reverse([2 => 'two', 5 => 'five'], true));
+	}
+
 	public function testsRemovesDuplicates()
 	{
 		$object = new static::$classname(['foo', 'bar', 'foo']);

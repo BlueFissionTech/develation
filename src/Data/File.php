@@ -6,7 +6,9 @@ use BlueFission;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Collections\ICollection;
+use BlueFission\Collections\Collection;
 use BlueFission\Collections\Hierarchical;
+use BlueFission\DevElation as Dev;
 use BlueFission\Val;
 use ReflectionClass;
 
@@ -72,8 +74,9 @@ class File extends Hierarchical implements IDispatcher
     public function exists(?string $path = null): bool
     {
         $target = $this->targetPath($path);
+        $exists = Val::isNotNull($target) && is_file($target);
 
-        return Val::isNotNull($target) && is_file($target);
+        return (bool)Dev::apply('_out', $exists);
     }
 
     /**
@@ -85,8 +88,9 @@ class File extends Hierarchical implements IDispatcher
     public function isReachable(?string $path = null): bool
     {
         $target = $this->targetPath($path);
+        $isReachable = Val::isNotNull($target) && is_file($target) && is_readable($target);
 
-        return Val::isNotNull($target) && is_file($target) && is_readable($target);
+        return (bool)Dev::apply('_out', $isReachable);
     }
 
     /**
@@ -98,16 +102,18 @@ class File extends Hierarchical implements IDispatcher
     private function targetPath(?string $path = null): ?string
     {
         if (Val::isNotNull($path)) {
-            return $path;
+            return Dev::apply('_in', $path);
         }
 
-        $segments = array_filter($this->path(), fn ($segment) => Val::isNotNull($segment) && $segment !== '');
+        $segments = (new Collection($this->path()))
+            ->filter(fn ($segment) => Val::isNotNull($segment) && $segment !== '')
+            ->contents();
 
         if (empty($segments)) {
             return null;
         }
 
-        return implode(static::PATH_SEPARATOR, $segments);
+        return Dev::apply('_in', implode(static::PATH_SEPARATOR, $segments));
     }
 
     /**

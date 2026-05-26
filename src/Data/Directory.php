@@ -4,7 +4,9 @@ namespace BlueFission\Data;
 
 use BlueFission\Collections\Hierarchical;
 use BlueFission\Collections\ICollection;
+use BlueFission\Collections\Collection;
 use BlueFission\Data\IData;
+use BlueFission\DevElation as Dev;
 use BlueFission\Val;
 
 /**
@@ -47,8 +49,9 @@ abstract class Directory extends Hierarchical implements ICollection
     public function exists(?string $path = null): bool
     {
         $target = $this->targetPath($path);
+        $exists = Val::isNotNull($target) && is_dir($target);
 
-        return Val::isNotNull($target) && is_dir($target);
+        return (bool)Dev::apply('_out', $exists);
     }
 
     /**
@@ -60,8 +63,9 @@ abstract class Directory extends Hierarchical implements ICollection
     public function isReachable(?string $path = null): bool
     {
         $target = $this->targetPath($path);
+        $isReachable = Val::isNotNull($target) && is_dir($target) && is_readable($target);
 
-        return Val::isNotNull($target) && is_dir($target) && is_readable($target);
+        return (bool)Dev::apply('_out', $isReachable);
     }
 
     /**
@@ -73,15 +77,17 @@ abstract class Directory extends Hierarchical implements ICollection
     private function targetPath(?string $path = null): ?string
     {
         if (Val::isNotNull($path)) {
-            return $path;
+            return Dev::apply('_in', $path);
         }
 
-        $segments = array_filter($this->path(), fn ($segment) => Val::isNotNull($segment) && $segment !== '');
+        $segments = (new Collection($this->path()))
+            ->filter(fn ($segment) => Val::isNotNull($segment) && $segment !== '')
+            ->contents();
 
         if (empty($segments)) {
             return null;
         }
 
-        return implode(DIRECTORY_SEPARATOR, $segments);
+        return Dev::apply('_in', implode(DIRECTORY_SEPARATOR, $segments));
     }
 }

@@ -405,6 +405,23 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Reverse the array.
+     *
+     * @param bool $preserve_keys Whether numeric keys should be preserved.
+     * @return IVal
+    */
+    public function _reverse(bool $preserve_keys = false): IVal
+    {
+        if (!$this->is($this->_data)) {
+            return $this;
+        }
+
+        $this->alter(array_reverse($this->_data, $preserve_keys));
+
+        return $this;
+    }
+
+    /**
      * get the largest integer value from an array
      * @return int
      */
