@@ -523,6 +523,7 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
         if (!$this->is($this->_data)) {
             return $this;
         }
+
         $array = $this->_data;
         foreach ($arrays as $arg) {
             if ($arg instanceof Arr) {
@@ -530,19 +531,41 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
             }
 
             if (is_array($arg)) {
-                foreach ($arg as $key => $value) {
-                    if (is_array($value) && isset($array[$key]) && is_array($array[$key])) {
-                        $array[$key] = $this->_merge($array[$key], $value);
-                    } elseif (is_numeric($key) && !in_array($value, $array)) {
-                        $array[] = $value;
-                    } else {
-                        $array[$key] = $value;
-                    }
-                }
+                $array = $this->mergeArrays($array, $arg);
             }
         }
 
+        $this->alter($array);
+
         return $this;
+    }
+
+    /**
+     * Recursively merge arrays using Arr::merge semantics.
+     *
+     * @param array $base
+     * @param array $incoming
+     * @return array
+     */
+    private function mergeArrays(array $base, array $incoming): array
+    {
+        foreach ($incoming as $key => $value) {
+            if (is_array($value) && isset($base[$key]) && is_array($base[$key])) {
+                $base[$key] = $this->mergeArrays($base[$key], $value);
+                continue;
+            }
+
+            if (is_numeric($key)) {
+                if (!in_array($value, $base)) {
+                    $base[] = $value;
+                }
+                continue;
+            }
+
+            $base[$key] = $value;
+        }
+
+        return $base;
     }
 
     /**

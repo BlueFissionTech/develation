@@ -116,6 +116,21 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['foo', 'bar'], static::$classname::values(['first' => 'foo', 'second' => 'bar']));
 	}
 
+	public function testMergePreservesListAppendsStatically()
+	{
+		$this->assertEquals(['foo', 'bar'], static::$classname::merge(['foo'], ['bar']));
+	}
+
+	public function testMergeRecursesAssociativeArraysAndAppendsNestedLists()
+	{
+		$merged = static::$classname::merge(
+			['meta' => ['tags' => ['alpha'], 'status' => 'draft']],
+			['meta' => ['tags' => ['beta'], 'status' => 'ready']]
+		);
+
+		$this->assertEquals(['meta' => ['tags' => ['alpha', 'beta'], 'status' => 'ready']], $merged);
+	}
+
 	public function testReversesValues()
 	{
 		$object = new static::$classname(['foo', 'bar', 'baz']);

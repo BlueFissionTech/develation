@@ -143,6 +143,20 @@ class StrTest extends ValTest {
 		$this->assertFalse(Str::contains('orchestrate', 'matrix'));
 	}
 
+	public function testStrRepeatProvidesCanonicalStaticHelper()
+	{
+		$this->assertSame('ababab', Str::strRepeat('ab', 3));
+		$this->assertSame('', Str::strRepeat('ab', 0));
+	}
+
+	public function testStrRepeatInstanceAliasKeepsRepeatBehavior()
+	{
+		$object = new Str('ha');
+
+		$this->assertSame($object, $object->strRepeat(2));
+		$this->assertSame('haha', $object->val());
+	}
+
 	public function testAppendPrependAndConcatMutateString()
 	{
 		$object = new Str('john');
