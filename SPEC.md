@@ -1,33 +1,28 @@
 ## Purpose
 
-Issue `#100` publishes the DevElation-owned capability contract for room `#7`,
-where DevElation, vibe, Vibrato (`vibe-interpreter`), and Reactor are aligning
-on a production-grade Vibe language construct that can surface DevElation
-features through Vibrato.
+This branch publishes a DevElation-owned capability surface for general PHP
+consumers. The goal is to clarify the library's own public design principles
+without making DevElation responsible for project-specific integration plans.
 
 ## Scope
 
-- document the stable DevElation type surface for Vibe and Vibrato
-- define invocation, chaining, hook, event, JSON, and diagnostic expectations
-- create the first shared contract matrix requested in Keryx room `#7`
-- link the contract from the public README
+- document the general primitive, helper, hook, behavior, data, service,
+  parsing, system, and security surfaces DevElation owns
+- define roadmap gates for accepting new public capabilities
+- link the capability surface from the public README
 - keep this branch documentation-only
 
 ## Out of Scope
 
-- implementing new DevElation runtime behavior
-- changing Vibe grammar
-- changing Vibrato parser/runtime implementation
-- changing Reactor bindings
+- implementing new runtime behavior
+- documenting project-specific integration syntax or execution plans
+- publishing coordination, automation, or tool instructions
 - enabling optional network, process, database, or service tests by default
 
 ## Acceptance Criteria
 
-- `vibe_vibrato_contract.md` exists and names the cross-repo ownership split
-- the contract matrix includes DevElation feature, Vibe construct, adapter,
-  expected result, errors, hooks/events, fixture, and owning issue columns
-- Vibrato's current asks are answered: capability inventory, signatures,
-  object-preserving chained transforms, hook/event payloads, JSON helpers, and
-  `#format` ownership boundaries
-- `README.md` links to the contract document
-- no runtime source files are changed
+- `capability_surface.md` describes DevElation capabilities in general library
+  terms
+- committed documentation avoids project-specific coordination references
+- `README.md` links to the capability surface
+- no runtime source files are changed by this branch

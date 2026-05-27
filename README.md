@@ -27,6 +27,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
 
 - [Data Types Documentation](datatypes.md)
+- [DevElation Capability Surface](capability_surface.md)
 
 Static helpers: most `Val`/`Obj`-based classes expose their underscored instance helpers as static shorthand. For example, `Str` has an internal `_pluralize()` instance method which can be invoked statically via `Str::pluralize('comment')` thanks to `Val::__callStatic`. This pattern is used throughout the library and examples.
 
@@ -71,10 +72,9 @@ Construct HTML elements for forms, tables, and templating with ease, improving t
 - [HTML Tools Documentation](html_tools.md)
 
 ### Parsing & Templating
-Vibe parsing, tag execution, includes, template sections, and scoped loop helpers for declarative templating workflows.
+Parsing, tag execution, includes, template sections, and scoped loop helpers for declarative templating workflows.
 
 - [Parsing & Templating Documentation](parsing.md)
-- [Vibe and Vibrato DevElation Capability Contract](vibe_vibrato_contract.md)
 
 ### Network Services
 Tools for handling email, HTTP requests, and IP operations, essential for developing web services and networked applications.
@@ -110,8 +110,8 @@ Guidance for running PHPUnit tests and enabling optional integration coverage.
 ### Examples
 Sample applications that demonstrate DevElation’s flexibility:
 
-- Session-backed todo list using `Arr`, `Date`, `Session` storage, HTML helpers, and Vibe templates: `examples/todo/index.php`
-- Simple comment thread with voting using `Arr`, `Str`, `Session` storage, HTML helpers, and Vibe templates: `examples/comments/index.php`
+- Session-backed todo list using `Arr`, `Date`, `Session` storage, HTML helpers, and templates: `examples/todo/index.php`
+- Simple comment thread with voting using `Arr`, `Str`, `Session` storage, HTML helpers, and templates: `examples/comments/index.php`
 - CLI territory game using the behavioral engine (`Behaves`) and an `Arr`-backed log: `examples/game/gangs.php`
 - CLI status report using args, tables, and progress bars: `examples/cli/report.php`
 - Additional walkthroughs live in `examples/README.md`
@@ -178,7 +178,7 @@ $store->assign($todos);
 $store->write();
 ```
 
-### Vibe loops: scoped current items and nested partials
+### Template loops: scoped current items and nested partials
 
 ```php
 use BlueFission\Parsing\Parser;
@@ -192,7 +192,7 @@ RendererRegistry::registerDefaults();
 ExecutorRegistry::registerDefaults();
 PreparerRegistry::registerDefaults();
 
-$parser = new Parser('{#each items=chapters glue="|"}{$current.title}:@include(\'sections.vibe\'){/each}');
+$parser = new Parser('{#each items=chapters glue="|"}{$current.title}:@include(\'sections.tpl\'){/each}');
 $parser->setVariables([
     'chapters' => [
         [
