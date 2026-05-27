@@ -6,7 +6,9 @@ use BlueFission;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Collections\ICollection;
+use BlueFission\Collections\Collection;
 use BlueFission\Collections\Hierarchical;
+use BlueFission\DevElation as Dev;
 use BlueFission\Val;
 use ReflectionClass;
 
@@ -61,6 +63,57 @@ class File extends Hierarchical implements IDispatcher
 
         $this->_contents = $data;
         return $this;
+    }
+
+    /**
+     * Check whether a filesystem file target exists without creating it.
+     *
+     * @param string|null $path
+     * @return bool
+     */
+    public function exists(?string $path = null): bool
+    {
+        $target = $this->targetPath($path);
+        $exists = Val::isNotNull($target) && is_file($target);
+
+        return (bool)Dev::apply('_out', $exists);
+    }
+
+    /**
+     * Check whether a filesystem file target exists and is readable.
+     *
+     * @param string|null $path
+     * @return bool
+     */
+    public function isReachable(?string $path = null): bool
+    {
+        $target = $this->targetPath($path);
+        $isReachable = Val::isNotNull($target) && is_file($target) && is_readable($target);
+
+        return (bool)Dev::apply('_out', $isReachable);
+    }
+
+    /**
+     * Resolve the explicit path or the hierarchical label path.
+     *
+     * @param string|null $path
+     * @return string|null
+     */
+    private function targetPath(?string $path = null): ?string
+    {
+        if (Val::isNotNull($path)) {
+            return Dev::apply('_in', $path);
+        }
+
+        $segments = (new Collection($this->path()))
+            ->filter(fn ($segment) => Val::isNotNull($segment) && $segment !== '')
+            ->contents();
+
+        if (empty($segments)) {
+            return null;
+        }
+
+        return Dev::apply('_in', implode(static::PATH_SEPARATOR, $segments));
     }
 
     /**

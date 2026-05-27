@@ -299,6 +299,17 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Canonical PHP-style alias for repeating the current string.
+	 *
+	 * @param int $times The number of times to repeat the string
+	 *
+	 * @return IVal
+	 */
+	public function _strRepeat(int $times): IVal {
+		return $this->_repeat($times);
+	}
+
+	/**
 	 * Append a value to the end of the current string.
 	 *
 	 * @param mixed $suffix

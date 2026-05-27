@@ -30,6 +30,13 @@ A collection of wrapper classes around PHP's primitive data types that offer enh
 
 Static helpers: most `Val`/`Obj`-based classes expose their underscored instance helpers as static shorthand. For example, `Str` has an internal `_pluralize()` instance method which can be invoked statically via `Str::pluralize('comment')` thanks to `Val::__callStatic`. This pattern is used throughout the library and examples.
 
+Helper API notes:
+
+- Use `Arr::has($array, $value)` for value checks. Use `Arr::hasKey($array, $key)` for key checks, and `Arr::hasValue($array, $value, true)` or `Arr::contains($array, $value, true)` when strict value matching matters.
+- Use `Arr::merge($base, $next)` when associative keys should be replaced recursively and numeric list values should be appended when unique. Use `Arr::append($base, $next)` for append-only numeric list behavior.
+- Use `Str::strRepeat($value, $times)` as the canonical static helper for `str_repeat`-style behavior. Existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
+- `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without constructing a `FileSystem` helper directly. These checks do not create missing paths.
+
 ### DateTime Handling
 Sophisticated date and time manipulation with object-oriented principles, extending PHP's native `DateTime` class.
 
