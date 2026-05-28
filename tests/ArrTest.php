@@ -131,6 +131,80 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['meta' => ['tags' => ['alpha', 'beta'], 'status' => 'ready']], $merged);
 	}
 
+	public function testMergeConfigReplacesNestedAssociativeValues()
+	{
+		$merged = static::$classname::mergeConfig(
+			['db' => ['host' => 'localhost', 'options' => ['timeout' => 10]]],
+			['db' => ['host' => 'mysql', 'options' => ['charset' => 'utf8mb4']]]
+		);
+
+		$this->assertEquals(
+			['db' => ['host' => 'mysql', 'options' => ['timeout' => 10, 'charset' => 'utf8mb4']]],
+			$merged
+		);
+	}
+
+	public function testMergeConfigAppendsNumericListsAndPreservesDuplicates()
+	{
+		$merged = static::$classname::mergeConfig(
+			['middleware' => ['auth', 'csrf']],
+			['middleware' => ['csrf', 'audit']]
+		);
+
+		$this->assertEquals(['middleware' => ['auth', 'csrf', 'csrf', 'audit']], $merged);
+	}
+
+	public function testMergeConfigHandlesMixedConfigPayloads()
+	{
+		$merged = static::$classname::mergeConfig(
+			[
+				'routes' => [
+					['method' => 'GET', 'path' => '/health'],
+				],
+				'cache' => [
+					'stores' => [
+						'array' => ['driver' => 'array'],
+					],
+				],
+			],
+			[
+				'routes' => [
+					['method' => 'POST', 'path' => '/jobs'],
+				],
+				'cache' => [
+					'stores' => [
+						'redis' => ['driver' => 'redis'],
+					],
+				],
+			]
+		);
+
+		$this->assertEquals(
+			[
+				'routes' => [
+					['method' => 'GET', 'path' => '/health'],
+					['method' => 'POST', 'path' => '/jobs'],
+				],
+				'cache' => [
+					'stores' => [
+						'array' => ['driver' => 'array'],
+						'redis' => ['driver' => 'redis'],
+					],
+				],
+			],
+			$merged
+		);
+	}
+
+	public function testMergeConfigWorksOnInstanceWithArrArguments()
+	{
+		$object = new static::$classname(['features' => ['alpha']]);
+		$next = static::$classname::make(['features' => ['beta']]);
+
+		$this->assertSame($object, $object->mergeConfig($next));
+		$this->assertEquals(['features' => ['alpha', 'beta']], $object->val());
+	}
+
 	public function testReversesValues()
 	{
 		$object = new static::$classname(['foo', 'bar', 'baz']);
