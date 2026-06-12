@@ -9,6 +9,15 @@ require_once __DIR__ . '/../Support/TestEnvironment.php';
 
 class HTTPTest extends TestCase {
 
+    public function testPathSegmentEncodesReservedCharacters() {
+        $this->assertSame('tenant%2Fwith%3Freserved%23chars', HTTP::pathSegment('tenant/with?reserved#chars'));
+    }
+
+    public function testPathSegmentTrimsWhitespaceAndPathSeparators() {
+        $this->assertSame('tenant%20id', HTTP::pathSegment(' /tenant id/ '));
+        $this->assertSame('', HTTP::pathSegment(' / '));
+    }
+
     public function testQuery() {
         $formdata = [
             'key1' => 'value1',
