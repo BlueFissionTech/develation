@@ -582,6 +582,24 @@ class FileSystem extends Data implements IData {
 	}
 
 	/**
+	 * Check whether a concrete file path exists without initializing storage state.
+	 *
+	 * @param string|null $path
+	 * @return bool
+	 */
+	public static function fileExists(?string $path): bool
+	{
+		if (Val::isNull($path) || $path === '') {
+			return (bool)Dev::apply('_out', false);
+		}
+
+		$path = Dev::apply('_in', $path);
+		$exists = is_string($path) && is_file($path);
+
+		return (bool)Dev::apply('_out', $exists);
+	}
+
+	/**
 	 * Upload a file
 	 * 
 	 * @param array $document The file to be uploaded
