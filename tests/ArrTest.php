@@ -131,9 +131,9 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['meta' => ['tags' => ['alpha', 'beta'], 'status' => 'ready']], $merged);
 	}
 
-	public function testMergeConfigReplacesNestedAssociativeValues()
+	public function testMergeRecursiveReplacesNestedAssociativeValues()
 	{
-		$merged = static::$classname::mergeConfig(
+		$merged = static::$classname::mergeRecursive(
 			['db' => ['host' => 'localhost', 'options' => ['timeout' => 10]]],
 			['db' => ['host' => 'mysql', 'options' => ['charset' => 'utf8mb4']]]
 		);
@@ -144,9 +144,9 @@ class ArrTest extends ValTest {
 		);
 	}
 
-	public function testMergeConfigAppendsNumericListsAndPreservesDuplicates()
+	public function testMergeRecursiveAppendsNumericListsAndPreservesDuplicates()
 	{
-		$merged = static::$classname::mergeConfig(
+		$merged = static::$classname::mergeRecursive(
 			['middleware' => ['auth', 'csrf']],
 			['middleware' => ['csrf', 'audit']]
 		);
@@ -154,9 +154,9 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['middleware' => ['auth', 'csrf', 'csrf', 'audit']], $merged);
 	}
 
-	public function testMergeConfigHandlesMixedConfigPayloads()
+	public function testMergeRecursiveHandlesMixedPayloads()
 	{
-		$merged = static::$classname::mergeConfig(
+		$merged = static::$classname::mergeRecursive(
 			[
 				'routes' => [
 					['method' => 'GET', 'path' => '/health'],
@@ -196,12 +196,12 @@ class ArrTest extends ValTest {
 		);
 	}
 
-	public function testMergeConfigWorksOnInstanceWithArrArguments()
+	public function testMergeRecursiveWorksOnInstanceWithArrArguments()
 	{
 		$object = new static::$classname(['features' => ['alpha']]);
 		$next = static::$classname::make(['features' => ['beta']]);
 
-		$this->assertSame($object, $object->mergeConfig($next));
+		$this->assertSame($object, $object->mergeRecursive($next));
 		$this->assertEquals(['features' => ['alpha', 'beta']], $object->val());
 	}
 
