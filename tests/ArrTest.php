@@ -131,6 +131,80 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['meta' => ['tags' => ['alpha', 'beta'], 'status' => 'ready']], $merged);
 	}
 
+	public function testMergeRecursiveReplacesNestedAssociativeValues()
+	{
+		$merged = static::$classname::mergeRecursive(
+			['db' => ['host' => 'localhost', 'options' => ['timeout' => 10]]],
+			['db' => ['host' => 'mysql', 'options' => ['charset' => 'utf8mb4']]]
+		);
+
+		$this->assertEquals(
+			['db' => ['host' => 'mysql', 'options' => ['timeout' => 10, 'charset' => 'utf8mb4']]],
+			$merged
+		);
+	}
+
+	public function testMergeRecursiveAppendsNumericListsAndPreservesDuplicates()
+	{
+		$merged = static::$classname::mergeRecursive(
+			['middleware' => ['auth', 'csrf']],
+			['middleware' => ['csrf', 'audit']]
+		);
+
+		$this->assertEquals(['middleware' => ['auth', 'csrf', 'csrf', 'audit']], $merged);
+	}
+
+	public function testMergeRecursiveHandlesMixedPayloads()
+	{
+		$merged = static::$classname::mergeRecursive(
+			[
+				'routes' => [
+					['method' => 'GET', 'path' => '/health'],
+				],
+				'cache' => [
+					'stores' => [
+						'array' => ['driver' => 'array'],
+					],
+				],
+			],
+			[
+				'routes' => [
+					['method' => 'POST', 'path' => '/jobs'],
+				],
+				'cache' => [
+					'stores' => [
+						'redis' => ['driver' => 'redis'],
+					],
+				],
+			]
+		);
+
+		$this->assertEquals(
+			[
+				'routes' => [
+					['method' => 'GET', 'path' => '/health'],
+					['method' => 'POST', 'path' => '/jobs'],
+				],
+				'cache' => [
+					'stores' => [
+						'array' => ['driver' => 'array'],
+						'redis' => ['driver' => 'redis'],
+					],
+				],
+			],
+			$merged
+		);
+	}
+
+	public function testMergeRecursiveWorksOnInstanceWithArrArguments()
+	{
+		$object = new static::$classname(['features' => ['alpha']]);
+		$next = static::$classname::make(['features' => ['beta']]);
+
+		$this->assertSame($object, $object->mergeRecursive($next));
+		$this->assertEquals(['features' => ['alpha', 'beta']], $object->val());
+	}
+
 	public function testReversesValues()
 	{
 		$object = new static::$classname(['foo', 'bar', 'baz']);

@@ -20,7 +20,7 @@ class HTTP {
 	 */
 	static function pathSegment(string $segment): string
 	{
-		$segment = trim(trim($segment), '/');
+		$segment = Str::trim(Str::trim($segment), '/');
 
 		return rawurlencode($segment);
 	}

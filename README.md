@@ -36,7 +36,8 @@ Helper API notes:
 - Use `Arr::has($array, $value)` for value checks. Use `Arr::hasKey($array, $key)` for key checks, and `Arr::hasValue($array, $value, true)` or `Arr::contains($array, $value, true)` when strict value matching matters.
 - Use `Arr::merge($base, $next)` when associative keys should be replaced recursively and numeric list values should be appended when unique. Use `Arr::append($base, $next)` for append-only numeric list behavior.
 - Use `Arr::values($array)` to reindex list values while preserving order, and `BlueFission\Net\HTTP::pathSegment($segment)` to encode a single URL path segment.
-- Use `Str::strRepeat($value, $times)` as the canonical static helper for `str_repeat`-style behavior. Existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
+- Use `Arr::mergeRecursive($base, $next)` when associative keys should be replaced recursively and numeric lists should append in order while preserving duplicates.
+- Use `Str::repeat($value, $times)` as the canonical static helper for `str_repeat`-style behavior. Existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
 - `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without constructing a `FileSystem` helper directly. These checks do not create missing paths.
 
 ### DateTime Handling
