@@ -569,6 +569,83 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Merge arrays recursively while preserving list semantics.
+     *
+     * Associative keys are replaced recursively. List values are appended in
+     * order and duplicates are preserved.
+     *
+     * @param array|Arr ...$arrays
+     * @return IVal
+     */
+    public function _mergeRecursive(...$arrays): IVal
+    {
+        if (!$this->is($this->_data)) {
+            return $this;
+        }
+
+        $array = $this->_data;
+        foreach ($arrays as $arg) {
+            if ($arg instanceof Arr) {
+                $arg = $arg->toArray();
+            }
+
+            if (is_array($arg)) {
+                $array = $this->mergeRecursiveArrays($array, $arg);
+            }
+        }
+
+        $this->alter($array);
+
+        return $this;
+    }
+
+    /**
+     * Recursively merge arrays while appending list values.
+     *
+     * @param array $base
+     * @param array $incoming
+     * @return array
+     */
+    private function mergeRecursiveArrays(array $base, array $incoming): array
+    {
+        if (array_is_list($base) && array_is_list($incoming)) {
+            return array_merge($base, $incoming);
+        }
+
+        foreach ($incoming as $key => $value) {
+            if (array_key_exists($key, $base)) {
+                $base[$key] = $this->mergeRecursiveValue($base[$key], $value);
+                continue;
+            }
+
+            if (is_int($key)) {
+                $base[] = $value;
+                continue;
+            }
+
+            $base[$key] = $value;
+        }
+
+        return $base;
+    }
+
+    /**
+     * Merge one recursive value into another.
+     *
+     * @param mixed $base
+     * @param mixed $incoming
+     * @return mixed
+     */
+    private function mergeRecursiveValue(mixed $base, mixed $incoming): mixed
+    {
+        if (is_array($base) && is_array($incoming)) {
+            return $this->mergeRecursiveArrays($base, $incoming);
+        }
+
+        return $incoming;
+    }
+
+    /**
      * Appends other arrays to local $_data array
      * @param array ...$arrays
      *
