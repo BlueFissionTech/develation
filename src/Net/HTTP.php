@@ -13,6 +13,19 @@ use BlueFission\Num;
 class HTTP {
 
 	/**
+	 * Encode a single URL path segment.
+	 *
+	 * @param string $segment
+	 * @return string
+	 */
+	static function pathSegment(string $segment): string
+	{
+		$segment = Str::trim(Str::trim($segment), '/');
+
+		return rawurlencode($segment);
+	}
+
+	/**
 	 * Query function to build a query string from an array of key-value pairs
 	 * 
 	 * @param array $formdata An array of key-value pairs to be used as the query
