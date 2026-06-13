@@ -37,7 +37,7 @@ Helper API notes:
 - Use `Arr::merge($base, $next)` when associative keys should be replaced recursively and numeric list values should be appended when unique. Use `Arr::append($base, $next)` for append-only numeric list behavior.
 - Use `Arr::mergeRecursive($base, $next)` when associative keys should be replaced recursively and numeric lists should append in order while preserving duplicates.
 - Use `Str::repeat($value, $times)` as the canonical static helper for `str_repeat`-style behavior. Existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
-- `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without constructing a `FileSystem` helper directly. These checks do not create missing paths.
+- `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
 
 ### DateTime Handling
 Sophisticated date and time manipulation with object-oriented principles, extending PHP's native `DateTime` class.

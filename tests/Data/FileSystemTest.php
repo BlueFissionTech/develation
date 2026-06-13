@@ -61,4 +61,16 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 
 		$this->assertTrue(file_exists($this->testdirectory.DIRECTORY_SEPARATOR.'testfile.txt'));
 	}
+
+	public function testStaticFileExistsChecksConcretePathWithoutConstructingStorage()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'wrapper.php';
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing.php';
+		touch($path);
+
+		$this->assertTrue(FileSystem::fileExists($path));
+		$this->assertFalse(FileSystem::fileExists($missing));
+		$this->assertFalse(FileSystem::fileExists($this->testdirectory));
+		$this->assertFileDoesNotExist($missing);
+	}
 }
