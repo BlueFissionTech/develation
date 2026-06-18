@@ -157,6 +157,27 @@ class StrTest extends ValTest {
 		$this->assertSame('haha', $object->val());
 	}
 
+	public function testEqualsIgnoreCaseComparesStringsWithoutMutating()
+	{
+		$object = new Str('Content-Type');
+
+		$this->assertTrue($object->equalsIgnoreCase('content-type'));
+		$this->assertSame('Content-Type', $object->val());
+		$this->assertTrue(Str::equalsIgnoreCase('ACCEPT', 'accept'));
+		$this->assertFalse(Str::equalsIgnoreCase('Accept', 'Accept-Encoding'));
+	}
+
+	public function testEqualsIgnoreCaseKeepsWhitespaceSignificant()
+	{
+		$this->assertFalse(Str::equalsIgnoreCase('Accept', ' accept '));
+	}
+
+	public function testEqualsIgnoreCaseCastsInputValues()
+	{
+		$this->assertTrue(Str::equalsIgnoreCase(123, '123'));
+		$this->assertFalse(Str::equalsIgnoreCase('', 0));
+	}
+
 	public function testAppendPrependAndConcatMutateString()
 	{
 		$object = new Str('john');

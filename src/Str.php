@@ -169,6 +169,19 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Check if the current string equals another string, ignoring ASCII case.
+	 *
+	 * Values are string-cast before comparison. Whitespace remains significant.
+	 *
+	 * @param string $string The string to compare with
+	 * @return bool
+	 */
+	public function _equalsIgnoreCase(string $string): bool
+	{
+		return strcasecmp((string)$this->_data, (string)$string) === 0;
+	}
+
+	/**
 	 * Encrypt a string
 	 *
 	 * @param string $mode The encryption mode to use. Can be 'md5' or 'sha1'. Default is 'md5'
