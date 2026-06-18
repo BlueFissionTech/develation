@@ -70,4 +70,26 @@ class CollectionTest extends \PHPUnit\Framework\TestCase
 
         $this->assertEquals(4, $i);
     }
+
+    public function testFilterUsesValueCallback()
+    {
+        $object = new Collection([1, 2, 3]);
+
+        $filtered = $object->filter(fn ($value) => $value > 1);
+
+        $this->assertEquals([1 => 2, 2 => 3], $filtered->toArray());
+    }
+
+    public function testFilterUsesValueAndKeyCallback()
+    {
+        $object = new Collection([
+            'first' => 1,
+            'second' => 2,
+            'third' => 3,
+        ]);
+
+        $filtered = $object->filter(fn ($value, $key) => $value > 1 && $key !== 'second');
+
+        $this->assertEquals(['third' => 3], $filtered->toArray());
+    }
 }
