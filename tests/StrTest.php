@@ -157,25 +157,25 @@ class StrTest extends ValTest {
 		$this->assertSame('haha', $object->val());
 	}
 
-	public function testEqualsIgnoreCaseComparesStringsWithoutMutating()
+	public function testMatchSupportsIgnoreCaseMode()
 	{
 		$object = new Str('Content-Type');
 
-		$this->assertTrue($object->equalsIgnoreCase('content-type'));
+		$this->assertTrue($object->match('content-type', Str::IGNORE_CASE));
 		$this->assertSame('Content-Type', $object->val());
-		$this->assertTrue(Str::equalsIgnoreCase('ACCEPT', 'accept'));
-		$this->assertFalse(Str::equalsIgnoreCase('Accept', 'Accept-Encoding'));
+		$this->assertTrue(Str::match('ACCEPT', 'accept', Str::IGNORE_CASE));
+		$this->assertFalse(Str::match('Accept', 'Accept-Encoding', Str::IGNORE_CASE));
 	}
 
-	public function testEqualsIgnoreCaseKeepsWhitespaceSignificant()
+	public function testMatchIgnoreCaseKeepsWhitespaceSignificant()
 	{
-		$this->assertFalse(Str::equalsIgnoreCase('Accept', ' accept '));
+		$this->assertFalse(Str::match('Accept', ' accept ', Str::IGNORE_CASE));
 	}
 
-	public function testEqualsIgnoreCaseCastsInputValues()
+	public function testMatchCastsInputValues()
 	{
-		$this->assertTrue(Str::equalsIgnoreCase(123, '123'));
-		$this->assertFalse(Str::equalsIgnoreCase('', 0));
+		$this->assertTrue(Str::match(123, '123'));
+		$this->assertFalse(Str::match('', 0));
 	}
 
 	public function testAppendPrependAndConcatMutateString()
