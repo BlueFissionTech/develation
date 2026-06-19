@@ -26,8 +26,60 @@ class HTTP {
 	}
 
 	/**
+	 * Parse a URL into normalized component parts.
+	 *
+	 * @param string $url
+	 * @return array|null
+	 */
+	static function urlParts(string $url): ?array
+	{
+		$parts = parse_url($url);
+
+		return is_array($parts) ? $parts : null;
+	}
+
+	/**
+	 * Extract a URL scheme.
+	 *
+	 * @param string $url
+	 * @return string|null
+	 */
+	static function urlScheme(string $url): ?string
+	{
+		$scheme = parse_url($url, PHP_URL_SCHEME);
+
+		return is_string($scheme) && $scheme !== '' ? $scheme : null;
+	}
+
+	/**
+	 * Extract a URL host.
+	 *
+	 * @param string $url
+	 * @return string|null
+	 */
+	static function urlHost(string $url): ?string
+	{
+		$host = parse_url($url, PHP_URL_HOST);
+
+		return is_string($host) && $host !== '' ? $host : null;
+	}
+
+	/**
+	 * Extract a URL port.
+	 *
+	 * @param string $url
+	 * @return int|null
+	 */
+	static function urlPort(string $url): ?int
+	{
+		$port = parse_url($url, PHP_URL_PORT);
+
+		return is_int($port) ? $port : null;
+	}
+
+	/**
 	 * Query function to build a query string from an array of key-value pairs
-	 * 
+	 *
 	 * @param array $formdata An array of key-value pairs to be used as the query
 	 * @param string $numeric_prefix A prefix to be added to numeric keys in the query array
 	 * @param string $key A key to be added to the query array
@@ -70,14 +122,14 @@ class HTTP {
 	static function urlExists(string $url): bool
 	{
 
-	    $scheme = parse_url($url, PHP_URL_SCHEME);
+	    $scheme = HTTP::urlScheme($url);
 	    
-	    if ($scheme === false || Arr::has(['http', 'https'], $scheme) === false) {
+	    if ($scheme === null || Arr::has(['http', 'https'], $scheme) === false) {
 	        return false;
 	    }
 	    
-	    $host = parse_url($url, PHP_URL_HOST);
-	    $port = parse_url($url, PHP_URL_PORT);
+	    $host = HTTP::urlHost($url);
+	    $port = HTTP::urlPort($url);
 
         if (!$host) {
             return false;

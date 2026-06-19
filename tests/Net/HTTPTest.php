@@ -18,6 +18,33 @@ class HTTPTest extends TestCase {
         $this->assertSame('', HTTP::pathSegment(' / '));
     }
 
+    public function testUrlPartsReturnsNormalizedParseResult() {
+        $parts = HTTP::urlParts('https://example.com:8443/docs?tab=api');
+
+        $this->assertSame('https', $parts['scheme']);
+        $this->assertSame('example.com', $parts['host']);
+        $this->assertSame(8443, $parts['port']);
+        $this->assertSame('/docs', $parts['path']);
+        $this->assertNull(HTTP::urlParts('http:///missing-host'));
+    }
+
+    public function testUrlComponentHelpersExtractCommonHosts() {
+        $this->assertSame('http', HTTP::urlScheme('http://example.com'));
+        $this->assertSame('https', HTTP::urlScheme('https://localhost:8443/status'));
+        $this->assertSame('localhost', HTTP::urlHost('https://localhost:8443/status'));
+        $this->assertSame('127.0.0.1', HTTP::urlHost('http://127.0.0.1:8080/health'));
+        $this->assertSame('[::1]', HTTP::urlHost('http://[::1]:8080/health'));
+        $this->assertSame(8443, HTTP::urlPort('https://localhost:8443/status'));
+    }
+
+    public function testUrlComponentHelpersReturnNullForMissingOrInvalidValues() {
+        $this->assertNull(HTTP::urlScheme('/relative/path'));
+        $this->assertNull(HTTP::urlHost('/relative/path'));
+        $this->assertNull(HTTP::urlHost('http:///missing-host'));
+        $this->assertNull(HTTP::urlPort('https://example.com'));
+        $this->assertNull(HTTP::urlPort('http:///missing-host'));
+    }
+
     public function testQuery() {
         $formdata = [
             'key1' => 'value1',
