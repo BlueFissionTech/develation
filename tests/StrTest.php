@@ -157,6 +157,27 @@ class StrTest extends ValTest {
 		$this->assertSame('haha', $object->val());
 	}
 
+	public function testMatchSupportsIgnoreCaseMode()
+	{
+		$object = new Str('Content-Type');
+
+		$this->assertTrue($object->match('content-type', Str::IGNORE_CASE));
+		$this->assertSame('Content-Type', $object->val());
+		$this->assertTrue(Str::match('ACCEPT', 'accept', Str::IGNORE_CASE));
+		$this->assertFalse(Str::match('Accept', 'Accept-Encoding', Str::IGNORE_CASE));
+	}
+
+	public function testMatchIgnoreCaseKeepsWhitespaceSignificant()
+	{
+		$this->assertFalse(Str::match('Accept', ' accept ', Str::IGNORE_CASE));
+	}
+
+	public function testMatchCastsInputValues()
+	{
+		$this->assertTrue(Str::match(123, '123'));
+		$this->assertFalse(Str::match('', 0));
+	}
+
 	public function testAppendPrependAndConcatMutateString()
 	{
 		$object = new Str('john');
