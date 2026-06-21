@@ -10,6 +10,7 @@ use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\IObj;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class Stdio
@@ -40,6 +41,53 @@ class Stdio extends Connection implements IConfigurable
         if (Arr::is($config)) {
             $this->config($config);
         }
+    }
+
+    /**
+     * Read request/body input without using stream_select().
+     *
+     * @param mixed $source Null for php://input, a stream resource, or a readable stream/path string.
+     * @return string
+     */
+    public static function readInput(mixed $source = null): string
+    {
+        $source = Val::isNull($source) ? 'php://input' : Dev::apply('_in', $source);
+        $handle = null;
+        $shouldClose = false;
+
+        if (is_resource($source)) {
+            $handle = $source;
+        } elseif (is_string($source) && $source !== '') {
+            $handle = @fopen($source, 'r');
+            $shouldClose = is_resource($handle);
+        }
+
+        if (!is_resource($handle)) {
+            return (string)Dev::apply('_out', '');
+        }
+
+        $contents = stream_get_contents($handle);
+
+        if ($shouldClose) {
+            fclose($handle);
+        }
+
+        if ($contents === false) {
+            $contents = '';
+        }
+
+        return (string)Dev::apply('_out', $contents);
+    }
+
+    /**
+     * Alias for readInput().
+     *
+     * @param mixed $source Null for php://input, a stream resource, or a readable stream/path string.
+     * @return string
+     */
+    public static function input(mixed $source = null): string
+    {
+        return self::readInput($source);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace BlueFission\Tests\Connections;
 
 use BlueFission\Connections\Connection;
+use BlueFission\Connections\IO;
 use BlueFission\Connections\Stdio;
 
 class StdioTest extends ConnectionTest
@@ -45,6 +46,54 @@ class StdioTest extends ConnectionTest
         $this->object->open();
 
         $this->assertEquals(Connection::STATUS_CONNECTED, $this->object->status(), "Status should be connected after opening output.");
+    }
+
+    public function testReadInputReadsExplicitStream()
+    {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'request-body');
+        rewind($stream);
+
+        $this->assertSame('request-body', Stdio::readInput($stream));
+
+        fclose($stream);
+    }
+
+    public function testReadInputReturnsEmptyStringForEmptyStream()
+    {
+        $stream = fopen('php://temp', 'r+');
+
+        $this->assertSame('', Stdio::readInput($stream));
+
+        fclose($stream);
+    }
+
+    public function testInputAliasAvoidsInteractiveStreamPolling()
+    {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'alias-body');
+        rewind($stream);
+
+        $this->assertSame('alias-body', Stdio::input($stream));
+
+        fclose($stream);
+    }
+
+    public function testInputReturnsEmptyStringForUnreadableSource()
+    {
+        $this->assertSame('', Stdio::input(''));
+        $this->assertSame('', Stdio::input(__DIR__ . '/missing-input.txt'));
+    }
+
+    public function testIoInputDelegatesToSafeStdioRead()
+    {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'io-body');
+        rewind($stream);
+
+        $this->assertSame('io-body', IO::input($stream));
+
+        fclose($stream);
     }
 
     // public function testStatusAfterClose()
