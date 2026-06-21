@@ -35,10 +35,12 @@ Helper API notes:
 
 - Use `Arr::has($array, $value)` for value checks. Use `Arr::hasKey($array, $key)` for key checks, and `Arr::hasValue($array, $value, true)` or `Arr::contains($array, $value, true)` when strict value matching matters.
 - Use `Arr::merge($base, $next)` when associative keys should be replaced recursively and numeric list values should be appended when unique. Use `Arr::append($base, $next)` for append-only numeric list behavior.
+- Use `Arr::filter($array, $callback)`, `Arr::map($array, $callback)`, `Arr::diff($left, $right)`, `Arr::intersect($left, $right)`, and `Arr::slice($array, $offset, $length)` for common array transforms that should stay on the DevElation helper surface.
 - Use `Arr::values($array)` to reindex list values while preserving order, and `BlueFission\Net\HTTP::pathSegment($segment)` to encode a single URL path segment.
 - Use `Arr::mergeRecursive($base, $next)` when associative keys should be replaced recursively and numeric lists should append in order while preserving duplicates.
 - Use `Str::repeat($value, $times)` as the canonical static helper for `str_repeat`-style behavior. Existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
-- Use `Str::match($left, $right, Str::IGNORE_CASE)` for case-insensitive equality checks. Values are string-cast before comparison and whitespace remains significant.
+- Use `Str::startsWith($value, $needle)`, `Str::endsWith($value, $needle)`, and `Str::match($left, $right, Str::IGNORE_CASE)` for string boundary and equality checks. Values are string-cast before comparison and whitespace remains significant.
+- Use `Date::formatTimestamp($timestamp, 'Y-m-d')` as a concise replacement for `date($format, $timestamp)`.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
 
 ### DateTime Handling

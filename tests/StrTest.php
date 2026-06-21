@@ -127,6 +127,17 @@ class StrTest extends ValTest {
 		$this->assertFalse($this->object->startsWith('Your Name'));
 		$this->assertTrue(Str::startsWith('prefix-value', 'prefix'));
 		$this->assertFalse(Str::startsWith('prefix-value', 'value'));
+		$this->assertTrue(Str::startsWith('Content-Type', 'content', Str::IGNORE_CASE));
+	}
+
+	public function testEndsWithWorks()
+	{
+		$this->assertTrue($this->object->endsWith('John'));
+		$this->assertFalse($this->object->endsWith('Name'));
+		$this->assertFalse(Str::endsWith('go', 'longer'));
+		$this->assertTrue(Str::endsWith('prefix-value', 'value'));
+		$this->assertFalse(Str::endsWith('prefix-value', 'prefix'));
+		$this->assertTrue(Str::endsWith('Content-Type', 'type', Str::IGNORE_CASE));
 	}
 
 	public function testToBoolStrictParsesTokens()
