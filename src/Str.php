@@ -312,6 +312,10 @@ class Str extends Val implements IVal {
 	 * @return IVal
 	 */
 	public function _repeat(int $times): IVal {
+		if ($times < 0) {
+			throw new \InvalidArgumentException('Repeat count must be non-negative.');
+		}
+
 		$string = str_repeat($this->_data, $times);
 
 		$this->alter($string);
