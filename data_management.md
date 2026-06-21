@@ -111,5 +111,6 @@ $log->push('queue processed')->write();
 ## Related
 
 - Storage implementations live under `src/Data/Storage` (MySQL, SQLite, Mongo, Memcached, Disk, Session).
+- SQLite storage result and schema contract: `sqlite.md`.
 - Queue implementations live under `src/Data/Queues`.
 - Optional integration test setup is documented in `tests.md`.
