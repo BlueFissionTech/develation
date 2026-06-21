@@ -90,4 +90,62 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFalse($filesystem->exists($missing));
 		$this->assertFileDoesNotExist($missing);
 	}
+
+	public function testLinesReadsFileContentsAsIterableValues()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'names.txt';
+		file_put_contents($path, 'Ada'.PHP_EOL.'Grace');
+
+		$filesystem = new FileSystem($path);
+
+		$this->assertSame(['Ada', 'Grace'], $filesystem->lines());
+	}
+
+	public function testLinesCanSplitInMemoryContents()
+	{
+		$filesystem = new FileSystem([
+			'root' => $this->testdirectory,
+			'filter' => [],
+			'doNotConfirm' => true,
+		]);
+		$filesystem->contents('alpha|beta|gamma');
+
+		$this->assertSame(['alpha', 'beta', 'gamma'], $filesystem->lines('|'));
+	}
+
+	public function testLinesReturnsEmptyListForMissingFileWithoutCreatingIt()
+	{
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing-lines.txt';
+		$filesystem = new FileSystem($missing);
+
+		$this->assertSame([], $filesystem->lines());
+		$this->assertFileDoesNotExist($missing);
+	}
+
+	public function testEntriesReturnsSortedDirectoryValues()
+	{
+		touch($this->testdirectory.DIRECTORY_SEPARATOR.'zeta.txt');
+		touch($this->testdirectory.DIRECTORY_SEPARATOR.'alpha.txt');
+
+		$filesystem = new FileSystem([
+			'root' => $this->testdirectory,
+			'filter' => [],
+			'doNotConfirm' => true,
+		]);
+
+		$this->assertSame(['alpha.txt', 'zeta.txt'], $filesystem->entries());
+	}
+
+	public function testEntriesReturnsEmptyListForMissingDirectoryWithoutCreatingIt()
+	{
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing-directory';
+		$filesystem = new FileSystem([
+			'root' => $missing,
+			'filter' => [],
+			'doNotConfirm' => true,
+		]);
+
+		$this->assertSame([], $filesystem->entries());
+		$this->assertDirectoryDoesNotExist($missing);
+	}
 }

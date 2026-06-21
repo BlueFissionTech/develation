@@ -40,6 +40,7 @@ Helper API notes:
 - Use `Str::repeat($value, $times)` or the explicit `Str::strRepeat($value, $times)` alias as the canonical static helper for `str_repeat`-style behavior. Repeat counts must be non-negative; existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
 - Use `Str::match($left, $right, Str::IGNORE_CASE)` for case-insensitive equality checks. Values are string-cast before comparison and whitespace remains significant.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
+- Use `BlueFission\Data\FileSystem::lines($eol)` for read-only file line values and `FileSystem::entries()` for sorted directory entry values. Missing targets return empty arrays and are not created.
 
 ### DateTime Handling
 Sophisticated date and time manipulation with object-oriented principles, extending PHP's native `DateTime` class.
