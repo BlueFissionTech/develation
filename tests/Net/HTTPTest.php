@@ -45,6 +45,24 @@ class HTTPTest extends TestCase {
         $this->assertNull(HTTP::urlPort('http:///missing-host'));
     }
 
+    public function testJsonDecodeReturnsStructuredValuesAndDefault() {
+        $this->assertSame(['ok' => true], HTTP::jsonDecode('{"ok":true}'));
+        $this->assertEquals((object)['ok' => true], HTTP::jsonDecode('{"ok":true}', false));
+        $this->assertSame(['fallback' => true], HTTP::jsonDecode('{bad json', true, ['fallback' => true]));
+    }
+
+    public function testHeaderLineNormalizesNameAndValue() {
+        $this->assertSame('Content-Type: application/json', HTTP::headerLine(' Content-Type ', ' application/json '));
+    }
+
+    public function testStatusHelpersResolveKnownCodes() {
+        $this->assertSame('Not Found', HTTP::statusText(404));
+        $this->assertSame('HTTP/1.1 404 Not Found', HTTP::statusLine(404));
+        $this->assertSame('HTTP/2 200 OK', HTTP::statusLine(200, ' HTTP/2 '));
+        $this->assertNull(HTTP::statusText(799));
+        $this->assertNull(HTTP::statusLine(799));
+    }
+
     public function testQuery() {
         $formdata = [
             'key1' => 'value1',
