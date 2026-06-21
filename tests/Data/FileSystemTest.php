@@ -73,4 +73,21 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFalse(FileSystem::fileExists($this->testdirectory));
 		$this->assertFileDoesNotExist($missing);
 	}
+
+	public function testReadOnlyExistsProbeAcceptsAssociativeConfigArray()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'existing.txt';
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing.txt';
+		touch($path);
+
+		$filesystem = new FileSystem([
+			'root' => $this->testdirectory,
+			'filter' => [],
+			'doNotConfirm' => true,
+		]);
+
+		$this->assertTrue($filesystem->exists($path));
+		$this->assertFalse($filesystem->exists($missing));
+		$this->assertFileDoesNotExist($missing);
+	}
 }
