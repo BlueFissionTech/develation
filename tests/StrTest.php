@@ -145,8 +145,17 @@ class StrTest extends ValTest {
 
 	public function testStrRepeatProvidesCanonicalStaticHelper()
 	{
+		$this->assertSame('ababab', Str::repeat('ab', 3));
 		$this->assertSame('ababab', Str::strRepeat('ab', 3));
 		$this->assertSame('', Str::strRepeat('ab', 0));
+	}
+
+	public function testStrRepeatRejectsNegativeCounts()
+	{
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('Repeat count must be non-negative.');
+
+		Str::repeat('ab', -1);
 	}
 
 	public function testStrRepeatInstanceAliasKeepsRepeatBehavior()
