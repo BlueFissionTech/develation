@@ -21,6 +21,20 @@ class Str extends Val implements IVal {
      */
     const SHA = 'sha1';
 
+	/**
+	 * Default exact match mode.
+	 *
+	 * @var int
+	 */
+	const MATCH_EXACT = 0;
+
+	/**
+	 * Case-insensitive match mode.
+	 *
+	 * @var int
+	 */
+	const IGNORE_CASE = 1;
+
     /**
 	 * Constructor to initialize value of the class
 	 *
@@ -159,12 +173,19 @@ class Str extends Val implements IVal {
 	 * Check if the current string matches the input string
 	 *
 	 * @param string $str2 The string to compare with the current string
+	 * @param int $mode The match mode. Use Str::IGNORE_CASE for case-insensitive comparison.
 	 *
 	 * @return bool True if the two strings match, false otherwise
 	 */
-	public function _match(string $str2): bool
+	public function _match(string $str2, int $mode = self::MATCH_EXACT): bool
 	{
-		$str1 = $this->_data;
+		$str1 = (string)$this->_data;
+		$str2 = (string)$str2;
+
+		if (($mode & self::IGNORE_CASE) === self::IGNORE_CASE) {
+			return strcasecmp($str1, $str2) === 0;
+		}
+
 		return ($str1 == $str2);
 	}
 
