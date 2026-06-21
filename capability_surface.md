@@ -4,6 +4,9 @@ This document describes DevElation's own capability surface for general PHP use.
 It is a guide for keeping public helpers, primitives, data tools, behaviors, and
 services coherent as the library evolves.
 
+For package and application adoption review, see the companion
+`usage_readiness_checklist.md`.
+
 ## Design Principles
 
 - DevElation owns its primitive wrappers, data abstractions, behavior system,
