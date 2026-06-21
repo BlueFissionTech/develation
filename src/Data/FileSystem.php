@@ -753,9 +753,70 @@ class FileSystem extends Data implements IData {
 
 		$this->status('Success');
 
-		return $output;	
+		return $output;
 	}
-	
+
+	/**
+	 * Return directory entries as a predictable iterable list.
+	 *
+	 * This helper only inspects the target directory. Missing or disallowed
+	 * directories return an empty list and are not created.
+	 *
+	 * @return array
+	 */
+	public function entries(): array
+	{
+		$entries = $this->listDir(false);
+
+		if (!Arr::is($entries)) {
+			return Dev::apply('_out', []);
+		}
+
+		$entries = Arr::make($entries)->sort()->val();
+
+		return Dev::apply('_out', $entries);
+	}
+
+	/**
+	 * Return file contents split into iterable line values.
+	 *
+	 * This helper reads the current file target when one is configured,
+	 * otherwise it splits the in-memory contents value. Missing files return
+	 * an empty list and are not created.
+	 *
+	 * @param string $eol
+	 * @return array
+	 */
+	public function lines(string $eol = PHP_EOL): array
+	{
+		$eol = Dev::apply('_in', $eol);
+		$contents = null;
+		$file = $this->file();
+
+		if ($file) {
+			$path = $this->path();
+			$filepath = $path.DIRECTORY_SEPARATOR.$file;
+
+			if (!$this->allowedDir($filepath) || !$this->exists($filepath) || !is_readable($filepath)) {
+				return Dev::apply('_out', []);
+			}
+
+			$contents = file_get_contents($filepath);
+		} elseif (Val::isNotNull($this->contents())) {
+			$contents = $this->contents();
+		}
+
+		if (!Str::is($contents) || $contents === '') {
+			return Dev::apply('_out', []);
+		}
+
+		if ($eol === '') {
+			return Dev::apply('_out', [$contents]);
+		}
+
+		return Dev::apply('_out', explode($eol, $contents));
+	}
+
 	/**
 	 * Get or set the contents of the file
 	 *

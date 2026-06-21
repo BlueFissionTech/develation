@@ -42,6 +42,7 @@ Helper API notes:
 - Use `Str::startsWith($value, $needle)`, `Str::endsWith($value, $needle)`, and `Str::match($left, $right, Str::IGNORE_CASE)` for string boundary and equality checks. Values are string-cast before comparison and whitespace remains significant.
 - Use `Date::formatTimestamp($timestamp, 'Y-m-d')` as a concise replacement for `date($format, $timestamp)`.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
+- Use `BlueFission\Data\FileSystem::lines($eol)` for read-only file line values and `FileSystem::entries()` for sorted directory entry values. Missing targets return empty arrays and are not created.
 - Use `BlueFission\Connections\Stdio::input()` or `Stdio::readInput()` to read request/body streams without interactive `stream_select()` polling. Empty or unreadable input returns an empty string.
 
 ### DateTime Handling
