@@ -205,6 +205,44 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['features' => ['alpha', 'beta']], $object->val());
 	}
 
+	public function testFiltersValuesWithCallback()
+	{
+		$filtered = static::$classname::filter(
+			['first' => 1, 'second' => 2, 'third' => 3],
+			fn ($value) => $value > 1
+		);
+
+		$this->assertSame(['second' => 2, 'third' => 3], $filtered);
+	}
+
+	public function testFiltersValuesWithKeyAwareCallback()
+	{
+		$filtered = static::$classname::filter(
+			['first' => 1, 'second' => 2],
+			fn ($value, $key) => $key === 'second' && $value === 2
+		);
+
+		$this->assertSame(['second' => 2], $filtered);
+	}
+
+	public function testMapsValuesWithCallbackAndPreservesKeys()
+	{
+		$mapped = static::$classname::map(
+			['first' => 1, 'second' => 2],
+			fn ($value, $key) => $key . ':' . ($value * 2)
+		);
+
+		$this->assertSame(['first' => 'first:2', 'second' => 'second:4'], $mapped);
+	}
+
+	public function testCommonStaticArrayHelpersReturnPlainArrays()
+	{
+		$this->assertSame(['bar'], static::$classname::slice(['foo', 'bar', 'baz'], 1, 1));
+		$this->assertSame([1 => 'bar'], static::$classname::diff(['foo', 'bar'], ['foo']));
+		$this->assertSame([1 => 'bar'], static::$classname::intersect(['foo', 'bar'], ['bar']));
+		$this->assertSame(['foo', 'bar'], static::$classname::merge(['foo'], ['bar']));
+	}
+
 	public function testReversesValues()
 	{
 		$object = new static::$classname(['foo', 'bar', 'baz']);

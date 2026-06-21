@@ -737,6 +737,48 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
         return $this;
     }
 
+    /**
+     * Return values that pass the callback while preserving their keys.
+     *
+     * @param callable $callback Receives value and key.
+     * @return Arr
+     */
+    public function _filter(callable $callback): Arr
+    {
+        if (!$this->is($this->_data)) {
+            return Arr::make();
+        }
+
+        $array = [];
+        foreach ($this->_data as $key => $value) {
+            if ($callback($value, $key)) {
+                $array[$key] = $value;
+            }
+        }
+
+        return Arr::make($array);
+    }
+
+    /**
+     * Map values through a callback while preserving their keys.
+     *
+     * @param callable $callback Receives value and key.
+     * @return Arr
+     */
+    public function _map(callable $callback): Arr
+    {
+        if (!$this->is($this->_data)) {
+            return Arr::make();
+        }
+
+        $array = [];
+        foreach ($this->_data as $key => $value) {
+            $array[$key] = $callback($value, $key);
+        }
+
+        return Arr::make($array);
+    }
+
 
     /**
      * Remove a value from the array

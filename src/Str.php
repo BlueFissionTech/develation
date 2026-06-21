@@ -576,7 +576,7 @@ class Str extends Val implements IVal {
 	 * @param string $needle
 	 * @return bool
 	 */
-	public function _startsWith(string $needle): bool
+	public function _startsWith(string $needle, int $mode = self::MATCH_EXACT): bool
 	{
 		$haystack = (string)$this->_data;
 		$needle = (string)$needle;
@@ -585,7 +585,38 @@ class Str extends Val implements IVal {
 			return true;
 		}
 
+		if (($mode & self::IGNORE_CASE) === self::IGNORE_CASE) {
+			return strncasecmp($haystack, $needle, strlen($needle)) === 0;
+		}
+
 		return strncmp($haystack, $needle, strlen($needle)) === 0;
+	}
+
+	/**
+	 * Check if the current string ends with the given needle.
+	 *
+	 * @param string $needle
+	 * @param int $mode The match mode. Use Str::IGNORE_CASE for case-insensitive comparison.
+	 * @return bool
+	 */
+	public function _endsWith(string $needle, int $mode = self::MATCH_EXACT): bool
+	{
+		$haystack = (string)$this->_data;
+		$needle = (string)$needle;
+
+		if ($needle === '') {
+			return true;
+		}
+
+		if (strlen($needle) > strlen($haystack)) {
+			return false;
+		}
+
+		if (($mode & self::IGNORE_CASE) === self::IGNORE_CASE) {
+			return substr_compare($haystack, $needle, -strlen($needle), null, true) === 0;
+		}
+
+		return substr_compare($haystack, $needle, -strlen($needle)) === 0;
 	}
 
 	/**

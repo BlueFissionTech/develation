@@ -124,6 +124,15 @@ class DateTest extends ValTest {
 		$this->assertEquals('2012-12-12', $object->date());
 	}
 
+	public function testFormatsTimestamp()
+	{
+		$timestamp = strtotime('2012-12-12 12:00:00');
+
+		$this->assertSame(date('Y-m-d', $timestamp), Date::formatTimestamp($timestamp));
+		$this->assertSame(date('c', $timestamp), Date::formatTimestamp((string)$timestamp, 'c'));
+		$this->assertSame('2012', (new Date('2012-12-12 12:00:00'))->formatTimestamp('Y'));
+	}
+
 	public function testGetsTime()
 	{
 		$object = new static::$classname('2012-12-12');

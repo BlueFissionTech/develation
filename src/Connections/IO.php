@@ -51,6 +51,14 @@ class IO
     }
 
     /**
+     * Read request/body input without using non-interactive stream polling.
+     */
+    public static function input(mixed $source = null): string
+    {
+        return (string)self::applyFilters(Stdio::input($source));
+    }
+
+    /**
      * Fetch remote data via HTTP.
      */
     public static function fetch(string $url, array $config = []): mixed
