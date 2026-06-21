@@ -68,6 +68,7 @@ Facilitate connectivity to various data sources and services, such as MySQL, cUR
 Handle queues, storage solutions, databases, Redis, MemQ, files, and logs with a unified approach to data manipulation and persistence.
 
 - [Data Management Documentation](data_management.md)
+- [SQLite Storage Contract](sqlite.md)
 - [Schema Documentation](schema.md)
 - [Graph Documentation](graph.md)
 - [Prototypes Documentation](prototypes.md)

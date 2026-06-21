@@ -52,8 +52,12 @@ class SQLiteTest extends \PHPUnit\Framework\TestCase
         $storage->activate()->readAll();
         $rows = $storage->fetchRows();
 
+        $this->assertSame(SQLite::STATUS_SUCCESS, $storage->status());
+        $this->assertStringContainsString('SELECT', $storage->query());
+        $this->assertStringContainsString('items', $storage->query());
         $this->assertCount(3, $rows);
         $this->assertSame(['one', 'two', 'three'], array_column($rows, 'name'));
+        $this->assertSame('one', $storage->field('name'));
     }
 
     public function testAllReturnsAllRowsDirectly()
