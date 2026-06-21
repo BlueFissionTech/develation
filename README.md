@@ -41,6 +41,7 @@ Helper API notes:
 - Use `Str::repeat($value, $times)` or the explicit `Str::strRepeat($value, $times)` alias as the canonical static helper for `str_repeat`-style behavior. Repeat counts must be non-negative; existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
 - Use `Str::startsWith($value, $needle)`, `Str::endsWith($value, $needle)`, and `Str::match($left, $right, Str::IGNORE_CASE)` for string boundary and equality checks. Values are string-cast before comparison and whitespace remains significant.
 - Use `Date::formatTimestamp($timestamp, 'Y-m-d')` as a concise replacement for `date($format, $timestamp)`.
+- Use `Num::isIntStrict()`, `Num::isFloatStrict()` / `Num::isDoubleStrict()`, and `Flag::isBoolStrict()` / `Flag::isBooleanStrict()` when native scalar type checks must not coerce strings or numeric values.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
 - Use `BlueFission\Data\FileSystem::lines($eol)` for read-only file line values and `FileSystem::entries()` for sorted directory entry values. Missing targets return empty arrays and are not created.
 - Use `BlueFission\Connections\Stdio::input()` or `Stdio::readInput()` to read request/body streams without interactive `stream_select()` polling. Empty or unreadable input returns an empty string.
