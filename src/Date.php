@@ -295,6 +295,23 @@ class Date extends Val implements IVal
     }
 
     /**
+     * Format the current value as a timestamp.
+     *
+     * @param string $format
+     * @return string
+     */
+    public function _formatTimestamp(string $format = 'Y-m-d'): string
+    {
+        $timestamp = $this->timestamp($this->_value);
+
+        if (Val::isNull($timestamp)) {
+            $timestamp = $this->timestamp();
+        }
+
+        return date($format, (int)$timestamp);
+    }
+
+    /**
      * Get the change between the current value and the snapshot
      *
      * @return mixed
