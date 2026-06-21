@@ -5,12 +5,35 @@ use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
 use BlueFission\Num;
+use BlueFission\DevElation as Dev;
 
 /**
  * Class HTTP
  * This class provides helper methods for handling HTTP requests and responses.
  */
 class HTTP {
+	const STATUS_TEXTS = [
+		100 => 'Continue',
+		101 => 'Switching Protocols',
+		200 => 'OK',
+		201 => 'Created',
+		202 => 'Accepted',
+		204 => 'No Content',
+		301 => 'Moved Permanently',
+		302 => 'Found',
+		304 => 'Not Modified',
+		400 => 'Bad Request',
+		401 => 'Unauthorized',
+		403 => 'Forbidden',
+		404 => 'Not Found',
+		405 => 'Method Not Allowed',
+		409 => 'Conflict',
+		422 => 'Unprocessable Entity',
+		429 => 'Too Many Requests',
+		500 => 'Internal Server Error',
+		502 => 'Bad Gateway',
+		503 => 'Service Unavailable',
+	];
 
 	/**
 	 * Encode a single URL path segment.
@@ -26,8 +49,103 @@ class HTTP {
 	}
 
 	/**
+	 * Parse a URL into normalized component parts.
+	 *
+	 * @param string $url
+	 * @return array|null
+	 */
+	static function urlParts(string $url): ?array
+	{
+		$parts = parse_url($url);
+
+		return Arr::is($parts) ? $parts : null;
+	}
+
+	/**
+	 * Extract a URL scheme.
+	 *
+	 * @param string $url
+	 * @return string|null
+	 */
+	static function urlScheme(string $url): ?string
+	{
+		$scheme = parse_url($url, PHP_URL_SCHEME);
+
+		return Str::is($scheme) && Str::isNotEmpty($scheme) ? $scheme : null;
+	}
+
+	/**
+	 * Extract a URL host.
+	 *
+	 * @param string $url
+	 * @return string|null
+	 */
+	static function urlHost(string $url): ?string
+	{
+		$host = parse_url($url, PHP_URL_HOST);
+
+		return Str::is($host) && Str::isNotEmpty($host) ? $host : null;
+	}
+
+	/**
+	 * Extract a URL port.
+	 *
+	 * @param string $url
+	 * @return int|null
+	 */
+	static function urlPort(string $url): ?int
+	{
+		$port = parse_url($url, PHP_URL_PORT);
+
+		return Num::is($port) ? Num::int($port) : null;
+	}
+
+	/**
+	 * Build a normalized HTTP header line.
+	 *
+	 * @param string $name
+	 * @param string $value
+	 * @return string
+	 */
+	static function headerLine(string $name, string $value): string
+	{
+		return Str::trim($name) . ': ' . Str::trim($value);
+	}
+
+	/**
+	 * Resolve a standard HTTP status text.
+	 *
+	 * @param int $code
+	 * @return string|null
+	 */
+	static function statusText(int $code): ?string
+	{
+		$statuses = Dev::apply('http_status_texts', self::STATUS_TEXTS);
+
+		return Arr::hasKey($statuses, $code) ? $statuses[$code] : null;
+	}
+
+	/**
+	 * Build an HTTP status line for a known status code.
+	 *
+	 * @param int $code
+	 * @param string $protocol
+	 * @return string|null
+	 */
+	static function statusLine(int $code, string $protocol = 'HTTP/1.1'): ?string
+	{
+		$text = HTTP::statusText($code);
+
+		if (Val::isNull($text)) {
+			return null;
+		}
+
+		return Str::trim($protocol) . ' ' . Num::int($code) . ' ' . $text;
+	}
+
+	/**
 	 * Query function to build a query string from an array of key-value pairs
-	 * 
+	 *
 	 * @param array $formdata An array of key-value pairs to be used as the query
 	 * @param string $numeric_prefix A prefix to be added to numeric keys in the query array
 	 * @param string $key A key to be added to the query array
@@ -70,14 +188,14 @@ class HTTP {
 	static function urlExists(string $url): bool
 	{
 
-	    $scheme = parse_url($url, PHP_URL_SCHEME);
+	    $scheme = HTTP::urlScheme($url);
 	    
-	    if ($scheme === false || Arr::has(['http', 'https'], $scheme) === false) {
+	    if ($scheme === null || Arr::has(['http', 'https'], $scheme) === false) {
 	        return false;
 	    }
 	    
-	    $host = parse_url($url, PHP_URL_HOST);
-	    $port = parse_url($url, PHP_URL_PORT);
+	    $host = HTTP::urlHost($url);
+	    $port = HTTP::urlPort($url);
 
         if (!$host) {
             return false;
@@ -278,6 +396,25 @@ class HTTP {
 		  foreach ($a as $k => $v) $result[] = json_encode($k).':'.json_encode($v);
 		  return '{' . join(',', $result) . '}';
 		}
+	}
+
+	/**
+	 * Decode a JSON string with a deterministic fallback value.
+	 *
+	 * @param string $json
+	 * @param bool $assoc
+	 * @param mixed $default
+	 * @return mixed
+	 */
+	static function jsonDecode(string $json, bool $assoc = true, mixed $default = null): mixed
+	{
+		$value = json_decode($json, $assoc);
+
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			return $default;
+		}
+
+		return $value;
 	}
 
 	/**

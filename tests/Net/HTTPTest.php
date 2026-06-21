@@ -18,6 +18,51 @@ class HTTPTest extends TestCase {
         $this->assertSame('', HTTP::pathSegment(' / '));
     }
 
+    public function testUrlPartsReturnsNormalizedParseResult() {
+        $parts = HTTP::urlParts('https://example.com:8443/docs?tab=api');
+
+        $this->assertSame('https', $parts['scheme']);
+        $this->assertSame('example.com', $parts['host']);
+        $this->assertSame(8443, $parts['port']);
+        $this->assertSame('/docs', $parts['path']);
+        $this->assertNull(HTTP::urlParts('http:///missing-host'));
+    }
+
+    public function testUrlComponentHelpersExtractCommonHosts() {
+        $this->assertSame('http', HTTP::urlScheme('http://example.com'));
+        $this->assertSame('https', HTTP::urlScheme('https://localhost:8443/status'));
+        $this->assertSame('localhost', HTTP::urlHost('https://localhost:8443/status'));
+        $this->assertSame('127.0.0.1', HTTP::urlHost('http://127.0.0.1:8080/health'));
+        $this->assertSame('[::1]', HTTP::urlHost('http://[::1]:8080/health'));
+        $this->assertSame(8443, HTTP::urlPort('https://localhost:8443/status'));
+    }
+
+    public function testUrlComponentHelpersReturnNullForMissingOrInvalidValues() {
+        $this->assertNull(HTTP::urlScheme('/relative/path'));
+        $this->assertNull(HTTP::urlHost('/relative/path'));
+        $this->assertNull(HTTP::urlHost('http:///missing-host'));
+        $this->assertNull(HTTP::urlPort('https://example.com'));
+        $this->assertNull(HTTP::urlPort('http:///missing-host'));
+    }
+
+    public function testJsonDecodeReturnsStructuredValuesAndDefault() {
+        $this->assertSame(['ok' => true], HTTP::jsonDecode('{"ok":true}'));
+        $this->assertEquals((object)['ok' => true], HTTP::jsonDecode('{"ok":true}', false));
+        $this->assertSame(['fallback' => true], HTTP::jsonDecode('{bad json', true, ['fallback' => true]));
+    }
+
+    public function testHeaderLineNormalizesNameAndValue() {
+        $this->assertSame('Content-Type: application/json', HTTP::headerLine(' Content-Type ', ' application/json '));
+    }
+
+    public function testStatusHelpersResolveKnownCodes() {
+        $this->assertSame('Not Found', HTTP::statusText(404));
+        $this->assertSame('HTTP/1.1 404 Not Found', HTTP::statusLine(404));
+        $this->assertSame('HTTP/2 200 OK', HTTP::statusLine(200, ' HTTP/2 '));
+        $this->assertNull(HTTP::statusText(799));
+        $this->assertNull(HTTP::statusLine(799));
+    }
+
     public function testQuery() {
         $formdata = [
             'key1' => 'value1',
