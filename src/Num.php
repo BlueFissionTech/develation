@@ -88,7 +88,37 @@ class Num extends Val implements IVal {
     {
         $number = $this->_data;
         return (is_numeric($number) && ((Val::isNotEmpty($number) && $number != 0) || $allowZero));
-    }    
+    }
+
+    /**
+     * Check whether the value is a native integer without coercion.
+     *
+     * @return bool
+     */
+    public function _isIntStrict(): bool
+    {
+        return is_int($this->_data);
+    }
+
+    /**
+     * Check whether the value is a native float without coercion.
+     *
+     * @return bool
+     */
+    public function _isFloatStrict(): bool
+    {
+        return is_float($this->_data);
+    }
+
+    /**
+     * Alias for native float checks.
+     *
+     * @return bool
+     */
+    public function _isDoubleStrict(): bool
+    {
+        return $this->_isFloatStrict();
+    }
 
 	/**
 	 * Sets string formatting for the output of the number

@@ -45,6 +45,25 @@ class NumTest extends ValTest
         $this->assertFalse($this->blankObject->isValid());
     }
 
+    public function testStrictIntegerHelperDoesNotCoerceStrings()
+    {
+        $this->assertTrue(Num::isIntStrict(0));
+        $this->assertTrue(Num::isIntStrict(42));
+        $this->assertFalse(Num::isIntStrict('42'));
+        $this->assertFalse(Num::isIntStrict(42.0));
+        $this->assertFalse(Num::isIntStrict(''));
+    }
+
+    public function testStrictFloatHelpersDoNotCoerceIntegersOrStrings()
+    {
+        $this->assertTrue(Num::isFloatStrict(0.0));
+        $this->assertTrue(Num::isFloatStrict(2.5));
+        $this->assertTrue(Num::isDoubleStrict(2.5));
+        $this->assertFalse(Num::isFloatStrict(2));
+        $this->assertFalse(Num::isFloatStrict('2.5'));
+        $this->assertFalse(Num::isDoubleStrict('2.5'));
+    }
+
     public function testPercentageReturnsCorrectValue()
     {
         $this->assertEquals(0.058, $this->largeObject->percentage(5));

@@ -80,6 +80,26 @@ class Flag extends Val implements IVal
     }
 
     /**
+     * Check whether the value is a native boolean without coercion.
+     *
+     * @return bool
+     */
+    public function _isBoolStrict(): bool
+    {
+        return is_bool($this->_data);
+    }
+
+    /**
+     * Alias for native boolean checks.
+     *
+     * @return bool
+     */
+    public function _isBooleanStrict(): bool
+    {
+        return $this->_isBoolStrict();
+    }
+
+    /**
      * Returns the boolean representation of a given value
      *
      * @param mixed $value The value to cast to a boolean

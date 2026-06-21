@@ -92,6 +92,18 @@ class FlagTest extends ValTest
 
     }
 
+    public function testStrictBooleanHelpersDoNotCoerceTokens()
+    {
+        $this->assertTrue(Flag::isBoolStrict(true));
+        $this->assertTrue(Flag::isBoolStrict(false));
+        $this->assertTrue(Flag::isBooleanStrict(false));
+        $this->assertFalse(Flag::isBoolStrict('true'));
+        $this->assertFalse(Flag::isBoolStrict('false'));
+        $this->assertFalse(Flag::isBoolStrict(1));
+        $this->assertFalse(Flag::isBooleanStrict(0));
+        $this->assertFalse(Flag::isBoolStrict(''));
+    }
+
     public function testSetsValue()
     {
         $object = new static::$classname();
