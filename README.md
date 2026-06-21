@@ -43,6 +43,7 @@ Helper API notes:
 - Use `Date::formatTimestamp($timestamp, 'Y-m-d')` as a concise replacement for `date($format, $timestamp)`.
 - Use `Num::isIntStrict()`, `Num::isFloatStrict()` / `Num::isDoubleStrict()`, and `Flag::isBoolStrict()` / `Flag::isBooleanStrict()` when native scalar type checks must not coerce strings or numeric values.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
+- Use `BlueFission\Connections\Stdio::input()` or `Stdio::readInput()` to read request/body streams without interactive `stream_select()` polling. Empty or unreadable input returns an empty string.
 
 ### DateTime Handling
 Sophisticated date and time manipulation with object-oriented principles, extending PHP's native `DateTime` class.
