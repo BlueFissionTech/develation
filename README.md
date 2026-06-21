@@ -22,6 +22,7 @@ Furthermore, DevElation isn't just a standalone library; it forms the backbone o
 DevElation implements a behavior-driven event handling system, which includes `Event`, `State`, and `Action`. These behaviors allow for reactive and decoupled components, making your application more modular and maintainable.
 
 - [Event Handling Documentation](behavior.md)
+- [Behavior Lifecycle Patterns](parser-runtime-behaviors.md)
 
 ### Data Types
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
