@@ -567,11 +567,15 @@ class FileSystem extends Data implements IData {
 	 */
 	public function exists($path = null): bool
 	{
-		$path = $path ?? null;
 		$file = Val::isNotNull($path) ? basename($path) : $this->file();
-		$directory = Val::isNotNull($path) ? realpath( dirname($path) ) : $this->path();
-		
-		$path = realpath( join(DIRECTORY_SEPARATOR, [$directory, $file] ) );
+		$directory = Val::isNotNull($path) ? dirname($path) : $this->path();
+		$directory = realpath($directory);
+
+		if (!$file || !$directory) {
+			return false;
+		}
+
+		$path = join(DIRECTORY_SEPARATOR, [$directory, $file]);
 
 		if (!$this->allowedDir($path)) {
 			$this->status("Location is outside of allowed path.");
