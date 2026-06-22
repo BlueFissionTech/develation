@@ -27,6 +27,7 @@ Strings:
 Numbers, flags, and dates:
 
 - Use `Num` for numeric conversion, arithmetic, formatting, and comparison helpers that should be hookable.
+- Use `Num::deg2rad()`, `Num::rad2deg()`, `Num::sin()`, `Num::cos()`, and `Num::atan2()` for angle and trigonometry operations that should remain on the helper surface.
 - Use `Flag` for boolean-style values instead of scattering one-off string comparisons.
 - Use `Date` for date/time value handling and `Date::formatTimestamp($timestamp, $format)` for timestamp formatting.
 

@@ -418,8 +418,100 @@ class Num extends Val implements IVal {
     }
 
     /**
+     * Convert degrees to radians.
+     *
+     * @return IVal
+     */
+    public function _deg2rad(): IVal
+    {
+        $value = deg2rad((float)$this->_data);
+
+        $this->alter($value);
+
+        return $this;
+    }
+
+    /**
+     * Alias for degrees-to-radians conversion.
+     *
+     * @return IVal
+     */
+    public function _degreesToRadians(): IVal
+    {
+        return $this->_deg2rad();
+    }
+
+    /**
+     * Convert radians to degrees.
+     *
+     * @return IVal
+     */
+    public function _rad2deg(): IVal
+    {
+        $value = rad2deg((float)$this->_data);
+
+        $this->alter($value);
+
+        return $this;
+    }
+
+    /**
+     * Alias for radians-to-degrees conversion.
+     *
+     * @return IVal
+     */
+    public function _radiansToDegrees(): IVal
+    {
+        return $this->_rad2deg();
+    }
+
+    /**
+     * Get the sine of the number, interpreted as radians.
+     *
+     * @return IVal
+     */
+    public function _sin(): IVal
+    {
+        $value = sin((float)$this->_data);
+
+        $this->alter($value);
+
+        return $this;
+    }
+
+    /**
+     * Get the cosine of the number, interpreted as radians.
+     *
+     * @return IVal
+     */
+    public function _cos(): IVal
+    {
+        $value = cos((float)$this->_data);
+
+        $this->alter($value);
+
+        return $this;
+    }
+
+    /**
+     * Get the two-argument arctangent of y and x.
+     *
+     * @param float $x The x coordinate
+     *
+     * @return IVal
+     */
+    public function _atan2(float $x): IVal
+    {
+        $value = atan2((float)$this->_data, $x);
+
+        $this->alter($value);
+
+        return $this;
+    }
+
+    /**
      * Set or return the decimal representation of a number
-     * 
+     *
      * @return mixed | Num
      */
     public function _dec(): mixed

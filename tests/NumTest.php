@@ -176,6 +176,39 @@ class NumTest extends ValTest
         $this->assertEquals(exp(log(729)), $number->exp()->val());
     }
 
+    public function testAngleConversionHelpersMutateValueAndDispatchStatically()
+    {
+        $degrees = new Num(180);
+
+        $this->assertEqualsWithDelta(M_PI, $degrees->deg2rad()->val(), 0.000000000001);
+        $this->assertEqualsWithDelta(M_PI, Num::deg2rad(180), 0.000000000001);
+        $this->assertEqualsWithDelta(M_PI / 2, Num::degreesToRadians(90), 0.000000000001);
+        $this->assertEqualsWithDelta(-M_PI / 2, Num::deg2rad(-90), 0.000000000001);
+        $this->assertEqualsWithDelta(0.0, Num::deg2rad(0), 0.000000000001);
+
+        $this->assertEqualsWithDelta(180.0, Num::rad2deg(M_PI), 0.000000000001);
+        $this->assertEqualsWithDelta(90.0, Num::radiansToDegrees(M_PI / 2), 0.000000000001);
+        $this->assertEqualsWithDelta(-90.0, Num::rad2deg(-M_PI / 2), 0.000000000001);
+        $this->assertEqualsWithDelta(0.0, Num::rad2deg(0), 0.000000000001);
+    }
+
+    public function testTrigonometryHelpersMatchPhpMath()
+    {
+        $angle = new Num(M_PI / 2);
+
+        $this->assertEqualsWithDelta(1.0, $angle->sin()->val(), 0.000000000001);
+        $this->assertEqualsWithDelta(sin(0), Num::sin(0), 0.000000000001);
+        $this->assertEqualsWithDelta(sin(-M_PI / 2), Num::sin(-M_PI / 2), 0.000000000001);
+
+        $this->assertEqualsWithDelta(cos(0), Num::cos(0), 0.000000000001);
+        $this->assertEqualsWithDelta(cos(M_PI), Num::cos(M_PI), 0.000000000001);
+        $this->assertEqualsWithDelta(cos(-M_PI), Num::cos(-M_PI), 0.000000000001);
+
+        $this->assertEqualsWithDelta(atan2(1, 1), Num::atan2(1, 1), 0.000000000001);
+        $this->assertEqualsWithDelta(atan2(0, 1), Num::atan2(0, 1), 0.000000000001);
+        $this->assertEqualsWithDelta(atan2(-1, 0), Num::atan2(-1, 0), 0.000000000001);
+    }
+
     public function testAbsoluteRoundAndIntegerHelpers()
     {
         $number = new Num(-12.75);
