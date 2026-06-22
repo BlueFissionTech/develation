@@ -29,7 +29,7 @@ values while preserving a simple path back to native data through `val()`.
 | --- | --- | --- |
 | Generic values | `BlueFission\Val` | Base wrapper behavior, dynamic helper dispatch, value access, diagnostics, hooks. |
 | Strings | `BlueFission\Str` | String transforms, normalization, formatting, matching, and repeat helpers. |
-| Numbers | `BlueFission\Num` | Numeric operations, formatting, conversion, and comparison helpers. |
+| Numbers | `BlueFission\Num` | Numeric operations, formatting, conversion, comparison, angle, and trigonometry helpers. |
 | Flags | `BlueFission\Flag` | Boolean parsing, conversion, and boolean-state helpers. |
 | Arrays | `BlueFission\Arr` | Array traversal, key/value checks, merging, mapping, filtering, counting, and ordering helpers. |
 | Objects | `BlueFission\Obj` | Dynamic fields, nested value access, object projection, and structured value helpers. |
