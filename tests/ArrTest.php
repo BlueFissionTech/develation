@@ -235,6 +235,16 @@ class ArrTest extends ValTest {
 		$this->assertSame(['first' => 'first:2', 'second' => 'second:4'], $mapped);
 	}
 
+	public function testMapsValuesWithValueOnlyCallable()
+	{
+		$mapped = static::$classname::map(
+			['first' => 'alpha', 'second' => 'beta'],
+			'strtoupper'
+		);
+
+		$this->assertSame(['first' => 'ALPHA', 'second' => 'BETA'], $mapped);
+	}
+
 	public function testCommonStaticArrayHelpersReturnPlainArrays()
 	{
 		$this->assertSame(['bar'], static::$classname::slice(['foo', 'bar', 'baz'], 1, 1));

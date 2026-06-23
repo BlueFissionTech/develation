@@ -6,6 +6,7 @@ use ArrayObject;
 use ArrayIterator;
 use IteratorAggregate;
 use InvalidArgumentException;
+use BlueFission\Collections\Support\MapsAndFilters;
 
 /**
  * Class Collection 
@@ -17,6 +18,8 @@ use InvalidArgumentException;
  * @link    https://bluefission.com/develation
  */
 class Collection implements ICollection, ArrayAccess, IteratorAggregate {
+
+	use MapsAndFilters;
 
 	/**
 	 * The actual value of the collection.
@@ -293,7 +296,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return Collection
 	 */
 	public function map( callable $callback ) {
-		$list = array_map( $callback, $this->contents() );
+		$list = $this->mapArrayValues( $this->contents(), $callback );
 		return new Collection( $list );
 	}
 
@@ -341,17 +344,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return Collection
 	 */
 	public function filter( callable $callback ) {
-
-		if ( !is_callable( $callback ) ) {
-			throw new InvalidArgumentException('Callback must be callable');
-		}
-
-		$reflectionFunction = new \ReflectionFunction($callback);
-		$numberOfParameters = $reflectionFunction->getNumberOfRequiredParameters();
-
-		$filterOption = $numberOfParameters > 1 ? \ARRAY_FILTER_USE_BOTH : 0;
-
-		$list = array_filter( $this->contents(), $callback, $filterOption );
+		$list = $this->filterArrayValues( $this->contents(), $callback );
 		return new Collection( $list );
 	}
 

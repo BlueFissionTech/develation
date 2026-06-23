@@ -3,6 +3,7 @@
 namespace BlueFission;
 
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Collections\Support\MapsAndFilters;
 use ArrayAccess;
 use IteratorAggregate;
 use Traversable;
@@ -44,6 +45,8 @@ use Traversable;
 
 class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
 {
+    use MapsAndFilters;
+
     protected $_type = DataTypes::ARRAY;
 
     protected $_forceType = false;
@@ -749,14 +752,7 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
             return Arr::make();
         }
 
-        $array = [];
-        foreach ($this->_data as $key => $value) {
-            if ($callback($value, $key)) {
-                $array[$key] = $value;
-            }
-        }
-
-        return Arr::make($array);
+        return Arr::make($this->filterArrayValues($this->_data, $callback));
     }
 
     /**
@@ -771,12 +767,7 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
             return Arr::make();
         }
 
-        $array = [];
-        foreach ($this->_data as $key => $value) {
-            $array[$key] = $callback($value, $key);
-        }
-
-        return Arr::make($array);
+        return Arr::make($this->mapArrayValues($this->_data, $callback));
     }
 
 
