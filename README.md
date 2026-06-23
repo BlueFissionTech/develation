@@ -126,6 +126,7 @@ Sample applications that demonstrate DevElation’s flexibility:
 - Simple comment thread with voting using `Arr`, `Str`, `Session` storage, HTML helpers, and templates: `examples/comments/index.php`
 - CLI territory game using the behavioral engine (`Behaves`) and an `Arr`-backed log: `examples/game/gangs.php`
 - CLI status report using args, tables, and progress bars: `examples/cli/report.php`
+- Helper workflow using current primitive, file, HTTP, date, flag, and security helpers: `examples/helpers/workflow.php`
 - Additional walkthroughs live in `examples/README.md`
 
 ## Quick Start Examples

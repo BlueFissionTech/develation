@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>{\$title}</title>
+    <title>{$title}</title>
     <style>
         body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 0; background: #020617; color: #e5e7eb; }
         header { background: #0f172a; color: #e5e7eb; padding: 1rem 1.5rem; border-bottom: 1px solid #1f2937; }
@@ -21,7 +21,7 @@
 </head>
 <body>
 <header>
-    <h1>{\$title}</h1>
+    <h1>{$title}</h1>
 </header>
 <main>
     @output('main')

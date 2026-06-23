@@ -1,10 +1,10 @@
 @template('layout.vibe')
 
 @section('main')
-    <p><small>Session-backed list using DevElation Session storage, Arr, Date and HTML HTML\Form/Table helpers.</small></p>
-    <p><small>Total tasks: {\$total_count} · Overdue: {\$overdue_count}</small></p>
+    <p><small>Session-backed list using DevElation Session storage, Arr, Date, Str, and HTML\Form/Table helpers.</small></p>
+    <p><small>Total tasks: {$total_count} | Overdue: {$overdue_count}</small></p>
 
-    {@add_form}
+    {$add_form}
 
-    {@items_table}
+    {$items_table}
 @endsection
