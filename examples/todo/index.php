@@ -10,6 +10,7 @@ use BlueFission\HTML\Table;
 use BlueFission\Date;
 use BlueFission\Arr;
 use BlueFission\Str;
+use BlueFission\Val;
 use BlueFission\Data\Storage\Session;
 
 // Backing store: DevElation Session storage instead of raw $_SESSION.
@@ -130,7 +131,7 @@ foreach ($todosArr->val() ?? [] as $todo) {
 }
 
 // Use Arr pipeline for counting overdue tasks.
-$overdueItems = Arr::make($items)->filter(fn (array $item): bool => !empty($item['overdue']));
+$overdueItems = Arr::make($items)->filter(fn (array $item): bool => !Val::isEmpty($item['overdue']));
 $viewData['overdue_count'] = Arr::count($overdueItems->val()) . ' ';
 
 // Build forms and table using DevElation HTML helpers.

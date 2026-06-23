@@ -6,6 +6,7 @@ require __DIR__ . '/../support.php';
 
 use BlueFission\Behavioral\Behaves;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Connections\Stdio;
 use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Arr;
@@ -114,7 +115,7 @@ class GangGame
             $this->renderState();
 
             $this->prompt('> ');
-            $input = Str::trim((string)fgets(STDIN));
+            $input = $this->readCommand();
 
             if (!$this->step($input)) {
                 break;
@@ -236,6 +237,17 @@ class GangGame
     private function prompt(string $message): void
     {
         fwrite(STDOUT, $message);
+    }
+
+    private function readCommand(): string
+    {
+        $input = Stdio::readLine(STDIN);
+
+        if (Str::isEmpty($input)) {
+            return 'quit';
+        }
+
+        return Str::trim($input);
     }
 }
 

@@ -29,9 +29,9 @@ $angles = Arr::make([0, 45, 90, 180])
 
         return [
             'degrees' => $degrees,
-            'radians' => round($radians, 6),
-            'sin' => round(Num::sin($radians), 6),
-            'cos' => round(Num::cos($radians), 6),
+            'radians' => Num::round($radians, 6),
+            'sin' => Num::round(Num::sin($radians), 6),
+            'cos' => Num::round(Num::cos($radians), 6),
         ];
     })
     ->values()
@@ -60,4 +60,4 @@ $report = [
     'angles' => $angles,
 ];
 
-echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+echo HTTP::jsonEncode($report) . PHP_EOL;

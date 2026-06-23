@@ -2,6 +2,7 @@
 
 namespace BlueFission\Tests\Examples;
 
+use BlueFission\Net\HTTP;
 use PHPUnit\Framework\TestCase;
 
 class ExamplesSmokeTest extends TestCase
@@ -29,7 +30,7 @@ class ExamplesSmokeTest extends TestCase
 
         $this->assertSame(0, $exitCode, $error);
 
-        $data = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+        $data = HTTP::jsonDecode($output);
 
         $this->assertSame(3, $data['name_count']);
         $this->assertTrue($data['source_file_exists']);
@@ -38,6 +39,22 @@ class ExamplesSmokeTest extends TestCase
         $this->assertTrue($data['enabled_flag']);
         $this->assertSame('HTTP/1.1 200 OK', $data['status_line']);
         $this->assertSame('Example%20Report.md', $data['encoded_path_segment']);
+    }
+
+    public function testHttpApiPacketExampleRuns(): void
+    {
+        [$exitCode, $output, $error] = $this->runExample(['examples/http/api_packet.php']);
+
+        $this->assertSame(0, $exitCode, $error);
+
+        $data = HTTP::jsonDecode($output);
+
+        $this->assertSame('GET', $data['request']['method']);
+        $this->assertSame('https', $data['request']['scheme']);
+        $this->assertSame('api.example.test', $data['request']['host']);
+        $this->assertSame('Example%20Report.md', $data['request']['path_segment']);
+        $this->assertSame('HTTP/1.1 202 Accepted', $data['expected_response']['status']);
+        $this->assertStringStartsWith('api-example:', $data['content_id']);
     }
 
     public function testGameScriptExampleRunsWithoutInput(): void

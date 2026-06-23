@@ -93,7 +93,7 @@ $items = Arr::make($threadsArr->get('main') ?? [])
     ->values()
     ->sort(function (array $a, array $b): int {
         if ($a['votes'] === $b['votes']) {
-            return strcmp($b['created_at'], $a['created_at']);
+            return Str::compare($b['created_at'], $a['created_at']);
         }
         return $b['votes'] <=> $a['votes'];
     })

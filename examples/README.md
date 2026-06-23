@@ -63,6 +63,18 @@ Run `composer install` first. The examples share `examples/support.php`, which l
   - From the project root: `php examples/helpers/workflow.php`
   - The example prints a JSON report and does not require a web server or external service.
 
+### 6. HTTP/API Packet – `examples/http/api_packet.php`
+
+- **Purpose**: Build a deterministic API request/response packet without calling an external service.
+- **Key DevElation concepts**:
+  - `Obj`: request-shaped structured data.
+  - `HTTP`: path segment encoding, query strings, header lines, URL parts, status lines, and JSON encoding.
+  - `Arr`: header list handling.
+  - `Flag`, `Date`, `Str`, and `Hash`: common request normalization and traceability helpers.
+- **How to run**:
+  - From the project root: `php examples/http/api_packet.php`
+  - The example prints JSON and is safe for clean package checkouts because it performs no network request.
+
 ### Additional Ideas to Explore
 
 These examples intentionally stay small, but there are several DevElation features that could be layered in when you want to go deeper:
