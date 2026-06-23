@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use BlueFission\Data\Directory;
+use BlueFission\Data\FileSystem;
 use BlueFission\Data\Log;
 use BlueFission\Str;
 
@@ -14,19 +16,49 @@ if (!is_file($autoload)) {
 
 require_once $autoload;
 
+function bf_example_directory_handle(string $path): Directory
+{
+    return new class(new FileSystem([
+        'root' => dirname($path),
+        'filter' => [],
+        'doNotConfirm' => true,
+    ])) extends Directory {};
+}
+
+function bf_example_ensure_directory(string $path): string
+{
+    $directory = bf_example_directory_handle($path);
+
+    if ($directory->exists($path)) {
+        return $path;
+    }
+
+    $parent = dirname($path);
+
+    if (!bf_example_directory_handle($parent)->exists($parent)) {
+        bf_example_ensure_directory($parent);
+    }
+
+    (new FileSystem([
+        'root' => $parent,
+        'filter' => [],
+        'doNotConfirm' => true,
+    ]))->mkdir(basename($path));
+
+    return $path;
+}
+
 function bf_example_runtime_path(string $path = ''): string
 {
     $root = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.localappdata' . DIRECTORY_SEPARATOR . 'examples';
-
-    if (!is_dir($root)) {
-        mkdir($root, 0775, true);
-    }
+    $root = bf_example_ensure_directory($root);
 
     if ($path === '') {
         return $root;
     }
 
-    $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+    $path = Str::replace($path, '/', DIRECTORY_SEPARATOR);
+    $path = Str::replace($path, '\\', DIRECTORY_SEPARATOR);
 
     return $root . DIRECTORY_SEPARATOR . $path;
 }

@@ -9,6 +9,7 @@ use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Val;
 use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\IObj;
 use BlueFission\DevElation as Dev;
 
@@ -57,7 +58,7 @@ class Stdio extends Connection implements IConfigurable
 
         if (is_resource($source)) {
             $handle = $source;
-        } elseif (is_string($source) && $source !== '') {
+        } elseif (Str::is($source) && Str::isNotEmpty($source)) {
             $handle = @fopen($source, 'r');
             $shouldClose = is_resource($handle);
         }
@@ -109,7 +110,7 @@ class Stdio extends Connection implements IConfigurable
 
         if (is_resource($source)) {
             $handle = $source;
-        } elseif (is_string($source) && $source !== '') {
+        } elseif (Str::is($source) && Str::isNotEmpty($source)) {
             $handle = @fopen($source, 'r');
             $shouldClose = is_resource($handle);
         }
