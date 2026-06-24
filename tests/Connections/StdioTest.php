@@ -85,6 +85,24 @@ class StdioTest extends ConnectionTest
         $this->assertSame('', Stdio::input(__DIR__ . '/missing-input.txt'));
     }
 
+    public function testReadLineReadsOneLineFromExplicitStream()
+    {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, "attack\nwait\n");
+        rewind($stream);
+
+        $this->assertSame("attack\n", Stdio::readLine($stream));
+        $this->assertSame("wait\n", Stdio::readLine($stream));
+
+        fclose($stream);
+    }
+
+    public function testReadLineReturnsEmptyStringForUnreadableSource()
+    {
+        $this->assertSame('', Stdio::readLine(''));
+        $this->assertSame('', Stdio::readLine(__DIR__ . '/missing-line-input.txt'));
+    }
+
     public function testIoInputDelegatesToSafeStdioRead()
     {
         $stream = fopen('php://temp', 'r+');

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../support.php';
 
 use BlueFission\HTML\Template;
 use BlueFission\HTML\Form;
 use BlueFission\HTML\Table;
 use BlueFission\Date;
 use BlueFission\Arr;
-use BlueFission\Data\Log;
-use BlueFission\Collections\Collection;
+use BlueFission\Str;
+use BlueFission\Val;
 use BlueFission\Data\Storage\Session;
 
 // Backing store: DevElation Session storage instead of raw $_SESSION.
@@ -19,23 +19,22 @@ use BlueFission\Data\Storage\Session;
 $session = new Session(['name' => 'develation_todo']);
 $session->activate()->read();
 
-// Simple file logger; could also be swapped for email/system logging via config.
-$logger = Log::instance();
-$logger->config(['instant' => true]);
+// Example logs are kept under .localappdata/examples so the package root stays tidy.
+$logger = bf_example_logger('todo');
 
 // Session data is stored as an Obj/Arr; retrieve the 'todos' field if present.
 $storedTodos = $session->field('todos');
 $todosArr = new Arr($storedTodos ?? []);
 
-$action = $_POST['action'] ?? null;
+$action = bf_example_input('action');
 
-if ($action === 'add') {
-    $title = trim((string)($_POST['title'] ?? ''));
-    $owner = trim((string)($_POST['owner'] ?? ''));
-    $dueInput = trim((string)($_POST['due'] ?? ''));
+if (Str::match($action, 'add', Str::IGNORE_CASE)) {
+    $title = bf_example_input('title');
+    $owner = bf_example_input('owner');
+    $dueInput = bf_example_input('due');
 
     if ($title !== '') {
-        $id = uniqid('todo_', true);
+        $id = bf_example_id('todo');
         $owner = $owner !== '' ? $owner : 'guest';
 
         $dueDisplay = null;
@@ -47,7 +46,7 @@ if ($action === 'add') {
             $nowTimestamp = Date::now()->timestamp();
 
             if ($dueTimestamp !== null) {
-                $dueDisplay = $dueDate->date();
+                $dueDisplay = Date::formatTimestamp($dueTimestamp);
                 $overdue = $dueTimestamp < $nowTimestamp;
             }
         }
@@ -63,8 +62,8 @@ if ($action === 'add') {
 
         $logger->push("todo.created: {$title} [owner={$owner}, due={$dueDisplay}]");
     }
-} elseif ($action === 'toggle') {
-    $id = $_POST['id'] ?? '';
+} elseif (Str::match($action, 'toggle', Str::IGNORE_CASE)) {
+    $id = bf_example_input('id');
     if ($todosArr->hasKey($id)) {
         $todo = $todosArr->get($id);
         $todo['done'] = !($todo['done'] ?? false);
@@ -72,8 +71,8 @@ if ($action === 'add') {
 
         $logger->push("todo.toggled: {$todo['title']} [done=" . ($todo['done'] ? '1' : '0') . ']');
     }
-} elseif ($action === 'delete') {
-    $id = $_POST['id'] ?? '';
+} elseif (Str::match($action, 'delete', Str::IGNORE_CASE)) {
+    $id = bf_example_input('id');
     if ($todosArr->hasKey($id)) {
         $todo = $todosArr->get($id);
         $todosArr->delete($id);
@@ -98,7 +97,7 @@ $viewData = [
 ];
 
 // Total count via Arr instance; append space so Template::field() does not treat zero as empty.
-$viewData['total_count'] = $todosArr->count() . ' ';
+$viewData['total_count'] = Arr::count($todosArr->val()) . ' ';
 
 $items = [];
 foreach ($todosArr->val() ?? [] as $todo) {
@@ -114,6 +113,11 @@ foreach ($todosArr->val() ?? [] as $todo) {
         $metaParts[] = 'OVERDUE';
     }
 
+    $metaParts = Arr::make($metaParts)
+        ->filter(fn (string $part): bool => Str::isNotEmpty($part))
+        ->values()
+        ->val();
+
     $items[] = [
         'id' => $todo['id'],
         'title' => $todo['title'],
@@ -121,24 +125,21 @@ foreach ($todosArr->val() ?? [] as $todo) {
         'owner' => $owner,
         'due' => $due,
         'overdue' => $overdue,
-        'meta' => implode(' · ', array_filter($metaParts)),
-        'css_class' => trim(($todo['done'] ? 'done ' : '') . ($overdue ? 'overdue' : '')),
+        'meta' => implode(' | ', $metaParts),
+        'css_class' => Str::trim(($todo['done'] ? 'done ' : '') . ($overdue ? 'overdue' : '')),
     ];
 }
 
 // Use Arr pipeline for counting overdue tasks.
-$overdueCollection = new Collection($items);
-$overdueCollection = $overdueCollection->filter(function ($item) {
-    return !empty($item['overdue']);
-});
-$viewData['overdue_count'] = $overdueCollection->count() . ' ';
+$overdueItems = Arr::make($items)->filter(fn (array $item): bool => !Val::isEmpty($item['overdue']));
+$viewData['overdue_count'] = Arr::count($overdueItems->val()) . ' ';
 
 // Build forms and table using DevElation HTML helpers.
 $addForm = '';
 $addForm .= Form::open('', 'todo_add', 'post');
 $addForm .= Form::field('text', 'title', 'Task', '', true);
 $addForm .= Form::field('text', 'owner', 'Owner', '');
-$addForm .= Form::field('date', 'due', 'Due', '');
+$addForm .= Form::field('text', 'due', 'Due (YYYY-MM-DD)', '');
 $addForm .= Form::field('hidden', 'action', '', 'add');
 $addForm .= Form::field('submit', 'submit', '', 'Add');
 $addForm .= Form::close();
@@ -163,10 +164,10 @@ foreach ($items as $item) {
     $actions .= Form::close();
 
     $rows[] = [
-        $item['title'],
-        $item['meta'],
-        $item['due'] ?? '',
-        $item['status_label'],
+        bf_example_html($item['title']),
+        bf_example_html($item['meta']),
+        bf_example_html($item['due'] ?? ''),
+        bf_example_html($item['status_label']),
         $actions,
     ];
 }

@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../support.php';
 
+use BlueFission\Arr;
 use BlueFission\Cli\Args;
 use BlueFission\Cli\Args\OptionDefinition;
 use BlueFission\Cli\Console;
 use BlueFission\Cli\Util\StatusBar;
+use BlueFission\Date;
+use BlueFission\Num;
+use BlueFission\Str;
 
 $args = (new Args())
     ->addOptions([
@@ -47,26 +51,30 @@ if (!empty($options['help'])) {
     exit(0);
 }
 
-$limit = max(1, (int)($options['limit'] ?? 5));
-$delay = max(0, (int)($options['delay'] ?? 0));
-$title = (string)($options['title'] ?? 'CLI Report');
+$limit = (int)Num::max((int)($options['limit'] ?? 5), 1);
+$delay = (int)Num::max((int)($options['delay'] ?? 0), 0);
+$title = Str::trim((string)($options['title'] ?? 'CLI Report'));
 
 if (!empty($options['ask'])) {
-    $title = $console->prompt('Report title: ', $title);
+    $title = Str::trim($console->prompt('Report title: ', $title));
 }
 
 $console->writeln($console->color($title, 'cyan', ['bold']));
 
-$rows = [];
-for ($i = 1; $i <= $limit; $i++) {
-    $rows[] = ['Item ' . $i, 'ready'];
-}
+$rows = Arr::make(range(1, $limit))
+    ->map(fn (int $i): array => ['Item ' . $i, 'ready'])
+    ->values()
+    ->val();
+
 $console->writeln($console->table(['Item', 'Status'], $rows, [
     'align' => ['left', 'right'],
 ]));
 
 $status = new StatusBar();
-$status->set('total', (string)$limit)->set('mode', 'demo');
+$status
+    ->set('total', (string)Arr::count($rows))
+    ->set('mode', 'demo')
+    ->set('date', Date::formatTimestamp(time()));
 $console->writeln($status->render());
 
 for ($i = 1; $i <= $limit; $i++) {

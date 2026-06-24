@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../support.php';
 
 use BlueFission\Behavioral\Behaves;
 use BlueFission\Behavioral\Behaviors\State;
-use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Connections\Stdio;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Arr;
-use BlueFission\Data\Log;
 
 // Simple NPC that uses DevElation's behavioral state machine to model territory changes.
 // This is intentionally small but shows how states like PROCESSING/CREATING/DELETING wrap logic.
@@ -49,6 +49,16 @@ class GangNpc implements \BlueFission\Behavioral\IDispatcher
         return $this->territory;
     }
 
+    public function gainTerritory(): void
+    {
+        $this->territory = (int)Num::increment($this->territory);
+    }
+
+    public function loseTerritory(): void
+    {
+        $this->territory = (int)Num::max(Num::decrement($this->territory), 0);
+    }
+
     public function tick(): string
     {
         $this->perform(State::PROCESSING);
@@ -57,7 +67,7 @@ class GangNpc implements \BlueFission\Behavioral\IDispatcher
 
         if ($roll === 1) {
             $this->perform(State::CREATING);
-            $this->territory++;
+            $this->gainTerritory();
             $this->halt(State::CREATING);
             $this->halt(State::PROCESSING);
             return "{$this->name} quietly expands territory.";
@@ -65,7 +75,7 @@ class GangNpc implements \BlueFission\Behavioral\IDispatcher
 
         if ($roll === 2 && $this->territory > 1) {
             $this->perform(State::DELETING);
-            $this->territory--;
+            $this->loseTerritory();
             $this->halt(State::DELETING);
             $this->halt(State::PROCESSING);
             return "{$this->name} loses some ground.";
@@ -105,7 +115,7 @@ class GangGame
             $this->renderState();
 
             $this->prompt('> ');
-            $input = trim((string)fgets(STDIN));
+            $input = $this->readCommand();
 
             if (!$this->step($input)) {
                 break;
@@ -121,7 +131,7 @@ class GangGame
      *
      * @param array<string> $actions
      */
-    public function runScripted(array $actions = null): void
+    public function runScripted(?array $actions = null): void
     {
         $this->line('Scripted DevElation Gangs run.');
         $actions = $actions ?? ['attack', 'attack', 'wait', 'attack', 'wait', 'attack'];
@@ -190,15 +200,8 @@ class GangGame
 
     private function shiftTerritory(GangNpc $winner, GangNpc $loser): void
     {
-        $winnerReflection = new ReflectionClass($winner);
-        $winnerProperty = $winnerReflection->getProperty('territory');
-        $winnerProperty->setAccessible(true);
-        $winnerProperty->setValue($winner, $winner->territory() + 1);
-
-        $loserReflection = new ReflectionClass($loser);
-        $loserProperty = $loserReflection->getProperty('territory');
-        $loserProperty->setAccessible(true);
-        $loserProperty->setValue($loser, max(0, $loser->territory() - 1));
+        $winner->gainTerritory();
+        $loser->loseTerritory();
     }
 
     private function renderState(): void
@@ -214,12 +217,13 @@ class GangGame
      */
     private function printRecap(): void
     {
-        $logger = Log::instance();
-        $logger->config(['instant' => true]);
+        $logger = bf_example_logger('gangs');
+        $entries = Arr::make($this->log->val())->reverse()->val();
 
         $this->line('');
         $this->line('Recap of NPC actions:');
-        foreach ($this->log->val() as $entry) {
+        $this->line('Actions logged: ' . Arr::count($entries));
+        foreach ($entries as $entry) {
             $this->line('- ' . $entry);
             $logger->push("gangs.npc: {$entry}");
         }
@@ -234,6 +238,17 @@ class GangGame
     {
         fwrite(STDOUT, $message);
     }
+
+    private function readCommand(): string
+    {
+        $input = Stdio::readLine(STDIN);
+
+        if (Str::isEmpty($input)) {
+            return 'quit';
+        }
+
+        return Str::trim($input);
+    }
 }
 
 // Entry point: default to interactive mode, but allow a simple scripted
@@ -242,7 +257,7 @@ $game = new GangGame();
 global $argv;
 $mode = $argv[1] ?? null;
 
-if ($mode === 'script') {
+if (Str::match((string)$mode, 'script', Str::IGNORE_CASE)) {
     $game->runScripted();
 } else {
     $game->run();

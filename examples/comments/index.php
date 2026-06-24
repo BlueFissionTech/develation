@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../support.php';
 
 use BlueFission\HTML\Template;
 use BlueFission\HTML\Form;
 use BlueFission\HTML\Table;
+use BlueFission\Date;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Arr;
-use BlueFission\Data\Log;
 use BlueFission\Data\Storage\Session;
 
 // Backing store: DevElation Session storage for threads.
@@ -18,9 +19,8 @@ use BlueFission\Data\Storage\Session;
 $session = new Session(['name' => 'develation_comments']);
 $session->activate()->read();
 
-// Simple logger to track comment events; storage type remains swappable.
-$logger = Log::instance();
-$logger->config(['instant' => true]);
+// Example logs are kept under .localappdata/examples so the package root stays tidy.
+$logger = bf_example_logger('comments');
 
 // Retrieve existing threads from the session object, defaulting to a basic structure.
 $storedThreads = $session->field('threads');
@@ -30,32 +30,32 @@ if (!$threadsArr->hasKey('main')) {
     $threadsArr->set('main', []);
 }
 
-$action = $_POST['action'] ?? null;
+$action = bf_example_input('action');
 
-if ($action === 'add') {
-    $author = trim((string)($_POST['author'] ?? ''));
-    $body = trim((string)($_POST['body'] ?? ''));
+if (Str::match($action, 'add', Str::IGNORE_CASE)) {
+    $author = bf_example_input('author');
+    $body = bf_example_input('body');
     if ($body !== '') {
-        $id = uniqid('comment_', true);
+        $id = bf_example_id('comment');
         $main = new Arr($threadsArr->get('main'));
         $comment = [
             'id' => $id,
             'author' => $author !== '' ? $author : 'anonymous',
             'body' => $body,
             'votes' => 0,
-            'created_at' => date('Y-m-d H:i:s'),
+            'created_at' => Date::formatTimestamp(time(), 'Y-m-d H:i:s'),
         ];
         $main->set($id, $comment);
         $threadsArr->set('main', $main->val());
 
         $logger->push("comment.created: {$comment['author']} – " . Str::truncate($comment['body'] ?? '', 80));
     }
-} elseif ($action === 'upvote') {
-    $id = $_POST['id'] ?? '';
+} elseif (Str::match($action, 'upvote', Str::IGNORE_CASE)) {
+    $id = bf_example_input('id');
     $main = new Arr($threadsArr->get('main'));
     if ($main->hasKey($id)) {
         $comment = $main->get($id);
-        $comment['votes'] = ($comment['votes'] ?? 0) + 1;
+        $comment['votes'] = Num::add((int)($comment['votes'] ?? 0), 1);
         $main->set($id, $comment);
         $threadsArr->set('main', $main->val());
 
@@ -89,18 +89,17 @@ $addForm .= Form::close();
 $viewData['add_form'] = $addForm;
 
 // Build table of comments via HTML\Table.
-$items = array_values($threadsArr->get('main') ?? []);
-
-if ($items) {
-    usort($items, function (array $a, array $b): int {
+$items = Arr::make($threadsArr->get('main') ?? [])
+    ->values()
+    ->sort(function (array $a, array $b): int {
         if ($a['votes'] === $b['votes']) {
-            return strcmp($b['created_at'], $a['created_at']);
+            return Str::compare($b['created_at'], $a['created_at']);
         }
         return $b['votes'] <=> $a['votes'];
-    });
-}
+    })
+    ->val();
 
-$count = count($items);
+$count = Arr::count($items);
 // Append space so Template::field() does not treat zero as empty.
 $viewData['comment_count'] = $count . ' ';
 $viewData['comment_label'] = Str::pluralize('comment');
@@ -115,9 +114,9 @@ foreach ($items as $comment) {
     $actions .= Form::close();
 
     $rows[] = [
-        $comment['votes'],
-        $comment['author'] . ' · ' . $comment['created_at'],
-        $comment['body'],
+        bf_example_html($comment['votes']),
+        bf_example_html($comment['author'] . ' | ' . $comment['created_at']),
+        bf_example_html($comment['body']),
         $actions,
     ];
 }

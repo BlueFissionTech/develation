@@ -9,6 +9,7 @@ use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Val;
 use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\IObj;
 use BlueFission\DevElation as Dev;
 
@@ -57,7 +58,7 @@ class Stdio extends Connection implements IConfigurable
 
         if (is_resource($source)) {
             $handle = $source;
-        } elseif (is_string($source) && $source !== '') {
+        } elseif (Str::is($source) && Str::isNotEmpty($source)) {
             $handle = @fopen($source, 'r');
             $shouldClose = is_resource($handle);
         }
@@ -88,6 +89,47 @@ class Stdio extends Connection implements IConfigurable
     public static function input(mixed $source = null): string
     {
         return self::readInput($source);
+    }
+
+    /**
+     * Read a single line from a stream without closing caller-owned handles.
+     *
+     * @param mixed $source Null for STDIN/php://stdin, a stream resource, or a readable stream/path string.
+     * @return string
+     */
+    public static function readLine(mixed $source = null): string
+    {
+        if (Val::isNull($source)) {
+            $source = defined('STDIN') ? STDIN : 'php://stdin';
+        } else {
+            $source = Dev::apply('_in', $source);
+        }
+
+        $handle = null;
+        $shouldClose = false;
+
+        if (is_resource($source)) {
+            $handle = $source;
+        } elseif (Str::is($source) && Str::isNotEmpty($source)) {
+            $handle = @fopen($source, 'r');
+            $shouldClose = is_resource($handle);
+        }
+
+        if (!is_resource($handle)) {
+            return (string)Dev::apply('_out', '');
+        }
+
+        $line = fgets($handle);
+
+        if ($shouldClose) {
+            fclose($handle);
+        }
+
+        if ($line === false) {
+            $line = '';
+        }
+
+        return (string)Dev::apply('_out', $line);
     }
 
     /**
