@@ -92,4 +92,28 @@ class CollectionTest extends \PHPUnit\Framework\TestCase
 
         $this->assertEquals(['third' => 3], $filtered->toArray());
     }
+
+    public function testMapUsesValueCallbackAndPreservesKeys()
+    {
+        $object = new Collection([
+            'first' => 'alpha',
+            'second' => 'beta',
+        ]);
+
+        $mapped = $object->map('strtoupper');
+
+        $this->assertSame(['first' => 'ALPHA', 'second' => 'BETA'], $mapped->toArray());
+    }
+
+    public function testMapUsesValueAndKeyCallback()
+    {
+        $object = new Collection([
+            'first' => 1,
+            'second' => 2,
+        ]);
+
+        $mapped = $object->map(fn ($value, $key) => $key . ':' . ($value * 2));
+
+        $this->assertSame(['first' => 'first:2', 'second' => 'second:4'], $mapped->toArray());
+    }
 }
