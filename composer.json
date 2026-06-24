@@ -15,7 +15,6 @@
     ],
     "require": {
         "php": ">=8.2",
-        "cboden/ratchet": "^0.4.4",
         "psr/http-message": "^2.0",
         "psr/http-client": "^1.0",
         "php-http/discovery": "^1.0"
@@ -34,9 +33,13 @@
         }
     },
     "require-dev": {
+        "cboden/ratchet": "^0.4.4",
         "phpunit/phpunit": "^11.5",
         "phpstan/phpstan": "^2.1",
         "friendsofphp/php-cs-fixer": "^3.0"
+    },
+    "suggest": {
+        "cboden/ratchet": "Install to use the optional BlueFission\\Async\\Sock Ratchet websocket transport."
     },
     "config": {
         "platform-check": true,

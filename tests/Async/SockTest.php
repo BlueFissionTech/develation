@@ -4,7 +4,6 @@ namespace BlueFission\Async\Tests;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\Async\Sock;
-use Ratchet\Server\IoServer;
 
 class SockTest extends TestCase {
     private $sock;
@@ -13,9 +12,11 @@ class SockTest extends TestCase {
 
     protected function setUp(): void {
         parent::setUp();
-        if (!class_exists(IoServer::class)) {
-            $this->markTestSkipped('Ratchet is not available');
+
+        if (!Sock::isAvailable()) {
+            return;
         }
+
         // Mock the WebSocketServer class which is referenced in Sock
         $this->mockWebSocketServer = $this->getMockBuilder('BlueFission\Async\WebSocketServer')
             ->disableOriginalConstructor()
@@ -25,7 +26,30 @@ class SockTest extends TestCase {
         $this->sock = new Sock($this->port, ['class' => get_class($this->mockWebSocketServer)]);
     }
 
+    public function testSockCanBeConfiguredWithoutStartingTransport() {
+        $sock = new Sock(9000, ['host' => '127.0.0.1', 'port' => 9000]);
+
+        $this->assertInstanceOf(Sock::class, $sock);
+        $this->assertSame(9000, $sock->config('port'));
+        $this->assertSame('127.0.0.1', $sock->config('host'));
+    }
+
+    public function testSockReportsTransportAvailability() {
+        $this->assertSame(Sock::missingDependencies() === [], Sock::isAvailable());
+    }
+
+    public function testSockReportsMissingTransportClasses() {
+        $this->assertSame(
+            ['BlueFission\\Tests\\MissingOptionalTransport'],
+            Sock::missingDependencies(['BlueFission\\Tests\\MissingOptionalTransport'])
+        );
+    }
+
     public function testStartAndStopWebSocketServer() {
+        if (!$this->sock) {
+            $this->markTestSkipped('Ratchet is not available');
+        }
+
         $this->assertInstanceOf(Sock::class, $this->sock);
         $this->assertEquals(get_class($this->mockWebSocketServer), $this->sock->config('class'));
 
@@ -62,6 +86,8 @@ class SockTest extends TestCase {
     protected function tearDown(): void {
         parent::tearDown();
         // Clean up after test
-        $this->sock->stop();
+        if ($this->sock) {
+            $this->sock->stop();
+        }
     }
 }
