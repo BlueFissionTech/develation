@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../support.php';
 
 use BlueFission\Arr;
+use BlueFission\Collections\Collection;
 use BlueFission\Data\File;
 use BlueFission\Data\FileSystem;
 use BlueFission\Date;
@@ -22,6 +23,16 @@ $names = Arr::make($filesystem->lines("\n"))
     ->filter(fn (string $name): bool => Str::isNotEmpty(Str::trim($name)))
     ->map(fn (string $name): string => Str::trim($name))
     ->values();
+
+$nameSummaries = (new Collection($names->val()))
+    ->filter(fn (string $name, int $index): bool => $index < 2 || Str::contains($name, 'Johnson'))
+    ->map(fn (string $name, int $index): array => [
+        'index' => $index,
+        'name' => $name,
+        'slug' => Str::lower(Str::replace($name, ' ', '-')),
+        'length' => Str::len($name),
+    ])
+    ->toArray();
 
 $angles = Arr::make([0, 45, 90, 180])
     ->map(function (int $degrees): array {
@@ -51,6 +62,7 @@ $report = [
     'fixture_entries' => $directory->entries(),
     'name_count' => Arr::count($names->val()),
     'names_latest_first' => $names->reverse()->val(),
+    'collection_name_summaries' => $nameSummaries,
     'admin_match' => Str::match('Admin', 'admin', Str::IGNORE_CASE),
     'enabled_flag' => Flag::parseBool('yes'),
     'status_line' => HTTP::statusLine(200),

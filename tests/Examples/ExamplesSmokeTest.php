@@ -35,6 +35,9 @@ class ExamplesSmokeTest extends TestCase
         $this->assertSame(3, $data['name_count']);
         $this->assertTrue($data['source_file_exists']);
         $this->assertTrue($data['source_file_reachable']);
+        $this->assertSame('Ada Lovelace', $data['collection_name_summaries'][0]['name']);
+        $this->assertSame(0, $data['collection_name_summaries'][0]['index']);
+        $this->assertSame('ada-lovelace', $data['collection_name_summaries'][0]['slug']);
         $this->assertTrue($data['admin_match']);
         $this->assertTrue($data['enabled_flag']);
         $this->assertSame('HTTP/1.1 200 OK', $data['status_line']);

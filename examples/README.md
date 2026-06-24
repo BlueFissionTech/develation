@@ -52,6 +52,7 @@ Run `composer install` first. The examples share `examples/support.php`, which l
 - **Purpose**: Non-interactive walkthrough of the current helper surface for package users and contributors.
 - **Key DevElation concepts**:
   - `Arr`: filtering, mapping, values, reverse ordering, and static `Arr::count()`.
+  - `Collections\Collection`: key-aware filtering and mapping with the same traversal semantics as `Arr`.
   - `Str`: repeat helpers, case-insensitive `match()`, trimming, and static helper dispatch.
   - `Num`: degree/radian conversion plus sine and cosine.
   - `Flag`: normalized boolean parsing.
