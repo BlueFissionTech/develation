@@ -233,9 +233,7 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
             return $this;
         }
 
-        array_unshift($this->_data, $value);
-
-        return $this;
+        return array_unshift($this->_data, $value);
     }
 
     /**
