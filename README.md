@@ -234,6 +234,14 @@ Install DevElation with Composer:
 composer require bluefission/develation
 ```
 
+The core package does not require the optional Ratchet websocket transport. If
+you use `BlueFission\Async\Sock`, install Ratchet in applications that can
+satisfy its dependency constraints:
+
+```bash
+composer require cboden/ratchet
+```
+
 The canonical source repository is `BlueFissionTech/develation` on GitHub.
 
 ```bash

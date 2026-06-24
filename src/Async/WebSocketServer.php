@@ -2,14 +2,12 @@
 
 namespace BlueFission\Async;
 
-use Ratchet\MessageComponentInterface;
-use Ratchet\ConnectionInterface;
-
 /**
- * Basic WebSocketServer implementation using Ratchet.
- * Handles open, message, close, and error events for all clients.
+ * Shared behavior for the optional Ratchet websocket handler.
+ *
+ * @internal
  */
-class WebSocketServer implements MessageComponentInterface
+trait WebSocketServerBehavior
 {
     protected \SplObjectStorage $clients;
 
@@ -22,10 +20,10 @@ class WebSocketServer implements MessageComponentInterface
     /**
      * Handles a new connection.
      *
-     * @param ConnectionInterface $conn
+     * @param object $conn
      * @return void
      */
-    public function onOpen(ConnectionInterface $conn): void
+    public function onOpen($conn): void
     {
         $this->clients->attach($conn);
         echo "New connection! ({$conn->resourceId})\n";
@@ -34,11 +32,11 @@ class WebSocketServer implements MessageComponentInterface
     /**
      * Handles an incoming message from a client.
      *
-     * @param ConnectionInterface $from
+     * @param object $from
      * @param string $msg
      * @return void
      */
-    public function onMessage(ConnectionInterface $from, $msg): void
+    public function onMessage($from, $msg): void
     {
         echo sprintf("Message from %d: %s\n", $from->resourceId, $msg);
 
@@ -52,25 +50,41 @@ class WebSocketServer implements MessageComponentInterface
     /**
      * Handles a closed connection.
      *
-     * @param ConnectionInterface $conn
+     * @param object $conn
      * @return void
      */
-    public function onClose(ConnectionInterface $conn): void
+    public function onClose($conn): void
     {
         $this->clients->detach($conn);
         echo "Connection {$conn->resourceId} has disconnected\n";
-    }               
+    }
 
     /**
      * Handles an error on a connection.
      *
-     * @param ConnectionInterface $conn
+     * @param object $conn
      * @param \Exception $e
      * @return void
      */
-    public function onError(ConnectionInterface $conn, \Exception $e): void
+    public function onError($conn, \Exception $e): void
     {
         echo "An error has occurred: {$e->getMessage()}\n";
         $conn->close();
+    }
+}
+
+/**
+ * Basic WebSocketServer implementation for the optional Ratchet transport.
+ * Handles open, message, close, and error events for all clients.
+ */
+if (interface_exists(\Ratchet\MessageComponentInterface::class)) {
+    class WebSocketServer implements \Ratchet\MessageComponentInterface
+    {
+        use WebSocketServerBehavior;
+    }
+} else {
+    class WebSocketServer
+    {
+        use WebSocketServerBehavior;
     }
 }
