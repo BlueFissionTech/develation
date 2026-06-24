@@ -225,7 +225,10 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
-     * Unshifts the first element onto the data array
+     * Unshifts a value onto the beginning of the data array.
+     *
+     * @param mixed $value
+     * @return IVal
      */
     public function _unshift(mixed $value): IVal
     {
@@ -233,7 +236,12 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
             return $this;
         }
 
-        return array_unshift($this->_data, $value);
+        $array = $this->_data;
+        array_unshift($array, $value);
+
+        $this->alter($array);
+
+        return $this;
     }
 
     /**
