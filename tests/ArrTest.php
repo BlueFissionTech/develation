@@ -121,6 +121,22 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['foo', 'bar'], static::$classname::merge(['foo'], ['bar']));
 	}
 
+	public function testUnshiftMutatesAndReturnsSelfForChaining()
+	{
+		$object = new static::$classname(['middle']);
+
+		$result = $object->unshift('first');
+
+		$this->assertSame($object, $result);
+		$this->assertEquals(['first', 'middle'], $object->val());
+		$this->assertEquals(['first', 'middle', 'last'], $object->append(['last'])->val());
+	}
+
+	public function testUnshiftReturnsUpdatedArrayStatically()
+	{
+		$this->assertEquals(['first', 'middle'], static::$classname::unshift(['middle'], 'first'));
+	}
+
 	public function testMergeRecursesAssociativeArraysAndAppendsNestedLists()
 	{
 		$merged = static::$classname::merge(

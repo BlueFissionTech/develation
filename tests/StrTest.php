@@ -208,6 +208,24 @@ class StrTest extends ValTest {
 		$this->assertSame('foobar', Str::concat('foo', 'bar'));
 	}
 
+	public function testSnakeIsChainableAndAvailableStatically()
+	{
+		$object = new Str('My Name Is John');
+
+		$this->assertSame($object, $object->snake());
+		$this->assertSame('my_name_is_john', $object->val());
+		$this->assertSame('my_name_is_john', Str::snake('My Name Is John'));
+	}
+
+	public function testPluralizeReturnsStringAndIsAvailableStatically()
+	{
+		$object = new Str('comment');
+
+		$this->assertSame('comments', $object->pluralize());
+		$this->assertSame('comments', Str::pluralize('comment'));
+		$this->assertSame('people', Str::pluralize('person'));
+	}
+
 	public function testMatchesAndMatchPatternSupportRegexChecks()
 	{
 		$this->assertTrue($this->object->matches('/^My Name/'));
