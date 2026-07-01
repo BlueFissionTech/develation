@@ -86,6 +86,6 @@ These examples intentionally stay small, but there are several DevElation featur
 - **Service mappings** (`Services\Mapping`, `Services\Request`/`Response`): wrap the todo or comments example as small services with typed requests/responses, showing how DevElation maps between external APIs and internal objects.
 - **Async/queues** (`Async`, `Data\Queues\Queue`): move expensive or periodic work (e.g., nightly purge of stale todos, background scoring) onto a DevElation queue.
 - **DevElation hooks** (`DevElation::apply`, `DevElation::do`): add filters/actions around critical points (before saving a todo, after posting a comment, when the NPC changes state) to demonstrate pluggable behavior without touching the core example logic.
-- **Example smoke tests** (`tests/Examples/ExamplesSmokeTest.php`): keep non-interactive examples executable as the helper surface evolves.
+- **Example smoke tests** (`tests/Examples/ExamplesSmokeTest.php`): keep non-interactive examples executable as the helper surface evolves. Run them with `vendor/bin/phpunit --do-not-cache-result tests/Examples/ExamplesSmokeTest.php`.
 
 Each of these modules already exists in `src/` and can be layered into the examples as you grow them into more full‑featured reference apps.
