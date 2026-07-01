@@ -59,7 +59,14 @@ class DispatcherTest extends \PHPUnit\Framework\TestCase
         $this->object->dispatch('testBehavior', "This Manual Event Was Dispatched");
     }
 
-    public function testDispatchMirrorsToInjectedIPC()
+    public function testDispatchesDoesNotExposeIPCByDefault()
+    {
+        $this->assertFalse(method_exists($this->object, 'setIPC'));
+        $this->assertFalse(method_exists($this->object, 'dispatchIPC'));
+        $this->assertFalse(method_exists($this->object, 'listenIPC'));
+    }
+
+    public function testIPCDispatchTraitMirrorsStandardDispatchToInjectedIPC()
     {
         $ipc = new class implements IIPC {
             public array $messages = [];
@@ -82,11 +89,16 @@ class DispatcherTest extends \PHPUnit\Framework\TestCase
 
         $this->expectOutputString('local');
 
-        $this->object->setIPC($ipc);
-        $this->object->behavior('testBehavior', function () {
+        $object = new class implements IDispatcher {
+            use Dispatches;
+            use IPCDispatches;
+        };
+
+        $object->setIPC($ipc);
+        $object->behavior('testBehavior', function () {
             echo 'local';
         });
-        $this->object->dispatch('testBehavior', 'payload');
+        $object->dispatch('testBehavior', 'payload');
 
         $this->assertSame(
             [

@@ -2,14 +2,15 @@
 
 namespace BlueFission\Behavioral;
 
+use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\IPC\IIPC;
 
 /**
  * Trait IPCDispatches
  *
- * Provides inter-process communication (IPC) dispatching and listening capabilities
- * via a shared IPC object. Classes using this trait can send messages to and listen
- * for messages from specific channels.
+ * Provides inter-process communication (IPC) dispatching and listening
+ * capabilities via a shared IPC object. When paired with Dispatches, the
+ * protected _dispatch hook mirrors standard behavior dispatches to IPC.
  */
 trait IPCDispatches
 {
@@ -62,5 +63,20 @@ trait IPCDispatches
         }
 
         return $this;
+    }
+
+    /**
+     * Mirror a standard behavior dispatch to IPC.
+     *
+     * @param Behavior $behavior
+     * @param mixed $args
+     * @return void
+     */
+    protected function _dispatch(Behavior $behavior, mixed $args = null): void
+    {
+        $this->dispatchIPC($behavior->name(), [
+            'behavior' => $behavior->name(),
+            'args' => $args,
+        ]);
     }
 }
