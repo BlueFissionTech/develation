@@ -33,4 +33,23 @@ class UriTest extends \PHPUnit\Framework\TestCase
         $uri = new Uri('https://www.example.com/foo/bar');
         $this->assertEquals(['id' => 'bar'], $uri->buildArguments('/foo/$id'));
     }
+
+    public function testMatchSupportsValueTokens()
+    {
+        $uri = new Uri('https://www.example.com/users/42/profile');
+
+        $this->assertTrue($uri->match('/users/$id/profile'));
+        $this->assertTrue($uri->match('/$resource/42/profile'));
+        $this->assertFalse($uri->match('/users/42'));
+    }
+
+    public function testBuildArgumentsUsesStringHelpersForTokenNames()
+    {
+        $uri = new Uri('https://www.example.com/users/42/profile');
+
+        $this->assertEquals(
+            ['resource' => 'users', 'id' => '42'],
+            $uri->buildArguments('/$resource/$id/profile')
+        );
+    }
 }
