@@ -157,7 +157,13 @@ trait Dispatches
             $args = [$args];
         }
 
-        return $this->trigger($behavior, $args);
+        $this->trigger($behavior, $args);
+
+        if (method_exists($this, '_dispatch')) {
+            $this->_dispatch($behavior, $args);
+        }
+
+        return $this;
     }
 
     /**

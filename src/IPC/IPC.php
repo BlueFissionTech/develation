@@ -4,9 +4,8 @@ namespace BlueFission\IPC;
 
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behaviors\State;
-use BlueFission\Behavioral\Behaviors\Event;
 
-class IPC
+class IPC implements IIPC
 {
     protected $_storage;
     protected $_maxRetries;
@@ -17,7 +16,7 @@ class IPC
         $this->_maxRetries = $maxRetries;
     }
 
-    public function write($channel, $message)
+    public function write(string $channel, mixed $message): void
     {
         if ($this->retryConnection()) {
             $data = $this->_storage->read() ?? [];
@@ -30,7 +29,7 @@ class IPC
         }
     }
 
-    public function read($channel)
+    public function read(string $channel): array
     {
         if ($this->retryConnection()) {
             $data = $this->_storage->read() ?? [];
@@ -42,7 +41,7 @@ class IPC
         }
     }
 
-    public function clear($channel)
+    public function clear(string $channel): void
     {
         if ($this->retryConnection()) {
             $data = $this->_storage->read() ?? [];

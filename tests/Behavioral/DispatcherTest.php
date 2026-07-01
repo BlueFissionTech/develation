@@ -3,7 +3,9 @@
 namespace BlueFission\Tests\Behavioral;
 
 use BlueFission\Behavioral\Dispatches;
+use BlueFission\Behavioral\IPCDispatches;
 use BlueFission\Behavioral\IDispatcher;
+use BlueFission\IPC\IIPC;
 
 class DispatcherTest extends \PHPUnit\Framework\TestCase
 {
@@ -57,4 +59,92 @@ class DispatcherTest extends \PHPUnit\Framework\TestCase
         $this->object->dispatch('testBehavior', "This Manual Event Was Dispatched");
     }
 
+    public function testDispatchesDoesNotExposeIPCByDefault()
+    {
+        $this->assertFalse(method_exists($this->object, 'setIPC'));
+        $this->assertFalse(method_exists($this->object, 'dispatchIPC'));
+        $this->assertFalse(method_exists($this->object, 'listenIPC'));
+    }
+
+    public function testIPCDispatchTraitMirrorsStandardDispatchToInjectedIPC()
+    {
+        $ipc = new class implements IIPC {
+            public array $messages = [];
+
+            public function write(string $channel, mixed $message): void
+            {
+                $this->messages[$channel][] = $message;
+            }
+
+            public function read(string $channel): array
+            {
+                return $this->messages[$channel] ?? [];
+            }
+
+            public function clear(string $channel): void
+            {
+                unset($this->messages[$channel]);
+            }
+        };
+
+        $this->expectOutputString('local');
+
+        $object = new class implements IDispatcher {
+            use Dispatches;
+            use IPCDispatches;
+        };
+
+        $object->setIPC($ipc);
+        $object->behavior('testBehavior', function () {
+            echo 'local';
+        });
+        $object->dispatch('testBehavior', 'payload');
+
+        $this->assertSame(
+            [
+                [
+                    'behavior' => 'testBehavior',
+                    'args' => ['payload'],
+                ],
+            ],
+            $ipc->messages['testBehavior']
+        );
+    }
+
+    public function testIPCDispatchesTraitHelpersUseTransport()
+    {
+        $ipc = new class implements IIPC {
+            public array $messages = [];
+
+            public function write(string $channel, mixed $message): void
+            {
+                $this->messages[$channel][] = $message;
+            }
+
+            public function read(string $channel): array
+            {
+                return $this->messages[$channel] ?? [];
+            }
+
+            public function clear(string $channel): void
+            {
+                unset($this->messages[$channel]);
+            }
+        };
+
+        $object = new class {
+            use IPCDispatches;
+        };
+        $received = [];
+
+        $object
+            ->setIPC($ipc)
+            ->dispatchIPC('manual', ['value' => 1])
+            ->listenIPC('manual', function ($message) use (&$received) {
+                $received[] = $message;
+            });
+
+        $this->assertSame([['value' => 1]], $received);
+        $this->assertSame([], $ipc->read('manual'));
+    }
 }
