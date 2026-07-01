@@ -10,6 +10,7 @@ use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\Behaviors\Handler;
 use BlueFission\Behavioral\Behaviors\HandlerCollection;
 use BlueFission\Behavioral\Behaviors\BehaviorCollection;
+use BlueFission\IPC\IIPC;
 use InvalidArgumentException;
 
 /**
@@ -31,6 +32,13 @@ trait Dispatches
      * @var HandlerCollection
      */
     protected $_handlers;
+
+    /**
+     * Optional IPC transport for mirrored dispatches.
+     *
+     * @var IIPC|null
+     */
+    protected ?IIPC $_ipc = null;
 
     /**
      * Constructor of the Dispatches class
@@ -157,7 +165,74 @@ trait Dispatches
             $args = [$args];
         }
 
-        return $this->trigger($behavior, $args);
+        $this->trigger($behavior, $args);
+        $this->dispatchBehaviorIPC($behavior, $args);
+
+        return $this;
+    }
+
+    /**
+     * Inject an IPC transport for mirrored dispatches.
+     *
+     * @param IIPC $ipc
+     * @return static
+     */
+    public function setIPC(IIPC $ipc): static
+    {
+        $this->_ipc = $ipc;
+
+        return $this;
+    }
+
+    /**
+     * Send a message to an IPC channel when a transport is available.
+     *
+     * @param string $channel
+     * @param mixed $message
+     * @return static
+     */
+    public function dispatchIPC(string $channel, mixed $message): static
+    {
+        if ($this->_ipc) {
+            $this->_ipc->write($channel, $message);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Read an IPC channel and pass messages to a callback.
+     *
+     * @param string $channel
+     * @param callable $callback
+     * @return static
+     */
+    public function listenIPC(string $channel, callable $callback): static
+    {
+        if ($this->_ipc) {
+            $messages = $this->_ipc->read($channel);
+            foreach ($messages as $message) {
+                $callback($message);
+            }
+            $this->_ipc->clear($channel);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Mirror a standard behavior dispatch to IPC.
+     *
+     * @param Behavior $behavior
+     * @param mixed $args
+     * @return void
+     */
+    protected function dispatchBehaviorIPC(Behavior $behavior, mixed $args): void
+    {
+        $this->dispatchIPC($behavior->name(), [
+            'behavior' => $behavior->name(),
+            'args' => $args,
+        ]);
     }
 
     /**
