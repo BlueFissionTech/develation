@@ -206,7 +206,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _plus(): IVal
 	{
-		return $this->_add(...func_get_args());
+		return $this->add(...func_get_args());
 	}
 
 	/**
@@ -237,7 +237,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _minus(): IVal
 	{
-		return $this->_sub(...func_get_args());
+		return $this->sub(...func_get_args());
 	}
 
 	/**
@@ -247,7 +247,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _subtract(): IVal
 	{
-		return $this->_sub(...func_get_args());
+		return $this->sub(...func_get_args());
 	}
 
 	/**
@@ -278,7 +278,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _times(): IVal
 	{
-		return $this->_multiply(...func_get_args());
+		return $this->multiply(...func_get_args());
 	}
 
 	/**
@@ -312,7 +312,7 @@ class Num extends Val implements IVal {
 	 */
 	public function _by(): IVal
 	{
-		return $this->_divide(...func_get_args());
+		return $this->divide(...func_get_args());
 	}
 
 	/**
