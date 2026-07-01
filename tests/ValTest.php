@@ -3,6 +3,7 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Val;
+use BlueFission\Num;
 use BlueFission\DataTypes;
 
 class ValTest extends \PHPUnit\Framework\TestCase
@@ -333,5 +334,82 @@ class ValTest extends \PHPUnit\Framework\TestCase
         }
 
         $this->assertEquals($var1, $var2->val());
+    }
+
+    public function testStaticSlotRegistrationWorksForInstancesAndStaticDispatch()
+    {
+        Val::slot('appendUnitTestSuffix', function ($suffix = 'Suffix') {
+            $this->val($this->val() . $suffix);
+
+            return $this;
+        });
+
+        $this->assertSame('valueSuffix', Val::make('value')->appendUnitTestSuffix()->val());
+        $this->assertSame('value!', Val::appendUnitTestSuffix('value', '!'));
+    }
+
+    public function testSnapshotQueueRecallAndResetWalksBack()
+    {
+        $value = new Val('one', false);
+
+        $value
+            ->snapshot(3)
+            ->val('two')
+            ->snapshot()
+            ->val('three')
+            ->snapshot()
+            ->val('four');
+
+        $this->assertSame('three', $value->recall());
+        $this->assertSame('three', $value->reset()->val());
+        $this->assertSame('two', $value->reset()->val());
+        $this->assertSame('one', $value->reset()->val());
+    }
+
+    public function testCopyAndAsCloneValueObjects()
+    {
+        $value = Val::make('base');
+        $copy = $value->copy();
+
+        $copy->val('copy');
+
+        $this->assertSame('base', $value->val());
+        $this->assertSame('copy', $copy->val());
+
+        $value->as($assigned);
+
+        $this->assertNotSame($value, $assigned);
+        $this->assertSame('base', $assigned->val());
+    }
+
+    public function testConditionalIfSupportsValueMethodAndOperatorComparisons()
+    {
+        $value = new Val('ready', false);
+        $hit = false;
+        $miss = false;
+
+        $value
+            ->if('ready')
+            ->then(function () use (&$hit) {
+                $hit = true;
+            })
+            ->otherwise(function () use (&$miss) {
+                $miss = true;
+            });
+
+        $number = new Num(1, false);
+        $changed = false;
+
+        $number
+            ->snapshot()
+            ->val(3)
+            ->if('delta', '>', 0)
+            ->then(function () use (&$changed) {
+                $changed = true;
+            });
+
+        $this->assertTrue($hit);
+        $this->assertFalse($miss);
+        $this->assertTrue($changed);
     }
 }

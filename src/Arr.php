@@ -392,6 +392,46 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
         return $array;
     }
 
+    /**
+     * Splice the internal array with a replacement array.
+     *
+     * @param array|Arr $replacement
+     * @param int $offset
+     * @param int|null $length
+     * @return IVal
+     */
+    public function _splice(array|Arr $replacement, int $offset, int $length = null): IVal
+    {
+        if (!$this->is($this->_data)) {
+            return $this;
+        }
+
+        if ($replacement instanceof Arr) {
+            $replacement = $replacement->toArray();
+        }
+
+        $array = $this->_data;
+        array_splice($array, $offset, $length, $replacement);
+        $this->alter($array);
+
+        return $this;
+    }
+
+    /**
+     * Join the array into a Str primitive.
+     *
+     * @param string $separator
+     * @return Str
+     */
+    public function _join(string $separator = ' '): Str
+    {
+        if (!$this->is($this->_data)) {
+            return Str::make('');
+        }
+
+        return Str::make(implode($separator, $this->_data));
+    }
+
 
     /**
      * Sort the array

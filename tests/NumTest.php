@@ -165,6 +165,23 @@ class NumTest extends ValTest
         $this->assertEquals(6, $number->divide(4)->val());
     }
 
+    public function testMathAliasesAcceptValueObjects()
+    {
+        $number = Num::make(10);
+
+        $number
+            ->plus(Num::make(5))
+            ->times(Num::make(2))
+            ->by(Num::make(5))
+            ->minus(Num::make(1));
+
+        $this->assertEquals(5, $number->val());
+        $this->assertEquals(15, Num::plus(10, Num::make(5)));
+        $this->assertEquals(8, Num::subtract(10, Num::make(2)));
+        $this->assertEquals(20, Num::times(10, Num::make(2)));
+        $this->assertEquals(5, Num::by(10, Num::make(2)));
+    }
+
     public function testPowerAndRootHelpersMutateValue()
     {
         $number = new Num(9);

@@ -35,6 +35,41 @@ class Val implements IVal, IDispatcher {
 	protected $_snapshot = null;
 
 	/**
+	 * Queue of captured snapshots.
+	 *
+	 * @var array<int, mixed>
+	 */
+	protected array $_snapshots = [];
+
+	/**
+	 * Maximum number of snapshots retained.
+	 *
+	 * @var int
+	 */
+	protected int $_snapshotLimit = 1;
+
+	/**
+	 * Temporary condition used by then()/otherwise().
+	 *
+	 * @var bool
+	 */
+	protected bool $_temporaryCondition = false;
+
+	/**
+	 * Whether a temporary condition is currently set.
+	 *
+	 * @var bool
+	 */
+	protected bool $_hasTemporaryCondition = false;
+
+	/**
+	 * Most recently consumed condition, retained for otherwise().
+	 *
+	 * @var bool|null
+	 */
+	protected ?bool $_lastCondition = null;
+
+	/**
 	 * @var string $_forceType
 	 */
 	protected $_forceType = false;
@@ -48,7 +83,7 @@ class Val implements IVal, IDispatcher {
 
 	private static $_last = null;
 
-	private static $_slots = [];
+	private static array $_slots = [];
 
 	/**
 	 * @var string PRIVATE_PREFIX
@@ -197,7 +232,10 @@ class Val implements IVal, IDispatcher {
 	 */
 	public static function slot(string $name, callable $callable): IVal
 	{
-		$this->_slots[$name] = $callable->bindTo($this, $this);
+		$class = get_called_class();
+		self::$_slots[$class][$name] = \Closure::fromCallable($callable);
+
+		return new $class();
 	}
 
 	/**
@@ -419,7 +457,9 @@ class Val implements IVal, IDispatcher {
 	 * @return IVal The instance of the Flag class
 	 */
 	public function then( $callback ) {
-		if ( $this->_data ) {
+		$condition = $this->conditionForThen();
+
+		if ( $condition ) {
 			$callback( $this );
 		}
 
@@ -434,9 +474,28 @@ class Val implements IVal, IDispatcher {
 	 * @return IVal The instance of the Flag class
 	 */
 	public function otherwise( $callback ) {
-		if ( !$this->_data ) {
+		$condition = $this->conditionForOtherwise();
+
+		if ( !$condition ) {
 			$callback( $this );
 		}
+
+		return $this;
+	}
+
+	/**
+	 * Set a temporary condition for then()/otherwise() chains.
+	 *
+	 * @param mixed $valueOrMethodName
+	 * @param mixed|null $compValueOrOperator
+	 * @param mixed|null $compValue
+	 * @return IVal
+	 */
+	public function _if(mixed $valueOrMethodName, mixed $compValueOrOperator = null, mixed $compValue = null): IVal
+	{
+		$this->_temporaryCondition = $this->evaluateCondition($valueOrMethodName, $compValueOrOperator, $compValue, func_num_args());
+		$this->_hasTemporaryCondition = true;
+		$this->_lastCondition = null;
 
 		return $this;
 	}
@@ -593,15 +652,35 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
-	 * Snapshot the value of the var
+	 * Snapshot the value of the var.
 	 *
+	 * @param int|null $limit Maximum number of snapshots to retain.
 	 * @return IVal
 	 */
-	public function snapshot(): IVal
+	public function snapshot(?int $limit = null): IVal
 	{
+		if ( !is_null($limit) ) {
+			$this->_snapshotLimit = max(1, $limit);
+		}
+
+		$this->_snapshots[] = $this->_data;
+		while (count($this->_snapshots) > $this->_snapshotLimit) {
+			array_shift($this->_snapshots);
+		}
+
 		$this->_snapshot = $this->_data;
 
 		return $this;
+	}
+
+	/**
+	 * Return the most recent snapshot value.
+	 *
+	 * @return mixed
+	 */
+	public function recall(): mixed
+	{
+		return $this->_snapshot;
 	}
 
 	/**
@@ -611,6 +690,7 @@ class Val implements IVal, IDispatcher {
 	public function clearSnapshot(): IVal
 	{
 		$this->_snapshot = null;
+		$this->_snapshots = [];
 
 		return $this;
 	}
@@ -622,8 +702,14 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function reset(): IVal
 	{
-		$this->_data = $this->_snapshot;
-		$this->trigger(Event::CHANGE);
+		$value = null;
+
+		if (count($this->_snapshots) > 0) {
+			$value = array_pop($this->_snapshots);
+		}
+
+		$this->_snapshot = count($this->_snapshots) > 0 ? $this->_snapshots[count($this->_snapshots) - 1] : null;
+		$this->alter($value);
 
 		return $this;
 	}
@@ -636,6 +722,29 @@ class Val implements IVal, IDispatcher {
 	public function delta()
 	{
 		return $this->_data - $this->_snapshot;
+	}
+
+	/**
+	 * Clone the current value object.
+	 *
+	 * @return IVal
+	 */
+	public function copy(): IVal
+	{
+		return clone $this;
+	}
+
+	/**
+	 * Assign a clone of this value object to the provided variable.
+	 *
+	 * @param mixed $newVar
+	 * @return IVal
+	 */
+	public function as(&$newVar): IVal
+	{
+		$newVar = $this->copy();
+
+		return $newVar;
 	}
 
 	/**
@@ -712,9 +821,13 @@ class Val implements IVal, IDispatcher {
 			
 			return $output;
 		} else {
-			if ( in_array($method, self::$_slots, true) ) {
+			$slot = self::slotFor(get_class($this), $method);
+			if ( $slot ) {
 				$this->trigger(Event::ACTION_PERFORMED);
-				return call_user_func_array(self::$_slots[$method], $args);
+				$bound = $slot->bindTo($this, get_class($this));
+				$output = call_user_func_array($bound, $args);
+
+				return $output ?? $this;
 			}
 
 			// throw new Exception("Method {$method} not defined", 1);
@@ -766,11 +879,162 @@ class Val implements IVal, IDispatcher {
 				$output = $output->val();
 			}
 			return $output;
-		} 
+		}
+
+		$slot = self::slotFor($class, $method);
+		if ( $slot ) {
+			$value = array_shift($args);
+
+			self::$_last = $value;
+
+			$object = new $class($value, false, false);
+			$bound = $slot->bindTo($object, $class);
+			$output = call_user_func_array($bound, $args);
+			if ( $output instanceof IVal ) {
+				return $output->val();
+			}
+
+			return $output ?? $object->val();
+		}
 
 		// throw new Exception("Method {$method} not defined", 1);
 		error_log("Method {$method} not defined in class " . get_called_class());
 		return false;
+	}
+
+	/**
+	 * Resolve a registered slot for a class, including inherited slots.
+	 *
+	 * @param string $class
+	 * @param string $method
+	 * @return \Closure|null
+	 */
+	protected static function slotFor(string $class, string $method): ?\Closure
+	{
+		$classes = array_merge([$class], class_parents($class) ?: []);
+
+		foreach ($classes as $candidate) {
+			if ( isset(self::$_slots[$candidate][$method]) ) {
+				return self::$_slots[$candidate][$method];
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Resolve the condition consumed by then().
+	 *
+	 * @return bool
+	 */
+	protected function conditionForThen(): bool
+	{
+		if ( $this->_hasTemporaryCondition ) {
+			$condition = $this->_temporaryCondition;
+			$this->_lastCondition = $condition;
+			$this->_hasTemporaryCondition = false;
+
+			return $condition;
+		}
+
+		return (bool)$this->_data;
+	}
+
+	/**
+	 * Resolve the condition consumed by otherwise().
+	 *
+	 * @return bool
+	 */
+	protected function conditionForOtherwise(): bool
+	{
+		if ( !is_null($this->_lastCondition) ) {
+			$condition = $this->_lastCondition;
+			$this->_lastCondition = null;
+
+			return $condition;
+		}
+
+		if ( $this->_hasTemporaryCondition ) {
+			$condition = $this->_temporaryCondition;
+			$this->_hasTemporaryCondition = false;
+
+			return $condition;
+		}
+
+		return (bool)$this->_data;
+	}
+
+	/**
+	 * Evaluate an if() condition.
+	 *
+	 * @param mixed $valueOrMethodName
+	 * @param mixed|null $compValueOrOperator
+	 * @param mixed|null $compValue
+	 * @param int $argCount
+	 * @return bool
+	 */
+	protected function evaluateCondition(mixed $valueOrMethodName, mixed $compValueOrOperator, mixed $compValue, int $argCount): bool
+	{
+		if ( $argCount === 1 ) {
+			return $this->compareValues($this->_data, '=', $valueOrMethodName);
+		}
+
+		$left = $this->conditionSubject($valueOrMethodName);
+
+		if ( $argCount === 2 ) {
+			return $this->compareValues($left, '=', $compValueOrOperator);
+		}
+
+		return $this->compareValues($left, (string)$compValueOrOperator, $compValue);
+	}
+
+	/**
+	 * Resolve a conditional subject from a method/helper name or literal value.
+	 *
+	 * @param mixed $value
+	 * @return mixed
+	 */
+	protected function conditionSubject(mixed $value): mixed
+	{
+		if ( is_string($value) ) {
+			if ( method_exists($this, $value) ) {
+				$value = $this->{$value}();
+			} elseif ( method_exists($this, self::PRIVATE_PREFIX.$value) ) {
+				$value = $this->{self::PRIVATE_PREFIX.$value}();
+			}
+		}
+
+		return $value instanceof IVal ? $value->val() : $value;
+	}
+
+	/**
+	 * Compare two values with a supported operator.
+	 *
+	 * @param mixed $left
+	 * @param string $operator
+	 * @param mixed $right
+	 * @return bool
+	 */
+	protected function compareValues(mixed $left, string $operator, mixed $right): bool
+	{
+		if ( $left instanceof IVal ) {
+			$left = $left->val();
+		}
+		if ( $right instanceof IVal ) {
+			$right = $right->val();
+		}
+
+		return match ($operator) {
+			'=', '==' => $left == $right,
+			'===' => $left === $right,
+			'!=', '<>' => $left != $right,
+			'!==' => $left !== $right,
+			'>' => $left > $right,
+			'>=' => $left >= $right,
+			'<' => $left < $right,
+			'<=' => $left <= $right,
+			default => false,
+		};
 	}
 
 	public function __destroy()

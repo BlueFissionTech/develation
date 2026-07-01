@@ -36,11 +36,12 @@ interface IVal
     public function ref(&$value): IVal;
 
     /**
-     * Snapshot the value of the var
+     * Snapshot the value of the var.
      *
+     * @param int|null $limit Maximum number of snapshots to retain.
      * @return IVal
      */
-    public function snapshot(): IVal;
+    public function snapshot(?int $limit = null): IVal;
 
     /**
      * Clear the value of the snapshot
@@ -55,6 +56,28 @@ interface IVal
      * @return IVal
      */
     public function reset(): IVal;
+
+    /**
+     * Return the most recent snapshot value.
+     *
+     * @return mixed
+     */
+    public function recall(): mixed;
+
+    /**
+     * Clone the current value object.
+     *
+     * @return IVal
+     */
+    public function copy(): IVal;
+
+    /**
+     * Assign a clone of this value object to the provided variable.
+     *
+     * @param mixed $newVar
+     * @return IVal
+     */
+    public function as(&$newVar): IVal;
 
     /**
      * Get the change between the current value and the snapshot

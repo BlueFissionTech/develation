@@ -198,6 +198,22 @@ class StrTest extends ValTest {
 		$this->assertFalse(Str::match('', 0));
 	}
 
+	public function testSizeAliasesLen()
+	{
+		$this->assertSame(15, $this->object->size());
+		$this->assertSame(15, Str::size('My Name Is John'));
+	}
+
+	public function testPosSupportsIgnoreCaseModeAndIposAlias()
+	{
+		$object = new Str('Content-Type');
+
+		$this->assertSame(8, $object->pos('type', Str::IGNORE_CASE));
+		$this->assertSame(8, $object->ipos('type'));
+		$this->assertFalse($object->pos('type'));
+		$this->assertSame(8, Str::pos('Content-Type', 'type', Str::IGNORE_CASE));
+	}
+
 	public function testAppendPrependAndConcatMutateString()
 	{
 		$object = new Str('john');

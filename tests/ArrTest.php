@@ -287,6 +287,30 @@ class ArrTest extends ValTest {
 		$this->assertEquals([5 => 'five', 2 => 'two'], static::$classname::reverse([2 => 'two', 5 => 'five'], true));
 	}
 
+	public function testSpliceMutatesAndReturnsSelfForChaining()
+	{
+		$object = new static::$classname(['hello', 'world']);
+
+		$result = $object->splice(['my', 'friends'], 1, 1);
+
+		$this->assertSame($object, $result);
+		$this->assertSame(['hello', 'my', 'friends'], $object->val());
+	}
+
+	public function testSpliceReturnsUpdatedArrayStatically()
+	{
+		$this->assertSame(['hello', 'my', 'friends'], static::$classname::splice(['hello', 'world'], ['my', 'friends'], 1, 1));
+	}
+
+	public function testJoinReturnsStringPrimitiveAndStaticString()
+	{
+		$object = new static::$classname(['hello', 'my', 'friends']);
+
+		$this->assertSame('hello my friends', $object->join()->val());
+		$this->assertSame('hello,my,friends', static::$classname::join(['hello', 'my', 'friends'], ','));
+		$this->assertSame('hello my friends', \BlueFission\Str::make('hello world')->split()->splice(['my', 'friends'], 1, 1)->join()->val());
+	}
+
 	public function testsRemovesDuplicates()
 	{
 		$object = new static::$classname(['foo', 'bar', 'foo']);
