@@ -222,7 +222,11 @@ class Str extends Val implements IVal {
 	 *
 	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
 	 */
-	public function _pos(string $needle): int|bool {
+	public function _pos(string $needle, int $mode = self::MATCH_EXACT): int|bool {
+		if (($mode & self::IGNORE_CASE) === self::IGNORE_CASE) {
+			return stripos($this->_data, $needle);
+		}
+
 		return strpos($this->_data, $needle);
 	}
 
@@ -233,8 +237,8 @@ class Str extends Val implements IVal {
 	 *
 	 * @return int The position of the first occurrence of $needle in the string, or -1 if not found
 	 */
-	public function _ipos(string $needle): int {
-		return stripos($this->_data, $needle);
+	public function _ipos(string $needle): int|bool {
+		return $this->_pos($needle, self::IGNORE_CASE);
 	}
 
 	// Reverse strpos
@@ -266,6 +270,15 @@ class Str extends Val implements IVal {
 			return 0;
 		}
 		return strlen($this->_data);
+	}
+
+	/**
+	 * Alias for the string length helper.
+	 *
+	 * @return int
+	 */
+	public function _size(): int {
+		return $this->_len();
 	}
 
 	/**

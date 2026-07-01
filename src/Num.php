@@ -187,18 +187,26 @@ class Num extends Val implements IVal {
      */
     public function _add(): IVal
     {
-    	$values = func_get_args();
-		$number = $this->_data;
-		if (!Num::isValid($number)) $number = 0;
+        $values = func_get_args();
+		$number = $this->numericValue($this->_data);
 
 		foreach ($values as $value) {
-			if (!Num::isValid($value)) $value = 0;
-			$number += $value;
+			$number += $this->numericValue($value);
 		}
 
 		$this->alter($number);
 
 		return $this;
+	}
+
+	/**
+	 * Alias for add().
+	 *
+	 * @return IVal
+	 */
+	public function _plus(): IVal
+	{
+		return $this->_add(...func_get_args());
 	}
 
 	/**
@@ -211,17 +219,35 @@ class Num extends Val implements IVal {
 	public function _sub(): IVal
 	{
 		$values = func_get_args();
-		$number = $this->_data;
-		if (!Num::isValid($number)) $number = 0;
+		$number = $this->numericValue($this->_data);
 
 		foreach ($values as $value) {
-			if (!Num::isValid($value)) $value = 0;
-			$number -= $value;
+			$number -= $this->numericValue($value);
 		}
 
 		$this->alter($number);
 
 		return $this;
+	}
+
+	/**
+	 * Alias for sub().
+	 *
+	 * @return IVal
+	 */
+	public function _minus(): IVal
+	{
+		return $this->_sub(...func_get_args());
+	}
+
+	/**
+	 * Verb alias for sub().
+	 *
+	 * @return IVal
+	 */
+	public function _subtract(): IVal
+	{
+		return $this->_sub(...func_get_args());
 	}
 
 	/**
@@ -234,17 +260,25 @@ class Num extends Val implements IVal {
 	public function _multiply(): IVal
 	{
 		$values = func_get_args();
-		$number = $this->_data;
-		if (!Num::isValid($number)) $number = 0;
+		$number = $this->numericValue($this->_data);
 
 		foreach ($values as $value) {
-			if (!Num::isValid($value)) $value = 0;
-			$number *= $value;
+			$number *= $this->numericValue($value);
 		}
 
 		$this->alter($number);
 
 		return $this;
+	}
+
+	/**
+	 * Alias for multiply().
+	 *
+	 * @return IVal
+	 */
+	public function _times(): IVal
+	{
+		return $this->_multiply(...func_get_args());
 	}
 
 	/**
@@ -257,11 +291,10 @@ class Num extends Val implements IVal {
 	public function _divide(): IVal
 	{
 		$values = func_get_args();
-		$number = $this->_data;
-		if (!Num::isValid($number)) $number = 0;
+		$number = $this->numericValue($this->_data);
 
 		foreach ($values as $value) {
-			if (!Num::isValid($value)) $value = 0;
+			$value = $this->numericValue($value);
 			if ($value != 0) {
 				$number /= $value;
 			}
@@ -270,6 +303,16 @@ class Num extends Val implements IVal {
 		$this->alter($number);
 
 		return $this;
+	}
+
+	/**
+	 * Alias for divide().
+	 *
+	 * @return IVal
+	 */
+	public function _by(): IVal
+	{
+		return $this->_divide(...func_get_args());
 	}
 
 	/**
@@ -301,11 +344,11 @@ class Num extends Val implements IVal {
      *
      * @return float The ratio between two values
      */
-    public function _percentage(float $part = 0, bool $percent = false): float
+    public function _percentage(mixed $part = 0, bool $percent = false): float
     {
-        $whole = $this->_data;
+        $whole = $this->numericValue($this->_data);
+        $part = $this->numericValue($part);
 
-        if (!Num::isValid($part)) $part = 0;
         if (!Num::isValid($whole)) $whole = 1;
 
         $ratio = $whole/($part * 100);
@@ -364,9 +407,9 @@ class Num extends Val implements IVal {
  	 *
  	 * @return IVal
  	 */
- 	public function _pow($power): IVal
- 	{
-        $value = pow($this->_data, $power);
+    public function _pow($power): IVal
+    {
+        $value = pow($this->numericValue($this->_data), $this->numericValue($power));
 
         $this->alter($value);
 
@@ -616,8 +659,8 @@ class Num extends Val implements IVal {
      *
      * @return float The minimum of the two numbers
      */
-    public function _min(float $number): float {
-        return min($this->_data, $number);
+    public function _min(mixed $number): float|int {
+        return min($this->numericValue($this->_data), $this->numericValue($number));
     }
 
     /**
@@ -627,9 +670,28 @@ class Num extends Val implements IVal {
      *
      * @return float The maximum of the two numbers
      */
-    public function _max(float $number): float {
-        return max($this->_data, $number);
+    public function _max(mixed $number): float|int {
+        return max($this->numericValue($this->_data), $this->numericValue($number));
     }
+
+	/**
+	 * Unwrap value objects and normalize numeric operands.
+	 *
+	 * @param mixed $value
+	 * @return float|int
+	 */
+	protected function numericValue(mixed $value): float|int
+	{
+		if ($value instanceof IVal) {
+			$value = $value->val();
+		}
+
+		if (!Num::isValid($value)) {
+			return 0;
+		}
+
+		return $value + 0;
+	}
 
     /**
      * Return int value of the $_value

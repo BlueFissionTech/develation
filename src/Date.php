@@ -161,8 +161,23 @@ class Date extends Val implements IVal
         return $this;
     }
 
-    public function snapshot(): IVal
+    /**
+     * Snapshot the current date value.
+     *
+     * @param int|null $limit Maximum number of snapshots to retain.
+     * @return IVal
+     */
+    public function snapshot(?int $limit = null): IVal
     {
+        if (!is_null($limit)) {
+            $this->_snapshotLimit = max(1, $limit);
+        }
+
+        $this->_snapshots[] = $this->_value;
+        while (count($this->_snapshots) > $this->_snapshotLimit) {
+            array_shift($this->_snapshots);
+        }
+
         $this->_snapshot = $this->_value;
 
         return $this;
@@ -170,7 +185,8 @@ class Date extends Val implements IVal
 
     public function reset(): IVal
     {
-        $this->_value = $this->_snapshot ?? 0;
+        $this->_value = count($this->_snapshots) > 0 ? array_pop($this->_snapshots) : 0;
+        $this->_snapshot = count($this->_snapshots) > 0 ? $this->_snapshots[count($this->_snapshots) - 1] : null;
 
         $this->setValue($this->_value);
 
