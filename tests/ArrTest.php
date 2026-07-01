@@ -269,6 +269,13 @@ class ArrTest extends ValTest {
 		$this->assertSame(['foo', 'bar'], static::$classname::merge(['foo'], ['bar']));
 	}
 
+	public function testSliceReturnsArrForFluentChaining()
+	{
+		$object = new static::$classname(['foo', 'bar', 'baz']);
+
+		$this->assertEquals(['BAR'], $object->slice(1, 1)->map('strtoupper')->val());
+	}
+
 	public function testReversesValues()
 	{
 		$object = new static::$classname(['foo', 'bar', 'baz']);

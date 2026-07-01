@@ -97,7 +97,7 @@ class DiskQueue extends Queue implements IQueue
             return true;
         }
 
-        return count($array) ? false : true;
+        return Arr::count($array) ? false : true;
     }
 
     /**
@@ -120,7 +120,7 @@ class DiskQueue extends Queue implements IQueue
         }
 
         if (self::$_mode == static::FILO) {
-            $array = array_reverse($array);
+            $array = Arr::reverse($array);
         }
 
         $message = null;
@@ -229,7 +229,7 @@ class DiskQueue extends Queue implements IQueue
         $fs->dirname = $queue;
         $array = $fs->listDir();
 
-        if (!is_array($array) || count($array) < 1) {
+        if (!Arr::is($array) || Arr::count($array) < 1) {
             return 1;
         }
         // rsort($array);

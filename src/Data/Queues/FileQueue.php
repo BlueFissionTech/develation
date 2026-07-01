@@ -3,6 +3,7 @@
 namespace BlueFission\Data\Queues;
 
 use RuntimeException;
+use BlueFission\Arr;
 use BlueFission\Collections\Collection;
 
 /**
@@ -70,20 +71,20 @@ class FileQueue extends Queue implements IQueue
 
         // Reverse the array if FILO
         if (self::$_mode == static::FILO) {
-            self::$cache[$queue] = array_reverse(self::$cache[$queue]);
+            self::$cache[$queue] = Arr::make(self::$cache[$queue])->reverse()->val();
         }
 
         if ($after_id === false && $till_id === false) {
             $item = array_shift(self::$cache[$queue]);
         } else {
             $after_id = $after_id ?? 0;
-            $length = $till_id === false ? count(self::$cache[$queue]) : $till_id;
+            $length = $till_id === false ? Arr::count(self::$cache[$queue]) : $till_id;
             $item = new Collection(array_splice(self::$cache[$queue], $after_id, $length));
         }
 
         // Fix it
         if (self::$_mode == static::FILO) {
-            self::$cache[$queue] = array_reverse(self::$cache[$queue]);
+            self::$cache[$queue] = Arr::make(self::$cache[$queue])->reverse()->val();
         }
         self::save();
         return $item;
