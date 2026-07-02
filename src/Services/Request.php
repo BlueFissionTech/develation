@@ -2,7 +2,10 @@
 
 namespace BlueFission\Services;
 
+use BlueFission\Arr;
 use BlueFission\Obj;
+use BlueFission\Str;
+use BlueFission\Val;
 
 /**
  * Class Request
@@ -22,7 +25,7 @@ class Request extends Obj
     {
         parent::__construct();
 
-        $this->_data = $this->all();
+        $this->_data = Arr::make($this->all());
     }
 
     /**
@@ -32,42 +35,51 @@ class Request extends Obj
      */
     public function all()
     {
-        switch ($this->type()) {
+        $method = Str::make($this->type())->upper();
+
+        switch ($method->val()) {
             case 'GET':
-                $request = filter_input_array(INPUT_GET);
-                if ($request === null || $request === false) {
-                    $request = $_GET ?? [];
-                }
+                $request = $this->input(INPUT_GET, $_GET ?? []);
                 break;
             case 'POST':
-                $request = filter_input_array(INPUT_POST);
-                if ($request === null || $request === false) {
-                    $request = $_POST ?? [];
-                }
+                $request = $this->input(INPUT_POST, $_POST ?? []);
                 break;
             default:
                 // $request = filter_input_array(INPUT_REQUEST); // Awaiting implmentation
-                $get = filter_input_array(INPUT_GET) ?? [];
-                $post = filter_input_array(INPUT_POST) ?? [];
+                $get = Arr::make($this->input(INPUT_GET, $_GET ?? []));
+                $post = Arr::make($this->input(INPUT_POST, $_POST ?? []));
 
-                if ($get === [] && !empty($_GET)) {
-                    $get = $_GET;
-                }
-                if ($post === [] && !empty($_POST)) {
-                    $post = $_POST;
-                }
-
-                $request = array_merge($get, $post);
+                $request = $get->merge($post->val())->val();
                 break;
         }
 
         return $request;
     }
 
+    /**
+     * Read request input with a superglobal fallback for CLI/test contexts.
+     *
+     * @param int $type
+     * @param array $fallback
+     * @return array
+     */
+    private function input(int $type, array $fallback = []): array
+    {
+        $request = filter_input_array($type);
+
+        if (Arr::is($request)) {
+            return $request;
+        }
+
+        return $fallback;
+    }
+
     public function file($field)
     {
-        $file = $_FILES[$field] ?? null;
-        if (!$file) {
+        $files = Arr::make($_FILES ?? []);
+        $file = $files->get($field);
+
+        if (!Val::is($file)) {
             return null;
         }
 
@@ -81,7 +93,7 @@ class Request extends Obj
      */
     public function type()
     {
-        return $_SERVER['REQUEST_METHOD'] ?? '_';
+        return Str::make($_SERVER['REQUEST_METHOD'] ?? '_')->upper()->val();
     }
 
     /**
