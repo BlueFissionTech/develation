@@ -13,6 +13,7 @@ use BlueFission\Cli\Args\OptionDefinition;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Obj;
 use BlueFission\DevElation as Dev;
 use BlueFission\Behavioral\Behaviors\Behavior;
@@ -289,51 +290,66 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      * @return object The current instance of the class.
      */
 	public function args() {
-		global $argv, $argc;
+		global $argv;
 
-		if ( $argc > 1 ) {
-			$this->_arguments[$this->_parameters[0]] = 'console';
+		$parameters = Arr::make($this->_parameters);
+		$argvItems = Arr::make($argv ?? []);
+
+		if ( $argvItems->count() > 1 ) {
+			$this->_arguments[$parameters[0]] = 'console';
 			$parser = $this->cliParser();
-			$definitions = $this->buildCliDefinitions($argv);
-			if (!empty($definitions)) {
-				$parser->addOptions($definitions);
+			$definitions = Arr::make($this->buildCliDefinitions($argvItems->val()));
+			if ($definitions->isNotEmpty()) {
+				$parser->addOptions($definitions->val());
 			}
 
-			$parser->parse($argv);
-			$positionals = $parser->positionals();
-			$options = $parser->options();
+			$parser->parse($argvItems->val());
+			$positionals = Arr::make($parser->positionals());
+			$options = Arr::make($parser->options());
 
-			$this->_arguments[$this->_parameters[1]] = $positionals[0] ?? $this->name();
-			$this->_arguments[$this->_parameters[2]] = $positionals[1] ?? '';
-			$this->_arguments[$this->_parameters[3]] = array_slice($positionals, 2);
-			$this->_arguments['query'] = $options;
+			$this->_arguments[$parameters[1]] = $positionals[0] ?? $this->name();
+			$this->_arguments[$parameters[2]] = $positionals[1] ?? '';
+			$this->_arguments[$parameters[3]] = $positionals->slice(2)->val();
+			$this->_arguments['query'] = $options->val();
 
-			if (!empty($options)) {
-				$_GET = array_merge($_GET ?? [], $options);
-				$_REQUEST = array_merge($_REQUEST ?? [], $options);
+			if ($options->isNotEmpty()) {
+				$_GET = Arr::make($_GET ?? [])->merge($options)->val();
+				$_REQUEST = Arr::make($_REQUEST ?? [])->merge($options)->val();
 			}
-		} elseif ( count( $_GET ) > 0 || count( $_POST ) > 0 ) {
-			$args = $this->_parameters;
+		} elseif ( Arr::isNotEmpty($_GET ?? []) || Arr::isNotEmpty($_POST ?? []) ) {
+			$args = $parameters->val();
 			foreach ( $args as $arg ) {
 				$this->_arguments[$arg] = Util::value($arg);
 			}
 		}
 
 		$uri = new Uri();
-		
+		$uriParts = Arr::make($uri->parts);
+
 		// Get the method for this request
-		$this->_arguments[$this->_parameters[0]] = (isset($this->_arguments[$this->_parameters[0]])) ? $this->_arguments[$this->_parameters[0]] : strtolower( isset($_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : 'GET' );
-		
+		$this->_arguments[$parameters[0]] = $this->argumentOr($parameters[0], Str::make($_SERVER['REQUEST_METHOD'] ?? 'GET')->lower()->val());
+
 		// Get the service targeted by this request
-		$this->_arguments[$this->_parameters[1]] = (isset($this->_arguments[$this->_parameters[1]])) ? $this->_arguments[$this->_parameters[1]] : ( $uri->parts[0] ?? $this->name() );
+		$this->_arguments[$parameters[1]] = $this->argumentOr($parameters[1], $uriParts[0] ?? $this->name());
 
 		// get the behavior triggered by this request
-		$this->_arguments[$this->_parameters[2]] = (isset($this->_arguments[$this->_parameters[2]])) ? $this->_arguments[$this->_parameters[2]] : ( $uri->parts[1] ?? '' ); // TODO send a universal default behavior
+		$this->_arguments[$parameters[2]] = $this->argumentOr($parameters[2], $uriParts[1] ?? ''); // TODO send a universal default behavior
 
 		// get the data triggered by this request
-		$this->_arguments[$this->_parameters[3]] = (isset($this->_arguments[$this->_parameters[3]])) ? $this->_arguments[$this->_parameters[3]] : ( array_slice($uri->parts, 2) ?? null );
+		$this->_arguments[$parameters[3]] = $this->argumentOr($parameters[3], $uriParts->slice(2)->val());
 
 		return $this;
+	}
+
+	private function argumentOr(string $key, mixed $default): mixed
+	{
+		$arguments = Arr::make($this->_arguments);
+
+		if ($arguments->hasKey($key) && Val::isNotNull($arguments[$key])) {
+			return $arguments[$key];
+		}
+
+		return $default;
 	}
 
 	public function assetDir($directory = null) {
@@ -1330,7 +1346,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	private function buildCliDefinitions(array $argv): array
 	{
-		$definitions = [];
+		$definitions = Arr::make();
 
 		foreach ($this->_cliOptions as $definition) {
 			if ($definition instanceof OptionDefinition) {
@@ -1338,49 +1354,58 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			}
 		}
 
-		$count = count($argv);
-		for ($i = 1; $i < $count; $i++) {
-			$arg = $argv[$i];
+		$argvItems = Arr::make($argv);
+		$count = Num::make($argvItems->count());
+		$index = Num::make(1);
+
+		while ($index->val() < $count->val()) {
+			$arg = $argvItems[$index->val()];
 			if (!Str::is($arg) || Str::pos($arg, '--') !== 0) {
+				$index->increment();
 				continue;
 			}
 
-			$name = substr($arg, 2);
-			if ($name === '') {
+			$name = Str::make(Str::sub($arg, 2));
+			if ($name->isEmpty()) {
+				$index->increment();
 				continue;
 			}
 
 			$value = null;
-			$eqPos = Str::pos($name, '=');
+			$eqPos = $name->pos('=');
 			if ($eqPos !== false) {
-				$value = substr($name, $eqPos + 1);
-				$name = substr($name, 0, $eqPos);
+				$value = $name->sub($eqPos + 1);
+				$name = Str::make($name->sub(0, $eqPos));
 			}
 
-			if ($name === '') {
+			if ($name->isEmpty()) {
+				$index->increment();
 				continue;
 			}
 
 			$type = 'string';
-			if (Str::pos($name, 'no-') === 0) {
-				$name = substr($name, 3);
+			if ($name->pos('no-') === 0) {
+				$name = Str::make($name->sub(3));
 				$type = 'bool';
-			} elseif ($value === null) {
-				$next = $argv[$i + 1] ?? null;
+			} elseif (Val::isNull($value)) {
+				$next = $argvItems[$index->val() + 1] ?? null;
 				$type = ($next !== null && Str::pos((string)$next, '-') !== 0) ? 'string' : 'bool';
 			}
 
-			if ($name === '') {
+			if ($name->isEmpty()) {
+				$index->increment();
 				continue;
 			}
 
-			if (!isset($definitions[$name])) {
-				$definitions[$name] = new OptionDefinition($name, [
+			if (!$definitions->hasKey($name->val())) {
+				$definitions[$name->val()] = new OptionDefinition($name->val(), [
 					'type' => $type,
 				]);
 			}
+
+			$index->increment();
 		}
 
-		return array_values($definitions);
+		return $definitions->values()->val();
 	}
 }
