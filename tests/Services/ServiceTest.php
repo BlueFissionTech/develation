@@ -190,4 +190,29 @@ class ServiceTest extends \PHPUnit\Framework\TestCase
         $this->object->call('field', ['test', 'foobar']);
         echo $this->object->call('field', ['test']);
     }
+
+    public function testStringClassCallbacksBindToServiceInstance()
+    {
+        $this->expectOutputString('prepared callback');
+
+        $this->object->type = ServiceCallbackTarget::class;
+
+        $handler = new Handler(
+            new Behavior('DoStringCallback'),
+            ServiceCallbackTarget::class . '::emit'
+        );
+
+        $this->object->register('testService', $handler, Service::LOCAL_LEVEL);
+        $this->object->message('DoStringCallback');
+    }
+}
+
+class ServiceCallbackTarget extends Obj
+{
+    use Configurable;
+
+    public function emit($behavior = null, $args = null): void
+    {
+        echo 'prepared callback';
+    }
 }

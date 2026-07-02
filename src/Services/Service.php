@@ -224,17 +224,21 @@ class Service extends Obj
     {
         if (is_object($callback)) {
             $callback = $callback->bindTo($this->scope, $this->instance);
-        } elseif (Str::is($callback) && (Str::pos($callback, '::') !== false)) {
-            $function = explode('::', $callback);
-            $callback = [$callback[0], $function[1]];
         } elseif (Str::is($callback)) {
-            $callback = [$this->instance, $callback];
+            $callbackName = Str::make($callback);
+            $callback = $callbackName->contains('::')
+                ? $callbackName->split('::')->val()
+                : [$this->instance, $callbackName->val()];
         }
 
         if (Arr::is($callback) && Arr::size($callback) == 2) {
-            if ($this->instance instanceof $callback[0]) {
-                $callback[0] = $this->instance;
+            $callbackParts = Arr::make($callback);
+
+            if (Str::is($callbackParts[0]) && $this->instance instanceof $callbackParts[0]) {
+                $callbackParts[0] = $this->instance;
             }
+
+            $callback = $callbackParts->val();
         }
 
         return $callback;
