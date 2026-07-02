@@ -3,6 +3,7 @@
 namespace BlueFission\Data\Queues;
 
 use BlueFission\Arr;
+use BlueFission\Val;
 use BlueFission\Collections\Collection;
 
 /**
@@ -76,8 +77,13 @@ class Queue implements IQueue
     public static function isEmpty($queue)
     {
         $stack = self::instance();
-        $count = isset($stack[$queue]) && Arr::count($stack[$queue]);
-        return $count ? false : true;
+        $items = $stack[$queue] ?? null;
+
+        if (!Val::is($items)) {
+            return true;
+        }
+
+        return Arr::count($items) === 0;
     }
 
     /**
