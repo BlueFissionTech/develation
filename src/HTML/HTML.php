@@ -4,6 +4,7 @@ namespace BlueFission\HTML;
 
 use BlueFission\Val;
 use BlueFission\Str;
+use BlueFission\Net\HTTP;
 use BlueFission\Utils\Util;
 
 /**
@@ -244,7 +245,7 @@ class HTML
         $query_r = array_merge($_POST, $_GET);
         unset($query_r[$begin]);
         unset($query_r[$end]);
-        $get_query = http_build_query($query_r);
+        $get_query = HTTP::query($query_r);
 
         if ($start > 0) {
             $chapter_r[] = '&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ';
