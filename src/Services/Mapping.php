@@ -3,7 +3,9 @@
 namespace BlueFission\Services;
 
 use BlueFission\Services\Application as App;
-use BlueFission\Obj;
+use BlueFission\Arr;
+use BlueFission\Str;
+use BlueFission\Val;
 
 /**
  * Class Mapping
@@ -61,11 +63,15 @@ class Mapping {
 	static public function add(String $path, $callable, String $name = '', String $method = 'get')
 	{
 		$app = App::instance();
+		$httpMethod = Str::make($method)->trim()->lower();
+		$routePath = Str::make($path)->trim()->trim('/');
+		$routeName = Str::make($name)->trim();
+
 		$mapping = $app->map(
-			strtolower($method), 
-			filter_var(trim($path, '/'), FILTER_SANITIZE_URL), 
+			$httpMethod->val(),
+			filter_var($routePath->val(), FILTER_SANITIZE_URL),
 			$callable, 
-			trim($name)
+			$routeName->val()
 		);
 
 		return $mapping;
@@ -82,13 +88,32 @@ class Mapping {
 	 */
 	static public function crud($root, $package, $controller, $idField, $gateway = '')
 	{
-		$name = str_replace(['/','-','_'], ['.','.','.'], $root.$package);
+		$name = Str::make($root.$package)
+			->replace('/', '.')
+			->replace('-', '.')
+			->replace('_', '.');
+		$resourcePath = self::pathFromParts($root, $package);
+		$itemPath = Str::make($resourcePath->val())->append('/$')->append($idField);
 
-		self::add($root.'/'.$package, [$controller, 'index'], $name, 'get')->gateway($gateway);
-		self::add($root.'/'.$package."/$".$idField, [$controller, 'find'], $name.'.get', 'get')->gateway($gateway);
-		self::add($root.'/'.$package, [$controller, 'save'], $name.'.save', 'post')->gateway($gateway);
-		self::add($root.'/'.$package."/$".$idField, [$controller, 'update'], $name.'.update', 'post')->gateway($gateway);
-		self::add($root.'/'.$package."/$".$idField, [$controller, 'delete'], $name.'.delete', 'delete')->gateway($gateway);
+		self::add($resourcePath->val(), [$controller, 'index'], $name->val(), 'get')->gateway($gateway);
+		self::add($itemPath->val(), [$controller, 'find'], Str::make($name->val())->append('.get')->val(), 'get')->gateway($gateway);
+		self::add($resourcePath->val(), [$controller, 'save'], Str::make($name->val())->append('.save')->val(), 'post')->gateway($gateway);
+		self::add($itemPath->val(), [$controller, 'update'], Str::make($name->val())->append('.update')->val(), 'post')->gateway($gateway);
+		self::add($itemPath->val(), [$controller, 'delete'], Str::make($name->val())->append('.delete')->val(), 'delete')->gateway($gateway);
+	}
+
+	/**
+	 * Build a URL path from arbitrary path segments.
+	 *
+	 * @param mixed ...$parts
+	 * @return Str
+	 */
+	private static function pathFromParts(...$parts): Str
+	{
+		return Arr::make($parts)
+			->map(fn ($part) => Str::make($part)->trim()->trim('/')->val())
+			->filter(fn ($part) => Str::make($part)->isNotEmpty())
+			->join('/');
 	}
 
 	/**
@@ -100,16 +125,15 @@ class Mapping {
 	 */
 	public function gateway( $gateway )
 	{
-		if (is_array($gateway)) {
-			foreach ($gateway as $g) {
-				if (trim((string)$g) !== '') {
-					$this->_gateways[] = $g;
-				}
-			}
-		} else {
-			if (trim((string)$gateway) !== '') {
-				$this->_gateways[] = $gateway;
-			}
+		if (!Val::is($gateway)) {
+			return $this;
+		}
+
+		$gateways = Arr::make(Arr::is($gateway) ? $gateway : [$gateway])
+			->filter(fn ($g) => Str::make((string)$g)->trim()->isNotEmpty());
+
+		foreach ($gateways as $g) {
+			$this->_gateways[] = $g;
 		}
 
 		return $this;

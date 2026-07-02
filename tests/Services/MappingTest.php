@@ -32,6 +32,15 @@ class MappingTest extends TestCase
         $this->assertEquals($callable, $mapping->callable);
     }
 
+    public function testAddNormalizesMethodPathAndNameWithPrimitiveObjects()
+    {
+        $mapping = Mapping::add(' /admin/users/ ', function () {}, ' users.index ', ' POST ');
+
+        $this->assertEquals('post', $mapping->method);
+        $this->assertEquals('admin/users', $mapping->path);
+        $this->assertEquals('users.index', $mapping->name);
+    }
+
     public function testCrudMethod()
     {
         $root = '/test';
