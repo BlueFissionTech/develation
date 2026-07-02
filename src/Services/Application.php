@@ -1089,7 +1089,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		} elseif ( is_callable([$recipient, $behavior->name()] ) ) {
 			call_user_func_array([$recipient, $behavior->name()], [$data]);
 		} else {
-			header("HTTP/1.0 404 Not Found");
+			header(HTTP::statusLine(404, 'HTTP/1.0') ?? 'HTTP/1.0 404 Not Found');
 			return '404';
 		}
 	}

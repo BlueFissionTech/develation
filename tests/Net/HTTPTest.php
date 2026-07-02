@@ -61,6 +61,7 @@ class HTTPTest extends TestCase {
     public function testStatusHelpersResolveKnownCodes() {
         $this->assertSame('Not Found', HTTP::statusText(404));
         $this->assertSame('HTTP/1.1 404 Not Found', HTTP::statusLine(404));
+        $this->assertSame('HTTP/1.0 404 Not Found', HTTP::statusLine(404, 'HTTP/1.0'));
         $this->assertSame('HTTP/2 200 OK', HTTP::statusLine(200, ' HTTP/2 '));
         $this->assertNull(HTTP::statusText(799));
         $this->assertNull(HTTP::statusLine(799));
