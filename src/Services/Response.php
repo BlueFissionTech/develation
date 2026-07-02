@@ -5,7 +5,9 @@ namespace BlueFission\Services;
 use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Flag;
 use BlueFission\Obj;
+use BlueFission\Val;
 use BlueFission\Behavioral\Behaviors\Event;
 
 /**
@@ -60,45 +62,47 @@ class Response extends Obj
             return;
         }
         if (Arr::is($values)) {
-            $mapped = false;
-            $iterations = 0;
-            foreach ($values as $key => $value) {
-                if ($iterations > self::MAX_ITERATIONS) {
+            $items = Arr::make($values);
+            $mapped = Flag::make(false);
+            $iterations = Num::make(0);
+
+            foreach ($items->val() as $key => $value) {
+                if ($iterations->val() > self::MAX_ITERATIONS) {
                     break;
                 }
 
-                if ($depth == 0 && $this->_data->hasKey($key) && $this->$key == null) {
-                    $mapped = true;
+                if ($depth == 0 && $this->_data->hasKey($key) && Val::isEmpty($this->$key)) {
+                    $mapped->val(true);
                     $this->$key = $value;
                 } else {
                     $this->fill($value, $depth + 1);
                 }
 
-                $iterations++;
+                $iterations->increment();
             }
 
-            if ($depth == 0 && Arr::isAssoc($values) && $this->data == null && $values != $this->list) {
-                $this->data = $values;
+            if ($depth == 0 && $items->isAssoc() && Val::isEmpty($this->data) && $items->val() != $this->list) {
+                $this->data = $items->val();
             }
 
-            if ($depth == 0 && Arr::isIndexed($values) && $mapped == false && $this->list == null) {
-                $this->list = $values;
+            if ($depth == 0 && $items->isIndexed() && $mapped->isFalse() && Val::isEmpty($this->list)) {
+                $this->list = $items->val();
             }
 
-            if ($depth == 1 && Arr::isIndexed($values) && $this->children == null && $values != $this->list) {
-                $this->children = $values;
+            if ($depth == 1 && $items->isIndexed() && Val::isEmpty($this->children) && $items->val() != $this->list) {
+                $this->children = $items->val();
             }
         }
 
-        if ($depth < 2 && Num::is($values) && $this->id == null) {
+        if ($depth < 2 && Num::is($values) && Val::isEmpty($this->id)) {
             $this->id = $values;
         }
 
-        if ($depth < 2 && Str::is($values) && $this->status == null) {
+        if ($depth < 2 && Str::is($values) && Val::isEmpty($this->status)) {
             $this->status = $values;
         }
 
-        if ($depth < 2 && \is_object($values) && $this->data == null) {
+        if ($depth < 2 && \is_object($values) && Val::isEmpty($this->data)) {
             $this->data = $values;
         }
     }
