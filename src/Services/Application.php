@@ -10,6 +10,7 @@ use BlueFission\Collections\Collection;
 use BlueFission\Services\Mapping;
 use BlueFission\Cli\Args;
 use BlueFission\Cli\Args\OptionDefinition;
+use BlueFission\Data\FileSystem;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
@@ -356,44 +357,60 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function assetDir($directory = null) {
 		if ( $directory ) {
-			$directory = trim($directory, '/');
-			$this->_assetDir = $directory;
+			$this->_assetDir = Str::make($directory)->trim('/')->val();
 		}
 		return $this->_assetDir;
 	}
 
 	public function webRoot($path = null) {
 		if ( $path ) {
-			$path = trim($path, '/');
-			$this->_webRoot = $path;
+			$this->_webRoot = Str::make($path)->trim('/')->val();
 		}
 		return $this->_webRoot;
 	}
 
 	public function fileExists($path) {
-		$templateDir = $this->assetDir();
-		$webRoot = $this->webRoot();
-		if ( file_exists($webRoot.DIRECTORY_SEPARATOR.$path) ) {
-			return true;
-		} elseif ( file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) ) {
-			return true;
-		} else {
-			return false;
+		foreach ($this->assetCandidates($path) as $candidate) {
+			if (FileSystem::fileExists($candidate)) {
+				return true;
+			}
 		}
+
+		return false;
 	}
 
 	public function fileContents($path) {
-		$templateDir = $this->assetDir();
-		$webRoot = $this->webRoot();
-		if ( $path != "" && file_exists($webRoot.DIRECTORY_SEPARATOR.$path) ) {
-			header('Content-type: '. $this->getMimeType($webRoot.DIRECTORY_SEPARATOR.$path));
-			return file_get_contents($webRoot.DIRECTORY_SEPARATOR.$path);
-		} elseif ( $path != "" && file_exists( $templateDir.DIRECTORY_SEPARATOR.$path ) ) {
-			header('Content-type: '. $this->getMimeType($templateDir.DIRECTORY_SEPARATOR.$path));
-			return file_get_contents($templateDir.DIRECTORY_SEPARATOR.$path);
-		} else {
+		if (Str::isEmpty($path)) {
 			return null;
 		}
+
+		foreach ($this->assetCandidates($path) as $candidate) {
+			if (!FileSystem::fileExists($candidate)) {
+				continue;
+			}
+
+			header(HTTP::headerLine('Content-type', $this->getMimeType($candidate)));
+
+			return (new FileSystem($candidate))->read()->contents();
+		}
+
+		return null;
+	}
+
+	private function assetCandidates($path): Arr
+	{
+		return Arr::make([$this->webRoot(), $this->assetDir()])
+			->map(fn ($root) => $this->assetPath($root, $path))
+			->filter(fn ($candidate) => Str::make($candidate)->isNotEmpty());
+	}
+
+	private function assetPath($root, $path): string
+	{
+		return Arr::make([$root, $path])
+			->map(fn ($part) => Str::make((string)$part)->trim('/')->val())
+			->filter(fn ($part) => Str::make($part)->isNotEmpty())
+			->join(DIRECTORY_SEPARATOR)
+			->val();
 	}
 
 	public function getMimeType($filename) {
