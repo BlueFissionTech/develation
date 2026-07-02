@@ -132,4 +132,75 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $_GET = $originalGet;
         $_REQUEST = $originalRequest;
     }
+
+    public function testCliNoOptionsMapToRequest()
+    {
+        global $argv, $argc;
+
+        $originalArgv = $argv ?? [];
+        $originalArgc = $argc ?? 0;
+        $originalGet = $_GET ?? [];
+        $originalRequest = $_REQUEST ?? [];
+
+        $_GET = [];
+        $_REQUEST = [];
+
+        $argv = ['app.php', 'service', 'behavior', '--no-cache'];
+        $argc = count($argv);
+
+        $app = Application::getInstance('CliNoArgsTest');
+        $app->args();
+
+        $request = new \BlueFission\Services\Request();
+        $this->assertFalse($request->all()['cache']);
+
+        $argv = $originalArgv;
+        $argc = $originalArgc;
+        $_GET = $originalGet;
+        $_REQUEST = $originalRequest;
+    }
+
+    public function testArgsUseRequestMethodAndUriDefaults()
+    {
+        global $argv, $argc;
+
+        $originalArgv = $argv ?? [];
+        $originalArgc = $argc ?? 0;
+        $originalGet = $_GET ?? [];
+        $originalPost = $_POST ?? [];
+        $originalServer = $_SERVER;
+
+        $argv = ['app.php'];
+        $argc = count($argv);
+        $_GET = [];
+        $_POST = [];
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['HTTP_HOST'] = 'example.test';
+        $_SERVER['REQUEST_URI'] = '/catalog/list/active';
+
+        $app = Application::getInstance('RequestDefaultArgsTest');
+        $app->args();
+
+        $arguments = $this->applicationArguments($app);
+
+        $this->assertSame('post', $arguments['_method']);
+        $this->assertSame('catalog', $arguments['service']);
+        $this->assertSame('list', $arguments['behavior']);
+        $this->assertSame(['active'], $arguments['data']);
+
+        $argv = $originalArgv;
+        $argc = $originalArgc;
+        $_GET = $originalGet;
+        $_POST = $originalPost;
+        $_SERVER = $originalServer;
+    }
+
+    private function applicationArguments(Application $app): array
+    {
+        $reflection = new \ReflectionClass($app);
+        $property = $reflection->getProperty('_arguments');
+        $property->setAccessible(true);
+
+        return $property->getValue($app);
+    }
 }
