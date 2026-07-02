@@ -3,7 +3,9 @@
 namespace BlueFission\Services;
 
 use BlueFission\Arr;
+use BlueFission\Flag;
 use BlueFission\Net\HTTP;
+use BlueFission\Num;
 use BlueFission\Str;
 
 /**
@@ -43,7 +45,7 @@ class Uri
      */
     public function __construct(string $path = '')
     {
-        $url = $path != '' ? $path : HTTP::url();
+        $url = Str::isNotEmpty($path) ? $path : HTTP::url();
 
         $request = Str::make(HTTP::urlPath($url) ?? '')->trim('/');
         $this->path = $request->val();
@@ -69,12 +71,7 @@ class Uri
         $uri_parts = $cleanTestUri->split('/');
         $parts = Arr::make($this->parts);
 
-        if ($uri_parts->count() == $parts->count()) {
-            for ($i = 0; $i < $uri_parts->count(); $i++) {
-                if (!$this->compare_parts($uri_parts[$i], $this->parts[$i])) {
-                    return false;
-                }
-            }
+        if ($this->partsMatch($uri_parts, $parts)) {
             return true;
         }
 
@@ -99,12 +96,7 @@ class Uri
         $uri_parts = $cleanTestUri->split('/');
         $parts = Arr::make($this->parts);
 
-        if ($uri_parts->count() == $parts->count()) {
-            for ($i = 0; $i < $uri_parts->count(); $i++) {
-                if (!$this->compare_parts($uri_parts[$i], $this->parts[$i])) {
-                    return false;
-                }
-            }
+        if ($this->partsMatch($uri_parts, $parts)) {
             return true;
         }
 
@@ -126,15 +118,59 @@ class Uri
         $uri_parts = $cleanUri->split('/');
         $parts = Arr::make($this->parts);
 
-        if ($uri_parts->count() == $parts->count()) {
-            for ($i = 0; $i < $uri_parts->count(); $i++) {
-                if (Str::startsWith($uri_parts[$i], $this->_valueToken)) {
-                    $arguments[Str::sub($uri_parts[$i], 1)] = $this->parts[$i];
+        if ($this->samePartCount($uri_parts, $parts)) {
+            $index = Num::make(0);
+
+            foreach ($uri_parts->val() as $uriPart) {
+                if (Str::startsWith($uriPart, $this->_valueToken)) {
+                    $arguments[Str::sub($uriPart, 1)] = $parts[$index->val()];
                 }
+
+                $index->increment();
             }
         }
 
         return $arguments->val();
+    }
+
+    /**
+     * Determine whether a URI signature and request path have compatible parts.
+     *
+     * @param Arr $uriParts
+     * @param Arr $parts
+     * @return bool
+     */
+    private function partsMatch(Arr $uriParts, Arr $parts): bool
+    {
+        if (!$this->samePartCount($uriParts, $parts)) {
+            return false;
+        }
+
+        $matches = Flag::make(true);
+        $index = Num::make(0);
+
+        foreach ($uriParts->val() as $uriPart) {
+            if (!$this->compare_parts($uriPart, $parts[$index->val()])) {
+                $matches->val(false);
+                break;
+            }
+
+            $index->increment();
+        }
+
+        return $matches->isTrue();
+    }
+
+    /**
+     * Determine whether two URI part lists have the same size.
+     *
+     * @param Arr $uriParts
+     * @param Arr $parts
+     * @return bool
+     */
+    private function samePartCount(Arr $uriParts, Arr $parts): bool
+    {
+        return $uriParts->count() == $parts->count();
     }
 
     /**
