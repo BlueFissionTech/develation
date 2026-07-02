@@ -34,6 +34,41 @@ class RequestTest extends TestCase
         }
     }
 
+    public function testAllFallsBackToPost()
+    {
+        $originalPost = $_POST ?? [];
+        $originalMethod = $_SERVER['REQUEST_METHOD'] ?? null;
+
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_POST = ['posted' => 'value'];
+
+        $request = new Request();
+        $this->assertEquals('value', $request->all()['posted']);
+
+        $_POST = $originalPost;
+        if ($originalMethod === null) {
+            unset($_SERVER['REQUEST_METHOD']);
+        } else {
+            $_SERVER['REQUEST_METHOD'] = $originalMethod;
+        }
+    }
+
+    public function testTypeNormalizesRequestMethod()
+    {
+        $originalMethod = $_SERVER['REQUEST_METHOD'] ?? null;
+
+        $_SERVER['REQUEST_METHOD'] = 'post';
+        $request = new Request();
+
+        $this->assertEquals('POST', $request->type());
+
+        if ($originalMethod === null) {
+            unset($_SERVER['REQUEST_METHOD']);
+        } else {
+            $_SERVER['REQUEST_METHOD'] = $originalMethod;
+        }
+    }
+
     public function testType()
     {
         $request = new Request();
