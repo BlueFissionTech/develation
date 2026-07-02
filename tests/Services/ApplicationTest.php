@@ -72,6 +72,8 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
             $app->webRoot($root);
             $app->assetDir($assets);
 
+            $this->assertSame(rtrim($root, '/\\'), $app->webRoot());
+            $this->assertSame(rtrim($assets, '/\\'), $app->assetDir());
             $this->assertTrue($app->fileExists('app.css'));
             $this->assertSame('web-root', $app->fileContents('app.css'));
         } finally {

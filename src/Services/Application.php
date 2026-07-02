@@ -357,14 +357,14 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	public function assetDir($directory = null) {
 		if ( $directory ) {
-			$this->_assetDir = Str::make($directory)->trim('/')->val();
+			$this->_assetDir = $this->assetRootPath($directory);
 		}
 		return $this->_assetDir;
 	}
 
 	public function webRoot($path = null) {
 		if ( $path ) {
-			$this->_webRoot = Str::make($path)->trim('/')->val();
+			$this->_webRoot = $this->assetRootPath($path);
 		}
 		return $this->_webRoot;
 	}
@@ -406,11 +406,24 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 	private function assetPath($root, $path): string
 	{
+		$root = $this->assetRootPath($root);
+		$path = Str::make((string)$path)->trim('/\\')->val();
+
 		return Arr::make([$root, $path])
-			->map(fn ($part) => Str::make((string)$part)->trim('/')->val())
 			->filter(fn ($part) => Str::make($part)->isNotEmpty())
 			->join(DIRECTORY_SEPARATOR)
 			->val();
+	}
+
+	private function assetRootPath($path): string
+	{
+		$path = Str::make((string)$path)->trim()->val();
+
+		if ($path === DIRECTORY_SEPARATOR) {
+			return $path;
+		}
+
+		return rtrim($path, '/\\');
 	}
 
 	public function getMimeType($filename) {
