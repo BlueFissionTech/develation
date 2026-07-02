@@ -2,6 +2,7 @@
 
 namespace BlueFission\Data;
 
+use BlueFission\Arr;
 use BlueFission\Val;
 use BlueFission\IObj;
 use BlueFission\Data\FileSystem;
@@ -214,9 +215,11 @@ class Log extends Data implements iData
     {
         $records = (Val::isNull($records)) ? $this->config('max_logs') : $records;
         $raw = $this->data();
-        $message = array_slice($raw, -($records));
-        $message = array_filter($message);
-        // $output = implode("\n", $message)."\n";
+        $message = Arr::make($raw)
+            ->slice(-($records))
+            ->filter(fn ($line) => Val::isNotEmpty($line))
+            ->val();
+
         $output = '';
         foreach ($message as $time => $line) {
             $output .= "{$time} - {$line}\n";

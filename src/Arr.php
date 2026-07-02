@@ -378,18 +378,15 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
      *
      * @param int $offset
      * @param int|null $length
-     * @return IVal
+     * @return Arr
      */
-    public function _slice(int $offset, int $length = null): array
+    public function _slice(int $offset, int $length = null): Arr
     {
         if (!$this->is($this->_data)) {
-            return $this;
+            return Arr::make();
         }
 
-        $array = $this->_data;
-        $array = array_slice($array, $offset, $length);
-
-        return $array;
+        return Arr::make(array_slice($this->_data, $offset, $length));
     }
 
     /**
