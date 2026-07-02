@@ -222,7 +222,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
         	$this->config['name'] ??
         	get_called_class();
 
-        if (isset(self::$_instances[$name])) {
+        if (Arr::hasKey(self::$_instances, $name)) {
             return self::$_instances[$name];
         }
 
@@ -243,11 +243,11 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
     static function getInstance($name = null)
     {
         $appName = $name ?? get_called_class();
-        if (!isset(self::$_instances[$appName])) {
-        	$config = [];
-        	if ($name) {
-        		$config['name'] = $name;
-        	}
+        if (!Arr::hasKey(self::$_instances, $appName)) {
+            $config = [];
+            if ($name) {
+                $config['name'] = $name;
+            }
             self::$_instances[$appName] = new static($config);
         }
 
@@ -261,12 +261,14 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      */
     static function instance()
     {
-		if (count(self::$_instances) <= 0) {
+		$instances = Arr::make(self::$_instances);
+		if ($instances->isEmpty()) {
 	        $calledClass = get_called_class();
 			self::$_instances[$calledClass] = new static();
+			$instances = Arr::make(self::$_instances);
 		}
 
-		return array_values(self::$_instances)[0];
+		return $instances->values()[0];
 	}
 
     /**
