@@ -43,6 +43,22 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf(\stdClass::class, $service);
     }
 
+    public function testNamedApplicationInstancesAreReused()
+    {
+        $first = Application::getInstance('InstanceHelperTest');
+        $second = Application::getInstance('InstanceHelperTest');
+
+        $this->assertSame($first, $second);
+    }
+
+    public function testApplicationInstanceReturnsFirstRegisteredInstance()
+    {
+        $first = Application::instance();
+        Application::getInstance('LaterInstanceHelperTest');
+
+        $this->assertSame($first, Application::instance());
+    }
+
     public function testApplicationCanRouteMessage()
     {
         $this->expectOutputString('Test Output');
