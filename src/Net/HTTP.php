@@ -88,6 +88,30 @@ class HTTP {
 	}
 
 	/**
+	 * Extract a URL path.
+	 *
+	 * @param string $url
+	 * @param bool $trimSeparators
+	 * @return string|null
+	 */
+	static function urlPath(string $url, bool $trimSeparators = false): ?string
+	{
+		$path = parse_url($url, PHP_URL_PATH);
+
+		if (!Str::is($path)) {
+			return null;
+		}
+
+		$path = Str::make($path);
+
+		if ($trimSeparators) {
+			$path->trim('/');
+		}
+
+		return $path->val();
+	}
+
+	/**
 	 * Extract a URL port.
 	 *
 	 * @param string $url

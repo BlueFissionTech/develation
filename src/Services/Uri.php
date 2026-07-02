@@ -2,7 +2,9 @@
 
 namespace BlueFission\Services;
 
+use BlueFission\Arr;
 use BlueFission\Net\HTTP;
+use BlueFission\Str;
 
 /**
  * Class Uri
@@ -43,11 +45,10 @@ class Uri
     {
         $url = $path != '' ? $path : HTTP::url();
 
-        $request = trim(parse_url($url, PHP_URL_PATH), '/');
-        $this->path = $request;
+        $request = Str::make(HTTP::urlPath($url) ?? '')->trim('/');
+        $this->path = $request->val();
 
-        $request_parts = explode('/', $request);
-        $this->parts = $request_parts;
+        $this->parts = $request->split('/')->val();
     }
 
     /**
@@ -59,16 +60,17 @@ class Uri
      */
     public function match($testUri)
     {
-        $cleanTestUri = trim($testUri, '/');
+        $cleanTestUri = Str::make($testUri)->trim('/');
 
-        if ($cleanTestUri == $this->path) {
+        if ($cleanTestUri->match($this->path)) {
             return true;
         }
 
-        $uri_parts = explode('/', $cleanTestUri);
+        $uri_parts = $cleanTestUri->split('/');
+        $parts = Arr::make($this->parts);
 
-        if (count($uri_parts) == count($this->parts)) {
-            for ($i = 0; $i < count($uri_parts); $i++) {
+        if ($uri_parts->count() == $parts->count()) {
+            for ($i = 0; $i < $uri_parts->count(); $i++) {
                 if (!$this->compare_parts($uri_parts[$i], $this->parts[$i])) {
                     return false;
                 }
@@ -88,16 +90,17 @@ class Uri
      */
     public function matchAndReturn($testUri)
     {
-        $cleanTestUri = trim($testUri, '/');
+        $cleanTestUri = Str::make($testUri)->trim('/');
 
-        if ($cleanTestUri == $this->path) {
+        if ($cleanTestUri->match($this->path)) {
             return $testUri;
         }
 
-        $uri_parts = explode('/', $cleanTestUri);
+        $uri_parts = $cleanTestUri->split('/');
+        $parts = Arr::make($this->parts);
 
-        if (count($uri_parts) == count($this->parts)) {
-            for ($i = 0; $i < count($uri_parts); $i++) {
+        if ($uri_parts->count() == $parts->count()) {
+            for ($i = 0; $i < $uri_parts->count(); $i++) {
                 if (!$this->compare_parts($uri_parts[$i], $this->parts[$i])) {
                     return false;
                 }
@@ -116,21 +119,22 @@ class Uri
      */
     public function buildArguments($uriSignature)
     {
-        $arguments = [];
+        $arguments = Arr::make();
 
-        $cleanUri = trim($uriSignature, '/');
+        $cleanUri = Str::make($uriSignature)->trim('/');
 
-        $uri_parts = explode('/', $cleanUri);
+        $uri_parts = $cleanUri->split('/');
+        $parts = Arr::make($this->parts);
 
-        if (count($uri_parts) == count($this->parts)) {
-            for ($i = 0; $i < count($uri_parts); $i++) {
-                if (strpos($uri_parts[$i], $this->_valueToken) === 0) {
-                    $arguments[ substr($uri_parts[$i], 1) ] = $this->parts[$i];
+        if ($uri_parts->count() == $parts->count()) {
+            for ($i = 0; $i < $uri_parts->count(); $i++) {
+                if (Str::startsWith($uri_parts[$i], $this->_valueToken)) {
+                    $arguments[Str::sub($uri_parts[$i], 1)] = $this->parts[$i];
                 }
             }
         }
 
-        return $arguments;
+        return $arguments->val();
     }
 
     /**
@@ -145,8 +149,8 @@ class Uri
         if ($firstPart == $secondPart) {
             return true;
         }
-        if (strpos($firstPart, $this->_valueToken) === 0
-            || strpos($secondPart, $this->_valueToken) === 0) {
+        if (Str::startsWith($firstPart, $this->_valueToken)
+            || Str::startsWith($secondPart, $this->_valueToken)) {
             return true;
         }
 

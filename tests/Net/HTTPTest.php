@@ -34,6 +34,8 @@ class HTTPTest extends TestCase {
         $this->assertSame('localhost', HTTP::urlHost('https://localhost:8443/status'));
         $this->assertSame('127.0.0.1', HTTP::urlHost('http://127.0.0.1:8080/health'));
         $this->assertSame('[::1]', HTTP::urlHost('http://[::1]:8080/health'));
+        $this->assertSame('/status', HTTP::urlPath('https://localhost:8443/status?ok=1'));
+        $this->assertSame('status', HTTP::urlPath('https://localhost:8443/status?ok=1', true));
         $this->assertSame(8443, HTTP::urlPort('https://localhost:8443/status'));
     }
 
@@ -41,6 +43,7 @@ class HTTPTest extends TestCase {
         $this->assertNull(HTTP::urlScheme('/relative/path'));
         $this->assertNull(HTTP::urlHost('/relative/path'));
         $this->assertNull(HTTP::urlHost('http:///missing-host'));
+        $this->assertNull(HTTP::urlPath('https://example.com'));
         $this->assertNull(HTTP::urlPort('https://example.com'));
         $this->assertNull(HTTP::urlPort('http:///missing-host'));
     }
