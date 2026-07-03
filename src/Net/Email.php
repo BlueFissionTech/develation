@@ -36,24 +36,24 @@ class Email extends Obj implements IConfigurable, IEmail
 
     /**
      * An array that stores the email headers.
-     * 
-     * @var array
+     *
+     * @var Arr
      */
-    private $_headers = [];
+    private Arr $_headers;
 
     /**
      * An array that stores the email attachments.
-     * 
-     * @var array
+     *
+     * @var Arr
      */
-    private $_attachments = [];
+    private Arr $_attachments;
 
     /**
      * An array that stores the email recipients.
-     * 
-     * @var array
+     *
+     * @var Arr
      */
-    private $_recipients = [];
+    private Arr $_recipients;
 
     /**
      * A constant to represent default recipients.
@@ -111,8 +111,12 @@ class Email extends Obj implements IConfigurable, IEmail
      */
     public function __construct($recipient = null, $from = null, $subject = null, $message = null, $cc = null, $bcc = null, $html = false, $headers_r = null, $additional = null, $attachments = null)
     {
-    	$this->__configConstruct();
+		$this->__configConstruct();
 		parent::__construct();
+
+		$this->_headers = Arr::make();
+		$this->_attachments = Arr::make();
+		$this->_recipients = Arr::make();
 
 		$recipient = Arr::toArray($recipient);
 		$cc = Arr::toArray($cc);
@@ -166,9 +170,9 @@ class Email extends Obj implements IConfigurable, IEmail
 		if (Str::is($input))
 		{
 			if (Val::isNull ($value))
-				return isset($this->_headers[$input]) ? $this->_headers[$input] : false;
-			
-			$this->_headers[$input] = self::sanitize($value); 
+				return $this->_headers->hasKey($input) ? $this->_headers[$input] : false;
+
+			$this->_headers[$input] = self::sanitize($value);
 
 			return $this;
 		}
@@ -181,7 +185,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		}
 
 		if ( Val::isNull($input) )
-			return $this->_headers;
+			return $this->_headers->val();
 	}
 
 	/**
@@ -197,9 +201,9 @@ class Email extends Obj implements IConfigurable, IEmail
 		if ( Str::is($input) )
 		{
 			if ( Val::isNull ($value) )
-				return isset($this->_attachments[$input]) ? $this->_attachments[$input] : null;
-			
-			$this->_attachments[$input] = $value; 
+				return $this->_attachments->hasKey($input) ? $this->_attachments[$input] : null;
+
+			$this->_attachments[$input] = $value;
 
 			return $this;
 		}
@@ -212,7 +216,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		}
 
 		if ( Val::isNull($input) )
-			return $this->_attachments;
+			return $this->_attachments->val();
 	}
 
 	/**
@@ -227,7 +231,7 @@ class Email extends Obj implements IConfigurable, IEmail
 	public function recipients($value = null, $name = null, $type = null)
 	{
 		if (Val::isNull($value)) {
-			return $this->_recipients;
+			return $this->_recipients->val();
 		}
 
 		if ( !Arr::is($value) ) {
@@ -462,13 +466,13 @@ class Email extends Obj implements IConfigurable, IEmail
 			return null;
 		}
 
-		$contents = file_get_contents($path);
-		if ($contents === false) {
+		$contents = FileSystem::fileContents($path);
+		if (Val::isNull($contents)) {
 			return null;
 		}
 
 		return [
-			'name' => basename($path),
+			'name' => FileSystem::fileBasename($path),
 			'type' => $file['type'] ?? 'application/octet-stream',
 			'contents' => chunk_split(base64_encode($contents)),
 		];
@@ -506,13 +510,13 @@ class Email extends Obj implements IConfigurable, IEmail
 		$from = $this->from();
 		$subject = $this->subject();
 		
-		$attachments = Arr::make($this->_attachments);
+		$attachments = $this->_attachments;
 		
 		$eol = $this->config('eol');
 		$mime_boundary = md5(time());
 		
 		//Build Headers
-		$this->_headers = [];
+		$this->_headers = Arr::make();
 		if ( $attachments->isNotEmpty() )
 		{
 			$this->_headers['MIME-Version'] = "1.0";
@@ -549,7 +553,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		{
 			$headers = "{$a}: $b";
 		}
-		$header_info = Arr::make($this->_headers)->join($eol)->val();
+		$header_info = $this->_headers->join($eol)->val();
 		$message = $this->body();
 		$message = wordwrap($message, 70);
 		

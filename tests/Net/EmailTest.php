@@ -3,6 +3,7 @@
 namespace BlueFission\Tests\Net;
 
 use PHPUnit\Framework\TestCase;
+use BlueFission\Arr;
 use BlueFission\Data\FileSystem;
 use BlueFission\Net\Email;
 
@@ -28,6 +29,18 @@ class EmailTest extends TestCase
         $email = new Email('test@example.com', 'test@example.com', 'Test Subject', 'Test Message', null, null, false, null, null, [$attachment]);
 
         $this->assertSame([$attachment], $email->attach());
+    }
+
+    public function testEmailCollectionsUseArrMembers()
+    {
+        $email = new Email();
+
+        $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_headers'));
+        $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_attachments'));
+        $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_recipients'));
+        $this->assertSame([], $email->headers());
+        $this->assertSame([], $email->attach());
+        $this->assertSame([], $email->recipients());
     }
 
     public function testField()
@@ -61,9 +74,9 @@ class EmailTest extends TestCase
                 'type' => 'text/plain',
             ]]);
 
-            $this->assertSame(basename($file), $payload['name']);
             $this->assertSame('text/plain', $payload['type']);
-            $this->assertSame(chunk_split(base64_encode('attachment body')), $payload['contents']);
+            $this->assertSame(FileSystem::fileBasename($file), $payload['name']);
+            $this->assertSame(chunk_split(base64_encode(FileSystem::fileContents($file))), $payload['contents']);
         } finally {
             if ($file && FileSystem::fileExists($file)) {
                 unlink($file);
@@ -90,5 +103,14 @@ class EmailTest extends TestCase
         $method->setAccessible(true);
 
         return $method->invokeArgs($email, $arguments);
+    }
+
+    private function emailProperty(Email $email, string $property)
+    {
+        $reflection = new \ReflectionClass($email);
+        $property = $reflection->getProperty($property);
+        $property->setAccessible(true);
+
+        return $property->getValue($email);
     }
 }

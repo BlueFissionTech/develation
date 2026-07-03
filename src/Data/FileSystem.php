@@ -640,6 +640,48 @@ class FileSystem extends Data implements IData {
 	}
 
 	/**
+	 * Read concrete file contents without initializing storage state.
+	 *
+	 * @param string|null $path
+	 * @return string|null
+	 */
+	public static function fileContents(?string $path): ?string
+	{
+		if (Val::isNull($path) || $path === '') {
+			return Dev::apply('_out', null);
+		}
+
+		$path = Dev::apply('_in', $path);
+		if (!is_string($path) || !is_file($path) || !is_readable($path)) {
+			return Dev::apply('_out', null);
+		}
+
+		$contents = file_get_contents($path);
+
+		return Dev::apply('_out', $contents === false ? null : $contents);
+	}
+
+	/**
+	 * Return the basename for a concrete file path.
+	 *
+	 * @param string|null $path
+	 * @return string|null
+	 */
+	public static function fileBasename(?string $path): ?string
+	{
+		if (Val::isNull($path) || $path === '') {
+			return Dev::apply('_out', null);
+		}
+
+		$path = Dev::apply('_in', $path);
+		if (!is_string($path)) {
+			return Dev::apply('_out', null);
+		}
+
+		return Dev::apply('_out', basename($path));
+	}
+
+	/**
 	 * Upload a file
 	 *
 	 * @param array $document The file to be uploaded
