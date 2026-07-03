@@ -35,6 +35,8 @@ class EmailTest extends TestCase
     {
         $email = new Email();
 
+        $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_config'));
+        $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_data'));
         $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_headers'));
         $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_attachments'));
         $this->assertInstanceOf(Arr::class, $this->emailProperty($email, '_recipients'));

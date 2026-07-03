@@ -114,6 +114,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		$this->__configConstruct();
 		parent::__construct();
 
+		$this->_config = Arr::make($this->_config);
 		$this->_headers = Arr::make();
 		$this->_attachments = Arr::make();
 		$this->_recipients = Arr::make();
