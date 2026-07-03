@@ -100,6 +100,25 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFileDoesNotExist($missing);
 	}
 
+	public function testStaticFileContentsReadsConcretePathWithoutConstructingStorage()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'contents.txt';
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing-contents.txt';
+		file_put_contents($path, 'file contents');
+
+		$this->assertSame('file contents', FileSystem::fileContents($path));
+		$this->assertNull(FileSystem::fileContents($missing));
+		$this->assertFileDoesNotExist($missing);
+	}
+
+	public function testStaticFileBasenameReturnsConcretePathBasename()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'basename.txt';
+
+		$this->assertSame('basename.txt', FileSystem::fileBasename($path));
+		$this->assertNull(FileSystem::fileBasename(null));
+	}
+
 	public function testReadOnlyExistsProbeAcceptsAssociativeConfigArray()
 	{
 		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'existing.txt';
