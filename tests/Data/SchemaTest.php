@@ -101,6 +101,24 @@ class SchemaTest extends \PHPUnit\Framework\TestCase
         return true;
     }
 
+    public function testFieldDefinitionNormalizesDefaultsAndConstraints()
+    {
+        $constraint = function (&$value) {
+            return $value !== null;
+        };
+
+        $definition = new FieldDefinition('score', [
+            'type' => \BlueFission\DataTypes::INTEGER,
+            'default' => null,
+            'constraints' => $constraint,
+        ]);
+
+        $this->assertSame('integer', $definition->type());
+        $this->assertTrue($definition->hasDefault());
+        $this->assertNull($definition->defaultValue());
+        $this->assertSame([$constraint], $definition->constraints());
+    }
+
     private function invokeSchemaMethod(Schema $schema, string $method, array $arguments = [])
     {
         $reflection = new \ReflectionClass($schema);
