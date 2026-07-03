@@ -81,6 +81,26 @@ class SchemaTest extends \PHPUnit\Framework\TestCase
         $this->assertArrayHasKey('name', $errors);
     }
 
+    public function testCallableArityUsesFuncForCallableReflection()
+    {
+        $schema = new Schema();
+        $callable = new class {
+            public function __invoke($value, $name, array $input)
+            {
+                return true;
+            }
+        };
+
+        $this->assertSame(3, $this->invokeSchemaMethod($schema, 'callableArity', [$callable]));
+        $this->assertSame(2, $this->invokeSchemaMethod($schema, 'callableArity', [[$this, 'schemaArityFixture']]));
+        $this->assertSame(1, $this->invokeSchemaMethod($schema, 'callableArity', ['strlen']));
+    }
+
+    public function schemaArityFixture($value, $name)
+    {
+        return true;
+    }
+
     public function testFieldDefinitionNormalizesDefaultsAndConstraints()
     {
         $constraint = function (&$value) {
@@ -97,5 +117,14 @@ class SchemaTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($definition->hasDefault());
         $this->assertNull($definition->defaultValue());
         $this->assertSame([$constraint], $definition->constraints());
+    }
+
+    private function invokeSchemaMethod(Schema $schema, string $method, array $arguments = [])
+    {
+        $reflection = new \ReflectionClass($schema);
+        $method = $reflection->getMethod($method);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($schema, $arguments);
     }
 }

@@ -3,8 +3,10 @@
 namespace BlueFission\Data;
 
 use BlueFission\Arr;
+use BlueFission\Func;
 use BlueFission\IVal;
 use BlueFission\Obj;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
 use BlueFission\ValFactory;
@@ -37,15 +39,15 @@ class Schema extends Obj
 
         $config = Dev::apply('_in', $config);
         if (Arr::isAssoc($config)) {
-            if (array_key_exists('strict', $config)) {
+            if (Arr::hasKey($config, 'strict')) {
                 $this->setValue('strict', (bool)$config['strict']);
             }
-            if (array_key_exists('cast', $config)) {
+            if (Arr::hasKey($config, 'cast')) {
                 $this->setValue('cast', (bool)$config['cast']);
             }
         }
 
-        if (!empty($fields)) {
+        if (Arr::isNotEmpty($fields)) {
             $this->defineMany($fields);
         }
 
@@ -71,7 +73,7 @@ class Schema extends Obj
     public function defineMany(array $fields): self
     {
         foreach ($fields as $name => $definition) {
-            if (is_string($name)) {
+            if (Str::is($name)) {
                 $this->define($name, $definition);
             } elseif ($definition instanceof FieldDefinition) {
                 $this->define($definition->name(), $definition);
@@ -89,7 +91,7 @@ class Schema extends Obj
     public function fieldDefinition(string $name): ?FieldDefinition
     {
         $fields = $this->fields();
-        if (!array_key_exists($name, $fields)) {
+        if (!Arr::hasKey($fields, $name)) {
             return null;
         }
 
@@ -99,7 +101,7 @@ class Schema extends Obj
     public function hasField(string $name): bool
     {
         $fields = $this->fields();
-        return array_key_exists($name, $fields);
+        return Arr::hasKey($fields, $name);
     }
 
     public function requiredFields(): array
@@ -163,7 +165,7 @@ class Schema extends Obj
 
         $this->setValue('errors', $errors);
 
-        if (!empty($errors)) {
+        if (Arr::isNotEmpty($errors)) {
             $this->perform(Event::FAILURE, new Meta(data: $errors));
         } else {
             $this->perform(Event::SUCCESS, new Meta(data: $result));
@@ -180,7 +182,7 @@ class Schema extends Obj
     public function validate($data, ?bool $strict = null): bool
     {
         $this->apply($data, $strict, false);
-        return empty($this->errors());
+        return Arr::isEmpty($this->errors());
     }
 
     public function transform($data, ?bool $strict = null): array
@@ -219,7 +221,7 @@ class Schema extends Obj
             $source = $definition->source() !== '' ? $definition->source() : $definition->name();
             $knownKeys[] = $source;
 
-            $hasKey = array_key_exists($source, $input);
+            $hasKey = Arr::hasKey($input, $source);
             if (!$hasKey) {
                 if ($definition->hasDefault()) {
                     $value = $this->resolveDefault($definition);
@@ -252,13 +254,13 @@ class Schema extends Obj
 
         if ($strict) {
             foreach ($input as $key => $value) {
-                if (!in_array($key, $knownKeys, true)) {
+                if (!Arr::has($knownKeys, $key, true)) {
                     $this->addError($errors, (string)$key, 'unknown_field');
                 }
             }
         } else {
             foreach ($input as $key => $value) {
-                if (!in_array($key, $knownKeys, true)) {
+                if (!Arr::has($knownKeys, $key, true)) {
                     $result[$key] = $value;
                 }
             }
@@ -275,13 +277,13 @@ class Schema extends Obj
         $useCast = $definition->cast() && $cast;
 
         if ($schema instanceof self) {
-            if (!is_array($value) && !is_object($value)) {
+            if (!Arr::is($value) && !is_object($value)) {
                 $this->addError($errors, $name, 'expected_object');
                 return ['ok' => false, 'value' => null];
             }
             $nested = $schema->apply($value, $strict, $cast);
             $nestedErrors = $schema->errors();
-            if (!empty($nestedErrors)) {
+            if (Arr::isNotEmpty($nestedErrors)) {
                 $this->addError($errors, $name, 'schema_failed', $nestedErrors);
                 return ['ok' => false, 'value' => null];
             }
@@ -289,7 +291,7 @@ class Schema extends Obj
         }
 
         if ($items !== null) {
-            if (!is_array($value)) {
+            if (!Arr::is($value)) {
                 if ($useCast) {
                     $value = Arr::make($value)->val();
                 } else {
@@ -314,7 +316,7 @@ class Schema extends Obj
                     }
                 }
 
-                if (!empty($itemErrors)) {
+                if (Arr::isNotEmpty($itemErrors)) {
                     $this->addError($errors, $name, 'item_failed', $itemErrors);
                     return ['ok' => false, 'value' => null];
                 }
@@ -330,7 +332,7 @@ class Schema extends Obj
         }
 
         if ($type === DataTypes::ARRAY->value) {
-            if (!is_array($value)) {
+            if (!Arr::is($value)) {
                 if ($useCast) {
                     $value = Arr::make($value)->val();
                 } else {
@@ -370,7 +372,7 @@ class Schema extends Obj
     protected function applyConstraints(IVal $valueObject, $value, FieldDefinition $definition, string $name, array $input, array &$errors): array
     {
         $constraints = $definition->constraints();
-        if (empty($constraints)) {
+        if (Arr::isEmpty($constraints)) {
             return ['ok' => true, 'value' => $value];
         }
 
@@ -424,19 +426,7 @@ class Schema extends Obj
     protected function callableArity(callable $callable): int
     {
         try {
-            if (is_array($callable) && count($callable) === 2) {
-                $ref = new \ReflectionMethod($callable[0], $callable[1]);
-            } elseif (is_string($callable)) {
-                $ref = new \ReflectionFunction($callable);
-            } elseif ($callable instanceof \Closure) {
-                $ref = new \ReflectionFunction($callable);
-            } elseif (is_object($callable) && method_exists($callable, '__invoke')) {
-                $ref = new \ReflectionMethod($callable, '__invoke');
-            } else {
-                return 1;
-            }
-
-            return $ref->getNumberOfParameters();
+            return Arr::count(Func::make($callable)->expects());
         } catch (\Throwable $e) {
             return 1;
         }
@@ -452,7 +442,7 @@ class Schema extends Obj
             return new FieldDefinition($name, ['schema' => $definition]);
         }
 
-        if (is_array($definition)) {
+        if (Arr::is($definition)) {
             $definition['schema'] = $definition['schema'] ?? ($definition['fields'] ?? null);
             return new FieldDefinition($name, $definition);
         }
@@ -470,7 +460,7 @@ class Schema extends Obj
             return new FieldDefinition('item', ['schema' => $definition]);
         }
 
-        if (is_array($definition)) {
+        if (Arr::is($definition)) {
             return new FieldDefinition('item', $definition);
         }
 
@@ -487,7 +477,7 @@ class Schema extends Obj
             return $schema;
         }
 
-        if (is_array($schema)) {
+        if (Arr::is($schema)) {
             return new self($schema);
         }
 
@@ -500,7 +490,7 @@ class Schema extends Obj
             return $type->value;
         }
 
-        if (!is_string($type)) {
+        if (!Str::is($type)) {
             return null;
         }
 
@@ -539,7 +529,7 @@ class Schema extends Obj
 
     protected function normalizeData($data): array
     {
-        if (is_array($data)) {
+        if (Arr::is($data)) {
             return $data;
         }
 
@@ -564,12 +554,12 @@ class Schema extends Obj
             return $value;
         }
 
-        if (is_string($value)) {
-            $normalized = strtolower(trim($value));
-            if (in_array($normalized, ['1', 'true', 'yes', 'y', 'on'], true)) {
+        if (Str::is($value)) {
+            $normalized = Str::make($value)->trim()->lower()->val();
+            if (Arr::has(['1', 'true', 'yes', 'y', 'on'], $normalized, true)) {
                 return true;
             }
-            if (in_array($normalized, ['0', 'false', 'no', 'n', 'off', ''], true)) {
+            if (Arr::has(['0', 'false', 'no', 'n', 'off', ''], $normalized, true)) {
                 return false;
             }
         }
@@ -593,7 +583,7 @@ class Schema extends Obj
             $entry['details'] = $details;
         }
 
-        if (!array_key_exists($field, $errors)) {
+        if (!Arr::hasKey($errors, $field)) {
             $errors[$field] = [];
         }
 
@@ -602,7 +592,7 @@ class Schema extends Obj
 
     protected function arrayValue($value): array
     {
-        if (is_array($value)) {
+        if (Arr::is($value)) {
             return $value;
         }
 

@@ -163,15 +163,8 @@ class Func extends Val implements IVal {
 	        return $this->_signature;
 	    }
 
-		if (is_callable($this->_data)) {
-			$reflector = null;
-			if (is_array($this->_data)) {
-				$reflector = new \ReflectionMethod($this->_data[0], $this->_data[1]);
-			} elseif (is_string($this->_data) && Str::pos($this->_data, '::') !== false) {
-				$reflector = new \ReflectionMethod($this->_data);
-			} else {
-	        	$reflector = new \ReflectionFunction($this->_data);
-			}
+		$reflector = $this->reflector();
+		if ($reflector) {
 	        return array_map(fn($p) => ['name' => $p->getName(), 'type' => (string)$p->getType()], $reflector->getParameters());
 	    }
 
@@ -186,19 +179,38 @@ class Func extends Val implements IVal {
 	{
 		if ($this->_returnType) return $this->_returnType;
 
-	    if (is_callable($this->_data)) {
-			$reflector = null;
-			if (is_array($this->_data)) {
-				$reflector = new \ReflectionMethod($this->_data[0], $this->_data[1]);
-			} elseif (is_string($this->_data) && Str::pos($this->_data, '::') !== false) {
-				$reflector = new \ReflectionMethod($this->_data);
-			} else {
-	        	$reflector = new \ReflectionFunction($this->_data);
-			}
+	    $reflector = $this->reflector();
+	    if ($reflector) {
 	        return (string)$reflector->getReturnType();
 	    }
 
 	    return null;
+	}
+
+	/**
+	 * Build a reflector for the wrapped callable.
+	 *
+	 * @return \ReflectionFunctionAbstract|null
+	 */
+	private function reflector(): ?\ReflectionFunctionAbstract
+	{
+		if (!is_callable($this->_data)) {
+			return null;
+		}
+
+		if (Arr::is($this->_data)) {
+			return new \ReflectionMethod($this->_data[0], $this->_data[1]);
+		}
+
+		if (Str::is($this->_data) && Str::pos($this->_data, '::') !== false) {
+			return new \ReflectionMethod($this->_data);
+		}
+
+		if (is_object($this->_data) && method_exists($this->_data, '__invoke')) {
+			return new \ReflectionMethod($this->_data, '__invoke');
+		}
+
+		return new \ReflectionFunction($this->_data);
 	}
 
 	/**
