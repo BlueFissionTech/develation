@@ -49,7 +49,7 @@ abstract class Directory extends Hierarchical implements ICollection
     public function exists(?string $path = null): bool
     {
         $target = $this->targetPath($path);
-        $exists = Val::isNotNull($target) && is_dir($target);
+        $exists = FileSystem::directoryExists($target);
 
         return (bool)Dev::apply('_out', $exists);
     }
@@ -63,7 +63,7 @@ abstract class Directory extends Hierarchical implements ICollection
     public function isReachable(?string $path = null): bool
     {
         $target = $this->targetPath($path);
-        $isReachable = Val::isNotNull($target) && is_dir($target) && is_readable($target);
+        $isReachable = FileSystem::directoryExists($target) && FileSystem::isReadable($target);
 
         return (bool)Dev::apply('_out', $isReachable);
     }

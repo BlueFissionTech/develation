@@ -59,7 +59,7 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->object->filename = 'testfile.txt';
 		$this->object->write();
 
-		$this->assertTrue(file_exists($this->testdirectory.DIRECTORY_SEPARATOR.'testfile.txt'));
+		$this->assertTrue(FileSystem::fileExists($this->testdirectory.DIRECTORY_SEPARATOR.'testfile.txt'));
 	}
 
 	public function testStaticFileExistsChecksConcretePathWithoutConstructingStorage()
@@ -71,6 +71,32 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue(FileSystem::fileExists($path));
 		$this->assertFalse(FileSystem::fileExists($missing));
 		$this->assertFalse(FileSystem::fileExists($this->testdirectory));
+		$this->assertFileDoesNotExist($missing);
+	}
+
+	public function testStaticDirectoryExistsChecksConcretePathWithoutConstructingStorage()
+	{
+		$directory = $this->testdirectory.DIRECTORY_SEPARATOR.'nested';
+		$file = $this->testdirectory.DIRECTORY_SEPARATOR.'sample.txt';
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing';
+		mkdir($directory);
+		touch($file);
+
+		$this->assertTrue(FileSystem::directoryExists($directory));
+		$this->assertFalse(FileSystem::directoryExists($file));
+		$this->assertFalse(FileSystem::directoryExists($missing));
+		$this->assertDirectoryDoesNotExist($missing);
+	}
+
+	public function testStaticIsReadableChecksConcretePathWithoutConstructingStorage()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'readable.txt';
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing-readable.txt';
+		touch($path);
+
+		$this->assertTrue(FileSystem::isReadable($path));
+		$this->assertTrue(FileSystem::isReadable($this->testdirectory));
+		$this->assertFalse(FileSystem::isReadable($missing));
 		$this->assertFileDoesNotExist($missing);
 	}
 

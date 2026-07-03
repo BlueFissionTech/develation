@@ -74,7 +74,7 @@ class File extends Hierarchical implements IDispatcher
     public function exists(?string $path = null): bool
     {
         $target = $this->targetPath($path);
-        $exists = Val::isNotNull($target) && is_file($target);
+        $exists = FileSystem::fileExists($target);
 
         return (bool)Dev::apply('_out', $exists);
     }
@@ -88,7 +88,7 @@ class File extends Hierarchical implements IDispatcher
     public function isReachable(?string $path = null): bool
     {
         $target = $this->targetPath($path);
-        $isReachable = Val::isNotNull($target) && is_file($target) && is_readable($target);
+        $isReachable = FileSystem::fileExists($target) && FileSystem::isReadable($target);
 
         return (bool)Dev::apply('_out', $isReachable);
     }
