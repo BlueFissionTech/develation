@@ -40,4 +40,21 @@ class HTMLTest extends \PHPUnit\Framework\TestCase
         $result = HTML::format("_Test content_", true);
         $this->assertEquals($expected, $result);
     }
+
+    public function testPaginateUsesHttpQueryHelper()
+    {
+        $originalGet = $_GET ?? [];
+        $originalPost = $_POST ?? [];
+
+        $_GET = ['start' => 0, 'lim' => 10, 'filter' => 'active'];
+        $_POST = ['token' => 'abc 123'];
+
+        $result = HTML::paginate(30, 'start', 'lim', '/items', 10);
+
+        $this->assertStringContainsString('token=abc+123', $result);
+        $this->assertStringContainsString('filter=active', $result);
+
+        $_GET = $originalGet;
+        $_POST = $originalPost;
+    }
 }

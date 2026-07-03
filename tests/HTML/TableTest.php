@@ -79,4 +79,26 @@ class TableTest extends \PHPUnit\Framework\TestCase
 
         $this->assertEquals($table->render(), $expected_render);
     }
+
+    public function testRenderLinksUseHttpQueryHelper()
+    {
+        $table = new Table([
+            'columns' => '2',
+            'headers' => false,
+            'href' => '/items',
+            'link_style' => 1,
+            'varname' => 'id',
+            'value' => '42',
+            'query' => ['token' => 'abc 123'],
+        ]);
+
+        $table->content([
+            ['ignored', 'Details'],
+        ]);
+
+        $this->assertStringContainsString(
+            'token=abc+123',
+            $table->render()
+        );
+    }
 }

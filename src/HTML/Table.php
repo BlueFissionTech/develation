@@ -5,6 +5,7 @@ namespace BlueFission\HTML;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Obj;
+use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\Configurable;
 
 /**
@@ -140,7 +141,7 @@ class Table extends Obj
                         $output .= '<td>';
                     }
                     if (($i == 1 || ($icon != '' && $i = 2)) && $link_style == 1) {
-                        $output .= '<a class="contentBox" href="' . $href . '?' . $varname . '=' . $value . ((Arr::isAssoc($query_r)) ? ('&' . http_build_query($query_r)) : '') . '">';
+                        $output .= '<a class="contentBox" href="' . $href . '?' . $varname . '=' . $value . ((Arr::isAssoc($query_r)) ? ('&' . HTTP::query($query_r)) : '') . '">';
                     }
                     if (!$show_image || $trunc != '') {
                         $data = HTML::format($b, '', $trunc);
