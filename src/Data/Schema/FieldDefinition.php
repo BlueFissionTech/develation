@@ -2,8 +2,10 @@
 
 namespace BlueFission\Data\Schema;
 
+use BlueFission\Arr;
 use BlueFission\Obj;
 use BlueFission\DataTypes;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DevElation as Dev;
 
@@ -45,15 +47,15 @@ class FieldDefinition extends Obj
         }
 
         $constraints = $config['constraints'] ?? [];
-        if (Val::isNotNull($constraints) && !is_array($constraints)) {
+        if (Val::isNotNull($constraints) && !Arr::is($constraints)) {
             $constraints = [$constraints];
         }
 
-        $hasDefault = array_key_exists('default', $config);
+        $hasDefault = Arr::hasKey($config, 'default');
 
         $this->assign([
             'name' => $name,
-            'type' => is_string($type) ? $type : '',
+            'type' => Str::is($type) ? $type : '',
             'required' => (bool)($config['required'] ?? false),
             'nullable' => (bool)($config['nullable'] ?? false),
             'default' => $config['default'] ?? null,
@@ -106,7 +108,7 @@ class FieldDefinition extends Obj
     public function constraints(): array
     {
         $value = $this->field('constraints');
-        return is_array($value) ? $value : [];
+        return Arr::is($value) ? $value : [];
     }
 
     public function items()
