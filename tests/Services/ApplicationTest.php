@@ -59,6 +59,50 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($first, Application::instance());
     }
 
+    public function testApplicationReadsFilesFromWebRootFirst()
+    {
+        $root = $this->makeTempDirectory('web-root');
+        $assets = $this->makeTempDirectory('asset-root');
+
+        try {
+            file_put_contents($root . DIRECTORY_SEPARATOR . 'app.css', 'web-root');
+            file_put_contents($assets . DIRECTORY_SEPARATOR . 'app.css', 'asset-root');
+
+            $app = Application::getInstance('AssetWebRootTest');
+            $app->webRoot($root);
+            $app->assetDir($assets);
+
+            $this->assertSame(rtrim($root, '/\\'), $app->webRoot());
+            $this->assertSame(rtrim($assets, '/\\'), $app->assetDir());
+            $this->assertTrue($app->fileExists('app.css'));
+            $this->assertSame('web-root', $app->fileContents('app.css'));
+        } finally {
+            $this->removeTempDirectory($root);
+            $this->removeTempDirectory($assets);
+        }
+    }
+
+    public function testApplicationFallsBackToAssetDirectoryForFiles()
+    {
+        $root = $this->makeTempDirectory('empty-root');
+        $assets = $this->makeTempDirectory('asset-root');
+
+        try {
+            file_put_contents($assets . DIRECTORY_SEPARATOR . 'app.js', 'asset-root');
+
+            $app = Application::getInstance('AssetFallbackTest');
+            $app->webRoot($root);
+            $app->assetDir($assets);
+
+            $this->assertTrue($app->fileExists('app.js'));
+            $this->assertSame('asset-root', $app->fileContents('app.js'));
+            $this->assertNull($app->fileContents('missing.js'));
+        } finally {
+            $this->removeTempDirectory($root);
+            $this->removeTempDirectory($assets);
+        }
+    }
+
     public function testApplicationCanRouteMessage()
     {
         $this->expectOutputString('Test Output');
@@ -218,5 +262,28 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $property->setAccessible(true);
 
         return $property->getValue($app);
+    }
+
+    private function makeTempDirectory(string $prefix): string
+    {
+        $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid($prefix . '-', true);
+        mkdir($directory);
+
+        return $directory;
+    }
+
+    private function removeTempDirectory(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            return;
+        }
+
+        foreach (glob($directory . DIRECTORY_SEPARATOR . '*') ?: [] as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+
+        rmdir($directory);
     }
 }
