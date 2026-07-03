@@ -3,6 +3,7 @@ namespace BlueFission\Net;
 
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\IConfigurable;
+use BlueFission\Data\FileSystem;
 use BlueFission\HTML\HTML;
 use BlueFission\DataTypes;
 use BlueFission\Obj;
@@ -126,6 +127,7 @@ class Email extends Obj implements IConfigurable, IEmail
         $this->body( $message );
         $this->additional( $additional );
         $this->headers( $headers_r );
+        $this->attach( $attachments );
     }
 
     /**
@@ -407,8 +409,8 @@ class Email extends Obj implements IConfigurable, IEmail
 
 		$passed = false;
 		$i = 0;
-		$count = count($address);
-		do 
+		$count = Arr::count($address);
+		do
 		{
 			// get email from User Name <email@address> format
 			preg_match($filter, $address[$i] ?? '', $matches);
@@ -429,15 +431,47 @@ class Email extends Obj implements IConfigurable, IEmail
 	 * @param array $addresses The array of email addresses to filter
 	 * @return array|bool An array of valid email addresses or false if none are found
 	 */
-	public function filterAddresses($addresses = null) 
+	public function filterAddresses($addresses = null)
 	{
-		$address_r = Arr::toArray($addresses);
-		$valid_address_r = [];
-		foreach ($address_r as $a) if (self::validateAddress($a)) $valid_address_r[] = self::sanitize($a);
-		if ( count($valid_address_r) == 0 ) {
+		$validAddresses = Arr::make(Arr::toArray($addresses))
+			->filter(fn ($address) => self::validateAddress($address))
+			->map(fn ($address) => self::sanitize($address))
+			->values();
+
+		if ( $validAddresses->isEmpty() ) {
 			return false;
 		}
-		return $valid_address_r;
+
+		return $validAddresses->val();
+	}
+
+	/**
+	 * Prepare a readable attachment for MIME output.
+	 *
+	 * @param mixed $file
+	 * @return array|null
+	 */
+	private function attachmentPayload($file): ?array
+	{
+		if (!Arr::is($file) || !Arr::hasKey($file, 'file')) {
+			return null;
+		}
+
+		$path = $file['file'];
+		if (!Str::is($path) || !FileSystem::fileExists($path) || !FileSystem::isReadable($path)) {
+			return null;
+		}
+
+		$contents = file_get_contents($path);
+		if ($contents === false) {
+			return null;
+		}
+
+		return [
+			'name' => basename($path),
+			'type' => $file['type'] ?? 'application/octet-stream',
+			'contents' => chunk_split(base64_encode($contents)),
+		];
 	}
 
 	/**
@@ -472,14 +506,14 @@ class Email extends Obj implements IConfigurable, IEmail
 		$from = $this->from();
 		$subject = $this->subject();
 		
-		$attachments = $this->_attachments;
+		$attachments = Arr::make($this->_attachments);
 		
 		$eol = $this->config('eol');
 		$mime_boundary = md5(time());
 		
 		//Build Headers
 		$this->_headers = [];
-		if ( $this->_attachments ) 
+		if ( $attachments->isNotEmpty() )
 		{
 			$this->_headers['MIME-Version'] = "1.0";
 			$this->_headers['Content-Type'] = "multipart/mixed; boundary=\"mixed-{$mime_boundary}\"";
@@ -505,8 +539,8 @@ class Email extends Obj implements IConfigurable, IEmail
 		$cc = $this->getRecipients(self::CC) ?? [];
 		$bcc = $this->getRecipients(self::BCC) ?? [];
 		
-		if (count($cc) > 0) $this->_headers["Cc"] = implode(', ', $cc);
-		if (count($bcc) > 0) $this->_headers["Bcc"] = implode(', ', $bcc);
+		if (Arr::isNotEmpty($cc)) $this->_headers["Cc"] = Arr::make($cc)->join(', ')->val();
+		if (Arr::isNotEmpty($bcc)) $this->_headers["Bcc"] = Arr::make($bcc)->join(', ')->val();
 		$this->_headers['X-Mailer'] = "PHP/" . phpversion();
 		
 		//Compile mail data
@@ -515,35 +549,26 @@ class Email extends Obj implements IConfigurable, IEmail
 		{
 			$headers = "{$a}: $b";
 		}
-		$header_info = implode($eol, $this->_headers);
+		$header_info = Arr::make($this->_headers)->join($eol)->val();
 		$message = $this->body();
 		$message = wordwrap($message, 70);
 		
 		$body = "";
 		
-		if ( $attachments )
+		if ( $attachments->isNotEmpty() )
 		{
 			foreach( $attachments as $file )
 			{
-				if (is_file($file["file"]))
-				{  
-					if ( file_exists($file["file"]) )
-					{
-						$file_name = substr($file["file"], (strrpos($file["file"], "/")+1));
-						
-						$handle=fopen($file["file"], 'rb');
-						$f_contents=fread($handle, filesize($file["file"]));
-						$f_contents=chunk_split(base64_encode($f_contents));    //Encode The Data For Transition using base64_encode();
-						fclose($handle);
-						
-						// Attach
-						$body .= "--mixed-{$mime_boundary}{$eol}";
-						$body .= "Content-Type: {$file["type"]}; name=\"{$file_name}\"{$eol}";
-						$body .= "Content-Transfer-Encoding: base64{$eol}";
-						$body .= "Content-Disposition: attachment; filename=\"{$file_name}\"{$eol}{$eol}"; // !! This line needs TWO end of lines !! IMPORTANT !!
-						$body .= $f_contents.$eol.$eol;
-					}
+				$payload = $this->attachmentPayload($file);
+				if (Val::isNull($payload)) {
+					continue;
 				}
+
+				$body .= "--mixed-{$mime_boundary}{$eol}";
+				$body .= "Content-Type: {$payload['type']}; name=\"{$payload['name']}\"{$eol}";
+				$body .= "Content-Transfer-Encoding: base64{$eol}";
+				$body .= "Content-Disposition: attachment; filename=\"{$payload['name']}\"{$eol}{$eol}";
+				$body .= $payload['contents'].$eol.$eol;
 			}
 			$body .= "--mixed-".$mime_boundary.$eol;
 		}
@@ -571,26 +596,26 @@ class Email extends Obj implements IConfigurable, IEmail
 		if ( $this->sendHTML() )
 			$body .= "--alt-{$mime_boundary}--{$eol}{$eol}";
 			  
-		if ($attachments )
+		if ($attachments->isNotEmpty() )
 			$body .= "--mixed-{$mime_boundary}--{$eol}{$eol}";  // finish with two eol's for better security. see Injection.
 	  
 		
 		// the INI lines are to force the From Address to be used
 		ini_set( "sendmail_from", $this->from() ); 
 		
-		if (count($recipients) <= 0) {
+		if (Arr::isEmpty($recipients)) {
 			$status .= "The send to address is empty.\n";
 		} elseif (!self::validateAddress($this->getRecipients())) {
-			$status .= "Email address '" . implode(', ', $this->rcpt) . "' is invalid.\n";
+			$status .= "Email address '" . Arr::make($this->rcpt)->join(', ')->val() . "' is invalid.\n";
 		} elseif ($subject == '') {
 			$status .= "Subject line is empty.\n";
 		} elseif ($message == '') {
 			$status .= "Message is empty.\n";
-		} elseif (count($cc) > 0 && !self::validateAddress($cc)) {
+		} elseif (Arr::isNotEmpty($cc) && !self::validateAddress($cc)) {
 			$status .= "Invalid address in the CC line\n";
-		} elseif (count($bcc) > 0 && !self::validateAddress($bcc)) {
+		} elseif (Arr::isNotEmpty($bcc) && !self::validateAddress($bcc)) {
 			$status .= "Invalid address in the BCC line\n";
-		} elseif (mail ( implode(', ', $this->getRecipients()), $this->subject(), $body, $header_info, $this->field('additional') )) {
+		} elseif (mail ( Arr::make($this->getRecipients())->join(', ')->val(), $this->subject(), $body, $header_info, $this->field('additional') )) {
 			$status = "Mail delivered successfully\n";
 		}
 		ini_restore( "sendmail_from" );

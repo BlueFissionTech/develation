@@ -3,6 +3,7 @@
 namespace BlueFission\Tests\Net;
 
 use PHPUnit\Framework\TestCase;
+use BlueFission\Data\FileSystem;
 use BlueFission\Net\Email;
 
 class EmailTest extends TestCase
@@ -19,6 +20,14 @@ class EmailTest extends TestCase
         $this->assertSame('Test Subject', $email->subject());
         $this->assertSame('Test Message', $email->body());
         $this->assertSame(['Test Headers'], $email->headers());
+    }
+
+    public function testConstructorAppliesAttachments()
+    {
+        $attachment = ['file' => __FILE__, 'type' => 'text/plain'];
+        $email = new Email('test@example.com', 'test@example.com', 'Test Subject', 'Test Message', null, null, false, null, null, [$attachment]);
+
+        $this->assertSame([$attachment], $email->attach());
     }
 
     public function testField()
@@ -38,5 +47,48 @@ class EmailTest extends TestCase
         $this->assertFalse($email->headers('invalid_header'));
         $this->assertSame('Test Header', $email->headers('test_header', 'Test Header')->headers('test_header'));
         $this->assertSame('Test Header', $email->headers('test_header'));
+    }
+
+    public function testAttachmentPayloadUsesReadableFile()
+    {
+        $file = tempnam(sys_get_temp_dir(), 'email-attachment-');
+        file_put_contents($file, 'attachment body');
+
+        try {
+            $email = new Email();
+            $payload = $this->invokeEmailMethod($email, 'attachmentPayload', [[
+                'file' => $file,
+                'type' => 'text/plain',
+            ]]);
+
+            $this->assertSame(basename($file), $payload['name']);
+            $this->assertSame('text/plain', $payload['type']);
+            $this->assertSame(chunk_split(base64_encode('attachment body')), $payload['contents']);
+        } finally {
+            if ($file && FileSystem::fileExists($file)) {
+                unlink($file);
+            }
+        }
+    }
+
+    public function testAttachmentPayloadRejectsMissingFile()
+    {
+        $email = new Email();
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('missing-email-attachment-', true);
+
+        $this->assertNull($this->invokeEmailMethod($email, 'attachmentPayload', [[
+            'file' => $path,
+            'type' => 'text/plain',
+        ]]));
+        $this->assertFileDoesNotExist($path);
+    }
+
+    private function invokeEmailMethod(Email $email, string $method, array $arguments = [])
+    {
+        $reflection = new \ReflectionClass($email);
+        $method = $reflection->getMethod($method);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($email, $arguments);
     }
 }
