@@ -30,7 +30,7 @@ class HTTPClient implements ClientInterface
         // Set the request body if there is one
         $body = (string) $request->getBody();
         if (Val::isNotEmpty($body)) {
-            $this->_curl->assign(json_decode($body, true) ?: $body);
+            $this->_curl->assign($this->requestBodyPayload($body));
         }
 
         $this->_curl
@@ -43,6 +43,11 @@ class HTTPClient implements ClientInterface
             $this->getHeaders(),
             $this->_curl->result()
         );
+    }
+
+    protected function requestBodyPayload(string $body): mixed
+    {
+        return HTTP::jsonDecode($body, true, $body);
     }
 
     protected function getStatusCode(): int
