@@ -255,6 +255,44 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $_SERVER = $originalServer;
     }
 
+    public function testRouteHelpersReturnMatchingUri()
+    {
+        $originalServer = $_SERVER;
+
+        $_SERVER['HTTP_HOST'] = 'example.test';
+        $_SERVER['REQUEST_URI'] = '/catalog/active';
+        unset($_SERVER['HTTPS']);
+
+        try {
+            $app = Application::getInstance('RouteHelperMatchTest');
+            $uris = ['/status', '/catalog/$filter'];
+
+            $this->assertTrue($this->invokeApplicationMethod($app, 'uriExists', [$uris]));
+            $this->assertSame('/catalog/$filter', $this->invokeApplicationMethod($app, 'returnMatchingUri', [$uris]));
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
+    public function testRouteHelpersReturnFalseWithoutMatch()
+    {
+        $originalServer = $_SERVER;
+
+        $_SERVER['HTTP_HOST'] = 'example.test';
+        $_SERVER['REQUEST_URI'] = '/catalog/active';
+        unset($_SERVER['HTTPS']);
+
+        try {
+            $app = Application::getInstance('RouteHelperMissTest');
+            $uris = ['/status', '/catalog/active/items'];
+
+            $this->assertFalse($this->invokeApplicationMethod($app, 'uriExists', [$uris]));
+            $this->assertFalse($this->invokeApplicationMethod($app, 'returnMatchingUri', [$uris]));
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
     private function applicationArguments(Application $app): array
     {
         $reflection = new \ReflectionClass($app);
@@ -262,6 +300,15 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $property->setAccessible(true);
 
         return $property->getValue($app);
+    }
+
+    private function invokeApplicationMethod(Application $app, string $method, array $arguments = [])
+    {
+        $reflection = new \ReflectionClass($app);
+        $method = $reflection->getMethod($method);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($app, $arguments);
     }
 
     private function makeTempDirectory(string $prefix): string

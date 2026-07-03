@@ -1049,6 +1049,23 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	/**
+	 * Return the matching URI from a route collection.
+	 *
+	 * @param iterable $uris
+	 * @return mixed string|bool
+	 */
+	private function matchingUri( $uris )
+	{
+		$uri = new Uri();
+		foreach ( Arr::make($uris) as $testUri ) {
+			if ( $uri->match($testUri) ) {
+				return $testUri;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Check if the given uris exists
 	 *
 	 * @param array $uris
@@ -1056,13 +1073,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	private function uriExists( $uris )
 	{
-		$uri = new Uri();
-		foreach ( $uris as $testUri ) {
-			if ( $uri->match($testUri) ) {
-				return true;
-			}
-		}
-		return false;
+		return $this->matchingUri($uris) !== false;
 	}
 
 	/**
@@ -1073,13 +1084,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	private function returnMatchingUri( $uris )
 	{
-		$uri = new Uri();
-		foreach ( $uris as $testUri ) {
-			if ( $uri->match($testUri) ) {
-				return $testUri;
-			}
-		}
-		return false;
+		return $this->matchingUri($uris);
 	}
 
 	/**
