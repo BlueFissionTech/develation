@@ -80,4 +80,22 @@ class SchemaTest extends \PHPUnit\Framework\TestCase
         $errors = $schema->errors();
         $this->assertArrayHasKey('name', $errors);
     }
+
+    public function testFieldDefinitionNormalizesDefaultsAndConstraints()
+    {
+        $constraint = function (&$value) {
+            return $value !== null;
+        };
+
+        $definition = new FieldDefinition('score', [
+            'type' => \BlueFission\DataTypes::INTEGER,
+            'default' => null,
+            'constraints' => $constraint,
+        ]);
+
+        $this->assertSame('integer', $definition->type());
+        $this->assertTrue($definition->hasDefault());
+        $this->assertNull($definition->defaultValue());
+        $this->assertSame([$constraint], $definition->constraints());
+    }
 }
