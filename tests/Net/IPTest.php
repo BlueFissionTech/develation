@@ -92,6 +92,14 @@ class IPTest extends TestCase
 
         IP::allow($ipAddress);
     }
+
+    public function testIsDeniedMatchesTrimmedBlockListEntries()
+    {
+        file_put_contents($this->ipFile, "10.0.0.1\n");
+
+        $this->assertTrue(IP::isDenied('10.0.0.1'));
+        $this->assertFalse(IP::isDenied('10.0.0.2'));
+    }
  
     /**
      * Test log() method returns the status of the log

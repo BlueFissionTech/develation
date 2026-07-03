@@ -2,6 +2,7 @@
 
 namespace BlueFission\Net;
 
+use BlueFission\Arr;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
@@ -23,9 +24,14 @@ class Request implements RequestInterface
     ) {
         $this->_method = $method;
         $this->_uri = $uri;
-        $this->_headers = $headers;
+        $this->_headers = Arr::make($headers);
         $this->_body = $body;
         $this->_protocolVersion = $protocolVersion;
+    }
+
+    public function __clone()
+    {
+        $this->_headers = Arr::make($this->_headers->val());
     }
 
     public function getRequestTarget(): string
@@ -81,12 +87,12 @@ class Request implements RequestInterface
 
     public function getHeaders(): array
     {
-        return $this->_headers;
+        return $this->_headers->val();
     }
 
     public function hasHeader($name): bool
     {
-        return isset($this->_headers[$name]);
+        return $this->_headers->hasKey($name);
     }
 
     public function getHeader($name): array
@@ -96,13 +102,13 @@ class Request implements RequestInterface
 
     public function getHeaderLine($name): string
     {
-        return implode(', ', $this->getHeader($name));
+        return Arr::make($this->getHeader($name))->join(', ')->val();
     }
 
     public function withHeader($name, $value): self
     {
         $new = clone $this;
-        $new->_headers[$name] = (array)$value;
+        $new->_headers[$name] = Arr::toArray($value);
         return $new;
     }
 
@@ -110,9 +116,11 @@ class Request implements RequestInterface
     {
         $new = clone $this;
         if ($new->hasHeader($name)) {
-            $new->_headers[$name] = array_merge($new->_headers[$name], (array)$value);
+            $new->_headers[$name] = Arr::make($new->_headers[$name])
+                ->mergeRecursive(Arr::toArray($value))
+                ->val();
         } else {
-            $new->_headers[$name] = (array)$value;
+            $new->_headers[$name] = Arr::toArray($value);
         }
         return $new;
     }
