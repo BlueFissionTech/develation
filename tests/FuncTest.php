@@ -126,10 +126,38 @@ class FuncTest extends ValTest
         $this->assertSame(['', ''], array_column($expects, 'type'));
     }
 
+    public function testExpectsCanInspectInvokableObjects()
+    {
+        $callable = new class {
+            public function __invoke(string $value, int $count): bool
+            {
+                return true;
+            }
+        };
+
+        $expects = Func::make($callable)->expects();
+
+        $this->assertCount(2, $expects);
+        $this->assertSame(['value', 'count'], array_column($expects, 'name'));
+        $this->assertSame(['string', 'int'], array_column($expects, 'type'));
+    }
+
     public function testReturns()
     {
         $func = new Func(function (): int { return 1; });
         $this->assertEquals('int', (string) $func->returns());
+    }
+
+    public function testReturnsCanInspectInvokableObjects()
+    {
+        $callable = new class {
+            public function __invoke(): bool
+            {
+                return true;
+            }
+        };
+
+        $this->assertSame('bool', Func::make($callable)->returns());
     }
 
     public function testSignatureAndParametersExposeMetadata()

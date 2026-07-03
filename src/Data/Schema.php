@@ -3,6 +3,7 @@
 namespace BlueFission\Data;
 
 use BlueFission\Arr;
+use BlueFission\Func;
 use BlueFission\IVal;
 use BlueFission\Obj;
 use BlueFission\Str;
@@ -425,19 +426,7 @@ class Schema extends Obj
     protected function callableArity(callable $callable): int
     {
         try {
-            if (Arr::is($callable) && Arr::count($callable) === 2) {
-                $ref = new \ReflectionMethod($callable[0], $callable[1]);
-            } elseif (Str::is($callable)) {
-                $ref = new \ReflectionFunction($callable);
-            } elseif ($callable instanceof \Closure) {
-                $ref = new \ReflectionFunction($callable);
-            } elseif (is_object($callable) && method_exists($callable, '__invoke')) {
-                $ref = new \ReflectionMethod($callable, '__invoke');
-            } else {
-                return 1;
-            }
-
-            return $ref->getNumberOfParameters();
+            return Arr::count(Func::make($callable)->expects());
         } catch (\Throwable $e) {
             return 1;
         }
