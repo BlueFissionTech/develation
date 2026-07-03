@@ -3,6 +3,7 @@
 namespace BlueFission\System;
 
 use BlueFission\Arr;
+use BlueFission\Data\FileSystem;
 use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
@@ -87,7 +88,7 @@ class CommandLocator
 
     protected static function resolvePath(string $path): ?string
     {
-        if (!file_exists($path)) {
+        if (!FileSystem::fileExists($path)) {
             return null;
         }
 
