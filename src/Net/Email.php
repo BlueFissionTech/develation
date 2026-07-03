@@ -462,7 +462,7 @@ class Email extends Obj implements IConfigurable, IEmail
 		}
 
 		$path = $file['file'];
-		if (!Str::is($path) || !FileSystem::fileExists($path) || !FileSystem::isReadable($path)) {
+		if (!Str::is($path)) {
 			return null;
 		}
 
