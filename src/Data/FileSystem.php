@@ -604,8 +604,44 @@ class FileSystem extends Data implements IData {
 	}
 
 	/**
+	 * Check whether a concrete directory path exists without initializing storage state.
+	 *
+	 * @param string|null $path
+	 * @return bool
+	 */
+	public static function directoryExists(?string $path): bool
+	{
+		if (Val::isNull($path) || $path === '') {
+			return (bool)Dev::apply('_out', false);
+		}
+
+		$path = Dev::apply('_in', $path);
+		$exists = is_string($path) && is_dir($path);
+
+		return (bool)Dev::apply('_out', $exists);
+	}
+
+	/**
+	 * Check whether a concrete path is readable without initializing storage state.
+	 *
+	 * @param string|null $path
+	 * @return bool
+	 */
+	public static function isReadable(?string $path): bool
+	{
+		if (Val::isNull($path) || $path === '') {
+			return (bool)Dev::apply('_out', false);
+		}
+
+		$path = Dev::apply('_in', $path);
+		$isReadable = is_string($path) && is_readable($path);
+
+		return (bool)Dev::apply('_out', $isReadable);
+	}
+
+	/**
 	 * Upload a file
-	 * 
+	 *
 	 * @param array $document The file to be uploaded
 	 * @param bool $overwrite Whether to overwrite the file if it already exists
 	 * @return IObj
