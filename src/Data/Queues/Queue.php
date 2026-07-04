@@ -3,7 +3,6 @@
 namespace BlueFission\Data\Queues;
 
 use BlueFission\Arr;
-use BlueFission\Val;
 use BlueFission\Collections\Collection;
 
 /**
@@ -68,6 +67,18 @@ class Queue implements IQueue
     }
 
     /**
+     * Return the queue items as a DevElation array primitive.
+     *
+     * @param \ArrayObject $stack
+     * @param string $queue
+     * @return Arr
+     */
+    private static function itemsFor(\ArrayObject $stack, string $queue): Arr
+    {
+        return Arr::make($stack[$queue] ?? []);
+    }
+
+    /**
      * Determines if the queue is empty.
      *
      * @param string $queue the name of the queue.
@@ -77,13 +88,7 @@ class Queue implements IQueue
     public static function isEmpty($queue)
     {
         $stack = self::instance();
-        $items = $stack[$queue] ?? null;
-
-        if (!Val::is($items)) {
-            return true;
-        }
-
-        return Arr::count($items) === 0;
+        return self::itemsFor($stack, $queue)->isEmpty();
     }
 
     /**
@@ -98,18 +103,21 @@ class Queue implements IQueue
     public static function dequeue($queue, $after_id = false, $till_id = false)
     {
         $stack = self::instance();
+        $items = self::itemsFor($stack, $queue);
+
         if ($after_id === false && $till_id === false) {
             if (self::$_mode == static::FIFO) {
-                $item = array_shift($stack[$queue]);
+                $item = $items->shift();
             } elseif (self::$_mode == static::FILO) {
-                $item = array_pop($stack[$queue]);
+                $item = $items->pop();
             }
+            $stack[$queue] = $items->val();
             return $item;
         } elseif ($after_id !== false && $till_id === false) {
-            $till_id = Arr::count($stack[$queue]) - 1;
+            $till_id = $items->count() - 1;
         }
-        $items = new Collection(Arr::slice($stack[$queue], $after_id, $till_id));
-        return $items;
+
+        return new Collection($items->slice($after_id, $till_id)->val());
     }
 
     /**
