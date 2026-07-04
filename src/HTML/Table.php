@@ -103,7 +103,7 @@ class Table extends Obj
 
             if ($count == 0) {
                 if ($header !== false) {
-                    $header = (is_array($header) && Arr::count($header) == $rowSize) ? $header : $row;
+                    $header = (Arr::is($header) && Arr::count($header) == $rowSize) ? $header : $row;
                     if (Arr::isAssoc($header)) {
                         $header = Arr::make($header)->keys()->val();
                     }
