@@ -238,12 +238,12 @@ class HTML
     {
         $output = '';
         $chapters = Arr::make([]);
-        $count = is_numeric($list_r) ? $list_r : Arr::count($list_r);
-        $list_r = (is_array($list_r) && ($count) <= 0) ? [] : $list_r;
+        $count = Num::is($list_r) ? $list_r : Arr::count($list_r);
+        $list_r = (Arr::is($list_r) && ($count) <= 0) ? [] : $list_r;
         $href = HTML::href($href);
 
-        $start = (isset($_GET[$begin]) && is_numeric($_GET[$begin])) ? $_GET[$begin] : 0;
-        $lim = (isset($_GET[$end]) && is_numeric($_GET[$end])) ? $_GET[$end] : $limit;
+        $start = (Vall::is($_GET[$begin]) && Num::is($_GET[$begin])) ? $_GET[$begin] : 0;
+        $lim = (Vall::is($_GET[$end]) && Num::is($_GET[$end])) ? $_GET[$end] : $limit;
         $query_r = Arr::make($_POST)->merge($_GET)->val();
         unset($query_r[$begin]);
         unset($query_r[$end]);
@@ -257,7 +257,7 @@ class HTML
                 $chapters->push('<a href="' . $href . '?' . $begin . '=' . ($i * $lim) . '&amp;' . $get_query . '">' . ($i + 1) . '</a>');
             }
         }
-        if ($start < round($count / $lim)) {
+        if ($start < Num::round($count / $lim)) {
             $chapters->push('<a href="' . $href . '?' . $begin . '=' . (($start + $lim) >= ($count) ? $start : ($start + $lim)) . '&amp;' . $get_query . '">Next</a> &gt;');
         }
 
@@ -289,8 +289,8 @@ class HTML
      */
     public static function results($list_r, $begin = 'start', $end = 'lim', $href = '', $chapters = true, $link_style = 1, $query_r = '', $highlight = '#c0c0ff', $img_dir = 'images/', $file_dir = 'assets/', $headers = '', $trunc = '', $limit = 20)
     {
-        $start = (isset($_GET[$begin]) && is_numeric($_GET[$begin])) ? $_GET[$begin] : 0;
-        $end = (isset($_GET[$end]) && is_numeric($_GET[$end])) ? $_GET[$end] : $limit;
+        $start = (Val::is($_GET[$begin]) && Num::is($_GET[$begin])) ? $_GET[$begin] : 0;
+        $end = (Val::is($_GET[$end]) && Num::is($_GET[$end])) ? $_GET[$end] : $limit;
         $list_r = Arr::isEmpty($list_r) ? [] : $list_r;
         $href = HTML::href($href);
 
@@ -403,7 +403,7 @@ class HTML
      */
     public static function darkerColor($hex)
     {
-        $color = preg_replace("/[^A-Za-z0-9 ]/", '', $hex);
+        $color = Str::replacePattern("/[^A-Za-z0-9 ]/", '', $hex);
         $color2 = '';
         foreach (str_split($color) as $a) {
             $num = hexdec($a);
