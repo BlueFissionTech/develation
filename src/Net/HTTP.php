@@ -381,45 +381,72 @@ class HTTP {
 		{
 			return json_encode($a);
 		}
-		if (is_null($a)) return 'null';
-		if ($a === false) return 'false';
-		if ($a === true) return 'true';
-		if (is_scalar($a))
-		{
-			if (is_float($a))
-			{
-				// Always use "." for floats.
-				return floatval(str_replace(",", ".", strval($a)));
-			}
 
-			if (is_string($a))
-			{
-				static $jsonReplaces = array(array("\\", "/", "\n", "\t", "\r", "\b", "\f", '"'), array('\\\\', '\\/', '\\n', '\\t', '\\r', '\\b', '\\f', '\"'));
-				return '"' . str_replace($jsonReplaces[0], $jsonReplaces[1], $a) . '"';
-			}
-			else
-				return $a;
+		return self::jsonEncodeFallback($a);
+	}
+
+	/**
+	 * Encode values without relying on the native JSON extension.
+	 *
+	 * @param mixed $value
+	 * @return string
+	 */
+	private static function jsonEncodeFallback($value): string
+	{
+		if (Val::isNull($value)) return 'null';
+		if ($value === false) return 'false';
+		if ($value === true) return 'true';
+
+		if (is_float($value)) {
+			return Str::make((string)$value)->replace(',', '.')->val();
 		}
-		$isList = true;
-		for ($i = 0, reset($a); $i < count($a); $i++, next($a))
-		{
-		  if (key($a) !== $i)
-		  {
-		    $isList = false;
-		    break;
-		  }
+
+		if (is_int($value)) {
+			return (string)$value;
 		}
-		$result = array();
-		if ($isList)
-		{
-		  foreach ($a as $v) $result[] = json_encode($v);
-		  return '[' . join(',', $result) . ']';
+
+		if (Str::is($value)) {
+			return '"' . self::escapeJsonStringFallback($value) . '"';
 		}
-		else
-		{
-		  foreach ($a as $k => $v) $result[] = json_encode($k).':'.json_encode($v);
-		  return '{' . join(',', $result) . '}';
+
+		$values = Arr::make((array)$value);
+
+		if (array_is_list($values->val())) {
+			return '[' . $values
+				->map(fn ($item) => self::jsonEncodeFallback($item))
+				->join(',')
+				->val() . ']';
 		}
+
+		return '{' . $values
+			->map(fn ($item, $key) => self::jsonEncodeFallback((string)$key) . ':' . self::jsonEncodeFallback($item))
+			->join(',')
+			->val() . '}';
+	}
+
+	/**
+	 * Escape a string for the legacy JSON encoder.
+	 *
+	 * @param string $value
+	 * @return string
+	 */
+	private static function escapeJsonStringFallback(string $value): string
+	{
+		$escaped = Str::make($value);
+		$replacements = Arr::make([
+			"\\" => '\\\\',
+			'/' => '\\/',
+			"\n" => '\\n',
+			"\t" => '\\t',
+			"\r" => '\\r',
+			"\x08" => '\\b',
+			"\f" => '\\f',
+			'"' => '\"',
+		]);
+
+		$replacements->each(fn ($replace, $search) => $escaped->replace($search, $replace));
+
+		return $escaped->val();
 	}
 
 	/**
