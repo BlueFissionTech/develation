@@ -185,9 +185,9 @@ class HTTP {
 	     $res = array();
 	     foreach ((array)$formdata as $k=>$v) 
 	     {
-	         $tmp_key = urlencode((is_int($k) && $numeric_prefix) ? $numeric_prefix.$k : $k);
+	         $tmp_key = urlencode((Num::isIntStrict($k) && $numeric_prefix) ? $numeric_prefix.$k : $k);
 	         if ($key) $tmp_key = $key.'['.$tmp_key.']';
-	         if ( is_array($v) || is_object($v) ) 
+	         if ( Arr::is($v) || is_object($v) ) 
 	         {
 	             $res[] = HTTP::query($v, null /* or $numeric_prefix if you want to add numeric_prefix to all indexes in array*/, $tmp_key);
 	         } else {
@@ -397,11 +397,11 @@ class HTTP {
 		if ($value === false) return 'false';
 		if ($value === true) return 'true';
 
-		if (is_float($value)) {
+		if (isFloatStrict($value)) {
 			return Str::make((string)$value)->replace(',', '.')->val();
 		}
 
-		if (is_int($value)) {
+		if (Num::isIntStrict($value)) {
 			return (string)$value;
 		}
 
