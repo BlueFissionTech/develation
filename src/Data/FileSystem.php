@@ -278,7 +278,7 @@ class FileSystem extends Data implements IData {
 	private function file(): string|null
 	{
 		if ( !$this->basename && $this->extension ) {
-			$this->basename = Arr::make([$this->filename, $this->extension])->join('.')->val();
+			$this->basename = Arr::join([$this->filename, $this->extension], '.');
 		} elseif ( !$this->basename ) {
 			$this->basename = $this->filename;
 		}
@@ -303,7 +303,7 @@ class FileSystem extends Data implements IData {
 
 		}
 
-		$path = Arr::make($pathParts)->join(DIRECTORY_SEPARATOR)->val();
+		$path = Arr::join($pathParts, DIRECTORY_SEPARATOR);
 		$realpath = realpath($path);
 
 		return $realpath ? $realpath : $path;
@@ -392,7 +392,7 @@ class FileSystem extends Data implements IData {
 		if ($filepath && file_exists($filepath) && is_readable($filepath)) {
 			$mimeType = @finfo_file($finfo, $filepath);
 		}
-		$content = ($mimeType && Str::make($mimeType)->sub(0, 4) == 'text') ? stripslashes($content) : $content;
+		$content = ($mimeType && Str::sub($mimeType, 0, 4) == 'text') ? stripslashes($content) : $content;
 
 		$status = '';
 		$isNewFile = false;
@@ -576,7 +576,7 @@ class FileSystem extends Data implements IData {
 			return false;
 		}
 
-		$path = Arr::make([$directory, $file])->join(DIRECTORY_SEPARATOR)->val();
+		$path = Arr::join([$directory, $file], DIRECTORY_SEPARATOR);
 
 		if (!$this->allowedDir($path)) {
 			$this->status("Location is outside of allowed path.");
@@ -785,7 +785,7 @@ class FileSystem extends Data implements IData {
 		$type = $this->config('filter');
 		$pattern = '';
 		if ( Arr::is($type) ) {
-			$pattern = "/\\" . Arr::make($type)->join('$|\\')->val() . "$/i";
+			$pattern = "/\\" . Arr::join($type, '$|\\') . "$/i";
 		}
 		return $pattern;
 	}
@@ -812,7 +812,7 @@ class FileSystem extends Data implements IData {
 		$filters = $this->config('filter');
 
 		$filter = (Arr::is($filters) && Arr::isNotEmpty($filters))
-			? '{'.Arr::make($filters)->map(fn ($extension) => '*' . $extension)->join(',')->val().'}'
+			? '{'.Arr::join(Arr::map($filters, fn ($extension) => '*' . $extension), ',').'}'
 			: '*';
 
 		$files = glob($this->path().DIRECTORY_SEPARATOR.$filter, GLOB_BRACE);
@@ -852,7 +852,7 @@ class FileSystem extends Data implements IData {
 			return Dev::apply('_out', []);
 		}
 
-		$entries = Arr::make($entries)->sort()->val();
+		$entries = Arr::sort($entries);
 
 		return Dev::apply('_out', $entries);
 	}
@@ -894,7 +894,7 @@ class FileSystem extends Data implements IData {
 			return Dev::apply('_out', [$contents]);
 		}
 
-		return Dev::apply('_out', Str::make($contents)->split($eol)->val());
+		return Dev::apply('_out', Str::split($contents, $eol));
 	}
 
 	/**

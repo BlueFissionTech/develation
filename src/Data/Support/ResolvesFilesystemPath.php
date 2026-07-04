@@ -33,6 +33,6 @@ trait ResolvesFilesystemPath
             return null;
         }
 
-        return Dev::apply('_in', Arr::make($segments)->join($separator)->val());
+        return Dev::apply('_in', Arr::join($segments, $separator));
     }
 }
