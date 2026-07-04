@@ -3,6 +3,7 @@ namespace BlueFission\System;
 
 use BlueFission\Val;
 use BlueFission\Str;
+use BlueFission\Num;
 use BlueFission\Date;
 use BlueFission\DevElation as Dev;
 
@@ -107,7 +108,7 @@ class Machine {
 
         $parts = Str::make($contents)->trim()->split(' ');
         $uptime = $parts->get(0);
-        if (!is_numeric($uptime)) {
+        if (!Num::is($uptime)) {
             return 0.0;
         }
 
@@ -131,7 +132,7 @@ class Machine {
             $response = (string)$this->_system->response();
 
             //extract the numerical value from the response
-            $cpuUsage = preg_replace("/[^0-9]/", "", $response);
+            $cpuUsage = Str::replacePattern("/[^0-9]/", "", $response);
 
             if ($cpuUsage === null || $cpuUsage === '') {
                 return 0.0;
@@ -141,7 +142,7 @@ class Machine {
         }
 
         $load = @\sys_getloadavg();
-        if ($load === false || !isset($load[0]) || !is_numeric($load[0])) {
+        if ($load === false || !isset($load[0]) || !Num::is($load[0])) {
             return 0.0;
         }
 
