@@ -12,6 +12,7 @@ class SystemTest extends TestCase
     {
         $system = new System();
         $this->assertTrue($system->isValidCommand('echo "Hello World"'));
+        $this->assertTrue($system->isValidCommand('  echo   "Hello World"  '));
         $this->assertFalse($system->isValidCommand(''));
 
         $validCommand = 'ls';
