@@ -8,6 +8,9 @@ use BlueFission\Parsing\Contracts\IToolFunction;
 use BlueFission\Parsing\Registry\FunctionRegistry;
 use BlueFission\Parsing\Registry\GeneratorRegistry;
 use BlueFission\Parsing\Element;
+use BlueFission\Arr;
+use BlueFission\Flag;
+use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
 class FunctionElement extends Element implements IExecutableElement, IRenderableElement
@@ -19,8 +22,8 @@ class FunctionElement extends Element implements IExecutableElement, IRenderable
         $result = Dev::apply('_out', $result);
 
         // Check for silent attribute
-        $silent = $this->getAttribute('silent') ?? 'false';
-        if (filter_var($silent, FILTER_VALIDATE_BOOLEAN)) {
+        $silent = Flag::make($this->getAttribute('silent') ?? 'false')->parseBool();
+        if ($silent) {
             Dev::do('_after', ['', $this]);
             return '';
         }
@@ -32,20 +35,26 @@ class FunctionElement extends Element implements IExecutableElement, IRenderable
     public function execute(): mixed
     {
         Dev::do('_before', [$this]);
-        $rawExpr = array_keys($this->attributes)[0] ?? '';
+        $rawExpr = Arr::make($this->attributes)->keys()->shift() ?? '';
         $rawExpr = Dev::apply('_in', $rawExpr);
 
         // Check for assignment syntax -> varName
         $assignTo = null;
-        if (preg_match('/->\s*(\w+)/', $rawExpr, $match)) {
+        if ($match = Str::make($rawExpr)->matchPattern('/->\s*(\w+)/')) {
             $assignTo = $match[1];
-            $rawExpr = trim(str_replace($match[0], '', $rawExpr));
+            $rawExpr = Str::make($rawExpr)
+                ->replace($match[0], '')
+                ->trim()
+                ->val();
         }
 
         // Check if function-style (contains parens)
-        if (preg_match('/^(\w+)\((.*?)\)$/', $rawExpr, $parts)) {
+        if ($parts = Str::make($rawExpr)->matchPattern('/^(\w+)\((.*?)\)$/')) {
             $funcName = $parts[1];
-            $args = array_map('trim', explode(',', $parts[2]));
+            $args = Str::make($parts[2])
+                ->split(',')
+                ->map(fn ($arg) => Str::trim((string)$arg))
+                ->val();
 
             $function = FunctionRegistry::get($funcName);
             $result = $function
@@ -67,9 +76,9 @@ class FunctionElement extends Element implements IExecutableElement, IRenderable
     public function getDescription(): string
     {
         $name = 'undefined';
-        if (preg_match('/->\s*(\w+)/', $rawExpr, $match)) {
+        $rawExpr = Arr::make($this->attributes)->keys()->shift() ?? '';
+        if ($match = Str::make($rawExpr)->matchPattern('/->\s*(\w+)/')) {
             $name = $match[1];
-            // $rawExpr = trim(str_replace($match[0], '', $rawExpr));
         }
 
         $descriptionString = sprintf('Define a function named `%s`', $name);
