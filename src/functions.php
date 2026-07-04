@@ -57,9 +57,20 @@ if (!function_exists('func')) {
 }
 
 if (!function_exists('obj')) {
-    function obj(): Obj
+    function obj(array|object|null $data = null, array $types = []): Obj
     {
-        return new Obj();
+        return new class($data, $types) extends Obj {
+            public function __construct(array|object|null $data = null, array $types = [])
+            {
+                $this->_types = $types;
+
+                if (Val::isNotNull($data)) {
+                    $this->_data = new Arr(is_object($data) ? get_object_vars($data) : $data);
+                }
+
+                parent::__construct();
+            }
+        };
     }
 }
 
@@ -84,8 +95,8 @@ if (!function_exists('filesystem')) {
     }
 }
 
-if (!function_exists('bf_file')) {
-    function bf_file(): File
+if (!function_exists('doc')) {
+    function doc(): File
     {
         return new File();
     }

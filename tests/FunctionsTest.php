@@ -6,6 +6,7 @@ use BlueFission\Collections\Collection;
 use BlueFission\Data\Directory;
 use BlueFission\Data\File;
 use BlueFission\Data\FileSystem;
+use BlueFission\DataTypes;
 use BlueFission\Date;
 use BlueFission\Flag;
 use BlueFission\Func;
@@ -42,10 +43,14 @@ class FunctionsTest extends \PHPUnit\Framework\TestCase
 
     public function testObjectAndCollectionHelpers()
     {
-        $object = obj();
+        $object = obj(['name' => 'Ada']);
         $this->assertInstanceOf(Obj::class, $object);
-        $object->assign(['name' => 'Ada']);
         $this->assertSame('Ada', $object->field('name'));
+
+        $typedObject = obj(['count' => 3], ['count' => DataTypes::NUMBER]);
+        $typedObject->exposeValueObject();
+        $this->assertInstanceOf(Num::class, $typedObject->field('count'));
+        $this->assertSame(5, $typedObject->field('count')->plus(2)->val());
 
         $collection = collect(['first' => 'alpha']);
         $this->assertInstanceOf(Collection::class, $collection);
@@ -57,7 +62,7 @@ class FunctionsTest extends \PHPUnit\Framework\TestCase
         $filesystem = filesystem(['root' => __DIR__]);
         $this->assertInstanceOf(FileSystem::class, $filesystem);
 
-        $file = bf_file();
+        $file = doc();
         $this->assertInstanceOf(File::class, $file);
         $this->assertTrue($file->exists(__FILE__));
         $this->assertSame($file, $file->contents('contents'));
@@ -71,8 +76,8 @@ class FunctionsTest extends \PHPUnit\Framework\TestCase
     public function testGlobalHelpersAvoidPhpBuiltInCollisions()
     {
         $this->assertTrue(function_exists('file'));
-        $this->assertTrue(function_exists('bf_file'));
-        $this->assertNotSame('bf_file', 'file');
+        $this->assertTrue(function_exists('doc'));
+        $this->assertFalse(function_exists('bf_file'));
 
         $this->assertTrue(function_exists('date'));
         $this->assertTrue(function_exists('datetime'));
