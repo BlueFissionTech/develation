@@ -1,10 +1,13 @@
 <?php
 namespace BlueFission\Utils;
 
+use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\Net\Email;
 use BlueFission\Net\HTTP;
 use BlueFission\Data\Storage\Disk;
+use BlueFission\Security\Hash;
 
 class Util {
     /**
@@ -171,9 +174,7 @@ class Util {
      */
     static function csrfToken()
     {
-        $token = bin2hex(random_bytes(32));
-
-        return $token;
+        return Hash::value(random_bytes(32), 'sha256');
     }
 
     /**
@@ -184,21 +185,36 @@ class Util {
      * @return mixed
      */
     static function value($var, $filter = FILTER_DEFAULT ) {
+        $var = Str::make((string)$var)->val();
+        $values = Arr::make([
+            self::inputValue(INPUT_COOKIE, $var, $filter, $_COOKIE),
+            self::inputValue(INPUT_POST, $var, $filter, $_POST),
+            self::inputValue(INPUT_GET, $var, $filter, $_GET),
+        ])
+            ->filter(fn ($value) => Val::isNotNull($value))
+            ->values();
 
-        $cookie = filter_input(INPUT_COOKIE, $var);
-		$get = filter_input(INPUT_GET, $var);
-		$post = filter_input(INPUT_POST, $var);
-
-        if ($cookie === null) {
-            $cookie = $_COOKIE[$var] ?? null;
-        }
-        if ($post === null) {
-            $post = $_POST[$var] ?? null;
-        }
-        if ($get === null) {
-            $get = $_GET[$var] ?? null;
-        }
-
-		return ( Val::isNotNull($cookie) ) ? $cookie : ( ( Val::isNotNull($post) ) ? $post : $get);
+		return $values->shift();
 	}
+
+    /**
+     * Read a filtered request value, falling back to superglobals for CLI tests.
+     *
+     * @param int $type
+     * @param string $var
+     * @param int $filter
+     * @param array $fallback
+     * @return mixed
+     */
+    private static function inputValue(int $type, string $var, int $filter, array $fallback): mixed
+    {
+        $value = filter_input($type, $var, $filter);
+        $fallback = Arr::make($fallback);
+
+        if (Val::isNull($value) && $fallback->hasKey($var)) {
+            $value = filter_var($fallback->get($var), $filter);
+        }
+
+        return $value;
+    }
 }
