@@ -6,6 +6,7 @@ use BlueFission\Collections\Collection;
 use BlueFission\Data\Directory;
 use BlueFission\Data\File;
 use BlueFission\Data\FileSystem;
+use BlueFission\Date;
 use BlueFission\Flag;
 use BlueFission\Func;
 use BlueFission\Num;
@@ -35,12 +36,15 @@ class FunctionsTest extends \PHPUnit\Framework\TestCase
         $callable = fn () => 'done';
         $this->assertInstanceOf(Func::class, func($callable));
         $this->assertSame('done', func($callable)->call());
+
+        $this->assertInstanceOf(Date::class, datetime('2026-07-04'));
     }
 
     public function testObjectAndCollectionHelpers()
     {
-        $object = obj(['name' => 'Ada']);
+        $object = obj();
         $this->assertInstanceOf(Obj::class, $object);
+        $object->assign(['name' => 'Ada']);
         $this->assertSame('Ada', $object->field('name'));
 
         $collection = collect(['first' => 'alpha']);
@@ -53,20 +57,25 @@ class FunctionsTest extends \PHPUnit\Framework\TestCase
         $filesystem = filesystem(['root' => __DIR__]);
         $this->assertInstanceOf(FileSystem::class, $filesystem);
 
-        $file = bf_file(__FILE__, 'contents');
+        $file = bf_file();
         $this->assertInstanceOf(File::class, $file);
-        $this->assertTrue($file->exists());
+        $this->assertTrue($file->exists(__FILE__));
+        $this->assertSame($file, $file->contents('contents'));
         $this->assertSame('contents', $file->contents());
 
-        $directory = directory(__DIR__);
+        $directory = directory();
         $this->assertInstanceOf(Directory::class, $directory);
-        $this->assertTrue($directory->exists());
+        $this->assertTrue($directory->exists(__DIR__));
     }
 
-    public function testGlobalHelpersAvoidPhpFileCollision()
+    public function testGlobalHelpersAvoidPhpBuiltInCollisions()
     {
         $this->assertTrue(function_exists('file'));
         $this->assertTrue(function_exists('bf_file'));
         $this->assertNotSame('bf_file', 'file');
+
+        $this->assertTrue(function_exists('date'));
+        $this->assertTrue(function_exists('datetime'));
+        $this->assertFalse(function_exists('bf_date'));
     }
 }

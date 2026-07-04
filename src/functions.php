@@ -57,15 +57,9 @@ if (!function_exists('func')) {
 }
 
 if (!function_exists('obj')) {
-    function obj(array|object|null $data = null): Obj
+    function obj(): Obj
     {
-        $object = new Obj();
-
-        if ($data !== null) {
-            $object->assign($data);
-        }
-
-        return $object;
+        return new Obj();
     }
 }
 
@@ -76,8 +70,8 @@ if (!function_exists('collect')) {
     }
 }
 
-if (!function_exists('bf_date')) {
-    function bf_date(mixed $value = null): Date
+if (!function_exists('datetime')) {
+    function datetime(mixed $value = null): Date
     {
         return Date::make($value);
     }
@@ -91,35 +85,15 @@ if (!function_exists('filesystem')) {
 }
 
 if (!function_exists('bf_file')) {
-    function bf_file(?string $path = null, mixed $contents = null): File
+    function bf_file(): File
     {
-        $file = new File();
-
-        if ($path !== null) {
-            $file->label($path);
-        }
-
-        if ($contents !== null) {
-            $file->contents($contents);
-        }
-
-        return $file;
+        return new File();
     }
 }
 
 if (!function_exists('directory')) {
-    function directory(mixed $pathOrStorage = null): Directory
+    function directory(?IData $storage = null): Directory
     {
-        $storage = $pathOrStorage instanceof IData
-            ? $pathOrStorage
-            : new FileSystem(Arr::is($pathOrStorage) ? $pathOrStorage : ['root' => (string)($pathOrStorage ?? ''), 'filter' => []]);
-
-        $directory = new class($storage) extends Directory {};
-
-        if (Str::is($pathOrStorage) && $pathOrStorage !== '') {
-            $directory->label($pathOrStorage);
-        }
-
-        return $directory;
+        return new class($storage ?? new FileSystem()) extends Directory {};
     }
 }
