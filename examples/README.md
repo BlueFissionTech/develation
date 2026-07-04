@@ -1,6 +1,8 @@
 ## DevElation Examples Overview
 
-This directory contains small, self-contained example apps that are meant to double as tutorials for “thinking in DevElation”. Each example leans on core library concepts instead of ad‑hoc PHP.
+This directory contains small, self-contained example apps that are meant to double as tutorials for “thinking in DevElation”. Each example leans on core library concepts instead of ad-hoc PHP.
+
+The examples favor DevElation primitives, data objects, storage objects, HTML helpers, CLI helpers, and behavior/state machinery when those classes own the capability. Global helper functions such as `arr()`, `str()`, `num()`, `flag()`, `obj()`, `collect()`, `datetime()`, `filesystem()`, `doc()`, and `directory()` are used as object entrypoints only; the returned objects still own traversal, mutation, formatting, IO, and behavior.
 
 Run `composer install` first. The examples share `examples/support.php`, which loads Composer, keeps local runtime files under `.localappdata/examples`, and provides tiny helpers for input normalization, safe HTML output, IDs, and logging.
 
@@ -13,7 +15,7 @@ Run `composer install` first. The examples share `examples/support.php`, which l
   - `Data\Storage\Session`: using DevElation’s storage pipeline (`activate()`, `read()`, `assign()`, `write()`) instead of working directly with `$_SESSION`.
   - `HTML\Template` + Vibe templates: binding an associative array (`$viewData`) into `todo.vibe` and `layout.vibe` for declarative rendering.
 - **How to run**:
-  - Point a PHP‑capable web server at the project root (or use the Laravel/Opus harness) and open `examples/todo/index.php` through the web server.
+  - Point a PHP-capable web server at the project root and open `examples/todo/index.php` through the web server.
 
 ### 2. Comment Thread – `examples/comments/index.php`
 
@@ -51,13 +53,14 @@ Run `composer install` first. The examples share `examples/support.php`, which l
 
 - **Purpose**: Non-interactive walkthrough of the current helper surface for package users and contributors.
 - **Key DevElation concepts**:
-  - `Arr`: filtering, mapping, values, reverse ordering, and static `Arr::count()`.
+  - Global helper functions: `arr()`, `collect()`, `str()`, `num()`, `flag()`, `datetime()`, `filesystem()`, and `doc()` as constructor/factory shortcuts.
+  - `Arr`: filtering, mapping, values, reverse ordering, and `count()` through the value object.
   - `Collections\Collection`: key-aware filtering and mapping with the same traversal semantics as `Arr`.
-  - `Str`: repeat helpers, case-insensitive `match()`, trimming, and static helper dispatch.
-  - `Num`: degree/radian conversion plus sine and cosine.
+  - `Str`: repeat helpers, case-insensitive `match()`, trimming, casing, and static helper dispatch.
+  - `Num`: degree/radian conversion plus sine and cosine through a fluent numeric object.
   - `Flag`: normalized boolean parsing.
-  - `Date`: timestamp formatting.
-  - `Data\File`, `Data\FileSystem`: safe existence checks, directory entries, and file lines.
+  - `Date`: timestamp and date formatting through the `datetime()` entrypoint.
+  - `Data\File`, `Data\FileSystem`: safe existence checks, directory entries, and file lines through `doc()` and `filesystem()`.
   - `Net\HTTP`: URL path segment, host, and status-line helpers.
   - `Security\Hash`: deterministic content IDs for structured values.
 - **How to run**:

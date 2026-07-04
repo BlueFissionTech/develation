@@ -4,67 +4,62 @@ declare(strict_types=1);
 
 require __DIR__ . '/../support.php';
 
-use BlueFission\Arr;
-use BlueFission\Collections\Collection;
-use BlueFission\Data\File;
-use BlueFission\Data\FileSystem;
-use BlueFission\Date;
-use BlueFission\Flag;
 use BlueFission\Net\HTTP;
-use BlueFission\Num;
 use BlueFission\Security\Hash;
 use BlueFission\Str;
 
 $fixtureDir = __DIR__ . DIRECTORY_SEPARATOR . 'fixtures';
 $namesPath = $fixtureDir . DIRECTORY_SEPARATOR . 'names.txt';
 
-$filesystem = new FileSystem($namesPath);
-$names = Arr::make($filesystem->lines("\n"))
-    ->filter(fn (string $name): bool => Str::isNotEmpty(Str::trim($name)))
-    ->map(fn (string $name): string => Str::trim($name))
+$filesystem = filesystem($namesPath);
+$names = arr($filesystem->lines("\n"))
+    ->filter(fn (string $name): bool => str($name)->trim()->isNotEmpty())
+    ->map(fn (string $name): string => str($name)->trim()->val())
     ->values();
 
-$nameSummaries = (new Collection($names->val()))
+$nameSummaries = collect($names->val())
     ->filter(fn (string $name, int $index): bool => $index < 2 || Str::contains($name, 'Johnson'))
     ->map(fn (string $name, int $index): array => [
         'index' => $index,
         'name' => $name,
-        'slug' => Str::lower(Str::replace($name, ' ', '-')),
-        'length' => Str::len($name),
+        'slug' => str($name)->replace(' ', '-')->lower()->val(),
+        'length' => str($name)->size(),
     ])
     ->toArray();
 
-$angles = Arr::make([0, 45, 90, 180])
+$angles = arr([0, 45, 90, 180])
     ->map(function (int $degrees): array {
-        $radians = Num::deg2rad($degrees);
+        $radians = num($degrees)->deg2rad()->val();
 
         return [
             'degrees' => $degrees,
-            'radians' => Num::round($radians, 6),
-            'sin' => Num::round(Num::sin($radians), 6),
-            'cos' => Num::round(Num::cos($radians), 6),
+            'radians' => num($radians)->round(6)->val(),
+            'sin' => num($radians)->sin()->round(6)->val(),
+            'cos' => num($radians)->cos()->round(6)->val(),
         ];
     })
     ->values()
     ->val();
 
-$directory = new FileSystem([
+$directory = filesystem([
     'root' => $fixtureDir,
     'filter' => [],
     'doNotConfirm' => true,
 ]);
 
+$marker = str('=')->repeat(3)->val();
+
 $report = [
-    'title' => Str::strRepeat('=', 3) . ' DevElation helper workflow ' . Str::strRepeat('=', 3),
-    'processed_on' => Date::formatTimestamp(time()),
-    'source_file_exists' => (new File())->exists($namesPath),
-    'source_file_reachable' => (new File())->isReachable($namesPath),
+    'title' => $marker . ' DevElation helper workflow ' . $marker,
+    'processed_on' => datetime()->val(),
+    'source_file_exists' => doc()->exists($namesPath),
+    'source_file_reachable' => doc()->isReachable($namesPath),
     'fixture_entries' => $directory->entries(),
-    'name_count' => Arr::count($names->val()),
+    'name_count' => arr($names->val())->count(),
     'names_latest_first' => $names->reverse()->val(),
     'collection_name_summaries' => $nameSummaries,
-    'admin_match' => Str::match('Admin', 'admin', Str::IGNORE_CASE),
-    'enabled_flag' => Flag::parseBool('yes'),
+    'admin_match' => str('Admin')->match('admin', Str::IGNORE_CASE),
+    'enabled_flag' => flag('yes')->parseBool(),
     'status_line' => HTTP::statusLine(200),
     'encoded_path_segment' => HTTP::pathSegment('Example Report.md'),
     'url_host' => HTTP::urlHost('https://example.test:8443/docs?tab=api'),
