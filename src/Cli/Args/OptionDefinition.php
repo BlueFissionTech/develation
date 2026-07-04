@@ -2,9 +2,11 @@
 
 namespace BlueFission\Cli\Args;
 
+use BlueFission\Arr;
+use BlueFission\Flag;
 use BlueFission\Obj;
+use BlueFission\Str;
 use BlueFission\DataTypes;
-use BlueFission\Val;
 use BlueFission\DevElation as Dev;
 
 class OptionDefinition extends Obj
@@ -38,26 +40,27 @@ class OptionDefinition extends Obj
 
         $name = Dev::apply('_in', $name);
         $config = Dev::apply('_in', $config);
+        $config = Arr::make($config);
 
-        $short = $config['short'] ?? [];
-        if (Val::isNotNull($short) && !is_array($short)) {
+        $short = $config->hasKey('short') ? $config['short'] : [];
+        if (!Arr::is($short)) {
             $short = [$short];
         }
 
-        $aliases = $config['aliases'] ?? [];
-        if (Val::isNotNull($aliases) && !is_array($aliases)) {
+        $aliases = $config->hasKey('aliases') ? $config['aliases'] : [];
+        if (!Arr::is($aliases)) {
             $aliases = [$aliases];
         }
 
         $this->assign([
-            'name' => $name,
+            'name' => Str::make($name)->trim()->val(),
             'short' => $short ?? [],
-            'type' => $config['type'] ?? 'string',
-            'default' => $config['default'] ?? null,
-            'required' => (bool)($config['required'] ?? false),
-            'repeatable' => (bool)($config['repeatable'] ?? false),
-            'env' => (string)($config['env'] ?? ''),
-            'description' => (string)($config['description'] ?? ''),
+            'type' => $config->hasKey('type') ? (string)$config['type'] : 'string',
+            'default' => $config->hasKey('default') ? $config['default'] : null,
+            'required' => Flag::parseBool($config->hasKey('required') ? $config['required'] : false),
+            'repeatable' => Flag::parseBool($config->hasKey('repeatable') ? $config['repeatable'] : false),
+            'env' => $config->hasKey('env') ? (string)$config['env'] : '',
+            'description' => $config->hasKey('description') ? (string)$config['description'] : '',
             'aliases' => $aliases ?? [],
         ]);
 
@@ -72,7 +75,7 @@ class OptionDefinition extends Obj
     public function short(): array
     {
         $value = $this->field('short');
-        return is_array($value) ? $value : [];
+        return Arr::is($value) ? $value : [];
     }
 
     public function type(): string
@@ -108,6 +111,6 @@ class OptionDefinition extends Obj
     public function aliases(): array
     {
         $value = $this->field('aliases');
-        return is_array($value) ? $value : [];
+        return Arr::is($value) ? $value : [];
     }
 }
