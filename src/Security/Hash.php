@@ -3,8 +3,12 @@
 namespace BlueFission\Security;
 
 use BlueFission\Arr;
+use BlueFission\Flag;
 use BlueFission\IVal;
+use BlueFission\Net\HTTP;
+use BlueFission\Num;
 use BlueFission\Obj;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -31,7 +35,7 @@ class Hash extends Obj
         parent::__construct();
 
         if (Val::isNotNull($algo)) {
-            $this->setValue('algo', (string)$algo);
+            $this->setValue('algo', Str::make($algo)->val());
         }
 
         Dev::do('_after', [$this]);
@@ -39,12 +43,12 @@ class Hash extends Obj
 
     public static function algorithms(): array
     {
-        return hash_algos();
+        return Arr::make(hash_algos())->val();
     }
 
     public static function supports(string $algo): bool
     {
-        return in_array($algo, hash_algos(), true);
+        return Arr::contains(self::algorithms(), $algo, true);
     }
 
     public static function value($data, ?string $algo = null, bool $raw = false): string
@@ -77,7 +81,7 @@ class Hash extends Obj
             return (string)$this->field('algo');
         }
 
-        $this->setValue('algo', (string)$algo);
+        $this->setValue('algo', Str::make($algo)->val());
         return (string)$this->field('algo');
     }
 
@@ -165,7 +169,7 @@ class Hash extends Obj
         $raw = (bool)Dev::apply('_in', $raw);
 
         $computed = $this->hash($data, $algo, $raw);
-        if ($computed === '' || $hash === '') {
+        if (Str::isEmpty($computed) || Str::isEmpty($hash)) {
             return false;
         }
 
@@ -220,14 +224,14 @@ class Hash extends Obj
         if ($hash === '') {
             return '';
         }
-        $output = $prefix . ':' . $hash;
+        $output = Str::make($prefix)->append(':')->append($hash)->val();
         return (string)Dev::apply('_out', $output);
     }
 
     public function errors(): array
     {
         $value = $this->field('errors');
-        return is_array($value) ? $value : [];
+        return Arr::is($value) ? Arr::toArray($value) : [];
     }
 
     public function clearErrors(): self
@@ -238,16 +242,16 @@ class Hash extends Obj
 
     protected function normalizeData($data): string
     {
-        if (is_string($data)) {
+        if (Str::is($data)) {
             return $data;
         }
 
-        if (is_int($data) || is_float($data) || is_bool($data)) {
+        if (Num::isIntStrict($data) || Num::isFloatStrict($data) || Flag::isBoolStrict($data)) {
             return (string)$data;
         }
 
-        if (is_array($data) || is_object($data)) {
-            return json_encode($data);
+        if (Arr::is($data) || is_object($data)) {
+            return HTTP::jsonEncode($data);
         }
 
         if (is_resource($data)) {
@@ -260,17 +264,18 @@ class Hash extends Obj
 
     protected function isAlgorithmSupported(string $algo): bool
     {
-        return in_array($algo, hash_algos(), true);
+        return static::supports($algo);
     }
 
     protected function addError(string $field, string $message): void
     {
-        $errors = $this->errors();
-        if (!array_key_exists($field, $errors)) {
-            $errors[$field] = [];
-        }
-        $errors[$field][] = ['message' => $message];
-        $this->setValue('errors', $errors);
+        $errors = Arr::make($this->errors());
+        $fieldErrors = Arr::make($errors->hasKey($field) ? $errors[$field] : []);
+
+        $fieldErrors->push(['message' => $message]);
+        $errors->set($field, $fieldErrors->val());
+
+        $this->setValue('errors', $errors->val());
     }
 
     protected function setValue(string $field, $value): void
