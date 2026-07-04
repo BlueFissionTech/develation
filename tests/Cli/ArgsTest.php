@@ -39,14 +39,37 @@ class ArgsTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(['one', 'two', 'three'], $parser->options()['tag']);
     }
 
+    public function testGroupedShortBooleanOptions()
+    {
+        $parser = new Args(['autoHelp' => false]);
+        $parser->addOption(new OptionDefinition('verbose', [
+            'short' => 'v',
+            'type' => 'bool',
+        ]));
+        $parser->addOption(new OptionDefinition('force', [
+            'short' => 'f',
+            'type' => 'bool',
+        ]));
+
+        $parser->parse(['tool.php', '-vf']);
+
+        $this->assertTrue($parser->options()['verbose']);
+        $this->assertTrue($parser->options()['force']);
+    }
+
     public function testEnvFallbackAndNoFlag()
     {
         putenv('TEST_ARGS_MODE=quiet');
+        putenv('TEST_ARGS_DEBUG=off');
 
         $parser = new Args(['autoHelp' => false]);
         $parser->addOption(new OptionDefinition('mode', [
             'type' => 'string',
             'env' => 'TEST_ARGS_MODE',
+        ]));
+        $parser->addOption(new OptionDefinition('debug', [
+            'type' => 'bool',
+            'env' => 'TEST_ARGS_DEBUG',
         ]));
         $parser->addOption(new OptionDefinition('color', [
             'type' => 'bool',
@@ -55,9 +78,11 @@ class ArgsTest extends \PHPUnit\Framework\TestCase
         $parser->parse(['tool.php', '--no-color']);
 
         $this->assertSame('quiet', $parser->options()['mode']);
+        $this->assertFalse($parser->options()['debug']);
         $this->assertFalse($parser->options()['color']);
 
         putenv('TEST_ARGS_MODE');
+        putenv('TEST_ARGS_DEBUG');
     }
 
     public function testUnknownArgsCollected()
@@ -66,5 +91,19 @@ class ArgsTest extends \PHPUnit\Framework\TestCase
         $parser->parse(['tool.php', '--unknown']);
 
         $this->assertSame(['--unknown'], $parser->unknown());
+    }
+
+    public function testDoubleDashKeepsRemainingValuesAsPositionals()
+    {
+        $parser = new Args(['autoHelp' => false]);
+        $parser->addOption(new OptionDefinition('verbose', [
+            'short' => 'v',
+            'type' => 'bool',
+        ]));
+
+        $parser->parse(['tool.php', '-v', '--', '--literal', 'file.txt']);
+
+        $this->assertTrue($parser->options()['verbose']);
+        $this->assertSame(['--literal', 'file.txt'], $parser->positionals());
     }
 }

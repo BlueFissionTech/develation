@@ -4,6 +4,7 @@ namespace BlueFission\Cli;
 
 use BlueFission\Obj;
 use BlueFission\Arr;
+use BlueFission\Flag;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
@@ -39,9 +40,11 @@ class Args extends Obj
     {
         parent::__construct();
 
+        $config = Arr::make(Dev::apply('_in', $config));
+
         $this->assign([
-            'allowUnknown' => (bool)($config['allowUnknown'] ?? true),
-            'autoHelp' => (bool)($config['autoHelp'] ?? true),
+            'allowUnknown' => $config->hasKey('allowUnknown') ? Flag::parseBool($config['allowUnknown'], true) : true,
+            'autoHelp' => $config->hasKey('autoHelp') ? Flag::parseBool($config['autoHelp'], true) : true,
         ]);
 
         if ($this->field('autoHelp')) {
@@ -55,20 +58,20 @@ class Args extends Obj
 
     public function addOption(OptionDefinition $definition): self
     {
-        $definitions = $this->arrayValue($this->field('definitions'));
+        $definitions = Arr::make($this->arrayValue($this->field('definitions')));
         $definitions[$definition->name()] = $definition;
-        $this->field('definitions', $definitions);
+        $this->field('definitions', $definitions->val());
 
         return $this;
     }
 
     public function addOptions(array $definitions): self
     {
-        foreach ($definitions as $definition) {
+        Arr::make($definitions)->each(function ($definition) {
             if ($definition instanceof OptionDefinition) {
                 $this->addOption($definition);
             }
-        }
+        });
 
         return $this;
     }
@@ -80,21 +83,21 @@ class Args extends Obj
         $this->perform(new Action(Action::PROCESS), new Meta(data: $argv));
 
         $options = [];
-        $positionals = [];
-        $unknown = [];
+        $positionals = Arr::make();
+        $unknown = Arr::make();
         $definitions = $this->arrayValue($this->field('definitions'));
         $map = $this->buildOptionMap($definitions);
 
-        if (count($argv) > 0) {
+        if (Arr::count($argv) > 0) {
             $this->field('command', (string)array_shift($argv));
         }
 
         $index = 0;
-        $count = count($argv);
+        $count = Arr::count($argv);
         while ($index < $count) {
             $arg = $argv[$index];
             if ($arg === '--') {
-                $positionals = array_merge($positionals, array_slice($argv, $index + 1));
+                $positionals->merge(array_slice($argv, $index + 1));
                 break;
             }
 
@@ -103,7 +106,7 @@ class Args extends Obj
                 if ($parsed !== null) {
                     [$name, $value] = $parsed;
                     if ($name === '') {
-                        $unknown[] = $arg;
+                        $unknown->push($arg);
                     } else {
                         $this->assignOption($options, $definitions[$name], $value);
                     }
@@ -118,7 +121,7 @@ class Args extends Obj
                     foreach ($parsed as $entry) {
                         [$name, $value, $raw] = $entry;
                         if ($name === '') {
-                            $unknown[] = $raw;
+                            $unknown->push($raw);
                         } else {
                             $this->assignOption($options, $definitions[$name], $value);
                         }
@@ -128,7 +131,7 @@ class Args extends Obj
                 continue;
             }
 
-            $positionals[] = $arg;
+            $positionals->push($arg);
             $index++;
         }
 
@@ -136,13 +139,13 @@ class Args extends Obj
         $this->applyEnvFallbacks($options, $definitions);
         $this->validateRequired($options, $definitions);
 
-        if (!$this->field('allowUnknown') && !empty($unknown)) {
-            throw new \RuntimeException('Unknown arguments: ' . implode(', ', $unknown));
+        if (!$this->field('allowUnknown') && $unknown->isNotEmpty()) {
+            throw new \RuntimeException('Unknown arguments: ' . $unknown->join(', ')->val());
         }
 
         $options = Dev::apply('_out', $options);
-        $positionals = Dev::apply('_out', $positionals);
-        $unknown = Dev::apply('_out', $unknown);
+        $positionals = Dev::apply('_out', $positionals->val());
+        $unknown = Dev::apply('_out', $unknown->val());
 
         $this->field('options', $options);
         $this->field('positionals', $positionals);
@@ -180,16 +183,16 @@ class Args extends Obj
         $commandName = $command ?: $this->field('command');
         $commandName = $commandName ?: 'script.php';
 
-        $lines = [];
-        $lines[] = 'Usage: ' . $commandName . ' [options] [args]';
-        $lines[] = '';
-        $lines[] = 'Options:';
+        $lines = Arr::make();
+        $lines->push('Usage: ' . $commandName . ' [options] [args]');
+        $lines->push('');
+        $lines->push('Options:');
 
-        $rows = [];
+        $rows = Arr::make();
         $maxWidth = 0;
         foreach ($definitions as $definition) {
             $flags = $this->formatFlags($definition);
-            $rows[] = [$flags, $definition->description(), $definition->defaultValue()];
+            $rows->push([$flags, $definition->description(), $definition->defaultValue()]);
             $maxWidth = max($maxWidth, Str::len($flags));
         }
 
@@ -200,10 +203,10 @@ class Args extends Obj
             if (Val::isNotNull($default) && $default !== '') {
                 $description .= ' (default: ' . $default . ')';
             }
-            $lines[] = '  ' . $flags . $description;
+            $lines->push('  ' . $flags . $description);
         }
 
-        $output = implode(PHP_EOL, $lines);
+        $output = $lines->join(PHP_EOL)->val();
         return Dev::apply('_out', $output);
     }
 
@@ -252,9 +255,9 @@ class Args extends Obj
     {
         $chunk = substr($arg, 1);
         $results = [];
-        $letters = str_split($chunk);
+        $letters = Str::make($chunk)->splitBy('//', -1, PREG_SPLIT_NO_EMPTY)->val();
 
-        if (count($letters) === 1) {
+        if (Arr::count($letters) === 1) {
             $letter = $letters[0];
             $definition = $map['short'][$letter] ?? null;
             if (!$definition) {
@@ -339,7 +342,7 @@ class Args extends Obj
 
     protected function arrayValue($value): array
     {
-        if (is_array($value)) {
+        if (Arr::is($value)) {
             return $value;
         }
 
@@ -357,14 +360,14 @@ class Args extends Obj
 
         if ($definition->repeatable() || $definition->type() === 'array') {
             $existing = $options[$name] ?? [];
-            if (!is_array($existing)) {
+            if (!Arr::is($existing)) {
                 $existing = [$existing];
             }
 
-            if (is_array($cast)) {
-                $existing = array_merge($existing, $cast);
+            if (Arr::is($cast)) {
+                $existing = Arr::make($existing)->merge($cast)->val();
             } else {
-                $existing[] = $cast;
+                $existing = Arr::make($existing)->push($cast)->val();
             }
 
             $options[$name] = $existing;
@@ -376,17 +379,7 @@ class Args extends Obj
     protected function castValue(string $type, $value)
     {
         if ($type === 'bool') {
-            if (is_bool($value)) {
-                return $value;
-            }
-            $normalized = strtolower((string)$value);
-            if (in_array($normalized, ['1', 'true', 'yes', 'y', 'on'], true)) {
-                return true;
-            }
-            if (in_array($normalized, ['0', 'false', 'no', 'n', 'off'], true)) {
-                return false;
-            }
-            return (bool)$value;
+            return Flag::parseBool($value);
         }
 
         if ($type === 'int') {
@@ -398,12 +391,17 @@ class Args extends Obj
         }
 
         if ($type === 'array') {
-            if (is_array($value)) {
+            if (Arr::is($value)) {
                 return $value;
             }
             $stringValue = (string)$value;
             if (Str::pos($stringValue, ',') !== false) {
-                return array_map('trim', explode(',', $stringValue));
+                return Str::make($stringValue)
+                    ->split(',')
+                    ->map(function ($item) {
+                        return Str::make((string)$item)->trim()->val();
+                    })
+                    ->val();
             }
             return [$stringValue];
         }
@@ -420,7 +418,7 @@ class Args extends Obj
     {
         foreach ($definitions as $definition) {
             $name = $definition->name();
-            if (!array_key_exists($name, $options) && Val::isNotNull($definition->defaultValue())) {
+            if (!Arr::hasKey($options, $name) && Val::isNotNull($definition->defaultValue())) {
                 $options[$name] = $definition->defaultValue();
             }
         }
@@ -430,7 +428,7 @@ class Args extends Obj
     {
         foreach ($definitions as $definition) {
             $name = $definition->name();
-            if (array_key_exists($name, $options)) {
+            if (Arr::hasKey($options, $name)) {
                 continue;
             }
 
@@ -451,7 +449,7 @@ class Args extends Obj
     protected function validateRequired(array $options, array $definitions): void
     {
         foreach ($definitions as $definition) {
-            if ($definition->required() && !array_key_exists($definition->name(), $options)) {
+            if ($definition->required() && !Arr::hasKey($options, $definition->name())) {
                 throw new \RuntimeException('Missing required option: ' . $definition->name());
             }
         }
@@ -459,13 +457,13 @@ class Args extends Obj
 
     protected function formatFlags(OptionDefinition $definition): string
     {
-        $parts = [];
+        $parts = Arr::make();
         foreach ($definition->short() as $short) {
-            $parts[] = '-' . $short;
+            $parts->push('-' . $short);
         }
-        $parts[] = '--' . $definition->name();
+        $parts->push('--' . $definition->name());
         foreach ($definition->aliases() as $alias) {
-            $parts[] = '--' . $alias;
+            $parts->push('--' . $alias);
         }
 
         $suffix = '';
@@ -473,6 +471,6 @@ class Args extends Obj
             $suffix = ' <' . $definition->type() . '>';
         }
 
-        return implode(', ', $parts) . $suffix;
+        return $parts->join(', ')->append($suffix)->val();
     }
 }
