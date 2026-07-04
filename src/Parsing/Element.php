@@ -269,14 +269,13 @@ class Element extends Obj {
 
     public function hasPathValue(string $path): bool
     {
-        $segments = Str::make($this->normalizeScopedPath($path))->split('.')->val();
-        $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
+        $segments = $this->pathSegments($path);
 
-        if (empty($segments)) {
+        if ($segments->isEmpty()) {
             return false;
         }
 
-        $value = $this->block->getVar(array_shift($segments));
+        $value = $this->block->getVar($segments->shift());
         if ($value === null) {
             return false;
         }
@@ -308,10 +307,9 @@ class Element extends Obj {
 
     public function getPathValue(string $path, bool $throw = false): mixed
     {
-        $segments = Str::make($this->normalizeScopedPath($path))->split('.')->val();
-        $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
+        $segments = $this->pathSegments($path);
 
-        if (empty($segments)) {
+        if ($segments->isEmpty()) {
             if ($throw) {
                 throw new \RuntimeException("Undefined value path '{$path}'.");
             }
@@ -319,7 +317,7 @@ class Element extends Obj {
             return null;
         }
 
-        $value = $this->block->getVar(array_shift($segments));
+        $value = $this->block->getVar($segments->shift());
 
         foreach ($segments as $segment) {
             if (is_array($value) && array_key_exists($segment, $value)) {
@@ -352,16 +350,15 @@ class Element extends Obj {
 
     public function setPathValue(string $path, mixed $value): void
     {
-        $segments = Str::make($this->normalizeScopedPath($path))->split('.')->val();
-        $segments = array_values(array_filter($segments, fn ($segment) => $segment !== ''));
+        $segments = $this->pathSegments($path);
 
-        if (empty($segments)) {
+        if ($segments->isEmpty()) {
             return;
         }
 
-        $root = array_shift($segments);
+        $root = $segments->shift();
 
-        if (empty($segments)) {
+        if ($segments->isEmpty()) {
             $this->setScopeVariable($root, $value);
             return;
         }
@@ -371,7 +368,7 @@ class Element extends Obj {
             throw new \RuntimeException("Undefined value path '{$path}'.");
         }
 
-        $container = $this->setNestedPathValue($container, $segments, $value, $path);
+        $container = $this->setNestedPathValue($container, $segments->val(), $value, $path);
         $this->setScopeVariable($root, $container);
     }
 
@@ -456,6 +453,14 @@ class Element extends Obj {
         return Str::sub($path, 1);
     }
 
+    protected function pathSegments(string $path): Arr
+    {
+        return Str::make($this->normalizeScopedPath($path))
+            ->split('.')
+            ->filter(fn ($segment) => $segment !== '')
+            ->values();
+    }
+
     protected function shouldInterpolateAttribute(mixed $raw, mixed $value): bool
     {
         if (!Str::is($raw) || !Str::is($value)) {
@@ -506,8 +511,8 @@ class Element extends Obj {
 
     protected function resolveInterpolationExpression(string $expression): string
     {
-        $segments = Str::make($expression)->split('|')->val();
-        $base = Str::trim((string)array_shift($segments));
+        $segments = Str::make($expression)->split('|');
+        $base = Str::trim((string)$segments->shift());
         $value = $this->resolveInterpolationValue($base);
 
         foreach ($segments as $segment) {
@@ -539,11 +544,11 @@ class Element extends Obj {
 
     protected function parseInterpolationFilter(string $segment): array
     {
-        $parts = Str::make($segment)->split(':')->val();
-        $filter = Str::lower(Str::trim((string)array_shift($parts)));
+        $parts = Str::make($segment)->split(':');
+        $filter = Str::lower(Str::trim((string)$parts->shift()));
 
-        if ($filter === 'default' && count($parts) > 1) {
-            $parts = [implode(':', $parts)];
+        if ($filter === 'default' && $parts->count() > 1) {
+            $parts = Arr::make([$parts->join(':')->val()]);
         }
 
         $arguments = [];
@@ -627,12 +632,10 @@ class Element extends Obj {
         }
 
         if (is_array($value)) {
-            $stringified = [];
-            foreach ($value as $item) {
-                $stringified[] = $this->stringifyInterpolatedValue($item);
-            }
-
-            return implode(',', $stringified);
+            return Arr::make($value)
+                ->map(fn ($item) => $this->stringifyInterpolatedValue($item))
+                ->join(',')
+                ->val();
         }
 
         if (is_object($value) && method_exists($value, '__toString')) {
@@ -674,7 +677,9 @@ class Element extends Obj {
 
     protected function setNestedPathValue(mixed $target, array $segments, mixed $value, string $path): mixed
     {
-        $segment = array_shift($segments);
+        $pathSegments = Arr::make($segments);
+        $segment = $pathSegments->shift();
+        $segments = $pathSegments->val();
 
         if ($segment === null) {
             return $value;

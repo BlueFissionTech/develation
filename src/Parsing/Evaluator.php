@@ -14,6 +14,7 @@ use BlueFission\Parsing\Registry\TagRegistry;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
 use BlueFission\Data\FileSystem;
+use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\Obj;
@@ -96,13 +97,7 @@ class Evaluator implements IDispatcher
             }
 
             $originalValue = $this->element->getScopeVariable($this->var);
-            if (is_array($originalValue)) {
-                $value = array_merge($originalValue, [$value]);
-            } elseif (is_string($originalValue)) {
-                $value = $originalValue . $value;
-            } else {
-                throw new \Exception("Cannot append to non-array/string variable '{$this->var}'.");
-            }
+            $value = $this->appendAssignmentValue($originalValue, $value, $this->var);
         }
 
         if ($push) {
@@ -111,11 +106,7 @@ class Evaluator implements IDispatcher
             }
 
             $originalValue = $this->element->getScopeVariable($this->var);
-            if (is_array($originalValue)) {
-                $value = array_merge($originalValue, [$value]);
-            } else {
-                throw new \Exception("Cannot push to non-array variable '{$this->var}'.");
-            }
+            $value = $this->pushAssignmentValue($originalValue, $value, $this->var);
         }
 
         $this->element->setScopeVariable($this->var, $value);
@@ -362,13 +353,7 @@ class Evaluator implements IDispatcher
                     }
 
                     $originalValue = $this->element->getScopeVariable($this->var);
-                    if (is_array($originalValue)) {
-                        $value = array_merge($originalValue, [$value]);
-                    } elseif (is_string($originalValue)) {
-                        $value = $originalValue . $value;
-                    } else {
-                        throw new \Exception("Cannot append to non-array/string variable '{$this->var}'.");
-                    }
+                    $value = $this->appendAssignmentValue($originalValue, $value, $this->var);
                 }
 
                 if ($push) {
@@ -377,11 +362,7 @@ class Evaluator implements IDispatcher
                     }
 
                     $originalValue = $this->element->getScopeVariable($this->var);
-                    if (is_array($originalValue)) {
-                        $value = array_merge($originalValue, [$value]);
-                    } else {
-                        throw new \Exception("Cannot push to non-array variable '{$this->var}'.");
-                    }
+                    $value = $this->pushAssignmentValue($originalValue, $value, $this->var);
                 }
 
                 $this->element->setScopeVariable($this->var, $value);
@@ -556,7 +537,7 @@ class Evaluator implements IDispatcher
     protected function invokeTool( $name = null ): mixed
     {
         // Allow tag or attribute-based tool invocation with optional assignment.
-        [$function, $params, $assign] = array_values($this->parseAdditional());
+        [$function, $params, $assign] = Arr::make($this->parseAdditional())->values()->val();
 
         $function = $name ?? $this->element->resolveValue($function);
 
@@ -570,6 +551,28 @@ class Evaluator implements IDispatcher
         }
 
         return "[Unknown tool: $function]";
+    }
+
+    protected function appendAssignmentValue(mixed $originalValue, mixed $value, string $variable): mixed
+    {
+        if (is_array($originalValue)) {
+            return Arr::make($originalValue)->push($value)->val();
+        }
+
+        if (is_string($originalValue)) {
+            return Str::make($originalValue)->append($value)->val();
+        }
+
+        throw new \Exception("Cannot append to non-array/string variable '{$variable}'.");
+    }
+
+    protected function pushAssignmentValue(mixed $originalValue, mixed $value, string $variable): array
+    {
+        if (is_array($originalValue)) {
+            return Arr::make($originalValue)->push($value)->val();
+        }
+
+        throw new \Exception("Cannot push to non-array variable '{$variable}'.");
     }
 
     protected function useGenerator(string $expression): mixed

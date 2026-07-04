@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Tests\Parsing;
 
+use BlueFission\Parsing\Elements\FunctionElement;
 use BlueFission\Parsing\Parser;
 use BlueFission\Parsing\Registry\TagRegistry;
 
@@ -52,5 +53,14 @@ class AdditionalTagsTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertStringContainsString('Hello World!', $output);
+    }
+
+    public function testFunctionDescriptionUsesAssignedName()
+    {
+        $element = new FunctionElement('function', '', '', [
+            'buildSummary() -> summary' => '',
+        ]);
+
+        $this->assertSame('Define a function named `summary`', $element->getDescription());
     }
 }

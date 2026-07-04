@@ -4,6 +4,7 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Parsing\Contracts\ILoopElement;
+use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
@@ -56,7 +57,7 @@ class EachElement extends Element implements ILoopElement
         $this->setScopeVariable('current_path', $previousCurrentPath);
         $this->setScopeVariable('index', $previousIndex);
 
-        $output = implode($glue, $results);
+        $output = Arr::make($results)->join($glue)->val();
         $output = Dev::apply('_out', $output);
         Dev::do('_after', [$output, $this]);
         return $output;
@@ -83,11 +84,11 @@ class EachElement extends Element implements ILoopElement
 
     protected function decodeGlue(string $glue): string
     {
-        $glue = Str::replace($glue, '\r\n', "\r\n");
-        $glue = Str::replace($glue, '\n', "\n");
-        $glue = Str::replace($glue, '\t', "\t");
-        $glue = Str::replace($glue, '\r', "\r");
-
-        return $glue;
+        return Str::make($glue)
+            ->replace('\r\n', "\r\n")
+            ->replace('\n', "\n")
+            ->replace('\t', "\t")
+            ->replace('\r', "\r")
+            ->val();
     }
 }
