@@ -30,6 +30,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 
 - [Event Handling Documentation](behavior.md)
 - [Behavior Lifecycle Patterns](parser-runtime-behaviors.md)
+- [Hooks, Filters, And Events Reference](hooks_events.md)
 
 ### Data Types
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
