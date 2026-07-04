@@ -3,6 +3,7 @@ namespace BlueFission\Cli\Util;
 
 use BlueFission\Arr;
 use BlueFission\Cli\Util\Support\ManagesUtilityState;
+use BlueFission\Num;
 use BlueFission\Obj;
 use BlueFission\Str;
 use BlueFission\Val;
@@ -45,9 +46,9 @@ class ProgressBar extends Obj
         $fillChar = Dev::apply('_in', $fillChar);
         $emptyChar = Dev::apply('_in', $emptyChar);
 
-        $this->setValue('total', max(0, $total));
+        $this->setValue('total', (int)Num::max(0, $total));
         $this->setValue('current', 0);
-        $this->setValue('width', max(1, $width));
+        $this->setValue('width', (int)Num::max(1, $width));
         $this->setValue('fillChar', $fillChar);
         $this->setValue('emptyChar', $emptyChar);
 
@@ -55,13 +56,13 @@ class ProgressBar extends Obj
             $meta = $this->behaviorMeta($args);
             $data = $this->behaviorData($args);
             if ($data->hasKey('total')) {
-                $this->setValue('total', max(0, (int)$data['total']));
+                $this->setValue('total', (int)Num::max(0, (int)$data['total']));
             }
             if ($data->hasKey('current')) {
-                $this->setValue('current', max(0, (int)$data['current']));
+                $this->setValue('current', (int)Num::max(0, (int)$data['current']));
             }
             if ($data->hasKey('width')) {
-                $this->setValue('width', max(1, (int)$data['width']));
+                $this->setValue('width', (int)Num::max(1, (int)$data['width']));
             }
             if ($data->hasKey('showPercent')) {
                 $this->setValue('showPercent', (bool)$data['showPercent']);
@@ -121,11 +122,11 @@ class ProgressBar extends Obj
 
         $progress = 0.0;
         if ($total > 0) {
-            $progress = min(1, $currentValue / $total);
+            $progress = Num::min(1, Num::make($currentValue)->by($total)->val());
         }
 
-        $filled = (int)floor($progress * $width);
-        $empty = $width - $filled;
+        $filled = Num::make($progress)->times($width)->int();
+        $empty = Num::make($width)->minus($filled)->int();
 
         $bar = Str::make('[')
             ->append(Str::make((string)$this->getValue('fillChar'))->repeat($filled))
@@ -136,12 +137,13 @@ class ProgressBar extends Obj
         $parts = Arr::make([$bar]);
 
         if ($this->getValue('showPercent')) {
-            $parts->push(str_pad((string)round($progress * 100), 3, ' ', STR_PAD_LEFT) . '%');
+            $percent = Num::make($progress)->times(100)->round()->val();
+            $parts->push(str_pad((string)$percent, 3, ' ', STR_PAD_LEFT) . '%');
         }
 
         if ($this->getValue('showCount')) {
             $parts->push(Str::make('(')
-                ->append(min($currentValue, $total))
+                ->append(Num::min($currentValue, $total))
                 ->append('/')
                 ->append($total)
                 ->append(')')

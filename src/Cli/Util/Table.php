@@ -2,6 +2,7 @@
 namespace BlueFission\Cli\Util;
 
 use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Obj;
 use BlueFission\Str;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -30,7 +31,7 @@ class Table extends Obj
         $rowCount = Arr::count($rows);
         $colCount = Arr::count($headers);
         for ($i = 0; $i < $rowCount; $i++) {
-            $colCount = max($colCount, Arr::count($rows[$i]));
+            $colCount = (int)Num::max($colCount, Arr::count($rows[$i]));
         }
 
         $headers = self::normalizeRow($headers, $colCount);
@@ -41,11 +42,11 @@ class Table extends Obj
 
         $widths = array_fill(0, $colCount, 0);
         for ($i = 0; $i < $colCount; $i++) {
-            $widths[$i] = max($widths[$i], Str::len(Ansi::strip((string)$headers[$i])));
+            $widths[$i] = (int)Num::max($widths[$i], Str::len(Ansi::strip((string)$headers[$i])));
         }
         foreach ($normalizedRows as $row) {
             for ($i = 0; $i < $colCount; $i++) {
-                $widths[$i] = max($widths[$i], Str::len(Ansi::strip((string)$row[$i])));
+                $widths[$i] = (int)Num::max($widths[$i], Str::len(Ansi::strip((string)$row[$i])));
             }
         }
 
@@ -80,7 +81,10 @@ class Table extends Obj
     {
         $parts = Arr::make();
         foreach ($widths as $width) {
-            $parts->push(Str::make('-')->repeat($width + ($padding * 2))->val());
+            $parts->push(Str::make('-')
+                ->repeat(Num::make($padding)->times(2)->plus($width)->int())
+                ->val()
+            );
         }
         return Str::make('+')->append($parts->join('+'))->append('+')->val();
     }
@@ -92,14 +96,14 @@ class Table extends Obj
             $text = (string)$cell;
             $visible = Str::len(Ansi::strip($text));
             $width = $widths[$index];
-            $space = max(0, $width - $visible);
+            $space = (int)Num::max(0, Num::make($width)->minus($visible)->val());
             $alignment = $align->hasKey($index) ? $align[$index] : 'left';
 
             if ($alignment === 'right') {
                 $text = Str::make(' ')->repeat($space)->append($text)->val();
             } elseif ($alignment === 'center') {
-                $left = (int)floor($space / 2);
-                $right = $space - $left;
+                $left = Num::make($space)->by(2)->int();
+                $right = Num::make($space)->minus($left)->int();
                 $text = Str::make(' ')
                     ->repeat($left)
                     ->append($text)

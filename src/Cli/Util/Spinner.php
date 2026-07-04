@@ -4,6 +4,7 @@ namespace BlueFission\Cli\Util;
 use BlueFission\Obj;
 use BlueFission\Arr;
 use BlueFission\Cli\Util\Support\ManagesUtilityState;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
@@ -44,7 +45,7 @@ class Spinner extends Obj
 
         $this->setValue('label', (string)$label);
         $this->setValue('frames', Arr::is($frames) ? $frames : $this->_data['frames']);
-        $this->setValue('intervalMs', max(10, (int)$intervalMs));
+        $this->setValue('intervalMs', (int)Num::max(10, (int)$intervalMs));
         $this->setValue('index', 0);
         $this->setValue('running', false);
         $this->setValue('lastTick', 0.0);
@@ -71,7 +72,7 @@ class Spinner extends Obj
                 $this->setValue('index', 0);
             }
             if ($data->hasKey('intervalMs')) {
-                $this->setValue('intervalMs', max(10, (int)$data['intervalMs']));
+                $this->setValue('intervalMs', (int)Num::max(10, (int)$data['intervalMs']));
             }
             $this->trigger(Event::CHANGE, $meta);
         });
@@ -164,7 +165,7 @@ class Spinner extends Obj
         $frames = Arr::make($this->getValue('frames'));
         $count = $frames->count();
         $index = (int)$this->getValue('index');
-        $index = $count > 0 ? ($index + 1) % $count : 0;
+        $index = $count > 0 ? Num::make($index)->plus(1)->int() % $count : 0;
         $this->setValue('index', $index);
         $this->trigger(Event::CHANGE);
         return $this;
@@ -172,6 +173,6 @@ class Spinner extends Obj
 
     protected function timestampMs(): float
     {
-        return microtime(true) * 1000;
+        return Num::make(microtime(true))->times(1000)->val();
     }
 }
