@@ -83,12 +83,11 @@ class Machine {
                     $bootString = Str::trim($matches[1]);
                 } else {
                     // Fallback to the original colon-based parsing but guard array access
-                    $boottimeParts = explode(':', $boottime, 4);
-                    if (count($boottimeParts) < 2) {
+                    $boottimeParts = Str::make($boottime)->split(':');
+                    if ($boottimeParts->count() < 2) {
                         return 0.0;
                     }
-                    $tail = array_slice($boottimeParts, 1);
-                    $bootString = Str::trim(implode(':', $tail));
+                    $bootString = Str::trim($boottimeParts->slice(1)->join(':')->val());
                 }
 
                 $uptime = Date::diff($bootString, Date::now()->val(), 'seconds');
@@ -106,12 +105,13 @@ class Machine {
             return 0.0;
         }
 
-        $parts = explode(' ', trim($contents));
-        if (!isset($parts[0]) || !is_numeric($parts[0])) {
+        $parts = Str::make($contents)->trim()->split(' ');
+        $uptime = $parts->get(0);
+        if (!is_numeric($uptime)) {
             return 0.0;
         }
 
-        return (float)$parts[0];
+        return (float)$uptime;
     }
 
     /**
