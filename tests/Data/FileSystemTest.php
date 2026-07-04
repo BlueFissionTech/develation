@@ -45,6 +45,17 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertEquals('Success', $status);
 	}
 
+	public function testCanViewFolderWithConfiguredExtensionFilter()
+	{
+		touch($this->testdirectory.DIRECTORY_SEPARATOR.'keep.txt');
+		touch($this->testdirectory.DIRECTORY_SEPARATOR.'skip.log');
+
+		$this->object->filter(['.txt']);
+		$dir = $this->object->listDir();
+
+		$this->assertEquals(['keep.txt'], $dir);
+	}
+
 	public function testCanCreateDirectory()
 	{
 		$this->object->mkdir('filesystem');

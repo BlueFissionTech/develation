@@ -6,8 +6,8 @@ use BlueFission;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Collections\ICollection;
-use BlueFission\Collections\Collection;
 use BlueFission\Collections\Hierarchical;
+use BlueFission\Data\Support\ResolvesFilesystemPath;
 use BlueFission\DevElation as Dev;
 use BlueFission\Val;
 use ReflectionClass;
@@ -25,6 +25,7 @@ class File extends Hierarchical implements IDispatcher
     use Dispatches {
         Dispatches::__construct as private __dispatchesConstruct;
     }
+    use ResolvesFilesystemPath;
 
     /**
      * The contents of the file.
@@ -73,7 +74,7 @@ class File extends Hierarchical implements IDispatcher
      */
     public function exists(?string $path = null): bool
     {
-        $target = $this->targetPath($path);
+        $target = $this->targetPath($path, static::PATH_SEPARATOR);
         $exists = FileSystem::fileExists($target);
 
         return (bool)Dev::apply('_out', $exists);
@@ -87,33 +88,10 @@ class File extends Hierarchical implements IDispatcher
      */
     public function isReachable(?string $path = null): bool
     {
-        $target = $this->targetPath($path);
+        $target = $this->targetPath($path, static::PATH_SEPARATOR);
         $isReachable = FileSystem::fileExists($target) && FileSystem::isReadable($target);
 
         return (bool)Dev::apply('_out', $isReachable);
-    }
-
-    /**
-     * Resolve the explicit path or the hierarchical label path.
-     *
-     * @param string|null $path
-     * @return string|null
-     */
-    private function targetPath(?string $path = null): ?string
-    {
-        if (Val::isNotNull($path)) {
-            return Dev::apply('_in', $path);
-        }
-
-        $segments = (new Collection($this->path()))
-            ->filter(fn ($segment) => Val::isNotNull($segment) && $segment !== '')
-            ->contents();
-
-        if (empty($segments)) {
-            return null;
-        }
-
-        return Dev::apply('_in', implode(static::PATH_SEPARATOR, $segments));
     }
 
     /**
