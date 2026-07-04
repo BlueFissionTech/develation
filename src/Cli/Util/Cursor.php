@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Cli\Util;
 
+use BlueFission\Cli\Util\Support\ManagesUtilityState;
 use BlueFission\Obj;
 use BlueFission\DataTypes;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -10,6 +11,8 @@ use BlueFission\DevElation as Dev;
 
 class Cursor extends Obj
 {
+    use ManagesUtilityState;
+
     protected $_data = [
         'x' => 1,
         'y' => 1,
@@ -35,18 +38,16 @@ class Cursor extends Obj
         $this->setValue('visible', $visible);
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
-            $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && is_array($meta->data ?? null)) {
-                $data = $meta->data;
-                if (array_key_exists('x', $data)) {
-                    $this->setValue('x', max(1, (int)$data['x']));
-                }
-                if (array_key_exists('y', $data)) {
-                    $this->setValue('y', max(1, (int)$data['y']));
-                }
-                if (array_key_exists('visible', $data)) {
-                    $this->setValue('visible', (bool)$data['visible']);
-                }
+            $meta = $this->behaviorMeta($args);
+            $data = $this->behaviorData($args);
+            if ($data->hasKey('x')) {
+                $this->setValue('x', max(1, (int)$data['x']));
+            }
+            if ($data->hasKey('y')) {
+                $this->setValue('y', max(1, (int)$data['y']));
+            }
+            if ($data->hasKey('visible')) {
+                $this->setValue('visible', (bool)$data['visible']);
             }
             $this->trigger(Event::CHANGE, $meta);
         });
@@ -113,24 +114,5 @@ class Cursor extends Obj
     public function visible(): bool
     {
         return (bool)$this->getValue('visible');
-    }
-
-    protected function setValue(string $field, $value): void
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            $current->val($value);
-            return;
-        }
-        $this->_data[$field] = $value;
-    }
-
-    protected function getValue(string $field)
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            return $current->val();
-        }
-        return $current;
     }
 }

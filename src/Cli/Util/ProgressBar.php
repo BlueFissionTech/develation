@@ -1,7 +1,11 @@
 <?php
 namespace BlueFission\Cli\Util;
 
+use BlueFission\Arr;
+use BlueFission\Cli\Util\Support\ManagesUtilityState;
+use BlueFission\Num;
 use BlueFission\Obj;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -11,6 +15,8 @@ use BlueFission\DevElation as Dev;
 
 class ProgressBar extends Obj
 {
+    use ManagesUtilityState;
+
     protected $_data = [
         'total' => 0,
         'current' => 0,
@@ -40,31 +46,29 @@ class ProgressBar extends Obj
         $fillChar = Dev::apply('_in', $fillChar);
         $emptyChar = Dev::apply('_in', $emptyChar);
 
-        $this->setValue('total', max(0, $total));
+        $this->setValue('total', (int)Num::max(0, $total));
         $this->setValue('current', 0);
-        $this->setValue('width', max(1, $width));
+        $this->setValue('width', (int)Num::max(1, $width));
         $this->setValue('fillChar', $fillChar);
         $this->setValue('emptyChar', $emptyChar);
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
-            $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && is_array($meta->data ?? null)) {
-                $data = $meta->data;
-                if (array_key_exists('total', $data)) {
-                    $this->setValue('total', max(0, (int)$data['total']));
-                }
-                if (array_key_exists('current', $data)) {
-                    $this->setValue('current', max(0, (int)$data['current']));
-                }
-                if (array_key_exists('width', $data)) {
-                    $this->setValue('width', max(1, (int)$data['width']));
-                }
-                if (array_key_exists('showPercent', $data)) {
-                    $this->setValue('showPercent', (bool)$data['showPercent']);
-                }
-                if (array_key_exists('showCount', $data)) {
-                    $this->setValue('showCount', (bool)$data['showCount']);
-                }
+            $meta = $this->behaviorMeta($args);
+            $data = $this->behaviorData($args);
+            if ($data->hasKey('total')) {
+                $this->setValue('total', (int)Num::max(0, (int)$data['total']));
+            }
+            if ($data->hasKey('current')) {
+                $this->setValue('current', (int)Num::max(0, (int)$data['current']));
+            }
+            if ($data->hasKey('width')) {
+                $this->setValue('width', (int)Num::max(1, (int)$data['width']));
+            }
+            if ($data->hasKey('showPercent')) {
+                $this->setValue('showPercent', (bool)$data['showPercent']);
+            }
+            if ($data->hasKey('showCount')) {
+                $this->setValue('showCount', (bool)$data['showCount']);
             }
             $this->trigger(Event::CHANGE, $meta);
         });
@@ -118,47 +122,39 @@ class ProgressBar extends Obj
 
         $progress = 0.0;
         if ($total > 0) {
-            $progress = min(1, $currentValue / $total);
+            $progress = Num::min(1, Num::make($currentValue)->by($total)->val());
         }
 
-        $filled = (int)floor($progress * $width);
-        $empty = $width - $filled;
+        $filled = Num::make($progress)->times($width)->int();
+        $empty = Num::make($width)->minus($filled)->int();
 
-        $bar = '[' . str_repeat((string)$this->getValue('fillChar'), $filled) . str_repeat((string)$this->getValue('emptyChar'), $empty) . ']';
+        $bar = Str::make('[')
+            ->append(Str::make((string)$this->getValue('fillChar'))->repeat($filled))
+            ->append(Str::make((string)$this->getValue('emptyChar'))->repeat($empty))
+            ->append(']')
+            ->val();
 
-        $parts = [$bar];
+        $parts = Arr::make([$bar]);
 
         if ($this->getValue('showPercent')) {
-            $parts[] = str_pad((string)round($progress * 100), 3, ' ', STR_PAD_LEFT) . '%';
+            $percent = Num::make($progress)->times(100)->round()->val();
+            $parts->push(str_pad((string)$percent, 3, ' ', STR_PAD_LEFT) . '%');
         }
 
         if ($this->getValue('showCount')) {
-            $parts[] = '(' . min($currentValue, $total) . '/' . $total . ')';
+            $parts->push(Str::make('(')
+                ->append(Num::min($currentValue, $total))
+                ->append('/')
+                ->append($total)
+                ->append(')')
+                ->val()
+            );
         }
 
-        $output = implode(' ', $parts);
+        $output = $parts->join(' ')->val();
         $output = Dev::apply('_out', $output);
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
         Dev::do('_after', [$output, $this]);
         return $output;
-    }
-
-    protected function setValue(string $field, $value): void
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            $current->val($value);
-            return;
-        }
-        $this->_data[$field] = $value;
-    }
-
-    protected function getValue(string $field)
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            return $current->val();
-        }
-        return $current;
     }
 }

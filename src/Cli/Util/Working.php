@@ -3,6 +3,7 @@ namespace BlueFission\Cli\Util;
 
 use BlueFission\Obj;
 use BlueFission\Arr;
+use BlueFission\Cli\Util\Support\ManagesUtilityState;
 use BlueFission\Val;
 use BlueFission\DataTypes;
 use BlueFission\Async\Promise;
@@ -13,6 +14,8 @@ use BlueFission\DevElation as Dev;
 
 class Working extends Obj
 {
+    use ManagesUtilityState;
+
     protected Spinner $_spinner;
 
     protected $_data = [
@@ -61,25 +64,23 @@ class Working extends Obj
         });
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
-            $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && is_array($meta->data ?? null)) {
-                $data = $meta->data;
-                if (array_key_exists('label', $data)) {
-                    $this->setValue('label', (string)$data['label']);
-                    $this->_spinner->label((string)$data['label']);
-                }
-                if (array_key_exists('frames', $data) && Arr::is($data['frames'])) {
-                    $this->setValue('frames', $data['frames']);
-                    $this->_spinner->frames($data['frames']);
-                }
-                if (array_key_exists('intervalMs', $data)) {
-                    $interval = max(10, (int)$data['intervalMs']);
-                    $this->setValue('intervalMs', $interval);
-                    $this->_spinner->interval($interval);
-                }
-                if (array_key_exists('outputHandler', $data)) {
-                    $this->setValue('outputHandler', $data['outputHandler']);
-                }
+            $meta = $this->behaviorMeta($args);
+            $data = $this->behaviorData($args);
+            if ($data->hasKey('label')) {
+                $this->setValue('label', (string)$data['label']);
+                $this->_spinner->label((string)$data['label']);
+            }
+            if ($data->hasKey('frames') && Arr::is($data['frames'])) {
+                $this->setValue('frames', $data['frames']);
+                $this->_spinner->frames($data['frames']);
+            }
+            if ($data->hasKey('intervalMs')) {
+                $interval = max(10, (int)$data['intervalMs']);
+                $this->setValue('intervalMs', $interval);
+                $this->_spinner->interval($interval);
+            }
+            if ($data->hasKey('outputHandler')) {
+                $this->setValue('outputHandler', $data['outputHandler']);
             }
             $this->trigger(Event::CHANGE, $meta);
         });
@@ -203,24 +204,5 @@ class Working extends Obj
         }
 
         return $work();
-    }
-
-    protected function setValue(string $field, $value): void
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            $current->val($value);
-            return;
-        }
-        $this->_data[$field] = $value;
-    }
-
-    protected function getValue(string $field)
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            return $current->val();
-        }
-        return $current;
     }
 }

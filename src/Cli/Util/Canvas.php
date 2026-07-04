@@ -2,6 +2,8 @@
 
 namespace BlueFission\Cli\Util;
 
+use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Obj;
 use BlueFission\Str;
 use BlueFission\Val;
@@ -35,8 +37,8 @@ class Canvas extends Obj
         $fill = Dev::apply('_in', $fill);
 
         $this->assign([
-            'width' => max(0, $width),
-            'height' => max(0, $height),
+            'width' => (int)Num::max(0, $width),
+            'height' => (int)Num::max(0, $height),
             'fill' => $this->normalizeChar($fill),
         ]);
 
@@ -96,10 +98,11 @@ class Canvas extends Obj
 
     public function toLines(): array
     {
-        $lines = [];
-        foreach ($this->buffer as $row) {
-            $lines[] = implode('', $row);
-        }
+        $lines = Arr::make($this->buffer)
+            ->map(function ($row) {
+                return Arr::make($row)->join('')->val();
+            })
+            ->val();
 
         return Dev::apply('_out', $lines);
     }
@@ -107,7 +110,7 @@ class Canvas extends Obj
     public function render(): string
     {
         Dev::do('_before', [$this]);
-        $output = implode(PHP_EOL, $this->toLines());
+        $output = Arr::make($this->toLines())->join(PHP_EOL)->val();
         $output = Dev::apply('_out', $output);
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
         Dev::do('_after', [$output, $this]);
@@ -124,7 +127,7 @@ class Canvas extends Obj
 
         $prior = $previous->toLines();
         $diffs = [];
-        $max = max(count($current), count($prior));
+        $max = (int)Num::max(Arr::count($current), Arr::count($prior));
 
         for ($index = 0; $index < $max; $index++) {
             $line = $current[$index] ?? '';
@@ -141,7 +144,7 @@ class Canvas extends Obj
     {
         Dev::do('_before', [$this, $previous]);
         $diffs = $this->diffLines($previous);
-        if (empty($diffs)) {
+        if (Arr::count($diffs) === 0) {
             return '';
         }
 
@@ -172,8 +175,8 @@ class Canvas extends Obj
 
     protected function resetBuffer(): void
     {
-        $width = max(0, (int)$this->field('width'));
-        $height = max(0, (int)$this->field('height'));
+        $width = (int)Num::max(0, (int)$this->field('width'));
+        $height = (int)Num::max(0, (int)$this->field('height'));
         $fill = $this->normalizeChar((string)$this->field('fill'));
 
         $this->buffer = [];

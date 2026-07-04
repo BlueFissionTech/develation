@@ -3,6 +3,9 @@ namespace BlueFission\Cli\Util;
 
 use BlueFission\Obj;
 use BlueFission\Arr;
+use BlueFission\Cli\Util\Support\ManagesUtilityState;
+use BlueFission\Num;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -12,6 +15,8 @@ use BlueFission\DevElation as Dev;
 
 class Spinner extends Obj
 {
+    use ManagesUtilityState;
+
     protected $_data = [
         'label' => '',
         'frames' => ['|', '/', '-', '\\'],
@@ -40,7 +45,7 @@ class Spinner extends Obj
 
         $this->setValue('label', (string)$label);
         $this->setValue('frames', Arr::is($frames) ? $frames : $this->_data['frames']);
-        $this->setValue('intervalMs', max(10, (int)$intervalMs));
+        $this->setValue('intervalMs', (int)Num::max(10, (int)$intervalMs));
         $this->setValue('index', 0);
         $this->setValue('running', false);
         $this->setValue('lastTick', 0.0);
@@ -57,19 +62,17 @@ class Spinner extends Obj
         });
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
-            $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && is_array($meta->data ?? null)) {
-                $data = $meta->data;
-                if (array_key_exists('label', $data)) {
-                    $this->setValue('label', (string)$data['label']);
-                }
-                if (array_key_exists('frames', $data) && Arr::is($data['frames'])) {
-                    $this->setValue('frames', $data['frames']);
-                    $this->setValue('index', 0);
-                }
-                if (array_key_exists('intervalMs', $data)) {
-                    $this->setValue('intervalMs', max(10, (int)$data['intervalMs']));
-                }
+            $meta = $this->behaviorMeta($args);
+            $data = $this->behaviorData($args);
+            if ($data->hasKey('label')) {
+                $this->setValue('label', (string)$data['label']);
+            }
+            if ($data->hasKey('frames') && Arr::is($data['frames'])) {
+                $this->setValue('frames', $data['frames']);
+                $this->setValue('index', 0);
+            }
+            if ($data->hasKey('intervalMs')) {
+                $this->setValue('intervalMs', (int)Num::max(10, (int)$data['intervalMs']));
             }
             $this->trigger(Event::CHANGE, $meta);
         });
@@ -138,7 +141,7 @@ class Spinner extends Obj
         $label = (string)$this->getValue('label');
         $frame = $this->frame();
 
-        $output = trim($label . ' ' . $frame);
+        $output = Str::make($label)->append(' ')->append($frame)->trim()->val();
         $output = Dev::apply('_out', $output);
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
         Dev::do('_after', [$output, $this]);
@@ -147,48 +150,29 @@ class Spinner extends Obj
 
     public function frame(): string
     {
-        $frames = $this->getValue('frames');
-        if (!Arr::is($frames) || count($frames) === 0) {
+        $frames = Arr::make($this->getValue('frames'));
+        if ($frames->isEmpty()) {
             return '';
         }
 
         $index = (int)$this->getValue('index');
-        $frame = $frames[$index % count($frames)] ?? '';
+        $frame = $frames[$index % $frames->count()] ?? '';
         return (string)$frame;
     }
 
     public function advance(): self
     {
-        $frames = $this->getValue('frames');
-        $count = Arr::is($frames) ? count($frames) : 0;
+        $frames = Arr::make($this->getValue('frames'));
+        $count = $frames->count();
         $index = (int)$this->getValue('index');
-        $index = $count > 0 ? ($index + 1) % $count : 0;
+        $index = $count > 0 ? Num::make($index)->plus(1)->int() % $count : 0;
         $this->setValue('index', $index);
         $this->trigger(Event::CHANGE);
         return $this;
     }
 
-    protected function setValue(string $field, $value): void
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            $current->val($value);
-            return;
-        }
-        $this->_data[$field] = $value;
-    }
-
-    protected function getValue(string $field)
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            return $current->val();
-        }
-        return $current;
-    }
-
     protected function timestampMs(): float
     {
-        return microtime(true) * 1000;
+        return Num::make(microtime(true))->times(1000)->val();
     }
 }
