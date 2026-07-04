@@ -296,7 +296,7 @@ class Evaluator implements IDispatcher
                 $path = $m[1];
                 $segments = explode('.', $path);
                 foreach ($segments as $seg) {
-                    if (is_array($value) && isset($value[$seg])) {
+                    if (Arr::is($value) && Val::is($value[$seg])) {
                         $value = $value[$seg];
                     } elseif (is_object($value) && isset($value->$seg)) {
                         $value = $value->$seg;
@@ -386,7 +386,7 @@ class Evaluator implements IDispatcher
         $filesystem->open($file)->read();
         $contents = $filesystem->contents();
 
-        if (!is_string($contents)) {
+        if (!Str::is($contents)) {
             return $contents;
         }
 
@@ -404,13 +404,13 @@ class Evaluator implements IDispatcher
             $paths = $this->element->getIncludePaths();
 
             foreach (['includes', 'modules', 'templates'] as $key) {
-                if (isset($paths[$key]) && is_string($paths[$key]) && $paths[$key] !== '') {
+                if (isset($paths[$key]) && Str::is($paths[$key]) && $paths[$key] !== '') {
                     $candidates[] = rtrim($paths[$key], '\\/') . DIRECTORY_SEPARATOR . $source;
                 }
             }
 
             foreach ($paths as $path) {
-                if (is_string($path) && $path !== '') {
+                if (Str::is($path) && $path !== '') {
                     $candidates[] = rtrim($path, '\\/') . DIRECTORY_SEPARATOR . $source;
                 }
             }
@@ -517,13 +517,13 @@ class Evaluator implements IDispatcher
 
         foreach ($matches as $match) {
             $param = $match['param'] ?? null;
-            if (!is_string($param) || Str::trim($param) === '') {
+            if (!Str::is($param) || Str::trim($param) === '') {
                 continue;
             }
 
             $arg = $this->element->resolveValue($param);
 
-            if (is_string($arg)) {
+            if (Str::is($arg)) {
                 $arg = Str::trim($arg);
                 $arg = $arg === '' ? null : $arg;
             }
@@ -555,11 +555,11 @@ class Evaluator implements IDispatcher
 
     protected function appendAssignmentValue(mixed $originalValue, mixed $value, string $variable): mixed
     {
-        if (is_array($originalValue)) {
+        if (Arr::is($originalValue)) {
             return Arr::make($originalValue)->push($value)->val();
         }
 
-        if (is_string($originalValue)) {
+        if (Str::is($originalValue)) {
             return Str::make($originalValue)->append($value)->val();
         }
 
@@ -568,7 +568,7 @@ class Evaluator implements IDispatcher
 
     protected function pushAssignmentValue(mixed $originalValue, mixed $value, string $variable): array
     {
-        if (is_array($originalValue)) {
+        if (Arr::is($originalValue)) {
             return Arr::make($originalValue)->push($value)->val();
         }
 
@@ -597,7 +597,7 @@ class Evaluator implements IDispatcher
     protected function call($classOrObject, $method, $args = []): mixed
     {
         // Handle both class static calls and instance method calls.
-        if (is_string($classOrObject)) {
+        if (Str::is($classOrObject)) {
             if (!class_exists($classOrObject)) {
                 throw new \Exception("Class '{$classOrObject}' does not exist.");
             }
