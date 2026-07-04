@@ -242,12 +242,11 @@ class HTML
         $list_r = (Arr::is($list_r) && ($count) <= 0) ? [] : $list_r;
         $href = HTML::href($href);
 
-        $start = (Vall::is($_GET[$begin]) && Num::is($_GET[$begin])) ? $_GET[$begin] : 0;
-        $lim = (Vall::is($_GET[$end]) && Num::is($_GET[$end])) ? $_GET[$end] : $limit;
-        $query_r = Arr::make($_POST)->merge($_GET)->val();
-        unset($query_r[$begin]);
-        unset($query_r[$end]);
-        $get_query = HTTP::query($query_r);
+        $start = (Val::is($_GET[$begin] ?? null) && Num::is($_GET[$begin])) ? (int)$_GET[$begin] : 0;
+        $lim = (Val::is($_GET[$end] ?? null) && Num::is($_GET[$end])) ? (int)$_GET[$end] : (int)$limit;
+        $lim = ($lim > 0) ? $lim : ((int)$limit > 0 ? (int)$limit : 20);
+        $query = Arr::make($_POST)->merge($_GET)->delete($begin)->delete($end);
+        $get_query = HTTP::query($query->val());
 
         if ($start > 0) {
             $chapters->push('&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ');
@@ -289,28 +288,32 @@ class HTML
      */
     public static function results($list_r, $begin = 'start', $end = 'lim', $href = '', $chapters = true, $link_style = 1, $query_r = '', $highlight = '#c0c0ff', $img_dir = 'images/', $file_dir = 'assets/', $headers = '', $trunc = '', $limit = 20)
     {
-        $start = (Val::is($_GET[$begin]) && Num::is($_GET[$begin])) ? $_GET[$begin] : 0;
-        $end = (Val::is($_GET[$end]) && Num::is($_GET[$end])) ? $_GET[$end] : $limit;
-        $list_r = Arr::isEmpty($list_r) ? [] : $list_r;
+        $limitKey = $end;
+        $start = (Val::is($_GET[$begin] ?? null) && Num::is($_GET[$begin])) ? (int)$_GET[$begin] : 0;
+        $lim = (Val::is($_GET[$limitKey] ?? null) && Num::is($_GET[$limitKey])) ? (int)$_GET[$limitKey] : (int)$limit;
+        $lim = ($lim > 0) ? $lim : ((int)$limit > 0 ? (int)$limit : 20);
+        $list = Arr::isEmpty($list_r) ? Arr::make([]) : Arr::make($list_r);
         $href = HTML::href($href);
 
-        if ($chapters) {
-            $chapter_list = dev_list_chapter($list_r, $begin, $end, $href);
-        }
+        $chapterList = $chapters ? HTML::paginate($list_r, $begin, $limitKey, $href, $limit) : '';
+        $output = Str::make($chapterList);
 
-        $output .= $chapter_list;
+        $table = new Table([
+            'href' => $href,
+            'query' => $query_r,
+            'highlight' => $highlight,
+            'headers' => $headers,
+            'link_style' => $link_style,
+            'show_image' => true,
+            'img_dir' => $img_dir,
+            'document_dir' => $file_dir,
+            'truncate' => $trunc,
+        ]);
+        $table->content($list->slice($start, $lim)->val());
 
-        $list_r = Arr::make($list_r)->slice($start, $end)->val();
+        $output->append($table->render())->append($chapterList);
 
-        //for ($i = $start; $i < (((count($list_r) - $start) > $end) ? ($start + $end) : count($list_r)); $i++)
-        // $output .= dev_content_box($list_r, '', $href, $query_r, $highlight, $headers, $link_style, true, $img_dir, $file_dir, '', $trunc);
-        $table = new Table();
-        $table->content($list_r);
-        $output .= $table->render();
-
-        $output .= $chapter_list;
-
-        return $output;
+        return $output->val();
     }
 
     /**

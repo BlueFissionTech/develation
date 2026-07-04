@@ -400,7 +400,7 @@ class Email extends Obj implements IConfigurable, IEmail
 	 */
 	static function validateAddress($address = null) 
 	{
-		$address = Arr::toArray($address); //dev_value_to_array($address);
+		$address = Arr::toArray($address);
 		$p = '/^[a-z0-9!#$%&*+-=?^_`{|}~\.]+([\.\+][a-z0-9!#$%&*+-=?^_`{|}~\.]+)*';
 		$p .= '@[a-z0-9][-a-z0-9]*(\.[a-z0-9][-a-z0-9]*)*';
 		$p .= '(\.[a-z]{2,}';

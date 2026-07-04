@@ -137,6 +137,37 @@ class Table extends Obj
             $i = 0;
 
             foreach ($row as $a => $b) {
+                if ($i == 0 && ((int)$link_style === 2 || (int)$link_style === 3)) {
+                    if ((int)$link_style === 2) {
+                        $output .= '<td>';
+                        $output .= Form::open($href) . Form::field('hidden', $a, '', $b) . Form::field('submit', 'submit', '', 'Go');
+                        if (Arr::isAssoc($query_r)) {
+                            foreach ($query_r as $c => $d) {
+                                $output .= Form::field('hidden', $c, '', $d);
+                            }
+                        }
+                        $output .= Form::close();
+                        $output .= "</td>";
+                    } else {
+                        $output .= '<td>';
+
+                        $output .= Form::field('checkbox', $a . '[]', '', $b);
+                        if (Arr::isAssoc($query_r)) {
+                            foreach ($query_r as $c => $d) {
+                                $output .= Form::field('hidden', $c, '', $d);
+                            }
+                        }
+
+                        $output .= "</td>";
+                    }
+
+                    $i++;
+                    if ($i > $fields) {
+                        break;
+                    }
+                    continue;
+                }
+
                 if ($i > 0 || ($link_style !== 1 && $link_style !== 0)) {
                     if (!($icon != '' && $fields == 2 && $i == 2)) {
                         $output .= '<td>';
@@ -165,31 +196,8 @@ class Table extends Obj
                         $output .= "</td>";
                     }
                 } elseif ($i == 0) {
-                    if ($link_style == 2) {
-                        $output .= '<td>';
-                        $output .= Form::open($href) . Form::field('hidden', $a, '', $b) . Form::field('submit', 'submit', '', 'Go');
-                        if (Arr::isAssoc($query_r)) {
-                            foreach ($query_r as $c => $d) {
-                                $output .= Form::feld('hidden', $c, '', $d);
-                            }
-                        }
-                        $output .= Form::close();
-                        $output .= "</td>";
-                    } elseif ($link_style == 3) {
-                        $output .= '<td>';
-
-                        $output .= Form::field('checkbox', $a . '[]', '', $b);
-                        if (Arr::isAssoc($query_r)) {
-                            foreach ($query_r as $c => $d) {
-                                $output .= Form::field('hidden', $c, '', $d);
-                            }
-                        }
-
-                        $output .= "</td>";
-                    } else {
-                        $varname = $a;
-                        $value = $b;
-                    }
+                    $varname = $a;
+                    $value = $b;
                 }
                 $i++;
                 if ($i > $fields) {

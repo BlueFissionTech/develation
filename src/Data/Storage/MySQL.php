@@ -802,7 +802,6 @@ class MySQL extends Storage implements IData
                 if ($this->field($field_name) !== 0 && $this->field($field_name) == '') {
                     if (!$field['Null'] || $field['Null'] == 'NO') {
                         if (Str::has($type, 'date')) {
-                            //$this->field($field_name, dev_join_date($field_name));
                             $this->field($field_name, date('Y-m-d'));
                             if (!is_string($this->field($field_name)) || !Date::is($this->field($field_name))) {
                                 $this->status("Field '$field_name' contains an inaccurate date format!");

@@ -101,4 +101,24 @@ class TableTest extends \PHPUnit\Framework\TestCase
             $table->render()
         );
     }
+
+    public function testRenderFormLinksIncludeQueryFields()
+    {
+        $table = new Table([
+            'columns' => '2',
+            'headers' => false,
+            'href' => '/items',
+            'link_style' => 2,
+            'query' => ['token' => 'abc 123'],
+        ]);
+
+        $table->content([
+            ['id' => 42, 'label' => 'Details'],
+        ]);
+
+        $result = $table->render();
+
+        $this->assertStringContainsString('name="token"', $result);
+        $this->assertStringContainsString('value="abc 123"', $result);
+    }
 }
