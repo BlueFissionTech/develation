@@ -2,6 +2,8 @@
 
 namespace BlueFission\System;
 
+use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\System\Machine;
 use BlueFission\Behavioral\Dispatches;
@@ -57,31 +59,35 @@ class System implements IDispatcher {
 	 */
 	public function isValidCommand($command) {
 		// check is the command is a system registered command
-		$valid = true;
+		$command = Str::make((string)$command)->trim();
 
-		if (empty($command)) {
+		if ($command->isEmpty()) {
 			return false;
 		}
 
-		// Get first word of command
-		$command = explode(' ', $command)[0];
+		$parts = $command->split(' ')
+			->filter(fn ($part) => Str::isNotEmpty($part))
+			->values();
+		$command = $parts[0] ?? '';
+
+		if (Val::isEmpty($command)) {
+			return false;
+		}
+
+		if (CommandLocator::find($command, ['use_shell' => false]) !== null) {
+			return true;
+		}
 
 		$command = escapeshellcmd($command);
 		if ( (new Machine())->getOS() == 'Windows' ) {
 			$valid = shell_exec("help $command");
 			// Parse the output to see if we got a help output or an error ("This command is not supported by the help utility")
-			$valid = strpos($valid, 'is not supported') === false;
-        } else {
-            // Prefer a simple existence check that works across distros
-            $output = shell_exec("command -v $command 2>/dev/null");
-            if ($output === null || $output === false) {
-                return false;
-            }
+			$valid = Str::is($valid) && !Str::has($valid, 'is not supported');
 
-            return trim($output) !== '';
-        }
+			return (bool)$valid;
+		}
 
-        return (bool)$valid;
+		return false;
 	}
 
 	/**
@@ -101,9 +107,11 @@ class System implements IDispatcher {
 		}
 
 		if (!Val::isEmpty($options)) {
-			foreach ($options as $opt) {
+			Arr::make(Arr::toArray($options))
+				->filter(fn ($opt) => Val::isNotNull($opt))
+				->each(function ($opt) use (&$command) {
 				$command .= ' ' . escapeshellarg($opt);
-			}
+			});
 		}
 
 		$this->_command = $command;
@@ -150,9 +158,11 @@ class System implements IDispatcher {
         }
 
         if (!Val::isEmpty($options)) {
-            foreach ($options as $opt) {
+            Arr::make(Arr::toArray($options))
+                ->filter(fn ($opt) => Val::isNotNull($opt))
+                ->each(function ($opt) use (&$command) {
                 $command .= ' ' . escapeshellarg($opt);
-            }
+            });
         }
 
         $this->_command = $command;
@@ -163,7 +173,7 @@ class System implements IDispatcher {
             2 => ["pipe", "w"]
         ];
 
-        if (isset($this->_output_file)) {
+        if (Val::is($this->_output_file)) {
             $descriptorspec[1] = ["file", $this->_output_file, "a"];
         }
 
@@ -200,14 +210,14 @@ class System implements IDispatcher {
     }
 
     public function stop($processId) {
-    	if (isset($this->_processes[$processId])) {
-    		$this->_processes[$processId]->stop();
-    		$this->trigger(Event::STOPPED);
-    	}
+		if (Arr::hasKey($this->_processes, $processId)) {
+			$this->_processes[$processId]->stop();
+			$this->trigger(Event::STOPPED);
+		}
     }
 
     public function readAvailableOutput($processId) {
-	    if (isset($this->_processes[$processId])) {
+	    if (Arr::hasKey($this->_processes, $processId)) {
 	        $read_streams = [$this->_processes[$processId]->pipes(1), $this->_processes[$processId]->pipes(2)];
 	        $write_streams = null;
 	        $except_streams = null;
@@ -226,14 +236,14 @@ class System implements IDispatcher {
 
 
 	public function writeInput($processId, $input) {
-	    if (isset($this->_processes[$processId])) {
+	    if (Arr::hasKey($this->_processes, $processId)) {
 	        $process = $this->_processes[$processId];//['process'];
 	        fwrite($process->pipes(0), $input);
 	    }
 	}
 
 	public function readOutput($processId) {
-	    if (isset($this->_processes[$processId])) {
+	    if (Arr::hasKey($this->_processes, $processId)) {
 	        $process = $this->_processes[$processId];//['process'];
 	        return stream_get_contents($process->pipes(1));
 	    }
@@ -318,7 +328,7 @@ class System implements IDispatcher {
 	* @return mixed string|boolean response of the command or false if command was run in background
 	*/
 	public function response() {
-		if ($this->_response) {
+		if (Val::isNotEmpty($this->_response)) {
 			return $this->_response;
 		}
 		return false;
