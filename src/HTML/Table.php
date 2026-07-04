@@ -98,13 +98,14 @@ class Table extends Obj
         $new_row = 1;
 
         foreach ($content_r as $row) {
-            $fields = ($fields != '' && $fields >= 0 && $fields < count($row)) ? $fields : count($row);
+            $rowSize = Arr::count($row);
+            $fields = ($fields != '' && $fields >= 0 && $fields < $rowSize) ? $fields : $rowSize;
 
             if ($count == 0) {
                 if ($header !== false) {
-                    $header = (is_array($header) && count($header) == count($row)) ? $header : $row;
+                    $header = (is_array($header) && Arr::count($header) == $rowSize) ? $header : $row;
                     if (Arr::isAssoc($header)) {
-                        $header = array_keys($header);
+                        $header = Arr::make($header)->keys()->val();
                     }
                     $output .= '<tr>';
                     $i = 0;

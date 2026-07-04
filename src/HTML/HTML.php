@@ -3,6 +3,8 @@
 namespace BlueFission\HTML;
 
 use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Net\HTTP;
 use BlueFission\Utils\Util;
@@ -235,32 +237,32 @@ class HTML
     public static function paginate($list_r, $begin = 'start', $end = 'lim', $href = '', $limit = 20)
     {
         $output = '';
-        $chapter_r = array();
-        $count = is_numeric($list_r) ? $list_r : count($list_r);
-        $list_r = (is_array($list_r) && ($count) <= 0) ? array() : $list_r;
+        $chapters = Arr::make([]);
+        $count = is_numeric($list_r) ? $list_r : Arr::count($list_r);
+        $list_r = (is_array($list_r) && ($count) <= 0) ? [] : $list_r;
         $href = HTML::href($href);
 
         $start = (isset($_GET[$begin]) && is_numeric($_GET[$begin])) ? $_GET[$begin] : 0;
         $lim = (isset($_GET[$end]) && is_numeric($_GET[$end])) ? $_GET[$end] : $limit;
-        $query_r = array_merge($_POST, $_GET);
+        $query_r = Arr::make($_POST)->merge($_GET)->val();
         unset($query_r[$begin]);
         unset($query_r[$end]);
         $get_query = HTTP::query($query_r);
 
         if ($start > 0) {
-            $chapter_r[] = '&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ';
+            $chapters->push('&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ');
         }
         if (($count / $lim) > 1) {
             for ($i = 0; $i < (($count / $lim)); $i++) {
-                $chapter_r[] = '<a href="' . $href . '?' . $begin . '=' . ($i * $lim) . '&amp;' . $get_query . '">' . ($i + 1) . '</a>';
+                $chapters->push('<a href="' . $href . '?' . $begin . '=' . ($i * $lim) . '&amp;' . $get_query . '">' . ($i + 1) . '</a>');
             }
         }
         if ($start < round($count / $lim)) {
-            $chapter_r[] = '<a href="' . $href . '?' . $begin . '=' . (($start + $lim) >= ($count) ? $start : ($start + $lim)) . '&amp;' . $get_query . '">Next</a> &gt;';
+            $chapters->push('<a href="' . $href . '?' . $begin . '=' . (($start + $lim) >= ($count) ? $start : ($start + $lim)) . '&amp;' . $get_query . '">Next</a> &gt;');
         }
 
         $output .= (($count > 0) ? 'Showing ' . ($start + 1) . '-' . (($count < ($start + $lim)) ? $count : ($start + $lim)) . ' of ' . $count . ' results.' : 'No matching results') . '<br />
-		' . implode(' | ', $chapter_r);
+		' . $chapters->join(' | ')->val();
 
         $output .= "<br />\n";
         return $output;
@@ -289,7 +291,7 @@ class HTML
     {
         $start = (isset($_GET[$begin]) && is_numeric($_GET[$begin])) ? $_GET[$begin] : 0;
         $end = (isset($_GET[$end]) && is_numeric($_GET[$end])) ? $_GET[$end] : $limit;
-        $list_r = (count($list_r) <= 0) ? array() : $list_r;
+        $list_r = Arr::isEmpty($list_r) ? [] : $list_r;
         $href = HTML::href($href);
 
         if ($chapters) {
@@ -298,7 +300,7 @@ class HTML
 
         $output .= $chapter_list;
 
-        $list_r = array_splice($list_r, $start, $end);
+        $list_r = Arr::make($list_r)->slice($start, $end)->val();
 
         //for ($i = $start; $i < (((count($list_r) - $start) > $end) ? ($start + $end) : count($list_r)); $i++)
         // $output .= dev_content_box($list_r, '', $href, $query_r, $highlight, $headers, $link_style, true, $img_dir, $file_dir, '', $trunc);
@@ -370,14 +372,12 @@ class HTML
      */
     public static function nl2li($str)
     {
-        $output = '';
-        $str_r = explode("\n", $str);
-        foreach ($str_r as $a) {
-            if ($a != '' && $a != ' ') {
-                $output .= "<li>$a</li>\n";
-            }
-        }
-        return $output;
+        return Str::make($str)
+            ->split("\n")
+            ->filter(fn ($line) => Str::trim((string)$line) !== '')
+            ->map(fn ($line) => "<li>{$line}</li>\n")
+            ->join('')
+            ->val();
     }
 
     /**
@@ -389,17 +389,9 @@ class HTML
      */
     public static function br2nl($str)
     {
-        if (version_compare(PHP_VERSION, '5.0.0', '<')) {
-            $str = strtolower($str);
-            $str = str_replace('<br>', "\n", $str);
-            $str = str_replace('<br />', "\n", $str);
-            $str = str_replace('<br/>', "\n", $str);
-        } else {
-            $str = str_ireplace('<br>', "\n", $str);
-            $str = str_ireplace('<br />', "\n", $str);
-            $str = str_ireplace('<br/>', "\n", $str);
-        }
-        return $str;
+        return Str::make($str)
+            ->replacePattern('/<br\s*\/?>/i', "\n")
+            ->val();
     }
 
     /**

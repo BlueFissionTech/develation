@@ -57,4 +57,18 @@ class HTMLTest extends \PHPUnit\Framework\TestCase
         $_GET = $originalGet;
         $_POST = $originalPost;
     }
+
+    public function testNl2LiSkipsBlankLines()
+    {
+        $result = HTML::nl2li("Alpha\n\n Beta \n ");
+
+        $this->assertSame("<li>Alpha</li>\n<li> Beta </li>\n", $result);
+    }
+
+    public function testBr2NlNormalizesCommonBreakTags()
+    {
+        $result = HTML::br2nl("Alpha<br>Beta<BR />Gamma<br/>Delta");
+
+        $this->assertSame("Alpha\nBeta\nGamma\nDelta", $result);
+    }
 }
