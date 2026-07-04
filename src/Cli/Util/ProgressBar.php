@@ -2,6 +2,7 @@
 namespace BlueFission\Cli\Util;
 
 use BlueFission\Arr;
+use BlueFission\Cli\Util\Support\ManagesUtilityState;
 use BlueFission\Obj;
 use BlueFission\Str;
 use BlueFission\Val;
@@ -13,6 +14,8 @@ use BlueFission\DevElation as Dev;
 
 class ProgressBar extends Obj
 {
+    use ManagesUtilityState;
+
     protected $_data = [
         'total' => 0,
         'current' => 0,
@@ -49,24 +52,22 @@ class ProgressBar extends Obj
         $this->setValue('emptyChar', $emptyChar);
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
-            $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && Arr::is($meta->data ?? null)) {
-                $data = Arr::make($meta->data);
-                if ($data->hasKey('total')) {
-                    $this->setValue('total', max(0, (int)$data['total']));
-                }
-                if ($data->hasKey('current')) {
-                    $this->setValue('current', max(0, (int)$data['current']));
-                }
-                if ($data->hasKey('width')) {
-                    $this->setValue('width', max(1, (int)$data['width']));
-                }
-                if ($data->hasKey('showPercent')) {
-                    $this->setValue('showPercent', (bool)$data['showPercent']);
-                }
-                if ($data->hasKey('showCount')) {
-                    $this->setValue('showCount', (bool)$data['showCount']);
-                }
+            $meta = $this->behaviorMeta($args);
+            $data = $this->behaviorData($args);
+            if ($data->hasKey('total')) {
+                $this->setValue('total', max(0, (int)$data['total']));
+            }
+            if ($data->hasKey('current')) {
+                $this->setValue('current', max(0, (int)$data['current']));
+            }
+            if ($data->hasKey('width')) {
+                $this->setValue('width', max(1, (int)$data['width']));
+            }
+            if ($data->hasKey('showPercent')) {
+                $this->setValue('showPercent', (bool)$data['showPercent']);
+            }
+            if ($data->hasKey('showCount')) {
+                $this->setValue('showCount', (bool)$data['showCount']);
             }
             $this->trigger(Event::CHANGE, $meta);
         });
@@ -153,24 +154,5 @@ class ProgressBar extends Obj
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
         Dev::do('_after', [$output, $this]);
         return $output;
-    }
-
-    protected function setValue(string $field, $value): void
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            $current->val($value);
-            return;
-        }
-        $this->_data[$field] = $value;
-    }
-
-    protected function getValue(string $field)
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            return $current->val();
-        }
-        return $current;
     }
 }

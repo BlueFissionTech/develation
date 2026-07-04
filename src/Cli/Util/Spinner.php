@@ -3,6 +3,7 @@ namespace BlueFission\Cli\Util;
 
 use BlueFission\Obj;
 use BlueFission\Arr;
+use BlueFission\Cli\Util\Support\ManagesUtilityState;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
@@ -13,6 +14,8 @@ use BlueFission\DevElation as Dev;
 
 class Spinner extends Obj
 {
+    use ManagesUtilityState;
+
     protected $_data = [
         'label' => '',
         'frames' => ['|', '/', '-', '\\'],
@@ -58,19 +61,17 @@ class Spinner extends Obj
         });
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
-            $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && Arr::is($meta->data ?? null)) {
-                $data = Arr::make($meta->data);
-                if ($data->hasKey('label')) {
-                    $this->setValue('label', (string)$data['label']);
-                }
-                if ($data->hasKey('frames') && Arr::is($data['frames'])) {
-                    $this->setValue('frames', $data['frames']);
-                    $this->setValue('index', 0);
-                }
-                if ($data->hasKey('intervalMs')) {
-                    $this->setValue('intervalMs', max(10, (int)$data['intervalMs']));
-                }
+            $meta = $this->behaviorMeta($args);
+            $data = $this->behaviorData($args);
+            if ($data->hasKey('label')) {
+                $this->setValue('label', (string)$data['label']);
+            }
+            if ($data->hasKey('frames') && Arr::is($data['frames'])) {
+                $this->setValue('frames', $data['frames']);
+                $this->setValue('index', 0);
+            }
+            if ($data->hasKey('intervalMs')) {
+                $this->setValue('intervalMs', max(10, (int)$data['intervalMs']));
             }
             $this->trigger(Event::CHANGE, $meta);
         });
@@ -167,25 +168,6 @@ class Spinner extends Obj
         $this->setValue('index', $index);
         $this->trigger(Event::CHANGE);
         return $this;
-    }
-
-    protected function setValue(string $field, $value): void
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            $current->val($value);
-            return;
-        }
-        $this->_data[$field] = $value;
-    }
-
-    protected function getValue(string $field)
-    {
-        $current = $this->_data[$field] ?? null;
-        if ($current instanceof \BlueFission\IVal) {
-            return $current->val();
-        }
-        return $current;
     }
 
     protected function timestampMs(): float
