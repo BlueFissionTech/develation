@@ -3,6 +3,8 @@
 namespace BlueFission\Data\Queues;
 
 use Memcached;
+use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Collections\Collection;
 
 /**
@@ -76,11 +78,11 @@ class MemQueue extends Queue implements IQueue
     private static function init()
     {
         $_stack = new Memcached();
-        $servers = explode(",", static::$_memq_pool);
-        foreach ($servers as $server) {
-            list($host, $port) = explode(":", $server);
+        $servers = Str::make(static::$_memq_pool)->split(',');
+        $servers->each(function ($server) use ($_stack) {
+            [$host, $port] = Str::make($server)->split(':')->val();
             $_stack->addServer($host, $port);
-        }
+        });
         self::$_stack = $_stack;
     }
 
@@ -151,20 +153,19 @@ class MemQueue extends Queue implements IQueue
             $until = $stack->get($queue . "_tail");
         }
 
-        $item_keys = [];
-        for ($i = $after + 1; $i <= $until; $i++) {
-            $item_keys[] = $queue . "_" . $i;
-        }
+        $item_keys = ($after + 1 <= $until)
+            ? Arr::make(range($after + 1, $until))
+                ->map(fn ($i) => Str::make($queue)->append('_')->append($i)->val())
+                ->val()
+            : [];
 
         $items = $stack->getMulti($item_keys, Memcached::GET_PRESERVE_ORDER);
 
-        if ($items === false || empty($items)) {
+        if ($items === false || Arr::isEmpty($items)) {
             return false;
         }
 
-        foreach ($item_keys as $key) {
-            $stack->delete($key);
-        }
+        Arr::make($item_keys)->each(fn ($key) => $stack->delete($key));
 
         return new Collection($items);
     }

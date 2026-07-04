@@ -3,6 +3,7 @@
 namespace BlueFission\Data\Queues;
 
 use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Data\FileSystem;
 use BlueFission\Collections\Collection;
 use BlueFission\Behavioral\Behaviors\Event;
@@ -61,15 +62,15 @@ class DiskQueue extends Queue implements IQueue
         if (!self::$initialized) {
             $tempfile = sys_get_temp_dir();
 
-            $stack = $tempfile.DIRECTORY_SEPARATOR.self::DIRNAME;
+            $stack = Str::make($tempfile)->append(DIRECTORY_SEPARATOR)->append(self::DIRNAME)->val();
 
             $fs = new FileSystem(array('root' => $tempfile, 'mode' => 'a+', 'filter' => 'file', 'doNotConfirm' => true));
 
-            if (file_exists($stack) && !is_dir($stack)) {
+            if (FileSystem::fileExists($stack) && !FileSystem::directoryExists($stack)) {
                 unlink($stack);
             }
 
-            if (!is_dir($stack)) {
+            if (!FileSystem::directoryExists($stack)) {
                 $fs->mkdir(self::DIRNAME);
             }
 
@@ -97,7 +98,7 @@ class DiskQueue extends Queue implements IQueue
             return true;
         }
 
-        return Arr::count($array) ? false : true;
+        return Arr::make($array)->isEmpty();
     }
 
     /**
@@ -145,7 +146,7 @@ class DiskQueue extends Queue implements IQueue
 
         $items = [];
         for ($i = $after + 1; $i <= $until; $i++) {
-            $file = self::FILENAME . str_pad($i, 11, '0', STR_PAD_LEFT);
+            $file = Str::make(self::FILENAME)->append(str_pad($i, 11, '0', STR_PAD_LEFT))->val();
             $fs->filename = $file;
 
             if ($fs->exists()) {
@@ -198,7 +199,7 @@ class DiskQueue extends Queue implements IQueue
 
         $tail = self::tail($queue);
         do {
-            $fs->basename = self::FILENAME . str_pad($tail, 11, '0', STR_PAD_LEFT);
+            $fs->basename = Str::make(self::FILENAME)->append(str_pad($tail, 11, '0', STR_PAD_LEFT))->val();
 
             $tail++;
             if ($tail > 99999999999) {
@@ -229,13 +230,18 @@ class DiskQueue extends Queue implements IQueue
         $fs->dirname = $queue;
         $array = $fs->listDir();
 
-        if (!Arr::is($array) || Arr::count($array) < 1) {
+        if (!Arr::is($array) || Arr::isEmpty($array)) {
             return 1;
         }
         // rsort($array);
-        $last = end($array);
+        $last = Arr::pop($array);
 
-        $tail = str_replace([$stack, self::FILENAME, $queue,DIRECTORY_SEPARATOR], ['','','',''], $last);
+        $tail = Str::make($last)
+            ->replace($stack, '')
+            ->replace(self::FILENAME, '')
+            ->replace($queue, '')
+            ->replace(DIRECTORY_SEPARATOR, '')
+            ->val();
 
         return (int)$tail;
     }

@@ -4,7 +4,6 @@ namespace BlueFission\Data\Queues;
 
 use RuntimeException;
 use BlueFission\Arr;
-use BlueFission\Val;
 use BlueFission\Collections\Collection;
 
 /**
@@ -63,13 +62,8 @@ class FileQueue extends Queue implements IQueue
     public static function isEmpty($queue)
     {
         self::ensureFileHandle();
-        $items = self::$cache[$queue] ?? null;
 
-        if (!Val::is($items)) {
-            return true;
-        }
-
-        return Arr::count($items) === 0;
+        return Arr::make(self::$cache[$queue] ?? [])->isEmpty();
     }
 
     public static function dequeue($queue, $after_id = false, $till_id = false)
@@ -82,10 +76,12 @@ class FileQueue extends Queue implements IQueue
         }
 
         if ($after_id === false && $till_id === false) {
-            $item = array_shift(self::$cache[$queue]);
+            $queueItems = Arr::make(self::$cache[$queue] ?? []);
+            $item = $queueItems->shift();
+            self::$cache[$queue] = $queueItems->val();
         } else {
             $after_id = $after_id ?? 0;
-            $queueItems = Arr::make(self::$cache[$queue]);
+            $queueItems = Arr::make(self::$cache[$queue] ?? []);
             $length = $till_id === false ? $queueItems->count() : $till_id;
             $item = new Collection($queueItems->slice($after_id, $length)->val());
             self::$cache[$queue] = $queueItems->splice([], $after_id, $length)->val();
