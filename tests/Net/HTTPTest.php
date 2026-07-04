@@ -79,6 +79,16 @@ class HTTPTest extends TestCase {
         $this->assertEquals($expected, $actual);
     }
 
+    public function testQueryPreservesEncodedSlashesInNestedValues() {
+        $formdata = [
+            'asset' => [
+                'path' => 'images/logo.png',
+            ],
+        ];
+
+        $this->assertSame('data[asset][path]=images/logo.png', HTTP::query($formdata, '', 'data'));
+    }
+
     public function testUrlExists() {
         if (!TestEnvironment::isNetworkEnabled()) {
             $this->assertFalse(HTTP::urlExists('ftp://example.com'));

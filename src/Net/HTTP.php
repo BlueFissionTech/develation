@@ -182,16 +182,16 @@ class HTTP {
 		{
 			return http_build_query($formdata, $numeric_prefix);
 		}
-	     $res = array();
-	     foreach ((array)$formdata as $k=>$v) 
+	     $res = Arr::make([]);
+	     foreach ((array)$formdata as $k=>$v)
 	     {
 	         $tmp_key = urlencode((is_int($k) && $numeric_prefix) ? $numeric_prefix.$k : $k);
 	         if ($key) $tmp_key = $key.'['.$tmp_key.']';
-	         if ( is_array($v) || is_object($v) ) 
+	         if ( is_array($v) || is_object($v) )
 	         {
-	             $res[] = HTTP::query($v, null /* or $numeric_prefix if you want to add numeric_prefix to all indexes in array*/, $tmp_key);
+	             $res->push(HTTP::query($v, null /* or $numeric_prefix if you want to add numeric_prefix to all indexes in array*/, $tmp_key));
 	         } else {
-	             $res[] = $tmp_key."=".str_replace('%2F', '/', urlencode($v));
+	             $res->push($tmp_key."=".Str::replace(urlencode($v), '%2F', '/'));
 	         }
 	         /*
 	         If you want, you can write this as one string:
@@ -199,7 +199,7 @@ class HTTP {
 	         */
 	     }
 	     $separator = ini_get('arg_separator.output');
-	     return implode($separator, $res);
+	     return $res->join($separator)->val();
 	}
 
 	/**
