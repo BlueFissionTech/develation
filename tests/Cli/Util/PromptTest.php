@@ -15,6 +15,7 @@ class PromptTest extends \PHPUnit\Framework\TestCase
     {
         $this->assertFalse(Prompt::confirm('', true, 'n'));
         $this->assertTrue(Prompt::confirm('', false, 'yes'));
+        $this->assertTrue(Prompt::confirm('', false, '  YES  '));
     }
 
     public function testChoiceResolvesSelection()
@@ -27,6 +28,7 @@ class PromptTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame('banana', Prompt::choice('', $choices, null, 'b'));
         $this->assertSame('cherry', Prompt::choice('', $choices, null, 'Cherry'));
+        $this->assertSame('cherry', Prompt::choice('', $choices, null, '  CHERRY  '));
         $this->assertSame('apple', Prompt::choice('', $choices, 'apple', ''));
     }
 
