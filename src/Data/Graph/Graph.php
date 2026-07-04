@@ -3,6 +3,7 @@
 namespace BlueFission\Data\Graph;
 
 use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Obj;
 use BlueFission\DataTypes;
 use BlueFission\DevElation as Dev;
@@ -65,7 +66,7 @@ class Graph extends Obj
             }
         });
 
-        if (!empty($graph)) {
+        if (Arr::isNotEmpty($graph)) {
             $this->load($graph);
         }
     }
@@ -168,12 +169,12 @@ class Graph extends Obj
 
     public function shortestPath(string $start, string $end, ?callable $fitnessFunction = null): array
     {
-        $nodeNames = Arr::keys($this->nodeMap()->val());
-        if (count($nodeNames) === 0) {
-            $nodeNames = Arr::keys($this->edgeMap()->val());
+        $nodeNames = $this->nodeMap()->keys();
+        if ($nodeNames->isEmpty()) {
+            $nodeNames = $this->edgeMap()->keys();
         }
 
-        if (count($nodeNames) === 0) {
+        if ($nodeNames->isEmpty()) {
             return [];
         }
 
@@ -193,31 +194,32 @@ class Graph extends Obj
             return 1.0;
         };
 
-        $distances = [];
-        $previous = [];
-        $unvisited = new Arr([]);
+        $distances = Arr::make();
+        $previous = Arr::make();
+        $unvisited = Arr::make();
 
         foreach ($nodeNames as $name) {
-            $distances[$name] = PHP_INT_MAX;
-            $previous[$name] = null;
+            $distances->set($name, PHP_INT_MAX);
+            $previous->set($name, null);
             $unvisited->set($name, true);
         }
 
-        if (!Arr::hasKey($distances, $start) || !Arr::hasKey($distances, $end)) {
+        if (!$distances->hasKey($start) || !$distances->hasKey($end)) {
             return [];
         }
 
-        $distances[$start] = 0;
+        $distances->set($start, 0);
 
         while ($unvisited->count() > 0) {
             $unvisitedArray = $unvisited->val();
+            $distanceMap = $distances->val();
 
             $closest = null;
             $closestDistance = PHP_INT_MAX;
 
             foreach ($unvisitedArray as $name => $_) {
-                if ($distances[$name] < $closestDistance) {
-                    $closestDistance = $distances[$name];
+                if ($distanceMap[$name] < $closestDistance) {
+                    $closestDistance = $distanceMap[$name];
                     $closest = $name;
                 }
             }
@@ -227,18 +229,19 @@ class Graph extends Obj
             }
 
             if ($closest === $end) {
-                $path = [];
+                $path = Arr::make();
                 $current = $end;
+                $previousMap = $previous->val();
 
                 while ($current !== null) {
-                    $path[] = $current;
-                    $current = $previous[$current] ?? null;
+                    $path->push($current);
+                    $current = $previousMap[$current] ?? null;
                 }
 
-                return array_reverse($path);
+                return $path->reverse()->val();
             }
 
-            if ($distances[$closest] === PHP_INT_MAX) {
+            if ($distanceMap[$closest] === PHP_INT_MAX) {
                 break;
             }
 
@@ -248,7 +251,7 @@ class Graph extends Obj
             }
 
             foreach ($edges as $neighbor => $value) {
-                if (!Arr::hasKey($unvisitedArray, $neighbor)) {
+                if (!$unvisited->hasKey($neighbor)) {
                     continue;
                 }
 
@@ -258,11 +261,11 @@ class Graph extends Obj
                     continue;
                 }
 
-                $alt = $distances[$closest] + $edgeCost;
+                $alt = Num::make($distanceMap[$closest])->plus($edgeCost)->val();
 
-                if ($alt < ($distances[$neighbor] ?? PHP_INT_MAX)) {
-                    $distances[$neighbor] = $alt;
-                    $previous[$neighbor] = $closest;
+                if ($alt < ($distanceMap[$neighbor] ?? PHP_INT_MAX)) {
+                    $distances->set($neighbor, $alt);
+                    $previous->set($neighbor, $closest);
                 }
             }
 
