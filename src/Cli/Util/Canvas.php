@@ -2,6 +2,7 @@
 
 namespace BlueFission\Cli\Util;
 
+use BlueFission\Arr;
 use BlueFission\Obj;
 use BlueFission\Str;
 use BlueFission\Val;
@@ -96,10 +97,11 @@ class Canvas extends Obj
 
     public function toLines(): array
     {
-        $lines = [];
-        foreach ($this->buffer as $row) {
-            $lines[] = implode('', $row);
-        }
+        $lines = Arr::make($this->buffer)
+            ->map(function ($row) {
+                return Arr::make($row)->join('')->val();
+            })
+            ->val();
 
         return Dev::apply('_out', $lines);
     }
@@ -107,7 +109,7 @@ class Canvas extends Obj
     public function render(): string
     {
         Dev::do('_before', [$this]);
-        $output = implode(PHP_EOL, $this->toLines());
+        $output = Arr::make($this->toLines())->join(PHP_EOL)->val();
         $output = Dev::apply('_out', $output);
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
         Dev::do('_after', [$output, $this]);
@@ -124,7 +126,7 @@ class Canvas extends Obj
 
         $prior = $previous->toLines();
         $diffs = [];
-        $max = max(count($current), count($prior));
+        $max = max(Arr::count($current), Arr::count($prior));
 
         for ($index = 0; $index < $max; $index++) {
             $line = $current[$index] ?? '';
@@ -141,7 +143,7 @@ class Canvas extends Obj
     {
         Dev::do('_before', [$this, $previous]);
         $diffs = $this->diffLines($previous);
-        if (empty($diffs)) {
+        if (Arr::count($diffs) === 0) {
             return '';
         }
 

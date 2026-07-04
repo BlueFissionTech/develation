@@ -62,22 +62,22 @@ class Working extends Obj
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
             $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && is_array($meta->data ?? null)) {
-                $data = $meta->data;
-                if (array_key_exists('label', $data)) {
+            if ($meta && Arr::is($meta->data ?? null)) {
+                $data = Arr::make($meta->data);
+                if ($data->hasKey('label')) {
                     $this->setValue('label', (string)$data['label']);
                     $this->_spinner->label((string)$data['label']);
                 }
-                if (array_key_exists('frames', $data) && Arr::is($data['frames'])) {
+                if ($data->hasKey('frames') && Arr::is($data['frames'])) {
                     $this->setValue('frames', $data['frames']);
                     $this->_spinner->frames($data['frames']);
                 }
-                if (array_key_exists('intervalMs', $data)) {
+                if ($data->hasKey('intervalMs')) {
                     $interval = max(10, (int)$data['intervalMs']);
                     $this->setValue('intervalMs', $interval);
                     $this->_spinner->interval($interval);
                 }
-                if (array_key_exists('outputHandler', $data)) {
+                if ($data->hasKey('outputHandler')) {
                     $this->setValue('outputHandler', $data['outputHandler']);
                 }
             }

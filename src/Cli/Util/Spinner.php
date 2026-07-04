@@ -3,6 +3,7 @@ namespace BlueFission\Cli\Util;
 
 use BlueFission\Obj;
 use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
 use BlueFission\Behavioral\Behaviors\Action;
@@ -58,16 +59,16 @@ class Spinner extends Obj
 
         $this->behavior(new Action(Action::UPDATE), function ($behavior, $args) {
             $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && is_array($meta->data ?? null)) {
-                $data = $meta->data;
-                if (array_key_exists('label', $data)) {
+            if ($meta && Arr::is($meta->data ?? null)) {
+                $data = Arr::make($meta->data);
+                if ($data->hasKey('label')) {
                     $this->setValue('label', (string)$data['label']);
                 }
-                if (array_key_exists('frames', $data) && Arr::is($data['frames'])) {
+                if ($data->hasKey('frames') && Arr::is($data['frames'])) {
                     $this->setValue('frames', $data['frames']);
                     $this->setValue('index', 0);
                 }
-                if (array_key_exists('intervalMs', $data)) {
+                if ($data->hasKey('intervalMs')) {
                     $this->setValue('intervalMs', max(10, (int)$data['intervalMs']));
                 }
             }
@@ -138,7 +139,7 @@ class Spinner extends Obj
         $label = (string)$this->getValue('label');
         $frame = $this->frame();
 
-        $output = trim($label . ' ' . $frame);
+        $output = Str::make($label)->append(' ')->append($frame)->trim()->val();
         $output = Dev::apply('_out', $output);
         $this->trigger(Event::PROCESSED, new Meta(data: $output));
         Dev::do('_after', [$output, $this]);
@@ -147,20 +148,20 @@ class Spinner extends Obj
 
     public function frame(): string
     {
-        $frames = $this->getValue('frames');
-        if (!Arr::is($frames) || count($frames) === 0) {
+        $frames = Arr::make($this->getValue('frames'));
+        if ($frames->isEmpty()) {
             return '';
         }
 
         $index = (int)$this->getValue('index');
-        $frame = $frames[$index % count($frames)] ?? '';
+        $frame = $frames[$index % $frames->count()] ?? '';
         return (string)$frame;
     }
 
     public function advance(): self
     {
-        $frames = $this->getValue('frames');
-        $count = Arr::is($frames) ? count($frames) : 0;
+        $frames = Arr::make($this->getValue('frames'));
+        $count = $frames->count();
         $index = (int)$this->getValue('index');
         $index = $count > 0 ? ($index + 1) % $count : 0;
         $this->setValue('index', $index);
