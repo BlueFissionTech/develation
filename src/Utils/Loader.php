@@ -5,6 +5,7 @@ namespace BlueFission\Utils;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Data\FileSystem;
 
 /**
  * Class to import all class files.
@@ -28,8 +29,9 @@ class Loader
      */
     private function __construct()
     {
-        $this->_paths = [];
-        $this->_paths[] = realpath(dirname(__FILE__));
+        $this->_paths = Arr::make([])
+            ->push(realpath(dirname(__FILE__)))
+            ->val();
     }
 
     /**
@@ -61,14 +63,14 @@ class Loader
             return $this->_config;
         } elseif (Str::is($config)) {
             if (!Val::is($value)) {
-                return Val::is($this->_config[$config]) ? $this->_config[$config] : null;
+                return Arr::hasKey($this->_config, $config) ? $this->_config[$config] : null;
             }
             if (Arr::hasKey($this->_config, $config)) {
                 $this->_config[$config] = $value;
             }
         } elseif (Arr::is($config)) {
-            foreach ($this->config as $a => $b) {
-                $this->_config[$a] = $config[$a];
+            foreach (Arr::make($config)->filter(fn ($value, $key) => Arr::hasKey($this->_config, $key)) as $key => $newValue) {
+                $this->_config[$key] = $newValue;
             }
         }
     }
@@ -82,7 +84,15 @@ class Loader
      */
     public function addPath($path)
     {
-        $this->_paths[] = $path;
+        $path = Str::trim((string)$path);
+
+        if ($path === '') {
+            return;
+        }
+
+        $this->_paths = Arr::make($this->_paths)
+            ->push($path)
+            ->val();
     }
 
     /**
@@ -118,23 +128,14 @@ class Loader
      */
     private function getClassDirectoryPath($fullyQualifiedClass)
     {
-        $pathParts = explode(".", $fullyQualifiedClass);
-        $numberOfPathParts = Arr::size($pathParts);
-        $filePath = "";
-        $isWildcardMatch = $pathParts[ $numberOfPathParts - 1 ] == "*";
-
-        // Build the file path
-        for ($index = 0; $index < $numberOfPathParts; $index++) {
-            if ($index < $numberOfPathParts - 1) {
-                $filePath .= $pathParts[$index] . DIRECTORY_SEPARATOR;
-            } elseif (!$isWildcardMatch) {
-                $filePath .=  $pathParts[$index] . "." . $this->config('default_extension');
-            }
-        }
+        $pathParts = Str::make($fullyQualifiedClass)->split($this->config('full_stop'));
+        $numberOfPathParts = $pathParts->size();
+        $isWildcardMatch = $pathParts->get($numberOfPathParts - 1) == "*";
+        $filePath = $this->classFilePath($pathParts, $isWildcardMatch);
 
         // Check if wildcard match
         if ($isWildcardMatch) {
-            $wildcardMatches = [];
+            $wildcardMatches = Arr::make([]);
             foreach ($this->_paths as $path) {
                 $testPath = $path . DIRECTORY_SEPARATOR . $filePath;
                 if (is_dir($testPath)) {
@@ -142,24 +143,39 @@ class Loader
                     while (false !== ($entry = $directory->read())) {
                         if ($entry != "." && $entry != ".." &&
                             Str::rpos($entry, ".".$this->_config['default_extension']) !== false) {
-                            $wildcardMatches[] = $testPath . $entry;
+                            $wildcardMatches->push($testPath . $entry);
                         }
                     }
                     $directory->close();
                 }
             }
-            return $wildcardMatches;
+            return $wildcardMatches->val();
         }
 
         // Check for file in the paths
         foreach ($this->_paths as $path) {
             $testPath = $path . DIRECTORY_SEPARATOR . $filePath;
-            if (file_exists($testPath)) {
+            if (FileSystem::fileExists($testPath)) {
                 return $testPath;
             }
         }
 
         // File not found
         return false;
+    }
+
+    private function classFilePath(Arr $pathParts, bool $isWildcardMatch): string
+    {
+        $segments = $isWildcardMatch ? $pathParts->slice(0, -1) : $pathParts->copy();
+
+        if (!$isWildcardMatch) {
+            $lastIndex = $segments->size() - 1;
+            $segments->set(
+                $lastIndex,
+                $segments->get($lastIndex) . "." . $this->config('default_extension')
+            );
+        }
+
+        return $segments->join(DIRECTORY_SEPARATOR)->val() . ($isWildcardMatch ? DIRECTORY_SEPARATOR : '');
     }
 }

@@ -9,6 +9,7 @@ use BlueFission\Date;
 use BlueFission\IObj;
 use BlueFission\Data\IData;
 use BlueFission\Connections\Database\MySQLLink;
+use BlueFission\Data\Storage\Support\BuildsQueryFragments;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Data\Storage\Behaviors\StorageAction;
@@ -36,6 +37,8 @@ use BlueFission\Data\Storage\Behaviors\StorageAction;
  */
 class MySQL extends Storage implements IData
 {
+    use BuildsQueryFragments;
+
     protected $_config = [
         'location' => null,
         'name' => '',
@@ -242,7 +245,7 @@ class MySQL extends Storage implements IData
     public function read(): IObj
     {
         $tables = $this->tables();
-        if (count($tables) < 1) {
+        if (Arr::isEmpty($tables)) {
             $this->status(self::STATUS_FAILED);
             return $this;
         }
@@ -291,12 +294,12 @@ class MySQL extends Storage implements IData
                     if ($this->config('auto_join')) {
                         $field = $this->arrayKeyIntersect($this->table($table), $join);
                         foreach ($field as $b => $c) {
-                            if (in_array($b, $active_fields) || Val::isEmpty($active_fields)) {
+                            if (Arr::has($active_fields, $b) || Val::isEmpty($active_fields)) {
                                 $on[] = $table . ".$b  = $a.$b";
                             }
                         }
                     }
-                    if (count($relations) > 0) {
+                    if (Arr::isNotEmpty($relations)) {
                         $fields = $this->arrayKeyIntersect($relations, $join);
                         foreach ($fields as $b => $c) {
                             $on[] = $table . "." . $relations[$b] . "  = $a.$b";
@@ -305,7 +308,7 @@ class MySQL extends Storage implements IData
 
                     if ($this->config('auto_join')) {
 
-                        for ($i = $count; $i < count($tables); $i++) {
+                        for ($i = $count; $i < Arr::count($tables); $i++) {
                             $b = $tables[$i];
                             if ($a != $b) {
                                 $join_2 = $this->table($b);
@@ -345,10 +348,7 @@ class MySQL extends Storage implements IData
             }
         }
 
-        $left_join = '';
-        if (count($this->tables()) > 1) {
-            $left_join .= "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
-        }
+        $left_join = $this->innerJoinClause($tables, $on);
 
         $select = [];
         foreach ($active_fields as $a) {
@@ -356,7 +356,7 @@ class MySQL extends Storage implements IData
                 $select[] = ($this->aggregateCase($table, $a)) ? $this->aggregateCase($table, $a) : $this->fieldTable($a).'.'.$a;
             }
         }
-        if (count($select) <= 0) {
+        if (Arr::isEmpty($select)) {
             $select[] = '*';
             foreach ($this->_aggregate as $a => $b) {
                 if ($this->exists($a)) {
@@ -366,14 +366,10 @@ class MySQL extends Storage implements IData
         }
 
         // Build query
-        $query = "SELECT " . implode(', ', $select) . " FROM `$table` $left_join WHERE " . implode(' AND ', $where);
+        $query = "SELECT " . Arr::join($select, ', ') . " FROM `$table` $left_join WHERE " . Arr::join($where, ' AND ');
 
-        if (count($distinct) > 0) {
-            $query .= " GROUP BY " . implode(', ', $distinct);
-        }
-        if (count($sort) > 0) {
-            $query .= " ORDER BY " . implode(', ', $sort);
-        }
+        $query = $this->appendListClause($query, 'GROUP BY', $distinct);
+        $query = $this->appendListClause($query, 'ORDER BY', $sort);
 
         $start = $this->start();
         $end = $this->end();
@@ -476,14 +472,14 @@ class MySQL extends Storage implements IData
                         }
                     }
 
-                    if (count($relations) > 0) {
+                    if (Arr::isNotEmpty($relations)) {
                         $fields = $this->arrayKeyIntersect($relations, $join);
                         foreach ($fields as $b => $c) {
                             $on[] = $table . "." . $relations[$b] . "  = $a.$b";
                         }
                     }
 
-                    for ($i = $count; $i < count($tables); $i++) {
+                    for ($i = $count; $i < Arr::count($tables); $i++) {
                         $b = $tables[$i];
                         if ($a != $b) {
                             $join_2 = $this->table($b);
@@ -505,7 +501,7 @@ class MySQL extends Storage implements IData
                     }
                     $count++;
 
-                    $members = $this->arrayKeyIntersect(array_keys($data), $join);
+                    $members = $this->arrayKeyIntersect(Arr::keys($data), $join);
 
                     foreach ($members as $b => $c) {
                         $where[] = $this->whereCase($a, $b, $c);
@@ -515,10 +511,7 @@ class MySQL extends Storage implements IData
             }
         }
 
-        $left_join = '';
-        if (count($this->tables()) > 1) {
-            $left_join = "INNER JOIN (" . implode(', ', array_slice($tables, 1)) . ") ON (" . implode(' AND ', $on) . ")";
-        }
+        $left_join = $this->innerJoinClause($tables, $on);
 
         // $select = []
         // foreach($active_fields as $a) if ($this->exists($a)) $select[] = $field_info[$a]['Table'].'.'.$a;
@@ -526,7 +519,7 @@ class MySQL extends Storage implements IData
 
         // Build query
         //$query = "SELECT " . implode(', ', $select) . " FROM `$table` $left_join WHERE " . implode(' AND ', $where);
-        $query = "DELETE FROM `$table` $left_join WHERE " . implode(' AND ', $where);
+        $query = "DELETE FROM `$table` $left_join WHERE " . Arr::join($where, ' AND ');
 
         //if (count($distinct) > 0) $query .= " GROUP BY " . implode(', ', $distinct);
         //if (count($sort) > 0) $query .= " ORDER BY " . implode(', ', $sort);

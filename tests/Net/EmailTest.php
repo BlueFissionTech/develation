@@ -98,6 +98,26 @@ class EmailTest extends TestCase
         $this->assertFileDoesNotExist($path);
     }
 
+    public function testValidateAddressAcceptsDisplayNamesAndRejectsInvalidBatches()
+    {
+        $this->assertTrue(Email::validateAddress([
+            'Test User <test@example.com>',
+            'second@example.com',
+        ]));
+
+        $this->assertFalse(Email::validateAddress([
+            'valid@example.com',
+            'not-an-address',
+        ]));
+    }
+
+    public function testSanitizeRemovesHeaderInjectionAndCarriageReturns()
+    {
+        $value = "Hello\r\nBcc: injected@example.com\r\nContent-Type: text/html";
+
+        $this->assertSame("Hello\n injected@example.com\n text/html", Email::sanitize($value));
+    }
+
     private function invokeEmailMethod(Email $email, string $method, array $arguments = [])
     {
         $reflection = new \ReflectionClass($email);

@@ -398,9 +398,9 @@ class Email extends Obj implements IConfigurable, IEmail
 	 * 
 	 * @return bool Returns true if all email addresses are valid, false otherwise
 	 */
-	static function validateAddress($address = null) 
+	static function validateAddress($address = null)
 	{
-		$address = Arr::toArray($address);
+		$addresses = Arr::make(Arr::toArray($address));
 		$p = '/^[a-z0-9!#$%&*+-=?^_`{|}~\.]+([\.\+][a-z0-9!#$%&*+-=?^_`{|}~\.]+)*';
 		$p .= '@[a-z0-9][-a-z0-9]*(\.[a-z0-9][-a-z0-9]*)*';
 		$p .= '(\.[a-z]{2,}';
@@ -412,22 +412,22 @@ class Email extends Obj implements IConfigurable, IEmail
 		// Regex to get email address from out of  User Name <email@address> format
 		$filter = '/(?<=<)?[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}(?=>)?/';
 
-		$passed = false;
-		$i = 0;
-		$count = Arr::count($address);
-		do
-		{
+		if ($addresses->isEmpty()) {
+			return false;
+		}
+
+		foreach ($addresses as $candidate) {
 			// get email from User Name <email@address> format
-			preg_match($filter, $address[$i] ?? '', $matches);
+			$matches = Str::make((string)$candidate)->matchPattern($filter) ?? [];
 			$email = $matches[0] ?? null;
 
 			$email = $email ?? '';
-			$match = preg_match($pattern, $email);
-			$passed = ($match > 0 && $match !== false) ? true : false;
-			$i++;
-		} while ($passed === true && $i < $count);
-		
-		return $passed;
+			if (!Str::matches($email, $pattern)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -489,16 +489,19 @@ class Email extends Obj implements IConfigurable, IEmail
 	{
 		if (Val::isNull($field)) return null;
 		//Remove line feeds
-		$ret = str_replace("\r", "", $field);
+		$ret = Str::make((string)$field)->replace("\r", "");
 		// Remove injected headers
-		$find = array("/bcc\:/i",
+		$find = Arr::make(["/bcc\:/i",
 		        "/Content\-Type\:/i",
 		        "/Mime\-Type\:/i",
 		        "/cc\:/i",
-		        "/to\:/i");
-		$ret = preg_replace($find, "", $field);
-		
-		return $ret;
+		        "/to\:/i"]);
+
+		foreach ($find as $pattern) {
+			$ret->replacePattern($pattern, "");
+		}
+
+		return $ret->val();
 	}
 
 	/**
