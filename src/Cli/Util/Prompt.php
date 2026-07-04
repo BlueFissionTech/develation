@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Cli\Util;
 
+use BlueFission\Arr;
 use BlueFission\Obj;
 use BlueFission\Str;
 use BlueFission\Val;
@@ -29,12 +30,12 @@ class Prompt extends Obj
 
         $this->behavior(new Action(Action::INPUT), function ($behavior, $args) {
             $meta = ($args instanceof Meta) ? $args : null;
-            if ($meta && is_array($meta->data ?? null)) {
-                $data = $meta->data;
-                if (array_key_exists('prompt', $data)) {
+            if ($meta && Arr::is($meta->data ?? null)) {
+                $data = Arr::make($meta->data);
+                if ($data->hasKey('prompt')) {
                     $this->setValue('lastPrompt', (string)$data['prompt']);
                 }
-                if (array_key_exists('response', $data)) {
+                if ($data->hasKey('response')) {
                     $this->setValue('lastResponse', (string)$data['response']);
                 }
             }
@@ -118,15 +119,16 @@ class Prompt extends Obj
             $response = self::readFromStdin($message);
         }
 
+        $response = Str::make((string)$response);
         if ($trim) {
-            $response = trim((string)$response);
+            $response->trim();
         }
 
-        if ($response === '' && Val::isNotNull($default)) {
+        if ($response->isEmpty() && Val::isNotNull($default)) {
             return (string)$default;
         }
 
-        return (string)Dev::apply('_out', $response);
+        return (string)Dev::apply('_out', $response->val());
     }
 
     public static function confirm(string $message, bool $default = false, ?string $input = null): bool
@@ -136,13 +138,13 @@ class Prompt extends Obj
         $input = Dev::apply('_in', $input);
         $defaultValue = $default ? 'y' : 'n';
         $response = self::ask($message, $defaultValue, $input, true);
-        $normalized = Str::lower(trim($response));
+        $normalized = self::normalizedResponse($response);
 
-        if (in_array($normalized, ['y', 'yes', 'true', '1'], true)) {
+        if (Arr::has(['y', 'yes', 'true', '1'], $normalized->val(), true)) {
             return true;
         }
 
-        if (in_array($normalized, ['n', 'no', 'false', '0'], true)) {
+        if (Arr::has(['n', 'no', 'false', '0'], $normalized->val(), true)) {
             return false;
         }
 
@@ -156,23 +158,38 @@ class Prompt extends Obj
         $default = Dev::apply('_in', $default);
         $input = Dev::apply('_in', $input);
         $response = self::ask($message, $default, $input, true);
-        $normalized = Str::lower(trim($response));
+        $normalized = self::normalizedResponse($response);
+        $choices = Arr::make($choices);
 
-        if ($normalized === '' && Val::isNotNull($default)) {
+        if ($normalized->isEmpty() && Val::isNotNull($default)) {
             $response = (string)$default;
+            $normalized = self::normalizedResponse($response);
         }
 
-        if (array_key_exists($response, $choices)) {
+        if ($choices->hasKey($response)) {
             return (string)$choices[$response];
         }
 
-        foreach ($choices as $value) {
-            if (strtolower((string)$value) === $normalized) {
-                return (string)$value;
+        $matched = null;
+        $choices->each(function ($value) use (&$matched, $normalized) {
+            if (Val::isNotNull($matched)) {
+                return;
             }
+            if (self::normalizedResponse($value)->match($normalized->val())) {
+                $matched = (string)$value;
+            }
+        });
+
+        if (Val::isNotNull($matched)) {
+            return $matched;
         }
 
         return (string)Dev::apply('_out', $response);
+    }
+
+    protected static function normalizedResponse($response): Str
+    {
+        return Str::make((string)$response)->trim()->lower();
     }
 
     protected static function readFromStdin(string $message): string
