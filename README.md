@@ -4,17 +4,24 @@ Welcome to the central documentation of **DevElation**, a comprehensive PHP libr
 
 ## Philosophy
 
-DevElation is built with the philosophy of reducing code complexity and promoting interconnectedness. It embraces the notion that robust and intelligent application development can be made more approachable through a suite of well-organized, intuitive modules. With a focus on automation, smart application components, and AI integration readiness, DevElation aims to be the cornerstone for framework builders in these domains.
+DevElation is built with the philosophy of reducing code complexity and promoting interconnectedness. It embraces the notion that robust application development can be made more approachable through a suite of well-organized, intuitive modules. The library is not just a bag of utility functions; it is a set of hookable value objects, data objects, behaviors, services, and helpers that are meant to participate in an application lifecycle.
 
-Central to DevElation's design is the principle of rapid prototyping, enabled by a consistent interface across its wide range of classes. Whether you're interacting with MySQL, Mongo, File, or Session storage, the method signatures and arguments are intentionally aligned. This uniformity means that developers can swap out entire data layers with minimal changes to the codebase, streamlining the process of scaling applications from simple prototypes to complex, robust systems.
+Central to DevElation's design is the principle of rapid prototyping without throwing away architecture. Primitives such as `Val`, `Str`, `Arr`, `Num`, `Flag`, `Date`, `Func`, and `Obj` should be treated as first-class citizens when values are captured, mutated, validated, observed, or passed through more than a trivial boundary. Static helpers remain appropriate for one-off hookable operations, while fluent objects are preferred when a value has a lifecycle.
 
-The library's dependency injection-friendly architecture means that scaling and enhancing functionality is as simple as changing the injected class. For example, an application initially designed with File storage can seamlessly transition to a Mongo database by substituting the File class with a Mongo class, with no need for extensive codebase changes. This not only accelerates development time but also promotes a clean and modular approach to application design.
+The library's dependency injection-friendly architecture means that scaling and enhancing functionality is often a matter of changing the injected class or storage backend. File, session, memory, SQL, Mongo, queue, schema, graph, service, connection, CLI, HTTP, HTML, and parsing classes are intentionally shaped around repeatable signatures so consumers can grow from simple scripts to structured systems without rewriting every call site.
 
-The pervasive event-driven approach throughout DevElation—where even the simplest data types are empowered with event handling capabilities—speaks to the library's commitment to creating intricate yet manageable systems. By offloading complexity to individual components, each element of the codebase contributes to a finely-tuned orchestration of operations. The result is a system where functionality is distributed yet cohesive, ensuring that enhancements can be made without increasing the burden on the core logic of the application.
+The pervasive event-driven approach throughout DevElation, where even simple data types can participate in events, hooks, filters, constraints, snapshots, and dynamic slots, reflects the library's commitment to intricate yet manageable systems. Complexity should live with the object that owns the data or behavior, not in scattered procedural glue.
 
-This granular empowerment leads to a development environment where maintainability and readability are not at odds with the power and sophistication of the systems being developed. With DevElation, creating dynamic, intelligent, and complex functionalities doesn't lead to cluttered code; instead, it fosters an ecosystem where each piece intelligently contributes to the whole.
+This granular empowerment leads to a development style where maintainability and readability are not at odds with power. DevElation code should prefer package-owned classes and interfaces when they already exist, keep features general and reusable, avoid consumer-specific coupling, and expose stable APIs that can be inherited, decorated, filtered, or composed.
 
-Furthermore, DevElation isn't just a standalone library; it forms the backbone of the BlueFission Opus project development framework. Opus leverages DevElation's core capabilities, extending them into a full-fledged framework that supports the construction of advanced and intelligent web applications. The shared philosophy underpinning both DevElation and Opus ensures that developers who are familiar with DevElation can effortlessly transition to using the Opus framework, with the assurance that they are building on top of a reliable and proven foundation.
+In practice:
+
+- Use DevElation objects for values and structures that will be worked with repeatedly.
+- Use static helpers for single hookable operations.
+- Use global helper functions as constructor/factory shortcuts only.
+- Let returned objects own their fluent behavior.
+- Prefer DevElation data, connection, service, CLI, HTML, parsing, security, and system utilities over ad-hoc raw PHP when the package already owns the capability.
+- Keep public features package-owned and broadly useful; consuming projects should consume or extend DevElation, not define its internal concerns.
 
 ## Features Overview
 
@@ -33,17 +40,50 @@ A collection of wrapper classes around PHP's primitive data types that offer enh
 
 Static helpers: most `Val`/`Obj`-based classes expose their underscored instance helpers as static shorthand. For example, `Str` has an internal `_pluralize()` instance method which can be invoked statically via `Str::pluralize('comment')` thanks to `Val::__callStatic`. This pattern is used throughout the library and examples.
 
+Global helper functions: Composer autoloads `src/functions.php`, which provides short factory entrypoints for the highest-use object lifecycles. These helpers instantiate or factory-wrap objects; they do not replace object methods. Chain from the returned object for behavior.
+
+```php
+use BlueFission\DataTypes;
+
+$title = str(' release notes ')->trim()->capitalize()->val();
+$items = arr(['first', 'second'])->reverse()->join(', ')->val();
+$record = obj(['count' => 3], ['count' => DataTypes::NUMBER]);
+$document = doc()->contents('Draft text');
+```
+
+Available helpers:
+
+- `val(mixed $value = null): Val`
+- `str(mixed $value = null): Str`
+- `arr(mixed $value = null): Arr`
+- `num(mixed $value = null): Num`
+- `flag(mixed $value = null): Flag`
+- `func(mixed $value = null): Func`
+- `obj(array|object|null $data = null, array $types = []): Obj`
+- `collect(mixed $value = null): Collection`
+- `datetime(mixed $value = null): Date`
+- `filesystem(mixed $config = null): FileSystem`
+- `doc(): Data\File`
+- `directory(?IData $storage = null): Data\Directory`
+
+The names intentionally avoid PHP built-ins such as `file()` and `date()`. Use
+`doc()` for a DevElation file object and `datetime()` for a DevElation date
+object.
+
 Helper API notes:
 
+- Prefer an object lifecycle when a value is changed or inspected more than a couple of times. Prefer static helpers for one-off hookable operations.
+- Use `Val::make($value)`, `Val::copy()`, `Val::as($target)`, `snapshot()`, `recall()`, `reset()`, and `if(...)->then(...)->otherwise(...)` when generic values need lifecycle, branching, or change tracking.
 - Use `Arr::has($array, $value)` for value checks. Use `Arr::hasKey($array, $key)` for key checks, and `Arr::hasValue($array, $value, true)` or `Arr::contains($array, $value, true)` when strict value matching matters.
 - Use `Arr::merge($base, $next)` when associative keys should be replaced recursively and numeric list values should be appended when unique. Use `Arr::append($base, $next)` for append-only numeric list behavior.
-- Use `Arr::filter($array, $callback)`, `Arr::map($array, $callback)`, `Arr::diff($left, $right)`, `Arr::intersect($left, $right)`, and `Arr::slice($array, $offset, $length)` for common array transforms that should stay on the DevElation helper surface.
+- Use `Arr::filter($array, $callback)`, `Arr::map($array, $callback)`, `Arr::diff($left, $right)`, `Arr::intersect($left, $right)`, `Arr::slice($array, $offset, $length)`, `Arr::splice($array, $replacement, $offset, $length)`, `Arr::join($array, $separator)`, and `Arr::reverse($array, $preserveKeys)` for common array transforms that should stay on the DevElation helper surface.
 - `Arr::map()` / `Arr::filter()` and `Collection::map()` / `Collection::filter()` share traversal semantics: callbacks may accept `value` or `value, key`, and retained or mapped values preserve their original keys.
 - Use `Arr::values($array)` to reindex list values while preserving order. Use `BlueFission\Net\HTTP::pathSegment($segment)` to encode a single URL path segment; `HTTP::urlScheme()`, `HTTP::urlHost()`, `HTTP::urlPort()`, `HTTP::urlPath()`, or `HTTP::urlParts()` for normalized URL component parsing; `HTTP::jsonDecode()` for deterministic JSON fallback handling; and `HTTP::headerLine()`, `HTTP::statusText()`, or `HTTP::statusLine()` for side-effect-free HTTP metadata helpers.
 - Use `Arr::mergeRecursive($base, $next)` when associative keys should be replaced recursively and numeric lists should append in order while preserving duplicates.
 - Use `Str::repeat($value, $times)` or the explicit `Str::strRepeat($value, $times)` alias as the canonical static helper for `str_repeat`-style behavior. Repeat counts must be non-negative; existing instance usage such as `Str::make(' ')->repeat(4)->val()` remains supported.
-- Use `Str::startsWith($value, $needle)`, `Str::endsWith($value, $needle)`, and `Str::match($left, $right, Str::IGNORE_CASE)` for string boundary and equality checks. Values are string-cast before comparison and whitespace remains significant.
+- Use `Str::startsWith($value, $needle)`, `Str::endsWith($value, $needle)`, `Str::match($left, $right, Str::IGNORE_CASE)`, `Str::snake($value)`, `Str::pluralize($value)`, and `Str::size($value)` for string boundary, equality, casing, inflection, and length checks. Values are string-cast before comparison and whitespace remains significant.
 - Use `Date::formatTimestamp($timestamp, 'Y-m-d')` as a concise replacement for `date($format, $timestamp)`.
+- Use `Num::plus()`, `Num::minus()`, `Num::times()`, and `Num::by()` as readable aliases for fluent math. Math helpers unwrap `Val` objects when appropriate.
 - Use `Num::isIntStrict()`, `Num::isFloatStrict()` / `Num::isDoubleStrict()`, and `Flag::isBoolStrict()` / `Flag::isBooleanStrict()` when native scalar type checks must not coerce strings or numeric values.
 - Use `Num::deg2rad($degrees)`, `Num::rad2deg($radians)`, `Num::sin($radians)`, `Num::cos($radians)`, and `Num::atan2($y, $x)` for hookable angle and trigonometry helpers. Angles passed to trigonometry helpers are radians.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
@@ -127,11 +167,33 @@ Sample applications that demonstrate DevElation’s flexibility:
 - Simple comment thread with voting using `Arr`, `Str`, `Session` storage, HTML helpers, and templates: `examples/comments/index.php`
 - CLI territory game using the behavioral engine (`Behaves`) and an `Arr`-backed log: `examples/game/gangs.php`
 - CLI status report using args, tables, and progress bars: `examples/cli/report.php`
-- Helper workflow using current primitive, file, HTTP, date, flag, and security helpers: `examples/helpers/workflow.php`
+- Helper workflow using global factory helpers plus primitive, file, HTTP, date, flag, and security objects: `examples/helpers/workflow.php`
 - HTTP/API packet builder using request normalization, headers, JSON, and status helpers: `examples/http/api_packet.php`
 - Additional walkthroughs live in `examples/README.md`
 
 ## Quick Start Examples
+
+### Fluent values and global helper entrypoints
+
+```php
+use BlueFission\DataTypes;
+
+$names = arr(['Ada Lovelace', 'Grace Hopper'])
+    ->map(fn (string $name): string => str($name)->trim()->val())
+    ->reverse()
+    ->join(', ')
+    ->val();
+
+$record = obj(['count' => 3], ['count' => DataTypes::NUMBER]);
+$record->exposeValueObject();
+$total = $record->field('count')->plus(num(2))->val();
+
+$document = doc()->contents('Processed: ' . $names);
+$timestamp = datetime('2026-07-04')->timestamp();
+```
+
+Global helpers are entrypoints into DevElation objects. They should create the
+object; the object should own the behavior.
 
 ### CLI utilities: args, tables, and progress
 
@@ -233,6 +295,11 @@ Install DevElation with Composer:
 ```bash
 composer require bluefission/develation
 ```
+
+Composer autoload registers DevElation classes and the global helper function
+file. After requiring `vendor/autoload.php`, helpers such as `arr()`, `str()`,
+`obj()`, `collect()`, `datetime()`, `filesystem()`, `doc()`, and `directory()`
+are available.
 
 The core package does not require the optional Ratchet websocket transport. If
 you use `BlueFission\Async\Sock`, install Ratchet in applications that can
