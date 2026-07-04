@@ -4,10 +4,9 @@ namespace BlueFission\Data;
 
 use BlueFission\Collections\Hierarchical;
 use BlueFission\Collections\ICollection;
-use BlueFission\Collections\Collection;
 use BlueFission\Data\IData;
+use BlueFission\Data\Support\ResolvesFilesystemPath;
 use BlueFission\DevElation as Dev;
-use BlueFission\Val;
 
 /**
  * Class Directory
@@ -20,6 +19,8 @@ use BlueFission\Val;
  */
 abstract class Directory extends Hierarchical implements ICollection
 {
+    use ResolvesFilesystemPath;
+
     /**
      * The root storage object backing the directory.
      *
@@ -68,26 +69,4 @@ abstract class Directory extends Hierarchical implements ICollection
         return (bool)Dev::apply('_out', $isReachable);
     }
 
-    /**
-     * Resolve the explicit path or the hierarchical label path.
-     *
-     * @param string|null $path
-     * @return string|null
-     */
-    private function targetPath(?string $path = null): ?string
-    {
-        if (Val::isNotNull($path)) {
-            return Dev::apply('_in', $path);
-        }
-
-        $segments = (new Collection($this->path()))
-            ->filter(fn ($segment) => Val::isNotNull($segment) && $segment !== '')
-            ->contents();
-
-        if (empty($segments)) {
-            return null;
-        }
-
-        return Dev::apply('_in', implode(DIRECTORY_SEPARATOR, $segments));
-    }
 }

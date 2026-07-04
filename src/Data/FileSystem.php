@@ -5,6 +5,7 @@ use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
 use BlueFission\IObj;
+use BlueFission\Collections\Collection;
 use BlueFission\DataTypes;
 use BlueFission\HTML\HTML;
 use BlueFission\Net\HTTP;
@@ -277,7 +278,7 @@ class FileSystem extends Data implements IData {
 	private function file(): string|null
 	{
 		if ( !$this->basename && $this->extension ) {
-			$this->basename = implode( '.', [$this->filename, $this->extension] );
+			$this->basename = Arr::join([$this->filename, $this->extension], '.');
 		} elseif ( !$this->basename ) {
 			$this->basename = $this->filename;
 		}
@@ -302,7 +303,7 @@ class FileSystem extends Data implements IData {
 
 		}
 
-		$path = implode( DIRECTORY_SEPARATOR, $pathParts ) ?? getcwd();
+		$path = Arr::join($pathParts, DIRECTORY_SEPARATOR);
 		$realpath = realpath($path);
 
 		return $realpath ? $realpath : $path;
@@ -391,7 +392,7 @@ class FileSystem extends Data implements IData {
 		if ($filepath && file_exists($filepath) && is_readable($filepath)) {
 			$mimeType = @finfo_file($finfo, $filepath);
 		}
-		$content = ($mimeType && substr($mimeType, 0, 4) == 'text') ? stripslashes($content) : $content;
+		$content = ($mimeType && Str::sub($mimeType, 0, 4) == 'text') ? stripslashes($content) : $content;
 
 		$status = '';
 		$isNewFile = false;
@@ -468,7 +469,7 @@ class FileSystem extends Data implements IData {
 
 		$filepath = $path.DIRECTORY_SEPARATOR.$file;
 
-		$content = (!empty($this->contents()) && Str::is($this->contents()) ) ? stripslashes($this->contents()) : $this->contents();
+		$content = (Val::isNotEmpty($this->contents()) && Str::is($this->contents()) ) ? stripslashes($this->contents()) : $this->contents();
 		$status = '';
 
 		if ($this->_handle) {
@@ -575,7 +576,7 @@ class FileSystem extends Data implements IData {
 			return false;
 		}
 
-		$path = join(DIRECTORY_SEPARATOR, [$directory, $file]);
+		$path = Arr::join([$directory, $file], DIRECTORY_SEPARATOR);
 
 		if (!$this->allowedDir($path)) {
 			$this->status("Location is outside of allowed path.");
@@ -784,7 +785,7 @@ class FileSystem extends Data implements IData {
 		$type = $this->config('filter');
 		$pattern = '';
 		if ( Arr::is($type) ) {
-			$pattern = "/\\" . implode('$|\\', $type) . "$/i";
+			$pattern = "/\\" . Arr::join($type, '$|\\') . "$/i";
 		}
 		return $pattern;
 	}
@@ -810,14 +811,15 @@ class FileSystem extends Data implements IData {
 
 		$filters = $this->config('filter');
 
-		$filter = (Val::isNotNull($filters) && Arr::size($filters) > 0) 
-			? '{'.implode(',*', $filters ?? []).'}' : '*';
+		$filter = (Arr::is($filters) && Arr::isNotEmpty($filters))
+			? '{'.Arr::join(Arr::map($filters, fn ($extension) => '*' . $extension), ',').'}'
+			: '*';
 
 		$files = glob($this->path().DIRECTORY_SEPARATOR.$filter, GLOB_BRACE);
-		
-		foreach ($files as $key=>$file) {
-			$files[$key] = basename($file);
-		}
+
+		$files = (new Collection($files ?: []))
+			->map(fn ($file) => basename($file))
+			->contents();
 
 		// $files = scandir($this->path());
 		
@@ -850,7 +852,7 @@ class FileSystem extends Data implements IData {
 			return Dev::apply('_out', []);
 		}
 
-		$entries = Arr::make($entries)->sort()->val();
+		$entries = Arr::sort($entries);
 
 		return Dev::apply('_out', $entries);
 	}
@@ -892,7 +894,7 @@ class FileSystem extends Data implements IData {
 			return Dev::apply('_out', [$contents]);
 		}
 
-		return Dev::apply('_out', explode($eol, $contents));
+		return Dev::apply('_out', Str::split($contents, $eol));
 	}
 
 	/**
@@ -1022,13 +1024,16 @@ class FileSystem extends Data implements IData {
 		}
 
 		if ( !$dir ) {
-			$dir = str_replace(['..'.DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR.'..'], ['',''], $path);
+			$dir = Str::make($path)
+				->replace('..'.DIRECTORY_SEPARATOR, '')
+				->replace(DIRECTORY_SEPARATOR.'..', '')
+				->val();
 		}
 
-		$len1 = strlen($root);
-		$len2 = strlen($dir);
+		$len1 = Str::len($root);
+		$len2 = Str::len($dir);
 
-		$position = ( $len2 > 0 ) ? strpos ( $dir, $root ) : 0;
+		$position = ( $len2 > 0 ) ? Str::pos($dir, $root) : 0;
 
 		$allowed = ( $len1 <= $len2 && $position === 0 ) ? true : false;
 
