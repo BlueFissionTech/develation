@@ -472,16 +472,17 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	public function process() {
-		$args = array_slice($this->_arguments, 1);
+		$args = $this->requestArguments();
 
 		$behavior = $args['behavior'];
 		
 		$uri = new Uri();
-		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
+		$methodMappings = $this->methodMappings();
+		if ( $methodMappings->isNotEmpty() && $this->uriExists($methodMappings->keys()->val()) ) {
 
 			// $mapping = $this->_mappings[$this->_arguments['_method']][$location];
-			$this->_cmdpath = $this->returnMatchingUri(array_keys($this->_mappings[$this->_arguments['_method']]));
-			$mapping = $this->_mappings[$this->_arguments['_method']][$this->_cmdpath];
+			$this->_cmdpath = $this->returnMatchingUri($methodMappings->keys()->val());
+			$mapping = $methodMappings[$this->_cmdpath];
 
 			$request = new Request();
 			$this->_request = $request;
@@ -496,7 +497,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 			$this->_operation = $this->prepareCallable($mapping->callable);
 
-			$this->_conditions = array_merge($args['data'], $uri->buildArguments($this->_cmdpath) );
+			$this->_conditions = Arr::make($args['data'])->merge($uri->buildArguments($this->_cmdpath))->val();
 		}
 
 		return $this;
@@ -508,11 +509,12 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * @return $this
 	 */
 	public function run() {
-		$args = array_slice($this->_arguments, 1);
+		$args = $this->requestArguments();
 		$behavior = $args['behavior'];
 		$uri = new Uri();
 
-		if ( isset($this->_mappings[$this->_arguments['_method']]) && $this->uriExists(array_keys($this->_mappings[$this->_arguments['_method']]) ) ) {
+		$methodMappings = $this->methodMappings();
+		if ( $methodMappings->isNotEmpty() && $this->uriExists($methodMappings->keys()->val()) ) {
 			// TODO make this more elegant
 			/* This should never have an array as callable becase of "prepareCallable"
 			if ( $callable[0] instanceof \BlueFission\Services\Service  ) {
@@ -529,7 +531,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 			print($result);
 		} elseif ( $args['service'] == $this->name() ) {
-			$data = isset($args['data']) ? $args['data'] : null;
+			$data = Arr::hasKey($args, 'data') ? $args['data'] : null;
 			
 			$this->boost($behavior, $data);
 		} elseif ($this->fileExists($uri->path) && $uri->path != "") {
@@ -553,6 +555,28 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		}
 
 		return $this;
+	}
+
+	/**
+	 * Return request arguments without the transport method entry.
+	 *
+	 * @return array
+	 */
+	private function requestArguments(): array
+	{
+		return Arr::make($this->_arguments)->slice(1)->val();
+	}
+
+	/**
+	 * Return mappings for the active request method.
+	 *
+	 * @return Arr
+	 */
+	private function methodMappings(): Arr
+	{
+		$method = $this->_arguments['_method'] ?? null;
+
+		return Arr::make($this->_mappings[$method] ?? []);
 	}
 
 	/**
@@ -829,7 +853,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	public function delegate( $name, $reference = null, $args = null )
 	{
 		$params = func_get_args();
-		$args = $args ?? array_slice( $params, 2 );
+		$args = $args ?? Arr::make($params)->slice(2)->val();
 
 		$service = new Service();
 		$service->parent($this);
@@ -843,7 +867,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		} elseif ( Val::isNotNull($reference) ) {
 			$service->type = $reference;	
 			$service->scope = $this;
-			if ( is_subclass_of($reference, Service::class) && count($args) == 0 ) {
+			if ( is_subclass_of($reference, Service::class) && Arr::count($args) == 0 ) {
 				$service->instance = $this->resolve($reference);
 			}
 		} else {
@@ -965,7 +989,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		if ( $call )
 		{
 			$params = func_get_args();
-			$args = array_slice( $params, 2 );
+			$args = Arr::make($params)->slice(2)->val();
 
 			$response = $this->_services[$serviceName]->call( $call, $args );
 
@@ -983,7 +1007,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function broadcast( $behavior, $args = null )
 	{
-		if (empty($this->_broadcastChain)) $this->_broadcastChain = ["Base"];
+		if (Arr::isEmpty($this->_broadcastChain)) $this->_broadcastChain = ["Base"];
 
 		if ( !($behavior instanceof Behavior) )
 		{
@@ -1001,7 +1025,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			{
 				foreach ( $senders as $senderName=>$recipients )
 				{
-					if (!isset($this->_broadcastedEvents[$senderName])) $this->_broadcastedEvents[$senderName] = [];
+					if (!Arr::hasKey($this->_broadcastedEvents, $senderName)) $this->_broadcastedEvents[$senderName] = [];
 
 					if (Arr::has($this->_broadcastedEvents[$senderName], $behavior->name())) {
 						continue;
@@ -1023,7 +1047,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 						if (
 							!Arr::has($this->_broadcastedEvents[$senderName], $behavior->name()) && 
 							$targetName == $senderName || 
-							( isset($this->_broadcastChain[$this->_depth-1]) && $this->_broadcastChain[$this->_depth-1] == $targetName)
+							( Arr::hasKey($this->_broadcastChain, $this->_depth-1) && $this->_broadcastChain[$this->_depth-1] == $targetName)
 						)
 						{
 							$name = $recipient['callback'] ? $recipient['callback'] : $behavior->name();
@@ -1140,13 +1164,13 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
         foreach ($this->_routes as $behaviorName => $senders) {
 
             foreach ($senders as $senderName => $recipients) {
-            	foreach ( $recipients as $recipient ) {
-            		$service = $recipient['recipient'];
-	                if (!isset($abilities[$service])) {
+                foreach ( $recipients as $recipient ) {
+                    $service = $recipient['recipient'];
+	                if (!Arr::hasKey($abilities, $service)) {
 	                    $abilities[$service] = [];
 	                }
 
-	                if (!in_array($behaviorName, $abilities[$service])) {
+	                if (!Arr::has($abilities[$service], $behaviorName)) {
 	                    $abilities[$service][] = $behaviorName;
 	                }
 	            }
@@ -1184,7 +1208,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 		$dependencies = $this->handleDependencies($constructor, $arguments);
 
-		$values = array_values($dependencies);
+		$values = Arr::make($dependencies)->values()->val();
 
 		$instance = new $class(...$values);
 	
@@ -1247,7 +1271,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	private function boundArguments(String $classname = null)
 	{
-		if ( array_key_exists($classname, $this->_boundArguments) ) {
+		$boundArguments = Arr::make($this->_boundArguments);
+
+		if ( $boundArguments->hasKey($classname) ) {
 			return $this->_boundArguments[$classname];
 		}
 
@@ -1258,17 +1284,17 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	       
 	        while ($parent = $class->getParentClass()) {
 	            $parents[] = $parent->getName();
-	            $interfaces = array_merge($parent->getInterfaceNames(), $interfaces);
+	            $interfaces = Arr::make($parent->getInterfaceNames())->merge($interfaces)->val();
 	            $class = $parent;
 	        }
 
 	        foreach ( $parents as $parent ) {
-	        	if ( array_key_exists($parent, $this->_boundArguments) ) {
+                if ( $boundArguments->hasKey($parent) ) {
 					return $this->_boundArguments[$parent];
 				}
 	        }
 	        foreach ( $interfaces as $interface ) {
-	        	if ( array_key_exists($interface, $this->_boundArguments) ) {
+                if ( $boundArguments->hasKey($interface) ) {
 					return $this->_boundArguments[$interface];
 				}
 	        }
@@ -1290,7 +1316,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		$parameters = $functionOrMethod->getParameters();
 		$dependencies = [];
 		
-		$varTypes = ['string', 'int', 'float', 'bool', 'array', 'object', 'callable', 'iterable', 'void', 'null'];
+		$varTypes = Arr::make(['string', 'int', 'float', 'bool', 'array', 'object', 'callable', 'iterable', 'void', 'null']);
 
 		$callingClass = null;
 		if ( $functionOrMethod instanceof \ReflectionMethod ) {
@@ -1308,12 +1334,12 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			$dependencyName = $parameter->getName();
 
 			// Check if the dependency class has a binding
-			if (\array_key_exists($dependencyClass, $this->_bindings)) {
+			if (Arr::hasKey($this->_bindings, $dependencyClass)) {
 				$dependencyClass = $this->_bindings[$dependencyClass];
 			}
 
 			// Merge the arguments with the application registered named bindings by class
-			$arguments = array_merge($this->boundArguments($callingClass), $arguments);
+			$arguments = Arr::make($this->boundArguments($callingClass))->merge($arguments)->val();
 
 			if ($dependencyClass === Request::class && $this->_request) {
 				$dependencies[$dependencyName] = $this->_request;
@@ -1321,15 +1347,15 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			}
 
 			// Check if the argument exists for the current dependency
-			if ( isset($arguments[$dependencyName]) ) {
+			if ( Arr::hasKey($arguments, $dependencyName) ) {
 				$dependencies[$dependencyName] = $arguments[$dependencyName];
 			}
 
 			// If the dependency class exists, get its dependencies and create an instance of it
-			if ( in_array($dependencyClass, $varTypes) ) {
+			if ( $varTypes->has($dependencyClass) ) {
 				$dependencies[$dependencyName] = $arguments[$dependencyName] ?? ( $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null );
 			} elseif ( $dependencyClass ) {
-				$values = array_values($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')));
+				$values = Arr::make($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')))->values()->val();
 
 				$dependencies[$dependencyName] = 
 					$arguments[$dependencyName] ?? 
