@@ -29,8 +29,8 @@ class HTTPClient implements ClientInterface
 
         // Set the request body if there is one
         $body = (string) $request->getBody();
-        if (!empty($body)) {
-            $this->_curl->assign(json_decode($body, true) ?: $body);
+        if (Val::isNotEmpty($body)) {
+            $this->_curl->assign($this->requestBodyPayload($body));
         }
 
         $this->_curl
@@ -45,6 +45,11 @@ class HTTPClient implements ClientInterface
         );
     }
 
+    protected function requestBodyPayload(string $body): mixed
+    {
+        return HTTP::jsonDecode($body, true, $body);
+    }
+
     protected function getStatusCode(): int
     {
         return curl_getinfo($this->_curl->connection(), CURLINFO_HTTP_CODE);
@@ -55,14 +60,22 @@ class HTTPClient implements ClientInterface
         $headerSize = curl_getinfo($this->_curl->connection(), CURLINFO_HEADER_SIZE);
         $headerString = Str::sub($this->_curl->result(), 0, $headerSize);
         $lines = $this->normalizeHeaderLines($headerString);
-        $headers = [];
+        return $this->parseHeaderLines($lines);
+    }
+
+    protected function parseHeaderLines(array $lines): array
+    {
+        $headers = Arr::make();
         foreach ($lines as $line) {
-            if (Str::pos($line, ':') !== false) {
-                list($key, $value) = explode(':', Str::use(), 2);
-                $headers[trim($key)] = trim($value);
+            $separator = Str::pos($line, ':');
+            if ($separator !== false) {
+                $key = Str::sub($line, 0, $separator);
+                $value = Str::sub($line, $separator + 1);
+                $headers[Str::trim($key)] = Str::trim($value);
             }
         }
-        return $headers;
+
+        return $headers->val();
     }
 
     protected function normalizeHeaderLines($headerString): array
@@ -71,21 +84,23 @@ class HTTPClient implements ClientInterface
             return [];
         }
 
-        $headerString = Val::grab();
-
         if (Str::is($headerString)) {
-            $headerString = Str::replace(Str::grab(), "\r", '');
-            $lines = Str::split($headerString, "\n");
+            $lines = Str::make($headerString)
+                ->replace("\r", '')
+                ->split("\n")
+                ->filter(fn ($line) => Str::isNotEmpty($line))
+                ->values()
+                ->val();
         } elseif (Arr::is($headerString)) {
             $lines = Arr::grab();
         } else {
             return [];
         }
 
-        if (!Arr::isNotEmpty($lines)) {
+        if (Arr::isEmpty($lines)) {
             return [];
         }
 
-        return Arr::grab();
+        return $lines;
     }
 }

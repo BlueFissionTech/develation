@@ -2,6 +2,7 @@
 namespace BlueFission\Net;
 
 use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\Date;
 use BlueFission\Flag;
@@ -73,6 +74,19 @@ class IP {
 		self::$_ipFile = $file;
 	}
 
+	private static function ipLines($ipList): Arr
+	{
+		return Str::make((string)$ipList)
+			->split("\n")
+			->map(fn ($line) => Str::trim($line))
+			->filter(fn ($line) => Str::isNotEmpty($line))
+			->values();
+	}
+
+	private static function serializeLines($lines, string $delimiter = "\n"): string
+	{
+		return Arr::make($lines)->join($delimiter)->val();
+	}
 
 	private static function update(array $data)
 	{
@@ -83,8 +97,10 @@ class IP {
 		$storage->when( new Event( Event::CONNECTED ), function() use ( $data, $storage ) {
 			if (Arr::is($data)) {
 				$delimiter = "\t";
-				$lines = array_map(fn ($line) => implode($delimiter, $line), $data);
-				$storage->contents( implode("\n", $lines) )->write();
+				$lines = Arr::make($data)
+					->map(fn ($line) => self::serializeLines($line, $delimiter))
+					->values();
+				$storage->contents(self::serializeLines($lines))->write();
 			}
 		})
 
@@ -114,17 +130,22 @@ class IP {
 	{
 		$file = self::$_accessLog;
 
-		if (!file_exists($file)) {
+		if (!FileSystem::fileExists($file)) {
 			return [];
 		}
 
 		$delimiter = "\t";
-		$data = [];
-		$lines = file($file);
-		if (Arr::is($lines)) {
-			$data = array_map(fn ($line) => explode($delimiter, $line), $lines);
+		$contents = FileSystem::fileContents($file);
+		if (Val::isEmpty($contents)) {
+			return [];
 		}
-		return $data;
+
+		return Str::make($contents)
+			->split("\n")
+			->filter(fn ($line) => Str::isNotEmpty(Str::trim($line)))
+			->map(fn ($line) => Str::make($line)->split($delimiter)->val())
+			->values()
+			->val();
 	}
 
 
@@ -157,17 +178,16 @@ class IP {
 		// Write the data to the file upon successful conncection
 		->when( Event::READ , function() use ( &$result, $storage, $ip ) {
 			$ipList = (string)$storage->contents();
-			$ips = array_filter(array_map('trim', explode("\n", $ipList)));
+			$ips = self::ipLines($ipList);
 
-			if (Arr::has($ips, $ip)) {
+			if ($ips->has($ip)) {
 				self::setStatus("IP address $ip already blocked");
 				$result = true;
 				return;
 			}
 
 			$ips[] = $ip;
-			$ipList = implode("\n", $ips);
-			$storage->contents($ipList)->write();
+			$storage->contents(self::serializeLines($ips))->write();
 		})
 
 		// If the save is successful, set the status
@@ -206,9 +226,8 @@ class IP {
 
 		// Write the data to the file upon successful conncection
 		->when( Event::READ , function() use ( &$result, $storage, $ip ) {
-			$ipList = $storage->contents();
-			$ips = explode("\n", $ipList);
-			$index = Arr::search($ip, $ips);
+			$ips = self::ipLines($storage->contents());
+			$index = $ips->search($ip);
 
 			if ($index === false) {
 				self::setStatus("IP address $ip already allowed");
@@ -217,8 +236,7 @@ class IP {
 			}
 
 			unset($ips[$index]);
-			$ipList = implode("\n", $ips);
-			$storage->contents($ipList)->write();
+			$storage->contents(self::serializeLines($ips->values()))->write();
 		})
 
 		// If the save is successful, set the status
@@ -256,9 +274,8 @@ class IP {
 		
 		$ip = ($ip == '') ? self::remote() : $ip;
 		
-		$ipList = file_get_contents(self::$_ipFile);
-		$ips = explode("\n", $ipList);
-		$isBlocked = Arr::has($ips, $ip);
+		$ipList = FileSystem::fileContents(self::$_ipFile);
+		$isBlocked = self::ipLines($ipList)->has($ip);
 		if ($isBlocked) {
 			$status = "Your IP address has been restricted from viewing this content. Please contact the administrator.";
 			if ($exit) exit($status);
@@ -368,12 +385,11 @@ class IP {
 	public static function isDenied($ip)
 	{
 		$isBlocked = false;
-		
+
 		$ip = $ip ?? self::remote();
-		
-		$ips = file(self::$_ipFile);
-		$isBlocked = in_array($ip, $ips);
-		
+
+		$isBlocked = self::ipLines(FileSystem::fileContents(self::$_ipFile))->has($ip);
+
 		return $isBlocked;
 	}
 }

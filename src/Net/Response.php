@@ -2,6 +2,7 @@
 
 namespace BlueFission\Net;
 
+use BlueFission\Arr;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -16,10 +17,15 @@ class Response implements ResponseInterface
     public function __construct($statusCode = 200, $headers = [], $body = null, $protocolVersion = '1.1', $reasonPhrase = '')
     {
         $this->_statusCode = $statusCode;
-        $this->_headers = $headers;
+        $this->_headers = Arr::make($headers);
         $this->_body = $body;
         $this->_protocolVersion = $protocolVersion;
         $this->_reasonPhrase = $reasonPhrase;
+    }
+
+    public function __clone()
+    {
+        $this->_headers = Arr::make($this->_headers->val());
     }
 
     public function getStatusCode(): int
@@ -54,12 +60,12 @@ class Response implements ResponseInterface
 
     public function getHeaders(): array
     {
-        return $this->_headers;
+        return $this->_headers->val();
     }
 
     public function hasHeader($name): bool
     {
-        return isset($this->_headers[$name]);
+        return $this->_headers->hasKey($name);
     }
 
     public function getHeader($name): array
@@ -72,13 +78,13 @@ class Response implements ResponseInterface
 
     public function getHeaderLine($name): string
     {
-        return implode(', ', $this->getHeader($name));
+        return Arr::make($this->getHeader($name))->join(', ')->val();
     }
 
     public function withHeader($name, $value): self
     {
         $new = clone $this;
-        $new->_headers[$name] = (array)$value;
+        $new->_headers[$name] = Arr::toArray($value);
         return $new;
     }
 
@@ -86,9 +92,11 @@ class Response implements ResponseInterface
     {
         $new = clone $this;
         if ($new->hasHeader($name)) {
-            $new->_headers[$name] = array_merge($new->_headers[$name], (array)$value);
+            $new->_headers[$name] = Arr::make($new->_headers[$name])
+                ->mergeRecursive(Arr::toArray($value))
+                ->val();
         } else {
-            $new->_headers[$name] = (array)$value;
+            $new->_headers[$name] = Arr::toArray($value);
         }
         return $new;
     }
