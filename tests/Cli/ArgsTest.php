@@ -39,6 +39,24 @@ class ArgsTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(['one', 'two', 'three'], $parser->options()['tag']);
     }
 
+    public function testGroupedShortBooleanOptions()
+    {
+        $parser = new Args(['autoHelp' => false]);
+        $parser->addOption(new OptionDefinition('verbose', [
+            'short' => 'v',
+            'type' => 'bool',
+        ]));
+        $parser->addOption(new OptionDefinition('force', [
+            'short' => 'f',
+            'type' => 'bool',
+        ]));
+
+        $parser->parse(['tool.php', '-vf']);
+
+        $this->assertTrue($parser->options()['verbose']);
+        $this->assertTrue($parser->options()['force']);
+    }
+
     public function testEnvFallbackAndNoFlag()
     {
         putenv('TEST_ARGS_MODE=quiet');

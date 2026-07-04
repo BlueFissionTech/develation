@@ -255,7 +255,7 @@ class Args extends Obj
     {
         $chunk = substr($arg, 1);
         $results = [];
-        $letters = str_split($chunk);
+        $letters = Str::make($chunk)->splitBy('//', -1, PREG_SPLIT_NO_EMPTY)->val();
 
         if (Arr::count($letters) === 1) {
             $letter = $letters[0];
