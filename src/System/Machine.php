@@ -3,6 +3,7 @@ namespace BlueFission\System;
 
 use BlueFission\Val;
 use BlueFission\Str;
+use BlueFission\Num;
 use BlueFission\Date;
 use BlueFission\DevElation as Dev;
 
@@ -83,12 +84,11 @@ class Machine {
                     $bootString = Str::trim($matches[1]);
                 } else {
                     // Fallback to the original colon-based parsing but guard array access
-                    $boottimeParts = explode(':', $boottime, 4);
-                    if (count($boottimeParts) < 2) {
+                    $boottimeParts = Str::make($boottime)->split(':');
+                    if ($boottimeParts->count() < 2) {
                         return 0.0;
                     }
-                    $tail = array_slice($boottimeParts, 1);
-                    $bootString = Str::trim(implode(':', $tail));
+                    $bootString = Str::trim($boottimeParts->slice(1)->join(':')->val());
                 }
 
                 $uptime = Date::diff($bootString, Date::now()->val(), 'seconds');
@@ -106,12 +106,13 @@ class Machine {
             return 0.0;
         }
 
-        $parts = explode(' ', trim($contents));
-        if (!isset($parts[0]) || !is_numeric($parts[0])) {
+        $parts = Str::make($contents)->trim()->split(' ');
+        $uptime = $parts->get(0);
+        if (!Num::is($uptime)) {
             return 0.0;
         }
 
-        return (float)$parts[0];
+        return (float)$uptime;
     }
 
     /**
@@ -131,7 +132,7 @@ class Machine {
             $response = (string)$this->_system->response();
 
             //extract the numerical value from the response
-            $cpuUsage = preg_replace("/[^0-9]/", "", $response);
+            $cpuUsage = Str::replacePattern($response, "/[^0-9]/", "");
 
             if ($cpuUsage === null || $cpuUsage === '') {
                 return 0.0;
@@ -141,7 +142,7 @@ class Machine {
         }
 
         $load = @\sys_getloadavg();
-        if ($load === false || !isset($load[0]) || !is_numeric($load[0])) {
+        if ($load === false || !isset($load[0]) || !Num::is($load[0])) {
             return 0.0;
         }
 

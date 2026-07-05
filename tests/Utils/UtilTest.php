@@ -3,6 +3,7 @@ namespace BlueFission\Tests;
 
 use BlueFission\Utils\Util;
 use BlueFission\Val;
+use BlueFission\Str;
 use BlueFission\Net\HTTP;
 use BlueFission\Net\Email;
 
@@ -41,8 +42,9 @@ class UtilTest extends \PHPUnit\Framework\TestCase {
     public function testCsrfToken() {
         //Test generating csrf token
         $token = Util::csrfToken();
-        $this->assertTrue(is_string($token));
-        $this->assertEquals(64, strlen($token));
+        $this->assertTrue(Str::is($token));
+        $this->assertSame(64, Str::len($token));
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $token);
     }
 
     public function testValue() {
@@ -65,5 +67,18 @@ class UtilTest extends \PHPUnit\Framework\TestCase {
 
         $value = Util::value('test');
         $this->assertEquals('get_value', $value);
+    }
+
+    public function testValueAppliesRequestedFilter() {
+        unset($_COOKIE['age'], $_GET['age']);
+        $_POST['age'] = '42';
+
+        $value = Util::value('age', FILTER_VALIDATE_INT);
+        $this->assertSame(42, $value);
+
+        $_POST['age'] = 'forty-two';
+
+        $value = Util::value('age', FILTER_VALIDATE_INT);
+        $this->assertFalse($value);
     }
 }

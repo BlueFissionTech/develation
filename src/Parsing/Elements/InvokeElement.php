@@ -4,6 +4,8 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Element;
+use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
 class InvokeElement extends Element implements IRenderableElement
@@ -17,7 +19,7 @@ class InvokeElement extends Element implements IRenderableElement
         $match = $this->getMatch();
         $argString = '';
         if (preg_match('/@invoke\\((.*)\\)/s', $match, $m)) {
-            $argString = trim($m[1]);
+            $argString = Str::trim($m[1]);
         }
 
         $macroName = null;
@@ -48,7 +50,7 @@ class InvokeElement extends Element implements IRenderableElement
         }
 
         // Parse remaining key=value pairs as arguments.
-        $args = [];
+        $args = Arr::make([]);
         if ($argString !== '') {
             if (preg_match_all('/([a-zA-Z_][a-zA-Z0-9_-]*)\\s*=\\s*(\"[^\"]*\"|\\\'[^\\\']*\\\'|\\[[^\\]]*\\]|[^\\s]+)/', $argString, $matches, PREG_SET_ORDER)) {
                 foreach ($matches as $m) {
@@ -56,13 +58,13 @@ class InvokeElement extends Element implements IRenderableElement
                     $rawVal = $m[2];
                     // Treat macro arguments as literal values by default:
                     // strip quotes/brackets but do not resolve as scoped vars.
-                    $val = trim($rawVal, "\"'");
-                    $args[$key] = $val;
+                    $val = Str::trim($rawVal, "\"'");
+                    $args->set($key, $val);
                 }
             }
         }
 
-        $output = $macroElement->invoke($args);
+        $output = $macroElement->invoke($args->val());
         $output = Dev::apply('_out', $output);
         Dev::do('_after', [$output, $this]);
         return $output;

@@ -40,21 +40,20 @@ class Disk extends Storage implements IData
 	 */
 	public function activate( ): IObj
 	{
-		$path = $this->config('location') ?? sys_get_temp_dir();
-		
-		$name = $this->config('name') ?? '';
-			
-		if (!$name)	{
-			$name = basename(tempnam($path, 'store_'));
+		$path = Str::make((string)($this->config('location') ?? sys_get_temp_dir()));
+		$name = Str::make((string)($this->config('name') ?? ''));
+
+		if ($name->isEmpty())	{
+			$name->val(basename(tempnam($path->val(), 'store_')));
 		}
 
 		$filesystem = new FileSystem( [
 			'mode'=>'c+',
 			'filter'=>'file',
-			'root'=>$path
+			'root'=>$path->val()
 		] );
 
-		$filesystem->filename = $name;
+		$filesystem->filename = $name->val();
 		$filesystem
 		->when(Event::CONNECTED, (function ($b, $m) use ($filesystem) {
 			$this->_source = $filesystem;
@@ -125,15 +124,14 @@ class Disk extends Storage implements IData
 
 		$value = Dev::apply(null, $value);
 
-		if ( function_exists('json_decode'))
-		{
-			$decoded = json_decode($value, true);
-			if (json_last_error() === JSON_ERROR_NONE) {
-				$this->contents($decoded);
-				$this->assign((array)$decoded);
-			} else {
-				$this->contents($value);
-			}
+		$invalidJson = new \stdClass();
+		$decoded = HTTP::jsonDecode((string)$value, true, $invalidJson);
+
+		if ($decoded !== $invalidJson) {
+			$this->contents($decoded);
+			$this->assign(Arr::make((array)$decoded)->val());
+		} else {
+			$this->contents($value);
 		}
 	}
 	
