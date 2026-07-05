@@ -97,7 +97,7 @@ class Args extends Obj
         while ($index < $count) {
             $arg = $argv[$index];
             if ($arg === '--') {
-                $positionals->merge(array_slice($argv, $index + 1));
+                $positionals->merge(Arr::make($argv)->slice($index + 1)->val());
                 break;
             }
 
@@ -217,15 +217,16 @@ class Args extends Obj
         $raw = $arg;
 
         $eqPos = Str::pos($arg, '=');
+        $argument = Str::make($arg);
         if ($eqPos !== false) {
-            $name = substr($arg, 2, $eqPos - 2);
-            $value = substr($arg, $eqPos + 1);
+            $name = $argument->sub(2, $eqPos - 2);
+            $value = $argument->sub($eqPos + 1);
         } else {
-            $name = substr($arg, 2);
+            $name = $argument->sub(2);
         }
 
         if (Str::pos($name, 'no-') === 0) {
-            $candidate = substr($name, 3);
+            $candidate = Str::make($name)->sub(3);
             if (isset($map['long'][$candidate])) {
                 return [$map['long'][$candidate]->name(), false];
             }
@@ -253,7 +254,7 @@ class Args extends Obj
 
     protected function parseShortOption(string $arg, array $argv, int &$index, array $map): ?array
     {
-        $chunk = substr($arg, 1);
+        $chunk = Str::make($arg)->sub(1);
         $results = [];
         $letters = Str::make($chunk)->splitBy('//', -1, PREG_SPLIT_NO_EMPTY)->val();
 
@@ -303,7 +304,7 @@ class Args extends Obj
             return $results;
         }
 
-        $value = implode('', $letters);
+        $value = Arr::make($letters)->join('')->val();
         if ($value === '' && $this->requiresValue($definition)) {
             $next = $argv[$index + 1] ?? null;
             if ($next !== null && Str::pos($next, '-') !== 0) {
