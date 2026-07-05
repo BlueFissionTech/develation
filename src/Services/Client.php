@@ -7,7 +7,13 @@ use BlueFission\Connections\Curl;
 use BlueFission\Net\HTTP;
 use BlueFission\Str;
 
-// @TODO: make other classes extend this base class
+/**
+ * Base service client for HTTP-backed integrations.
+ *
+ * Subclasses are expected to configure $_baseUrl, $_apiKey, or $_client as
+ * needed and may override target(), get(), or post() for provider-specific
+ * transport behavior.
+ */
 abstract class Client extends Service
 {
     protected ?Curl $_curl;

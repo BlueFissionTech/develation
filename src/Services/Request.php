@@ -45,7 +45,6 @@ class Request extends Obj
                 $request = $this->input(INPUT_POST, $_POST ?? []);
                 break;
             default:
-                // $request = filter_input_array(INPUT_REQUEST); // Awaiting implmentation
                 $get = Arr::make($this->input(INPUT_GET, $_GET ?? []));
                 $post = Arr::make($this->input(INPUT_POST, $_POST ?? []));
 

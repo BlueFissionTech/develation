@@ -662,7 +662,6 @@ class MySQL extends Storage implements IData
             $this->_fields = [];
         }
 
-        // TODO make sure this works as expected and it actually compares the arrays
         if (Arr::size($this->_fields) <= 0) {
             $data = [];
             //$tables = Arr::toArray( $this->config(self::NAME_FIELD) ? $this->config(self::NAME_FIELD) : get_class($this) );

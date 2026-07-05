@@ -192,10 +192,7 @@ class Authenticator extends Service
      */
     private function confirmIPAddress($value)
     {
-        // $attempts = new Mysql('dash_login_attempts'); // TODO fix this with dependency injection
-        $attempts = $this->_datasource;
-        $attempts->config('name', $this->config('login_attempts_table'));
-        $attempts->activate();
+        $attempts = $this->loginAttemptsStorage();
         $last = [];
         $attempts->field('ip_address', $value);
         $attempts->read();
@@ -226,10 +223,7 @@ class Authenticator extends Service
      */
     private function blockIPAddress()
     {
-        // $attempts = new Mysql('dash_login_attempts');
-        $attempts = $this->_datasource;
-        $attempts->config('name', $this->config('login_attempts_table'));
-        $attempts->activate();
+        $attempts = $this->loginAttemptsStorage();
         $last = [];
         $attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
         $attempts->read();
@@ -250,18 +244,25 @@ class Authenticator extends Service
      */
     private function clearIPAddress()
     {
-        $attempts = $this->_datasource;
+        $attempts = $this->loginAttemptsStorage();
         $attempts->clear();
-        $attempts->config('name', $this->config('login_attempts_table'));
-        $attempts->activate();
         $last = [];
         $attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
         $attempts->read();
         $last = Arr::make(Arr::toArray($attempts->data()));
 
         if ($last->hasKey('last_attempt') && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
-            $db->delete('dash_login_attempts', 'ip_address', $_SERVER['REMOTE_ADDR']);
+            $attempts->delete();
         }
+    }
+
+    private function loginAttemptsStorage(): Storage
+    {
+        $attempts = $this->_datasource;
+        $attempts->config('name', $this->config('login_attempts_table'));
+        $attempts->activate();
+
+        return $attempts;
     }
 
     /**

@@ -51,4 +51,26 @@ class AuthenticatorTest extends TestCase
 
         $this->assertFalse($this->authenticator->isAuthenticated());
     }
+
+    public function testClearIPAddressDeletesLoginAttemptThroughDatasource()
+    {
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        $session = new Cookie();
+        $datasource = $this->createMock(Storage::class);
+        $datasource->method('config')->willReturnSelf();
+        $datasource->method('activate')->willReturnSelf();
+        $datasource->method('clear')->willReturnSelf();
+        $datasource->method('field')->willReturnSelf();
+        $datasource->method('read')->willReturnSelf();
+        $datasource->method('data')->willReturn([
+            'last_attempt' => date('Y-m-d G:i:s', strtotime('+1 minute')),
+        ]);
+        $datasource->expects($this->once())->method('delete')->willReturnSelf();
+
+        $authenticator = new Authenticator($session, $datasource);
+        $method = new \ReflectionMethod($authenticator, 'clearIPAddress');
+        $method->setAccessible(true);
+        $method->invoke($authenticator);
+    }
 }

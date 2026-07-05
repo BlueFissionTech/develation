@@ -336,7 +336,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		$this->_arguments[$parameters[1]] = $this->argumentOr($parameters[1], $uriParts[0] ?? $this->name());
 
 		// get the behavior triggered by this request
-		$this->_arguments[$parameters[2]] = $this->argumentOr($parameters[2], $uriParts[1] ?? ''); // TODO send a universal default behavior
+		$this->_arguments[$parameters[2]] = $this->argumentOr($parameters[2], $uriParts[1] ?? $this->defaultBehavior());
 
 		// get the data triggered by this request
 		$this->_arguments[$parameters[3]] = $this->argumentOr($parameters[3], $uriParts->slice(2)->val());
@@ -515,15 +515,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 		$methodMappings = $this->methodMappings();
 		if ( $methodMappings->isNotEmpty() && $this->uriExists($methodMappings->keys()->val()) ) {
-			// TODO make this more elegant
-			/* This should never have an array as callable becase of "prepareCallable"
-			if ( $callable[0] instanceof \BlueFission\Services\Service  ) {
-				$callable[0]->parent( $this );
-			}
-			*/
-			if ( $this->_operation instanceof \BlueFission\Services\Service  ) {
-				$this->_operation->parent( $this );
-			}
+			$this->attachOperationParent($this->_operation);
 
 			$result = $this->executeServiceMethod($this->_operation, $this->_conditions);
 
@@ -555,6 +547,18 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		}
 
 		return $this;
+	}
+
+	private function defaultBehavior(): string
+	{
+		return '';
+	}
+
+	private function attachOperationParent(mixed $operation): void
+	{
+		if ( $operation instanceof \BlueFission\Services\Service  ) {
+			$operation->parent( $this );
+		}
 	}
 
 	/**
