@@ -247,12 +247,12 @@ class HTTP {
 	 * @param bool $wholedomain A flag to determine if the whole domain name should be returned or not.
 	 * @return string The domain name of the current website.
 	 */
-	static function domain( $wholedomain = false ) 
+	static function domain( $wholedomain = false )
 	{
-		$domain = (isset($_SERVER['HTTP_HOST'])) ? $_SERVER['HTTP_HOST'] : '';
-		if ($domain != '') 
+		$domain = self::serverValue('HTTP_HOST', '');
+		if ($domain != '')
 		{
-			$domain = (strtolower(Str::sub($domain, 0, 4)) == 'www.' && !$wholedomain ) ? Str::sub($domain, 3) : $domain;
+			$domain = (Str::make(Str::sub($domain, 0, 4))->lower()->val() == 'www.' && !$wholedomain ) ? Str::sub($domain, 3) : $domain;
 			$port = Str::pos($domain, ':');
 			$domain = ($port) ? Str::sub($domain, 0, $port) : $domain;
 		}
@@ -267,8 +267,8 @@ class HTTP {
 	static function url()
 	{
 		$url = '';
-		if ( isset($_SERVER['HTTP_HOST']) && isset($_SERVER['REQUEST_URI']) ) {
-			$url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
+		if (Arr::hasKey($_SERVER, 'HTTP_HOST') && Arr::hasKey($_SERVER, 'REQUEST_URI')) {
+			$url = self::requestScheme() . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
 		}
 
 		return $url;
@@ -283,26 +283,21 @@ class HTTP {
 	 * @param bool $doc A flag to determine if the document root or the current href of the website should be returned.
 	 * @return string The href value of the current website.
 	 */
-	static function href($href = '', $doc = true) 
+	static function href($href = '', $doc = true)
 	{
-	    if (empty($href)) {
+	    if (Val::isEmpty($href)) {
 	        if (!defined('PAGE_EXTENSION')) define('PAGE_EXTENSION', '.php');
-	        $protocol = (
-	        	!empty($_SERVER['HTTPS']) 
-	        	&& $_SERVER['HTTPS'] !== 'off' 
-	        	|| (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
-	       	)
-	       		? "https://" : "http://";
-	        $host = $_SERVER['HTTP_HOST'];
-	        $request_uri = $_SERVER['REQUEST_URI'];
+	        $protocol = self::requestProtocol();
+	        $host = self::serverValue('HTTP_HOST', '');
+	        $request_uri = self::serverValue('REQUEST_URI', '');
 	        if ($doc === false) {
-	            $href = $_SERVER['DOCUMENT_ROOT'];
+	            $href = self::serverValue('DOCUMENT_ROOT', '');
 	        } else {
 	            $href = $protocol . $host . $request_uri;
 	            if (Str::rpos($href, PAGE_EXTENSION)) {
-	                $href = Str::sub($href, 0, Str::rpos($href, PAGE_EXTENSION) + strlen(PAGE_EXTENSION));
+	                $href = Str::sub($href, 0, Str::rpos($href, PAGE_EXTENSION) + Str::len(PAGE_EXTENSION));
 	            } elseif (Str::rpos($href, '/')) {
-	                $href = Str::sub($href, 0, Str::rpos($href, '/') + strlen('/'));
+	                $href = Str::sub($href, 0, Str::rpos($href, '/') + Str::len('/'));
 	            }
 	        }
 	    }
@@ -326,10 +321,10 @@ class HTTP {
 	static function cookie($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
 		if (Val::isNull($value))
-			return $_COOKIE[$var] ?? null;
-		
+			return Arr::hasKey($_COOKIE, $var) ? $_COOKIE[$var] : null;
+
 		$domain = ($path) ? Str::sub($path, 0, Str::pos($path, '/')) : HTTP::domain();
-		$dir = ($path) ? Str::sub($path, Str::pos($path, '/'), strlen($path)) : '/';
+		$dir = ($path) ? Str::sub($path, Str::pos($path, '/'), Str::len($path)) : '/';
 		$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 		$cookiesecure = (bool)$secure;
 			
@@ -351,12 +346,12 @@ class HTTP {
 	static function session($var, $value = null, $expire = null, $path = null, $secure = false)
 	{
 		if (Val::isNull($value) )
-			return $_SESSION[$var] ?? null;
-			
-		if (session_id() == '') 
+			return Arr::hasKey($_SESSION ?? [], $var) ? $_SESSION[$var] : null;
+
+		if (session_id() == '')
 		{
 			$domain = ($path) ? Str::sub($path, 0, Str::pos($path, '/')) : HTTP::domain();
-			$dir = ($path) ? Str::sub($path, Str::pos($path, '/'), strlen($path)) : '/';
+			$dir = ($path) ? Str::sub($path, Str::pos($path, '/'), Str::len($path)) : '/';
 			$cookiedie = (Num::isValid($expire)) ? time()+(int)$expire : (int)$expire; //expire in one hour
 			$cookiesecure = (bool)$secure;
 			
@@ -480,9 +475,33 @@ class HTTP {
 	static function redirect($href = '', $request_r = [], $snapshot = '') {
 	  $href = HTTP::href($href);
 	  $request = ($request_r) ? http_build_query($request_r) : "";
-	  $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? "https://" : "http://";
+	  $protocol = self::requestProtocol();
 	  $href = $protocol . str_replace(['http://', 'https://'], '', $href) . (($request != '') ? "?$request" : "");
 	  if ($snapshot != '') HTTP::cookie('href_snapshot', $snapshot);
 	  header("Location: $href");
+	}
+
+	private static function serverValue(string $key, mixed $default = null): mixed
+	{
+		return Arr::hasKey($_SERVER, $key) ? $_SERVER[$key] : $default;
+	}
+
+	private static function requestScheme(): string
+	{
+		return self::isSecureRequest() ? 'https' : 'http';
+	}
+
+	private static function requestProtocol(): string
+	{
+		return self::requestScheme() . '://';
+	}
+
+	private static function isSecureRequest(): bool
+	{
+		$server = Arr::make($_SERVER);
+		$hasHttps = $server->hasKey('HTTPS') && Val::isNotEmpty($server['HTTPS']) && $server['HTTPS'] !== 'off';
+		$hasSecurePort = $server->hasKey('SERVER_PORT') && Num::int($server['SERVER_PORT']) == 443;
+
+		return $hasHttps || $hasSecurePort;
 	}
 }
