@@ -475,7 +475,8 @@ class FileSystem extends Data implements IData {
 		$status = '';
 
 		if ($this->_handle) {
-			if ( ftruncate($this->_handle, 0) !== false) {
+			$handle = $this->_handle->unwrap();
+			if (is_resource($handle) && ftruncate($handle, 0) !== false) {
 				$status = "Successfully emptied '$file'";
 				$this->status($status);
 				$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
