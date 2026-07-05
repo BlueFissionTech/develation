@@ -218,6 +218,174 @@ class Ref extends Val implements IVal
         return $value;
     }
 
+    public function tell(): int|false
+    {
+        if (!$this->_valid()) {
+            $this->trigger(Event::ERROR);
+            return false;
+        }
+
+        if (is_resource($this->_data)) {
+            return ftell($this->_data);
+        }
+
+        if (is_object($this->_data) && method_exists($this->_data, 'tell')) {
+            $position = $this->_data->tell();
+
+            return is_int($position) ? $position : false;
+        }
+
+        $this->trigger(Event::ERROR);
+        return false;
+    }
+
+    public function seek(int $offset, int $whence = SEEK_SET): self
+    {
+        if (!$this->_valid()) {
+            $this->trigger(Event::ERROR);
+            return $this;
+        }
+
+        $success = false;
+        if (is_resource($this->_data)) {
+            $success = fseek($this->_data, $offset, $whence) === 0;
+        } elseif (is_object($this->_data) && method_exists($this->_data, 'seek')) {
+            $success = $this->_data->seek($offset, $whence);
+            $success = $success === null || (bool)$success;
+        }
+
+        if (!$success) {
+            $this->trigger(Event::ERROR);
+        }
+
+        return $this;
+    }
+
+    public function rewind(): self
+    {
+        if (!$this->_valid()) {
+            $this->trigger(Event::ERROR);
+            return $this;
+        }
+
+        $success = false;
+        if (is_resource($this->_data)) {
+            $success = rewind($this->_data);
+        } elseif (is_object($this->_data) && method_exists($this->_data, 'rewind')) {
+            $success = $this->_data->rewind();
+            $success = $success === null || (bool)$success;
+        } elseif (is_object($this->_data) && method_exists($this->_data, 'seek')) {
+            $success = $this->_data->seek(0, SEEK_SET);
+            $success = $success === null || (bool)$success;
+        }
+
+        if (!$success) {
+            $this->trigger(Event::ERROR);
+        }
+
+        return $this;
+    }
+
+    public function eof(): bool
+    {
+        if (!$this->_valid()) {
+            return true;
+        }
+
+        if (is_resource($this->_data)) {
+            return feof($this->_data);
+        }
+
+        if (is_object($this->_data) && method_exists($this->_data, 'eof')) {
+            return (bool)$this->_data->eof();
+        }
+
+        return false;
+    }
+
+    public function truncate(int $size = 0): bool
+    {
+        if (!$this->_valid()) {
+            $this->trigger(Event::ERROR);
+            return false;
+        }
+
+        if (is_resource($this->_data)) {
+            $success = ftruncate($this->_data, max(0, $size));
+            if ($success) {
+                $this->trigger([Event::SAVED, Event::CHANGE]);
+            } else {
+                $this->trigger(Event::ERROR);
+            }
+
+            return $success;
+        }
+
+        if (is_object($this->_data) && method_exists($this->_data, 'truncate')) {
+            $success = (bool)$this->_data->truncate(max(0, $size));
+            $this->trigger($success ? [Event::SAVED, Event::CHANGE] : Event::ERROR);
+
+            return $success;
+        }
+
+        $this->trigger(Event::ERROR);
+        return false;
+    }
+
+    public function chunks(int $length = 8192): \Generator
+    {
+        $length = max(1, $length);
+
+        if (!$this->_valid()) {
+            $this->trigger(Event::ERROR);
+            return;
+        }
+
+        if (is_resource($this->_data)) {
+            while (!feof($this->_data)) {
+                $chunk = fread($this->_data, $length);
+                if ($chunk === false) {
+                    $this->trigger(Event::ERROR);
+                    return;
+                }
+
+                if ($chunk === '') {
+                    return;
+                }
+
+                $chunk = Dev::apply('_out', $chunk);
+                $this->trigger([Event::READ, Event::RECEIVED]);
+
+                yield $chunk;
+            }
+
+            return;
+        }
+
+        if (is_object($this->_data) && method_exists($this->_data, 'read')) {
+            while (!$this->eof()) {
+                $chunk = $this->_data->read($length);
+                if ($chunk === false || $chunk === '' || is_null($chunk)) {
+                    return;
+                }
+
+                $chunk = Dev::apply('_out', $chunk);
+                $this->trigger([Event::READ, Event::RECEIVED]);
+
+                yield $chunk;
+            }
+
+            return;
+        }
+
+        if (!is_null($this->_data) && $this->_data !== false) {
+            $chunk = Dev::apply('_out', $this->_data);
+            $this->trigger([Event::READ, Event::RECEIVED]);
+
+            yield $chunk;
+        }
+    }
+
     public function write(mixed $data): int|bool
     {
         if (!$this->_valid()) {

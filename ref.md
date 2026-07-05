@@ -9,6 +9,8 @@ Use `Ref` when a reference, stream, pipe, or object handle benefits from:
 - explicit caller-owned versus owned close policy;
 - hookable read and write boundaries;
 - lifecycle events for read, write, connect, and close;
+- stream cursor helpers for seeking, rewinding, position checks, end-of-file
+  checks, truncation, and chunked reads;
 - fluent metadata for mode, target, status, or subsystem ownership.
 
 Keep native PHP resource handling when wrapping would obscure a low-level API
@@ -43,6 +45,20 @@ rewind($handle);
 
 $payload = $ref->read();
 $ref->close();
+```
+
+Streams can be consumed incrementally:
+
+```php
+$ref = Ref::open($path);
+
+foreach ($ref->chunks(8192) as $chunk) {
+    // Process without loading the whole stream into memory.
+}
+
+$ref->rewind();
+$position = $ref->tell();
+$ref->seek(0)->truncate();
 ```
 
 Reference binding is available when PHP can safely bind the value:

@@ -106,6 +106,47 @@ class RefTest extends ValTest
         $this->assertContains(Event::DISCONNECTED, $events);
     }
 
+    public function testCursorHelpersMoveAndReportStreamPosition()
+    {
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, 'abcdef');
+        rewind($handle);
+
+        $ref = Ref::resource($handle, ['owned' => true]);
+
+        $this->assertSame(0, $ref->tell());
+        $this->assertSame('ab', $ref->read(2));
+        $this->assertSame(2, $ref->tell());
+        $this->assertSame('de', $ref->seek(3)->read(2));
+        $this->assertFalse($ref->eof());
+        $this->assertSame('abcdef', $ref->rewind()->read());
+        $this->assertTrue($ref->eof());
+    }
+
+    public function testTruncateShortensOwnedStream()
+    {
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, 'abcdef');
+        rewind($handle);
+
+        $ref = Ref::resource($handle, ['owned' => true]);
+
+        $this->assertTrue($ref->truncate(3));
+        $this->assertSame('abc', $ref->rewind()->read());
+    }
+
+    public function testChunksIterateReadableStreamWithoutLoadingAllData()
+    {
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, 'abcdef');
+        rewind($handle);
+
+        $ref = Ref::resource($handle, ['owned' => true]);
+
+        $this->assertSame(['ab', 'cd', 'ef'], iterator_to_array($ref->chunks(2)));
+        $this->assertTrue($ref->eof());
+    }
+
     public function testDevElationFiltersWrapReadAndWriteBoundaries()
     {
         Dev::up();
