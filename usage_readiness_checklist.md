@@ -146,3 +146,52 @@ Repository-style code should keep domain names at the application layer and use 
 - Public code depends only on documented methods, constants, and return shapes.
 - Application-specific repository names, lifecycle names, and migrations stay outside DevElation core.
 - New helper requests make sense for DevElation as a general-purpose library, not only one caller.
+
+## Pre-Release To Stable Audit
+
+Before promoting an alpha or other pre-release to a stable tag, run a native
+function surface audit. The goal is not to eliminate every PHP built-in. The
+goal is to make each native call intentional: either use the DevElation surface
+because it adds lifecycle, hooks, consistency, or tests, or leave the native call
+in place because exact PHP behavior is required.
+
+Audit candidates:
+
+- Resource and stream functions: `is_resource`, `fopen`, `fclose`, `fread`,
+  `fwrite`, `fgets`, `ftell`, `fseek`, `rewind`, `feof`, `ftruncate`,
+  `stream_get_contents`, and `stream_set_blocking`.
+- Encoding and HTTP helpers: `json_encode`, `json_decode`, `urlencode`,
+  `http_build_query`, header/status string assembly, and path component parsing.
+- Array helpers: `array_merge`, `array_filter`, `array_map`, `array_diff`,
+  `array_intersect`, `array_slice`, `array_splice`, `array_reverse`,
+  `array_values`, `count`, and key/value existence checks.
+- String helpers: `trim`, `strtolower`, `strtoupper`, `str_replace`,
+  `str_starts_with`, `str_ends_with`, `strlen`, and repeat/case helpers.
+- Date, number, and boolean helpers where DevElation has a documented wrapper.
+
+Review questions:
+
+- Does DevElation already own a helper or primitive method for this operation?
+- Would using that helper improve hooks, events, metadata, ownership, or naming
+  consistency?
+- Is the native call inside the primitive/helper implementation itself, where
+  exact PHP behavior is required?
+- Would replacing the native call widen behavior in a risky way, such as
+  treating object handles like native resources?
+- Is the chosen path covered by focused tests or documented as an intentional
+  native boundary?
+
+Suggested command shape:
+
+```powershell
+rg -n "json_encode|json_decode|rewind|ftruncate|fopen|fclose|fread|fwrite|fgets|ftell|fseek|feof|stream_get_contents|http_build_query|urlencode|array_merge|array_filter|array_map|array_diff|array_intersect|array_slice|array_splice|array_reverse|array_values|count\(" src tests README.md *.md
+```
+
+When the scan finds native calls, classify them before release:
+
+- **Use DevElation**: replace with an existing primitive/helper and add or
+  update tests.
+- **Keep native**: leave in place because the code is implementing the helper,
+  calling an extension API, or preserving exact PHP semantics.
+- **Create issue**: open a follow-up when the helper should exist but the
+  release should not grow scope.
