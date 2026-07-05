@@ -515,7 +515,10 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the AND operator
+	 * Combine the stored value with another value using AND semantics.
+	 *
+	 * Outside an if() chain this is native bitwise AND. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -526,12 +529,20 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->setBooleanChainValue($this->booleanChainValue() && $value);
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue($this->booleanChainValue() && $value);
+		} else {
+			$this->_data = $this->_data & $value;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the OR operator
+	 * Combine the stored value with another value using OR semantics.
+	 *
+	 * Outside an if() chain this is native bitwise OR. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -542,22 +553,38 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->setBooleanChainValue($this->booleanChainValue() || $value);
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue($this->booleanChainValue() || $value);
+		} else {
+			$this->_data = $this->_data | $value;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Negate the stored boolean value
+	 * Negate the stored value.
+	 *
+	 * Outside an if() chain this is native bitwise NOT. Inside an if() chain it
+	 * negates the temporary logical condition.
 	 *
 	 * @return IVal The instance of the Flag class
 	 */
 	public function not() {
-		$this->setBooleanChainValue(!$this->booleanChainValue());
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue(!$this->booleanChainValue());
+		} else {
+			$this->_data = ~$this->_data;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the XOR operator
+	 * Combine the stored value with another value using XOR semantics.
+	 *
+	 * Outside an if() chain this is native bitwise XOR. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -568,12 +595,20 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->setBooleanChainValue($this->booleanChainValue() !== (bool)$value);
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue($this->booleanChainValue() !== (bool)$value);
+		} else {
+			$this->_data = $this->_data ^ $value;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the NOR operator
+	 * Combine the stored value with another value using NOR semantics.
+	 *
+	 * Outside an if() chain this is native bitwise NOR. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -584,7 +619,12 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->setBooleanChainValue(!($this->booleanChainValue() || $value));
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue(!($this->booleanChainValue() || $value));
+		} else {
+			$this->_data = ~($this->_data | $value);
+		}
+
 		return $this;
 	}
 

@@ -445,7 +445,7 @@ class ValTest extends \PHPUnit\Framework\TestCase
             ->endif()
             ->and(false);
 
-        $this->assertFalse($value->val());
+        $this->assertSame(0, $value->val());
     }
 
     public function testBooleanHelpersMutateStoredValueOutsideIfChain()
@@ -454,10 +454,24 @@ class ValTest extends \PHPUnit\Framework\TestCase
 
         $value->and(false);
 
-        $this->assertFalse($value->val());
+        $this->assertSame(0, $value->val());
 
         $value->or(true);
 
-        $this->assertTrue($value->val());
+        $this->assertSame(1, $value->val());
+    }
+
+    public function testBitwiseHelpersMutateStoredValueOutsideIfChain()
+    {
+        $value = new Val(6, false);
+
+        $this->assertSame(2, $value->and(3)->val());
+        $this->assertSame(3, $value->or(1)->val());
+        $this->assertSame(4, $value->xor(7)->val());
+        $this->assertSame(-5, $value->not()->val());
+
+        $nor = new Val(6, false);
+
+        $this->assertSame(-8, $nor->nor(3)->val());
     }
 }
