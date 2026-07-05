@@ -1,10 +1,20 @@
 {
     "name": "bluefission/develation",
     "type": "library",
-    "description": "Core Framework for BlueFission.com internal PHP Projects",
+    "description": "DevElation primitives, behaviors, data, service, and framework utilities for Blue Fission PHP projects",
     "homepage": "https://github.com/BlueFissionTech/develation",
     "license": "MIT",
-    "keywords": ["develation", "framework", "core", "bluefission", "php"],
+    "keywords": [
+        "develation",
+        "bluefission",
+        "materia",
+        "php",
+        "primitives",
+        "behaviors",
+        "services",
+        "data",
+        "framework"
+    ],
     "authors": [
         {
             "name": "Devon Scott",
@@ -31,9 +41,13 @@
         ]
     },
     "autoload-dev": {
-        "psr-4": { 
-            "BlueFission\\Tests\\": "tests/" 
+        "psr-4": {
+            "BlueFission\\Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --do-not-cache-result",
+        "test:services": "vendor/bin/phpunit --do-not-cache-result tests/Services"
     },
     "require-dev": {
         "cboden/ratchet": "^0.4.4",
@@ -49,6 +63,27 @@
         "allow-plugins": {
             "php-http/discovery": true
         }
+    },
+    "archive": {
+        "exclude": [
+            "/.codex",
+            "/.github",
+            "/.idea",
+            "/.phpunit.cache",
+            "/.phpunit.result.cache",
+            "/AGENTS.behavior.md",
+            "/AGENTS.md",
+            "/SPEC.md",
+            "/artifacts",
+            "/composer.lock",
+            "/docker",
+            "/examples",
+            "/harness.json",
+            "/phpunit.xml",
+            "/scripts",
+            "/tests",
+            "/tests.md"
+        ]
     },
     "support": {
         "issues": "https://github.com/BlueFissionTech/develation/issues",
