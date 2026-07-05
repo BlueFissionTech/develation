@@ -2,6 +2,7 @@
 
 namespace BlueFission\Utils;
 
+use BlueFission\Arr;
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behavioral;
 use BlueFission\Behavioral\Behaviors\State;
@@ -53,7 +54,7 @@ class Mem
 
     public static function unregister($id)
     {
-        if (isset(self::$pool[$id])) {
+        if (Arr::hasKey(self::$pool, $id)) {
             unset(self::$pool[$id]);
             unset(self::$audit[$id]);
         }
@@ -66,7 +67,7 @@ class Mem
 
     public static function get($id)
     {
-        if (isset(self::$pool[$id]) && self::$pool[$id] !== self::SLEEPING) {
+        if (Arr::hasKey(self::$pool, $id) && self::$pool[$id] !== self::SLEEPING) {
             self::$audit[$id]['used'] = true;
             return self::$pool[$id];
         }
@@ -110,7 +111,7 @@ class Mem
 
     public static function wakeup($id)
     {
-        if (isset(self::$pool[$id]) && self::$pool[$id] === self::SLEEPING) {
+        if (Arr::hasKey(self::$pool, $id) && self::$pool[$id] === self::SLEEPING) {
             // Assume stored data is serialized
             self::$pool[$id] = self::retrieve($id);
             Dev::do(null, [self::$pool[$id]]);
@@ -120,7 +121,7 @@ class Mem
 
     public static function sleep($id)
     {
-        if (isset(self::$pool[$id]) && self::$pool[$id] !== self::SLEEPING) {
+        if (Arr::hasKey(self::$pool, $id) && self::$pool[$id] !== self::SLEEPING) {
             Dev::do(null, [self::$pool[$id]]);
 
             if (self::$storage) {
