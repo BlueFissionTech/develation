@@ -10,6 +10,8 @@
 
 namespace BlueFission\Services;
 
+use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Configurable;
@@ -106,12 +108,12 @@ class Authenticator extends Service
         // $users = $this->config('users');
         // $users->
 
-        if (isset($_SERVER['REMOTE_ADDR']) && !$this->confirmIPAddress($_SERVER['REMOTE_ADDR'])) {
+        if (Arr::hasKey($_SERVER, 'REMOTE_ADDR') && !$this->confirmIPAddress($_SERVER['REMOTE_ADDR'])) {
             $this->_status[] = 'Too many failures';
             return false;
         }
 
-        if ("" == $username || "" == $password) {
+        if (Str::make((string)$username)->isEmpty() || Str::make((string)$password)->isEmpty()) {
             $this->_status[] = "Username and password required";
             return false;
         }
@@ -123,9 +125,11 @@ class Authenticator extends Service
             return false;
         }
 
-        $savedpass = $userinfo[$this->config('password_field')];
+        $userinfo = Arr::make(Arr::toArray($userinfo));
+        $passwordField = $this->config('password_field');
+        $savedpass = $userinfo->hasKey($passwordField) ? $userinfo[$passwordField] : null;
 
-        if (empty($savedpass) || !$this->verifyPassword($password, $savedpass)) {
+        if (Val::isEmpty($savedpass) || !$this->verifyPassword($password, $savedpass)) {
             $this->_status[] = "Username or password incorrect";
             return false;
         }
@@ -195,19 +199,19 @@ class Authenticator extends Service
         $last = [];
         $attempts->field('ip_address', $value);
         $attempts->read();
-        $last = $attempts->data();
+        $last = Arr::make(Arr::toArray($attempts->data()));
 
 
-        if (isset($last['last_attempt']) && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
-            $last['attempts']++;
+        if ($last->hasKey('last_attempt') && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
+            $attemptCount = (int)($last['attempts'] ?? 0) + 1;
         } else {
-            $last['attempts'] = 0;
+            $attemptCount = 0;
         }
         $attempts->field('last_attempt', date('Y-m-d G:i:s', strtotime('now')));
-        $attempts->field('attempts', $last['attempts']);
+        $attempts->field('attempts', $attemptCount);
         $attempts->write();
 
-        if (isset($last['attempts']) && $last['attempts'] >= $this->config('max_attempts')) {
+        if ($attemptCount >= $this->config('max_attempts')) {
             return false;
         }
         return true;
@@ -229,11 +233,11 @@ class Authenticator extends Service
         $last = [];
         $attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
         $attempts->read();
-        $last = $attempts->data();
+        $last = Arr::make(Arr::toArray($attempts->data()));
 
 
-        if (isset($last['last_attempt']) && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
-            if (isset($last['attempts']) && $last['attempts'] >= $this->config('max_attempts')) {
+        if ($last->hasKey('last_attempt') && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
+            if ($last->hasKey('attempts') && $last['attempts'] >= $this->config('max_attempts')) {
                 return true;
             }
         }
@@ -253,9 +257,9 @@ class Authenticator extends Service
         $last = [];
         $attempts->field('ip_address', $_SERVER['REMOTE_ADDR']);
         $attempts->read();
-        $last = $attempts->data();
+        $last = Arr::make(Arr::toArray($attempts->data()));
 
-        if (isset($last['last_attempt']) && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
+        if ($last->hasKey('last_attempt') && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
             $db->delete('dash_login_attempts', 'ip_address', $_SERVER['REMOTE_ADDR']);
         }
     }
@@ -293,7 +297,7 @@ class Authenticator extends Service
         $user->read();
         $dbCheck = $user->data();
 
-        if (!empty($dbCheck)) {
+        if (Val::isNotEmpty($dbCheck)) {
             return $dbCheck;
         } else {
             return false;
@@ -310,8 +314,9 @@ class Authenticator extends Service
         // $data = $this->_session->data();
         // die(var_dump($_SESSION));
 
-        if (isset($_COOKIE[$this->config('session')])) {
-            if ($this->setAuthCookie(stripslashes($_COOKIE[$this->config('session')]))) {
+        $sessionKey = $this->config('session');
+        if (Arr::hasKey($_COOKIE, $sessionKey)) {
+            if ($this->setAuthCookie(stripslashes($_COOKIE[$sessionKey]))) {
                 return true;
             } else {
                 $this->_status[] = "Could not save session";

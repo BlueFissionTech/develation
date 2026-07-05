@@ -5,6 +5,7 @@ namespace BlueFission\Services;
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Obj;
+use BlueFission\Val;
 
 class Credentials extends Obj
 {
@@ -46,9 +47,9 @@ class Credentials extends Obj
     {
         $valid = false;
 
-        if (!$this->field('username')) {
+        if (Val::isEmpty($this->field('username'))) {
             $this->status(self::FAILED_USERNAME_EMPTY);
-        } elseif (!$this->field('password')) {
+        } elseif (Val::isEmpty($this->field('password'))) {
             $this->status(self::FAILED_PASSWORD_EMPTY);
         } else {
             $valid = true;
