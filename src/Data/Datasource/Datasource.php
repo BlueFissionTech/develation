@@ -3,6 +3,7 @@
 namespace BlueFission\Data\Datasource;
 
 use BlueFission\Num;
+use BlueFission\Arr;
 use BlueFission\IObj;
 use BlueFission\Data\Data;
 use BlueFission\Data\IData;
@@ -39,8 +40,9 @@ class Datasource extends Data implements IData
      */
     public function __construct($config = null)
     {
-        parent::__construct($config = null);
-        $_index = -1;
+        parent::__construct($config);
+        $this->_index = -1;
+        $this->_collection = [];
     }
 
     /**
@@ -84,8 +86,12 @@ class Datasource extends Data implements IData
      *
      * @return string
      */
-    public function contents()
+    public function contents($data = null): mixed
     {
+        if ($data !== null) {
+            return $this->assign($data);
+        }
+
         return serialize($this->_data);
     }
 
@@ -112,7 +118,7 @@ class Datasource extends Data implements IData
     private function inbounds($index = null)
     {
         $index = Num::isValid($index) ? $index : $this->_index;
-        return ($index <= count($this->_collection) && $index >= 0);
+        return ($index <= Arr::count($this->_collection) && $index >= 0);
     }
 
     /**

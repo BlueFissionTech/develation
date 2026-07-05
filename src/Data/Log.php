@@ -3,6 +3,8 @@
 namespace BlueFission\Data;
 
 use BlueFission\Arr;
+use BlueFission\Date;
+use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\IObj;
 use BlueFission\Data\FileSystem;
@@ -63,7 +65,7 @@ class Log extends Data implements iData
     public function __construct($config = null)
     {
         parent::__construct();
-        if (is_array($config)) {
+        if (Arr::is($config)) {
             $this->config($config);
         }
 
@@ -94,7 +96,7 @@ class Log extends Data implements iData
      */
     public function push($message): IObj
     {
-        $time = date('Y-m-d G:i:s');
+        $time = Date::now()->formatTimestamp('Y-m-d G:i:s');
         $this->field($time, $message);
         if ($this->config('instant')) {
             $this->write();
@@ -220,11 +222,15 @@ class Log extends Data implements iData
             ->filter(fn ($line) => Val::isNotEmpty($line))
             ->val();
 
-        $output = '';
+        $output = Str::make();
         foreach ($message as $time => $line) {
-            $output .= "{$time} - {$line}\n";
+            $output
+                ->append($time)
+                ->append(' - ')
+                ->append($line)
+                ->append("\n");
         }
-        return $output;
+        return $output->val();
     }
 
     /**
