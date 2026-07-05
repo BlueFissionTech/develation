@@ -412,4 +412,52 @@ class ValTest extends \PHPUnit\Framework\TestCase
         $this->assertFalse($miss);
         $this->assertTrue($changed);
     }
+
+    public function testConditionalBooleanHelpersMutateTemporaryConditionOnly()
+    {
+        $value = new Val(true, false);
+        $hit = false;
+        $miss = false;
+
+        $value
+            ->if(true)
+            ->and(false)
+            ->or(false)
+            ->then(function () use (&$hit) {
+                $hit = true;
+            })
+            ->otherwise(function () use (&$miss) {
+                $miss = true;
+            });
+
+        $this->assertFalse($hit);
+        $this->assertTrue($miss);
+        $this->assertTrue($value->val());
+    }
+
+    public function testEndifClearsTemporaryConditionWithoutTouchingValue()
+    {
+        $value = new Val(true, false);
+
+        $value
+            ->if(true)
+            ->and(false)
+            ->endif()
+            ->and(false);
+
+        $this->assertFalse($value->val());
+    }
+
+    public function testBooleanHelpersMutateStoredValueOutsideIfChain()
+    {
+        $value = new Val(true, false);
+
+        $value->and(false);
+
+        $this->assertFalse($value->val());
+
+        $value->or(true);
+
+        $this->assertTrue($value->val());
+    }
 }

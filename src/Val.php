@@ -484,6 +484,20 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
+	 * End a temporary if() chain without applying it to the stored value.
+	 *
+	 * @return IVal
+	 */
+	public function endif(): IVal
+	{
+		$this->_temporaryCondition = false;
+		$this->_hasTemporaryCondition = false;
+		$this->_lastCondition = null;
+
+		return $this;
+	}
+
+	/**
 	 * Set a temporary condition for then()/otherwise() chains.
 	 *
 	 * @param mixed $valueOrMethodName
@@ -512,7 +526,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data && $value;
+		$this->setBooleanChainValue($this->booleanChainValue() && $value);
 		return $this;
 	}
 
@@ -528,7 +542,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data || $value;
+		$this->setBooleanChainValue($this->booleanChainValue() || $value);
 		return $this;
 	}
 
@@ -538,7 +552,7 @@ class Val implements IVal, IDispatcher {
 	 * @return IVal The instance of the Flag class
 	 */
 	public function not() {
-		$this->_data = !$this->_data;
+		$this->setBooleanChainValue(!$this->booleanChainValue());
 		return $this;
 	}
 
@@ -554,7 +568,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data xor $value;
+		$this->setBooleanChainValue($this->booleanChainValue() !== (bool)$value);
 		return $this;
 	}
 
@@ -570,7 +584,7 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = !($this->_data || $value);
+		$this->setBooleanChainValue(!($this->booleanChainValue() || $value));
 		return $this;
 	}
 
@@ -962,6 +976,36 @@ class Val implements IVal, IDispatcher {
 		}
 
 		return (bool)$this->_data;
+	}
+
+	/**
+	 * Resolve the boolean value currently targeted by boolean chain helpers.
+	 *
+	 * @return bool
+	 */
+	protected function booleanChainValue(): bool
+	{
+		if ( $this->_hasTemporaryCondition ) {
+			return $this->_temporaryCondition;
+		}
+
+		return (bool)$this->_data;
+	}
+
+	/**
+	 * Set the boolean value currently targeted by boolean chain helpers.
+	 *
+	 * @param mixed $value
+	 * @return void
+	 */
+	protected function setBooleanChainValue(mixed $value): void
+	{
+		if ( $this->_hasTemporaryCondition ) {
+			$this->_temporaryCondition = (bool)$value;
+			return;
+		}
+
+		$this->_data = (bool)$value;
 	}
 
 	/**

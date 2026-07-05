@@ -28,6 +28,13 @@ interface IVal
     public function clear(): IVal;
 
     /**
+     * End a temporary if() chain without applying it to the stored value.
+     *
+     * @return IVal
+     */
+    public function endif(): IVal;
+
+    /**
      * pass the value as a reference bound to $_data
      *
      * @param mixed $value
