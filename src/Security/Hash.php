@@ -9,6 +9,7 @@ use BlueFission\IVal;
 use BlueFission\Net\HTTP;
 use BlueFission\Num;
 use BlueFission\Obj;
+use BlueFission\Ref;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
@@ -256,7 +257,7 @@ class Hash extends Obj
         }
 
         if (is_resource($data)) {
-            $contents = stream_get_contents($data);
+            $contents = Ref::resource($data)->read();
             return $contents === false ? '' : $contents;
         }
 

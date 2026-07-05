@@ -3,6 +3,7 @@
 namespace BlueFission\System;
 
 use BlueFission\Arr;
+use BlueFission\Ref;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\System\Machine;
@@ -224,10 +225,10 @@ class System implements IDispatcher {
 	        $output = '';
 
 	        while (stream_select($read_streams, $write_streams, $except_streams, 0, 200000) > 0) {
-	            foreach ($read_streams as $stream) {
-	                $output .= stream_get_contents($stream);
-	            }
-	        }
+            foreach ($read_streams as $stream) {
+                $output .= Ref::resource($stream)->read();
+            }
+        }
 
 	        return $output;
 	    }
@@ -238,14 +239,14 @@ class System implements IDispatcher {
 	public function writeInput($processId, $input) {
 	    if (Arr::hasKey($this->_processes, $processId)) {
 	        $process = $this->_processes[$processId];//['process'];
-	        fwrite($process->pipes(0), $input);
+	        Ref::resource($process->pipes(0))->write($input);
 	    }
 	}
 
 	public function readOutput($processId) {
 	    if (Arr::hasKey($this->_processes, $processId)) {
 	        $process = $this->_processes[$processId];//['process'];
-	        return stream_get_contents($process->pipes(1));
+	        return Ref::resource($process->pipes(1))->read();
 	    }
 	    return false;
 	}

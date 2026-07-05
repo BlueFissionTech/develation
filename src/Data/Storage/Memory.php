@@ -5,10 +5,11 @@ namespace BlueFission\Data\Storage;
 use BlueFission\IObj;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\DevElation as Dev;
+use BlueFission\Ref;
 
 class Memory extends Storage
 {
-    protected $_stream;
+    protected ?Ref $_stream = null;
 
     public function __construct($config = null)
     {
@@ -18,10 +19,11 @@ class Memory extends Storage
     public function activate(): IObj
     {
         $mode = $this->config('target') ?? 'memory';
-        $this->_stream = fopen('php://'.$mode, 'r+');
-        if (!$this->_stream) {
+        $handle = fopen('php://'.$mode, 'r+');
+        if (!$handle) {
             throw new \RuntimeException("Unable to open php://$mode stream");
         }
+        $this->_stream = Ref::resource($handle, ['owned' => true, 'target' => 'php://'.$mode]);
 
         return parent::activate();
     }
@@ -29,14 +31,20 @@ class Memory extends Storage
     private function _disconnect()
     {
         if ($this->_stream) {
-            fclose($this->_stream);
+            $this->_stream->close();
         }
     }
 
     protected function _read(): void
     {
-        rewind($this->_stream);
-        $contents = stream_get_contents($this->_stream);
+        $handle = $this->_stream?->unwrap();
+        if (!is_resource($handle)) {
+            $this->_contents = [];
+            return;
+        }
+
+        rewind($handle);
+        $contents = $this->_stream->read();
 
         $contents = Dev::apply(null, $contents);
 
@@ -45,17 +53,27 @@ class Memory extends Storage
 
     protected function _write(): void
     {
-        ftruncate($this->_stream, 0);
-        rewind($this->_stream);
+        $handle = $this->_stream?->unwrap();
+        if (!is_resource($handle)) {
+            return;
+        }
+
+        ftruncate($handle, 0);
+        rewind($handle);
 
         $contents = Dev::apply(null, $this->_contents);
         
-        fwrite($this->_stream, json_encode($contents));
+        $this->_stream->write(json_encode($contents));
     }
 
     protected function _delete(): void
     {
-        ftruncate($this->_stream, 0);
-        rewind($this->_stream);
+        $handle = $this->_stream?->unwrap();
+        if (!is_resource($handle)) {
+            return;
+        }
+
+        ftruncate($handle, 0);
+        rewind($handle);
     }
 }

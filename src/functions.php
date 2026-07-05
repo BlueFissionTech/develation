@@ -6,6 +6,7 @@ use BlueFission\Flag;
 use BlueFission\Func;
 use BlueFission\Num;
 use BlueFission\Obj;
+use BlueFission\Ref;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\Collections\Collection;
@@ -53,6 +54,13 @@ if (!function_exists('func')) {
     function func(mixed $value = null): Func
     {
         return Func::make($value);
+    }
+}
+
+if (!function_exists('ref')) {
+    function ref(mixed $value = null): Ref
+    {
+        return Ref::make($value);
     }
 }
 

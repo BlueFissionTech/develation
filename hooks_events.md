@@ -106,7 +106,7 @@ library conventions.
 
 | Area | Files to inspect first | Typical hooks |
 | --- | --- | --- |
-| Primitive values | `src/Val.php`, `src/Str.php`, `src/Arr.php`, `src/Num.php`, `src/Flag.php`, `src/Date.php`, `src/Func.php` | `_in`, `_out`, auto-generated hooks, mutation events |
+| Primitive values | `src/Val.php`, `src/Str.php`, `src/Arr.php`, `src/Num.php`, `src/Flag.php`, `src/Date.php`, `src/Func.php`, `src/Ref.php` | `_in`, `_out`, auto-generated hooks, mutation events |
 | CLI | `src/Cli/Console.php`, `src/Cli/Args.php`, `src/Cli/Util/*` | `_in`, `_out`, `_before`, `_after`, `OnProcessed`, `OnSent`, `OnReceived`, `OnChange` |
 | Connections | `src/Connections/*`, `src/Connections/Database/*` | `_in`, `_out`, connection states, send/receive events, action failures |
 | Data and storage | `src/Data/*`, `src/Data/Storage/*`, `src/Data/Queues/*` | `_in`, `_out`, auto-generated hooks, graph hooks, storage behaviors |

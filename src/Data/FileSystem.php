@@ -4,6 +4,7 @@ namespace BlueFission\Data;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Ref;
 use BlueFission\IObj;
 use BlueFission\Collections\Collection;
 use BlueFission\DataTypes;
@@ -19,9 +20,9 @@ class FileSystem extends Data implements IData {
 	/**
 	 * The file handle for the file being processed
 	 *
-	 * @var resource $_handle
+	 * @var Ref|null $_handle
 	 */
-	private $_handle;
+	private ?Ref $_handle = null;
 
 	/**
 	 * The contents of the file being processed
@@ -164,12 +165,13 @@ class FileSystem extends Data implements IData {
 				$this->halt( State::CONNECTING );
 				$this->perform( Event::FAILURE, new Meta(info: $status) );
 			} else {
+				$ref = Ref::resource($handle, ['owned' => true, 'target' => $filepath, 'mode' => $this->config('mode')]);
 				if ($this->config('lock') && flock($handle, LOCK_EX)) {
 					$this->_isLocked = true;
-					$this->_handle = $handle;
+					$this->_handle = $ref;
 					$this->perform( Event::CONNECTED );
 				} elseif (!$this->config('lock')) {
-					$this->_handle = $handle;
+					$this->_handle = $ref;
 					$this->perform( Event::CONNECTED );
 				} else {
 					$this->_isLocked = false;
@@ -195,7 +197,7 @@ class FileSystem extends Data implements IData {
 	{
 		$this->perform( new State(State::DISCONNECTING) );
 		if ($this->_handle) {
-			fclose ( $this->_handle );
+			$this->_handle->close();
 		}
 		$this->_handle = null;
 		$this->_isLocked = false;
@@ -342,7 +344,7 @@ class FileSystem extends Data implements IData {
 		}
 		elseif ( $this->_handle )
 		{
-			$this->contents( fread( $this->_handle, filesize($filepath) ) );
+			$this->contents($this->_handle->read(filesize($filepath)));
 			if ( $this->contents() === false )
 			{
 				$this->status( "File $file could not be read" );
@@ -428,7 +430,7 @@ class FileSystem extends Data implements IData {
 				$status = "The file '$file' is not writable";
 			}
 		} elseif ($this->_handle) {
-			if ( fwrite($this->_handle, $content) !== false) 
+			if ( $this->_handle->write($content) !== false)
 			{
 				$status = "Successfully wrote to file '$file'";
 				$this->status($status);

@@ -6,7 +6,7 @@ Welcome to the central documentation of **DevElation**, a comprehensive PHP libr
 
 DevElation is built with the philosophy of reducing code complexity and promoting interconnectedness. It embraces the notion that robust application development can be made more approachable through a suite of well-organized, intuitive modules. The library is not just a bag of utility functions; it is a set of hookable value objects, data objects, behaviors, services, and helpers that are meant to participate in an application lifecycle.
 
-Central to DevElation's design is the principle of rapid prototyping without throwing away architecture. Primitives such as `Val`, `Str`, `Arr`, `Num`, `Flag`, `Date`, `Func`, and `Obj` should be treated as first-class citizens when values are captured, mutated, validated, observed, or passed through more than a trivial boundary. Static helpers remain appropriate for one-off hookable operations, while fluent objects are preferred when a value has a lifecycle.
+Central to DevElation's design is the principle of rapid prototyping without throwing away architecture. Primitives such as `Val`, `Str`, `Arr`, `Num`, `Flag`, `Date`, `Func`, `Ref`, and `Obj` should be treated as first-class citizens when values are captured, mutated, validated, observed, or passed through more than a trivial boundary. Static helpers remain appropriate for one-off hookable operations, while fluent objects are preferred when a value has a lifecycle.
 
 The library's dependency injection-friendly architecture means that scaling and enhancing functionality is often a matter of changing the injected class or storage backend. File, session, memory, SQL, Mongo, queue, schema, graph, service, connection, CLI, HTTP, HTML, and parsing classes are intentionally shaped around repeatable signatures so consumers can grow from simple scripts to structured systems without rewriting every call site.
 
@@ -36,6 +36,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
 
 - [Data Types Documentation](datatypes.md)
+- [Ref Primitive Documentation](ref.md)
 - [DevElation Capability Surface](capability_surface.md)
 - [Usage Readiness Checklist](usage_readiness_checklist.md)
 
@@ -50,6 +51,8 @@ $title = str(' release notes ')->trim()->capitalize()->val();
 $items = arr(['first', 'second'])->reverse()->join(', ')->val();
 $record = obj(['count' => 3], ['count' => DataTypes::NUMBER]);
 $document = doc()->contents('Draft text');
+$handle = ref(fopen('php://temp', 'r+'))->owned(true);
+$handle->write('data');
 ```
 
 Available helpers:
@@ -60,6 +63,7 @@ Available helpers:
 - `num(mixed $value = null): Num`
 - `flag(mixed $value = null): Flag`
 - `func(mixed $value = null): Func`
+- `ref(mixed $value = null): Ref`
 - `obj(array|object|null $data = null, array $types = []): Obj`
 - `collect(mixed $value = null): Collection`
 - `datetime(mixed $value = null): Date`
@@ -87,6 +91,7 @@ Helper API notes:
 - Use `Num::plus()`, `Num::minus()`, `Num::times()`, and `Num::by()` as readable aliases for fluent math. Math helpers unwrap `Val` objects when appropriate.
 - Use `Num::isIntStrict()`, `Num::isFloatStrict()` / `Num::isDoubleStrict()`, and `Flag::isBoolStrict()` / `Flag::isBooleanStrict()` when native scalar type checks must not coerce strings or numeric values.
 - Use `Num::deg2rad($degrees)`, `Num::rad2deg($radians)`, `Num::sin($radians)`, `Num::cos($radians)`, and `Num::atan2($y, $x)` for hookable angle and trigonometry helpers. Angles passed to trigonometry helpers are radians.
+- Use `Ref::resource($handle, ['owned' => false])`, `Ref::open($target, ['mode' => 'r'])`, `Ref::bind($value)`, and `ref($value)` when PHP references, stream resources, process pipes, or runtime handles need explicit ownership, read/write helpers, hooks, or lifecycle events. Keep native handles where direct PHP interop is clearer.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
 - Use `BlueFission\Data\FileSystem::lines($eol)` for read-only file line values and `FileSystem::entries()` for sorted directory entry values. Missing targets return empty arrays and are not created.
 - Use `BlueFission\Connections\Stdio::input()` or `Stdio::readInput()` to read request/body streams without interactive `stream_select()` polling. Empty or unreadable input returns an empty string.
