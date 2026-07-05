@@ -135,3 +135,7 @@ brand asset once the site is added.
   external services.
 - Native PHP interop remains available where consumer code or PHP extensions
   expect raw values or resources.
+- Pre-release to stable promotion includes a native function surface audit:
+  existing DevElation helpers should be used where they add lifecycle,
+  ownership, hooks, consistency, or test coverage, and remaining native calls
+  should be intentional low-level boundaries.
