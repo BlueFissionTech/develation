@@ -56,7 +56,7 @@ class CommandLocator
                 continue;
             }
 
-            $candidateBase = $path->trim(DIRECTORY_SEPARATOR)->append(DIRECTORY_SEPARATOR)->append($command)->val();
+            $candidateBase = rtrim($path->val(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $command;
             $result = self::matchExecutable($candidateBase, $extensions, $hasExtension);
             if ($result) {
                 return self::remember($command, $result, $options->val());
