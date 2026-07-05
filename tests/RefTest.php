@@ -42,6 +42,32 @@ class RefTest extends ValTest
         fclose($handle);
     }
 
+    public function testIsRecognizesReferencePrimitiveValues()
+    {
+        $handle = fopen('php://temp', 'r+');
+
+        $this->assertTrue(Ref::is($handle));
+        $this->assertFalse(Ref::is('php://temp'));
+        $this->assertFalse(Ref::is(null));
+
+        fclose($handle);
+    }
+
+    public function testOpenCreatesOwnedStreamFromTarget()
+    {
+        $path = tempnam(sys_get_temp_dir(), 'ref-open-');
+        file_put_contents($path, 'opened');
+
+        $ref = Ref::open($path);
+
+        $this->assertTrue($ref->valid());
+        $this->assertTrue($ref->isOwned());
+        $this->assertSame('opened', $ref->read());
+        $ref->close();
+
+        unlink($path);
+    }
+
     public function testOwnedResourceClosesDeterministically()
     {
         $handle = fopen('php://temp', 'r+');
@@ -102,6 +128,30 @@ class RefTest extends ValTest
         $handle = fopen('php://temp', 'r+');
 
         $this->assertTrue(Ref::valid($handle));
+
+        fclose($handle);
+    }
+
+    public function testsGrab()
+    {
+        $handle = fopen('php://temp', 'r+');
+
+        if (Ref::is($handle)) {
+            $this->assertSame($handle, Ref::grab());
+        }
+
+        fclose($handle);
+    }
+
+    public function testsUse()
+    {
+        $handle = fopen('php://temp', 'r+');
+
+        if (Ref::is($handle)) {
+            $ref = Ref::use();
+            $this->assertInstanceOf(Ref::class, $ref);
+            $this->assertSame($handle, $ref->val());
+        }
 
         fclose($handle);
     }

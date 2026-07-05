@@ -14,6 +14,23 @@ Use `Ref` when a reference, stream, pipe, or object handle benefits from:
 Keep native PHP resource handling when wrapping would obscure a low-level API
 contract or when a call site only touches a handle once.
 
+`Ref::is($value)` is the primitive type predicate. It returns true for native
+resources, readable/writable/closeable object handles, callable object handles,
+or values explicitly bound through `Ref::bind()`. It does not treat scalar
+paths, URLs, or arbitrary non-null values as references.
+
+Use the constructors by intent:
+
+- `Ref::make($value)` / `ref($value)` wraps an arbitrary value on the common
+  `Val` family surface.
+- `Ref::resource($handle, $options)` wraps an already-open resource or handle.
+  It does not open anything and defaults to `owned => false`, so `close()` will
+  not close caller-owned handles unless ownership is set explicitly.
+- `Ref::open($target, ['mode' => 'r'])` opens a stream with `fopen()` and wraps
+  it as owned. Prefer this when the `Ref` should manage the stream lifecycle;
+  prefer `fopen()` plus `Ref::resource()` when existing PHP APIs own the handle.
+- `Ref::bind($value)` binds to a PHP variable by reference.
+
 ```php
 use BlueFission\Ref;
 

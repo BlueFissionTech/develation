@@ -221,7 +221,7 @@ class Val implements IVal, IDispatcher {
 	{
 		$value = self::grab();
 
-		return self::make($value);
+		return static::make($value);
 	}
 
 	/**

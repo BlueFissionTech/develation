@@ -248,7 +248,7 @@ class Hash extends Obj
             return $data;
         }
 
-        if (Num::isIntStrict($data) || Num::isFloatStrict($data) || Flag::isBoolStrict($data)) {
+        if (Num::isInt($data) || Num::isFloat($data) || Flag::isBool($data)) {
             return (string)$data;
         }
 

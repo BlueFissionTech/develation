@@ -53,7 +53,7 @@ class Ref extends Val implements IVal
         $mode = (string)($options['mode'] ?? 'r');
         $handle = is_resource($target) || is_object($target)
             ? $target
-            : fopen((string)$target, $mode);
+            : @fopen((string)$target, $mode);
 
         $ref = static::resource($handle, $options + [
             'owned' => true,
@@ -138,6 +138,22 @@ class Ref extends Val implements IVal
         }
 
         return $this->_bound || !is_null($this->_data);
+    }
+
+    public function _is(): bool
+    {
+        if (is_resource($this->_data)) {
+            return true;
+        }
+
+        if (is_object($this->_data)) {
+            return method_exists($this->_data, 'close')
+                || method_exists($this->_data, 'read')
+                || method_exists($this->_data, 'write')
+                || is_callable($this->_data);
+        }
+
+        return $this->_bound;
     }
 
     public function _isValid($value = null): bool

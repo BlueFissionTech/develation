@@ -185,7 +185,7 @@ class HTTP {
 	     $res = Arr::make([]);
 	     foreach ((array)$formdata as $k=>$v)
 	     {
-	         $tmp_key = urlencode((Num::isIntStrict($k) && $numeric_prefix) ? $numeric_prefix.$k : $k);
+	         $tmp_key = urlencode((Num::isInt($k) && $numeric_prefix) ? $numeric_prefix.$k : $k);
 	         if ($key) $tmp_key = $key.'['.$tmp_key.']';
 	         if ( Arr::is($v) || is_object($v) )
 	         {
@@ -392,11 +392,11 @@ class HTTP {
 		if ($value === false) return 'false';
 		if ($value === true) return 'true';
 
-		if (Num::isFloatStrict($value)) {
+		if (Num::isFloat($value)) {
 			return Str::make((string)$value)->replace(',', '.')->val();
 		}
 
-		if (Num::isIntStrict($value)) {
+		if (Num::isInt($value)) {
 			return (string)$value;
 		}
 
