@@ -9,6 +9,7 @@ use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\IConfigurable;
 use BlueFission\Val;
 use BlueFission\Arr;
+use BlueFission\Ref;
 use BlueFission\Str;
 use BlueFission\IObj;
 use BlueFission\DevElation as Dev;
@@ -53,25 +54,21 @@ class Stdio extends Connection implements IConfigurable
     public static function readInput(mixed $source = null): string
     {
         $source = Val::isNull($source) ? 'php://input' : Dev::apply('_in', $source);
-        $handle = null;
-        $shouldClose = false;
-
-        if (is_resource($source)) {
-            $handle = $source;
+        if (Ref::is($source)) {
+            $ref = Ref::resource($source);
         } elseif (Str::is($source) && Str::isNotEmpty($source)) {
             $handle = @fopen($source, 'r');
-            $shouldClose = is_resource($handle);
+            $ref = Ref::is($handle) ? Ref::resource($handle, ['owned' => true]) : null;
+        } else {
+            $ref = null;
         }
 
-        if (!is_resource($handle)) {
+        if (!$ref || !$ref->valid()) {
             return (string)Dev::apply('_out', '');
         }
 
-        $contents = stream_get_contents($handle);
-
-        if ($shouldClose) {
-            fclose($handle);
-        }
+        $contents = $ref->read();
+        $ref->close();
 
         if ($contents === false) {
             $contents = '';
@@ -105,25 +102,21 @@ class Stdio extends Connection implements IConfigurable
             $source = Dev::apply('_in', $source);
         }
 
-        $handle = null;
-        $shouldClose = false;
-
-        if (is_resource($source)) {
-            $handle = $source;
+        if (Ref::is($source)) {
+            $ref = Ref::resource($source);
         } elseif (Str::is($source) && Str::isNotEmpty($source)) {
             $handle = @fopen($source, 'r');
-            $shouldClose = is_resource($handle);
+            $ref = Ref::is($handle) ? Ref::resource($handle, ['owned' => true]) : null;
+        } else {
+            $ref = null;
         }
 
-        if (!is_resource($handle)) {
+        if (!$ref || !$ref->valid()) {
             return (string)Dev::apply('_out', '');
         }
 
-        $line = fgets($handle);
-
-        if ($shouldClose) {
-            fclose($handle);
-        }
+        $line = $ref->line();
+        $ref->close();
 
         if ($line === false) {
             $line = '';
@@ -235,11 +228,11 @@ class Stdio extends Connection implements IConfigurable
      */
     protected function _close(): void
     {
-        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'in') && is_resource($this->_connection['in'])) {
-            fclose($this->_connection['in']);
+        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'in') && Ref::is($this->_connection['in'])) {
+            Ref::resource($this->_connection['in'], ['owned' => true])->close();
         }
-        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'out') && is_resource($this->_connection['out'])) {
-            fclose($this->_connection['out']);
+        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'out') && Ref::is($this->_connection['out'])) {
+            Ref::resource($this->_connection['out'], ['owned' => true])->close();
         }
         $this->perform(Event::DISCONNECTED); // Signal that the stream has been unloaded
     }

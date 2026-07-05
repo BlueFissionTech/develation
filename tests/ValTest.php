@@ -412,4 +412,66 @@ class ValTest extends \PHPUnit\Framework\TestCase
         $this->assertFalse($miss);
         $this->assertTrue($changed);
     }
+
+    public function testConditionalBooleanHelpersMutateTemporaryConditionOnly()
+    {
+        $value = new Val(true, false);
+        $hit = false;
+        $miss = false;
+
+        $value
+            ->if(true)
+            ->and(false)
+            ->or(false)
+            ->then(function () use (&$hit) {
+                $hit = true;
+            })
+            ->otherwise(function () use (&$miss) {
+                $miss = true;
+            });
+
+        $this->assertFalse($hit);
+        $this->assertTrue($miss);
+        $this->assertTrue($value->val());
+    }
+
+    public function testEndifClearsTemporaryConditionWithoutTouchingValue()
+    {
+        $value = new Val(true, false);
+
+        $value
+            ->if(true)
+            ->and(false)
+            ->endif()
+            ->and(false);
+
+        $this->assertSame(0, $value->val());
+    }
+
+    public function testBooleanHelpersMutateStoredValueOutsideIfChain()
+    {
+        $value = new Val(true, false);
+
+        $value->and(false);
+
+        $this->assertSame(0, $value->val());
+
+        $value->or(true);
+
+        $this->assertSame(1, $value->val());
+    }
+
+    public function testBitwiseHelpersMutateStoredValueOutsideIfChain()
+    {
+        $value = new Val(6, false);
+
+        $this->assertSame(2, $value->and(3)->val());
+        $this->assertSame(3, $value->or(1)->val());
+        $this->assertSame(4, $value->xor(7)->val());
+        $this->assertSame(-5, $value->not()->val());
+
+        $nor = new Val(6, false);
+
+        $this->assertSame(-8, $nor->nor(3)->val());
+    }
 }

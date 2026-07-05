@@ -84,7 +84,7 @@ class Flag extends Val implements IVal
      *
      * @return bool
      */
-    public function _isBoolStrict(): bool
+    public function _isBool(): bool
     {
         return is_bool($this->_data);
     }
@@ -94,9 +94,9 @@ class Flag extends Val implements IVal
      *
      * @return bool
      */
-    public function _isBooleanStrict(): bool
+    public function _isBoolean(): bool
     {
-        return $this->_isBoolStrict();
+        return $this->_isBool();
     }
 
     /**

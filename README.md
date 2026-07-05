@@ -6,7 +6,7 @@ Welcome to the central documentation of **DevElation**, a comprehensive PHP libr
 
 DevElation is built with the philosophy of reducing code complexity and promoting interconnectedness. It embraces the notion that robust application development can be made more approachable through a suite of well-organized, intuitive modules. The library is not just a bag of utility functions; it is a set of hookable value objects, data objects, behaviors, services, and helpers that are meant to participate in an application lifecycle.
 
-Central to DevElation's design is the principle of rapid prototyping without throwing away architecture. Primitives such as `Val`, `Str`, `Arr`, `Num`, `Flag`, `Date`, `Func`, and `Obj` should be treated as first-class citizens when values are captured, mutated, validated, observed, or passed through more than a trivial boundary. Static helpers remain appropriate for one-off hookable operations, while fluent objects are preferred when a value has a lifecycle.
+Central to DevElation's design is the principle of rapid prototyping without throwing away architecture. Primitives such as `Val`, `Str`, `Arr`, `Num`, `Flag`, `Date`, `Func`, `Ref`, and `Obj` should be treated as first-class citizens when values are captured, mutated, validated, observed, or passed through more than a trivial boundary. Static helpers remain appropriate for one-off hookable operations, while fluent objects are preferred when a value has a lifecycle.
 
 The library's dependency injection-friendly architecture means that scaling and enhancing functionality is often a matter of changing the injected class or storage backend. File, session, memory, SQL, Mongo, queue, schema, graph, service, connection, CLI, HTTP, HTML, and parsing classes are intentionally shaped around repeatable signatures so consumers can grow from simple scripts to structured systems without rewriting every call site.
 
@@ -36,6 +36,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
 
 - [Data Types Documentation](datatypes.md)
+- [Ref Primitive Documentation](ref.md)
 - [DevElation Capability Surface](capability_surface.md)
 - [Usage Readiness Checklist](usage_readiness_checklist.md)
 
@@ -50,6 +51,8 @@ $title = str(' release notes ')->trim()->capitalize()->val();
 $items = arr(['first', 'second'])->reverse()->join(', ')->val();
 $record = obj(['count' => 3], ['count' => DataTypes::NUMBER]);
 $document = doc()->contents('Draft text');
+$handle = ref(fopen('php://temp', 'r+'))->owned(true);
+$handle->write('data');
 ```
 
 Available helpers:
@@ -60,6 +63,7 @@ Available helpers:
 - `num(mixed $value = null): Num`
 - `flag(mixed $value = null): Flag`
 - `func(mixed $value = null): Func`
+- `ref(mixed $value = null): Ref`
 - `obj(array|object|null $data = null, array $types = []): Obj`
 - `collect(mixed $value = null): Collection`
 - `datetime(mixed $value = null): Date`
@@ -74,7 +78,7 @@ object.
 Helper API notes:
 
 - Prefer an object lifecycle when a value is changed or inspected more than a couple of times. Prefer static helpers for one-off hookable operations.
-- Use `Val::make($value)`, `Val::copy()`, `Val::as($target)`, `snapshot()`, `recall()`, `reset()`, and `if(...)->then(...)->otherwise(...)` when generic values need lifecycle, branching, or change tracking.
+- Use `Val::make($value)`, `Val::copy()`, `Val::as($target)`, `snapshot()`, `recall()`, `reset()`, and `if(...)->then(...)->otherwise(...)` when generic values need lifecycle, branching, or change tracking. Without an open `if()` chain, `and()`, `or()`, `xor()`, `nor()`, and `not()` apply native bitwise operations to the root value. After `if()` starts a conditional chain, those helpers mutate the temporary logical condition only; `then()` / `otherwise()` consume it, and `endif()` discards it explicitly.
 - Use `Arr::has($array, $value)` for value checks. Use `Arr::hasKey($array, $key)` for key checks, and `Arr::hasValue($array, $value, true)` or `Arr::contains($array, $value, true)` when strict value matching matters.
 - Use `Arr::merge($base, $next)` when associative keys should be replaced recursively and numeric list values should be appended when unique. Use `Arr::append($base, $next)` for append-only numeric list behavior.
 - Use `Arr::filter($array, $callback)`, `Arr::map($array, $callback)`, `Arr::diff($left, $right)`, `Arr::intersect($left, $right)`, `Arr::slice($array, $offset, $length)`, `Arr::splice($array, $replacement, $offset, $length)`, `Arr::join($array, $separator)`, and `Arr::reverse($array, $preserveKeys)` for common array transforms that should stay on the DevElation helper surface.
@@ -85,8 +89,9 @@ Helper API notes:
 - Use `Str::startsWith($value, $needle)`, `Str::endsWith($value, $needle)`, `Str::match($left, $right, Str::IGNORE_CASE)`, `Str::snake($value)`, `Str::pluralize($value)`, and `Str::size($value)` for string boundary, equality, casing, inflection, and length checks. Values are string-cast before comparison and whitespace remains significant.
 - Use `Date::formatTimestamp($timestamp, 'Y-m-d')` as a concise replacement for `date($format, $timestamp)`.
 - Use `Num::plus()`, `Num::minus()`, `Num::times()`, and `Num::by()` as readable aliases for fluent math. Math helpers unwrap `Val` objects when appropriate.
-- Use `Num::isIntStrict()`, `Num::isFloatStrict()` / `Num::isDoubleStrict()`, and `Flag::isBoolStrict()` / `Flag::isBooleanStrict()` when native scalar type checks must not coerce strings or numeric values.
+- Use `Num::isInt()`, `Num::isFloat()` / `Num::isDouble()`, and `Flag::isBool()` / `Flag::isBoolean()` when native scalar type checks must not coerce strings or numeric values.
 - Use `Num::deg2rad($degrees)`, `Num::rad2deg($radians)`, `Num::sin($radians)`, `Num::cos($radians)`, and `Num::atan2($y, $x)` for hookable angle and trigonometry helpers. Angles passed to trigonometry helpers are radians.
+- Use `Ref::is($value)` as the reference/resource predicate, `Ref::resource($handle, ['owned' => false])` for already-open caller-owned handles, `Ref::open($target, ['mode' => 'r'])` when the primitive should call `fopen()` and own the stream, `Ref::bind($value)` for PHP reference binding, and `ref($value)` / `Ref::make($value)` for generic wrapping. `Ref` supports cursor helpers such as `tell()`, `seek()`, `rewind()`, `eof()`, `truncate()`, and generator-based `chunks()` for streaming reads. Keep native handles where direct PHP interop is clearer.
 - `BlueFission\Data\FileSystem::fileExists($path)` checks concrete file paths without initializing storage state. `BlueFission\Data\File::exists()` / `isReachable()` and `BlueFission\Data\Directory::exists()` / `isReachable()` can check explicit paths or hierarchy labels without creating missing paths.
 - Use `BlueFission\Data\FileSystem::lines($eol)` for read-only file line values and `FileSystem::entries()` for sorted directory entry values. Missing targets return empty arrays and are not created.
 - Use `BlueFission\Connections\Stdio::input()` or `Stdio::readInput()` to read request/body streams without interactive `stream_select()` polling. Empty or unreadable input returns an empty string.

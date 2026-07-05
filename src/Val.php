@@ -221,7 +221,7 @@ class Val implements IVal, IDispatcher {
 	{
 		$value = self::grab();
 
-		return self::make($value);
+		return static::make($value);
 	}
 
 	/**
@@ -484,6 +484,20 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
+	 * End a temporary if() chain without applying it to the stored value.
+	 *
+	 * @return IVal
+	 */
+	public function endif(): IVal
+	{
+		$this->_temporaryCondition = false;
+		$this->_hasTemporaryCondition = false;
+		$this->_lastCondition = null;
+
+		return $this;
+	}
+
+	/**
 	 * Set a temporary condition for then()/otherwise() chains.
 	 *
 	 * @param mixed $valueOrMethodName
@@ -501,7 +515,10 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the AND operator
+	 * Combine the stored value with another value using AND semantics.
+	 *
+	 * Outside an if() chain this is native bitwise AND. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -512,12 +529,20 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data && $value;
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue($this->booleanChainValue() && $value);
+		} else {
+			$this->_data = $this->_data & $value;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the OR operator
+	 * Combine the stored value with another value using OR semantics.
+	 *
+	 * Outside an if() chain this is native bitwise OR. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -528,22 +553,38 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data || $value;
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue($this->booleanChainValue() || $value);
+		} else {
+			$this->_data = $this->_data | $value;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Negate the stored boolean value
+	 * Negate the stored value.
+	 *
+	 * Outside an if() chain this is native bitwise NOT. Inside an if() chain it
+	 * negates the temporary logical condition.
 	 *
 	 * @return IVal The instance of the Flag class
 	 */
 	public function not() {
-		$this->_data = !$this->_data;
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue(!$this->booleanChainValue());
+		} else {
+			$this->_data = ~$this->_data;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the XOR operator
+	 * Combine the stored value with another value using XOR semantics.
+	 *
+	 * Outside an if() chain this is native bitwise XOR. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -554,12 +595,20 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = $this->_data xor $value;
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue($this->booleanChainValue() !== (bool)$value);
+		} else {
+			$this->_data = $this->_data ^ $value;
+		}
+
 		return $this;
 	}
 
 	/**
-	 * Combine the stored boolean value with another boolean value using the NOR operator
+	 * Combine the stored value with another value using NOR semantics.
+	 *
+	 * Outside an if() chain this is native bitwise NOR. Inside an if() chain it
+	 * composes the temporary logical condition.
 	 *
 	 * @param mixed $value The boolean value to combine with the stored value
 	 *
@@ -570,7 +619,12 @@ class Val implements IVal, IDispatcher {
 			$value = $value->val();
 		}
 
-		$this->_data = !($this->_data || $value);
+		if ( $this->_hasTemporaryCondition ) {
+			$this->setBooleanChainValue(!($this->booleanChainValue() || $value));
+		} else {
+			$this->_data = ~($this->_data | $value);
+		}
+
 		return $this;
 	}
 
@@ -962,6 +1016,36 @@ class Val implements IVal, IDispatcher {
 		}
 
 		return (bool)$this->_data;
+	}
+
+	/**
+	 * Resolve the boolean value currently targeted by boolean chain helpers.
+	 *
+	 * @return bool
+	 */
+	protected function booleanChainValue(): bool
+	{
+		if ( $this->_hasTemporaryCondition ) {
+			return $this->_temporaryCondition;
+		}
+
+		return (bool)$this->_data;
+	}
+
+	/**
+	 * Set the boolean value currently targeted by boolean chain helpers.
+	 *
+	 * @param mixed $value
+	 * @return void
+	 */
+	protected function setBooleanChainValue(mixed $value): void
+	{
+		if ( $this->_hasTemporaryCondition ) {
+			$this->_temporaryCondition = (bool)$value;
+			return;
+		}
+
+		$this->_data = (bool)$value;
 	}
 
 	/**

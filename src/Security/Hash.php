@@ -9,6 +9,7 @@ use BlueFission\IVal;
 use BlueFission\Net\HTTP;
 use BlueFission\Num;
 use BlueFission\Obj;
+use BlueFission\Ref;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
@@ -247,7 +248,7 @@ class Hash extends Obj
             return $data;
         }
 
-        if (Num::isIntStrict($data) || Num::isFloatStrict($data) || Flag::isBoolStrict($data)) {
+        if (Num::isInt($data) || Num::isFloat($data) || Flag::isBool($data)) {
             return (string)$data;
         }
 
@@ -255,8 +256,8 @@ class Hash extends Obj
             return HTTP::jsonEncode($data);
         }
 
-        if (is_resource($data)) {
-            $contents = stream_get_contents($data);
+        if (Ref::is($data)) {
+            $contents = Ref::resource($data)->read();
             return $contents === false ? '' : $contents;
         }
 

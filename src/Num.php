@@ -95,7 +95,7 @@ class Num extends Val implements IVal {
      *
      * @return bool
      */
-    public function _isIntStrict(): bool
+    public function _isInt(): bool
     {
         return is_int($this->_data);
     }
@@ -105,7 +105,7 @@ class Num extends Val implements IVal {
      *
      * @return bool
      */
-    public function _isFloatStrict(): bool
+    public function _isFloat(): bool
     {
         return is_float($this->_data);
     }
@@ -115,9 +115,9 @@ class Num extends Val implements IVal {
      *
      * @return bool
      */
-    public function _isDoubleStrict(): bool
+    public function _isDouble(): bool
     {
-        return $this->_isFloatStrict();
+        return $this->_isFloat();
     }
 
 	/**
