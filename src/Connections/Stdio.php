@@ -142,10 +142,11 @@ class Stdio extends Connection implements IConfigurable
     {
         $this->close();
 
-        $this->_connection;
+        $target = $this->config('target');
+        $output = $this->config('output');
         $this->_connection = [
-            'in' => $this->config('target') ? fopen($this->config('target'), 'r') : (defined('STDIN') ? STDIN : fopen('php://input', 'r')),
-            'out' => $this->config('output') ? fopen($this->config('output'), 'w') : (defined('STDOUT') ? STDOUT : fopen('php://output', 'w'))
+            'in' => Str::isNotEmpty($target) ? fopen($target, 'r') : (defined('STDIN') ? STDIN : fopen('php://input', 'r')),
+            'out' => Str::isNotEmpty($output) ? fopen($output, 'w') : (defined('STDOUT') ? STDOUT : fopen('php://output', 'w'))
         ];
 
         $status = $this->_connection['in'] && $this->_connection['out'] ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
@@ -181,7 +182,7 @@ class Stdio extends Connection implements IConfigurable
 
         $numChangedStreams = @stream_select($readStreams, $writeStreams, $exceptStreams, $timeout);
 
-        $this->_result = '';
+        $result = Str::make();
 
         if ($numChangedStreams === false) {
             // Error occurred during stream_select
@@ -193,7 +194,7 @@ class Stdio extends Connection implements IConfigurable
             $data = fgets($this->_connection['in']);
 
             if ($data !== false) {
-                $this->_result .= $data;
+                $result->append($data);
                 $this->dispatch(Event::RECEIVED, new Meta(data: $data)); // Emit success with data
                 $captured = true;
             } else {
@@ -202,6 +203,7 @@ class Stdio extends Connection implements IConfigurable
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $error));
             }
         }
+        $this->_result = $result->val();
 
         // $this->halt(State::BUSY);
     }
@@ -233,10 +235,10 @@ class Stdio extends Connection implements IConfigurable
      */
     protected function _close(): void
     {
-        if (isset($this->_connection['in']) && is_resource($this->_connection['in'])) {
+        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'in') && is_resource($this->_connection['in'])) {
             fclose($this->_connection['in']);
         }
-        if (isset($this->_connection['out']) && is_resource($this->_connection['out'])) {
+        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'out') && is_resource($this->_connection['out'])) {
             fclose($this->_connection['out']);
         }
         $this->perform(Event::DISCONNECTED); // Signal that the stream has been unloaded

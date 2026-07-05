@@ -4,6 +4,7 @@ namespace BlueFission\Connections;
 
 use BlueFission\Val;
 use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Behavioral\IConfigurable;
@@ -141,47 +142,56 @@ class Socket extends Connection implements IConfigurable
         $status = '';
 
         if ($socket) {
-            $method = $this->config('method');
+            $method = Str::make($this->config('method'))->upper()->val();
 
             $data = HTTP::query($this->_data);
             $this->_result = '';
 
-            if (Val::is($data)) {
+            if (Str::isNotEmpty($data)) {
                 $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
             }
 
-            $method = strtoupper($method);
-            $request = '';
-
-            $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'PHP/'.phpversion();
+            $request = Str::make();
 
             if ($method == 'GET') {
-                $request .= '/' . $this->_url . '?';
-                $request .= $data;
-                $request .= "\r\n";
-                $request .= "User-Agent: Dev-Elation\r\n";
-                $request .= "Connection: Close\r\n";
-                $request .= "Content-Length: 0\r\n";
-
-                $cmd = "GET $request HTTP/1.0\r\nHost: ".$this->_host."\r\n\r\n";
+                $request
+                    ->append('/')
+                    ->append($this->_url)
+                    ->append('?')
+                    ->append($data)
+                    ->append("\r\n")
+                    ->append("User-Agent: Dev-Elation\r\n")
+                    ->append("Connection: Close\r\n")
+                    ->append("Content-Length: 0\r\n");
             } elseif ($method == 'POST') {
-
-                $request .= '/' . $this->_url;
-                $request .= "\r\n";
-                $request .= "User-Agent: Dev-Elation\r\n";
-                $request .= "Content-Type: application/x-www-form-urlencoded\r\n";
-                $request .= "Content-Length: ".strlen($data)."\r\n";
-                $request .= $data;
+                $request
+                    ->append('/')
+                    ->append($this->_url)
+                    ->append("\r\n")
+                    ->append("User-Agent: Dev-Elation\r\n")
+                    ->append("Content-Type: application/x-www-form-urlencoded\r\n")
+                    ->append("Content-Length: ")
+                    ->append(Str::size($data))
+                    ->append("\r\n")
+                    ->append($data);
             } else {
                 $status = self::STATUS_FAILED;
                 $this->status($status);
                 return false;
             }
 
-            $cmd = "$method $request HTTP/1.1\r\nHost: ".$this->_host."\r\n";
+            $cmd = Str::make($method)
+                ->append(' ')
+                ->append($request())
+                ->append(' HTTP/1.1')
+                ->append("\r\nHost: ")
+                ->append($this->_host)
+                ->append("\r\n")
+                ->val();
 
             $this->perform([State::RECEIVING, State::PROCESSING, State::BUSY]);
             fputs($socket, $cmd);
+            $response = Str::make();
 
             while (!feof($socket)) {
                 $chunk = fgets($socket, 1024);
@@ -198,8 +208,9 @@ class Socket extends Connection implements IConfigurable
 
                 $this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
 
-                $this->_result .= $chunk;
+                $response->append($chunk);
             }
+            $this->_result = $response->val();
             $this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
 
             $status = $this->_result ? self::STATUS_SUCCESS : self::STATUS_FAILED;

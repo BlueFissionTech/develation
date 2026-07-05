@@ -7,6 +7,9 @@ use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Async\Promise;
 use BlueFission\Arr;
+use BlueFission\Str;
+use BlueFission\Data\File;
+use BlueFission\Data\FileSystem;
 
 /**
  * IO utility class for performing common input/output operations
@@ -26,17 +29,21 @@ class IO
     {
         // Fast-path: when a concrete input file is provided, avoid the
         // behavioral/stdio stack and just copy/read the file directly.
-        if (is_string($input) && is_file($input)) {
-            $data = @file_get_contents($input);
+        $source = Str::is($input) ? Str::make($input) : null;
+        $file = new File();
 
-            if (isset($config['output']) && is_string($config['output'])) {
-                @file_put_contents($config['output'], $data);
+        if ($source && $source->isNotEmpty() && $file->exists($source())) {
+            $data = FileSystem::fileContents($source());
+            $options = Arr::make($config);
+
+            if ($options->hasKey('output') && Str::is($options['output'])) {
+                @file_put_contents($options['output'], $data);
             }
 
             return self::applyFilters($data);
         }
 
-        $stdio = new Stdio(array_merge(['target' => $input], $config));
+        $stdio = new Stdio(Arr::make(['target' => $input])->merge($config)->toArray());
         $stdio
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stdio", $b))
             ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Communication complete", $b))
@@ -63,7 +70,7 @@ class IO
      */
     public static function fetch(string $url, array $config = []): mixed
     {
-        $curl = new Curl(array_merge(['target' => $url, 'timeout' => 5, 'connect_timeout' => 3], $config));
+        $curl = new Curl(Arr::make(['target' => $url, 'timeout' => 5, 'connect_timeout' => 3])->merge($config)->toArray());
         $curl
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to remote", $b))
             ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
@@ -82,7 +89,7 @@ class IO
      */
     public static function stream(string $url, array $config = []): mixed
     {
-        $stream = new Stream(array_merge(['target' => $url, 'timeout' => 5], $config));
+        $stream = new Stream(Arr::make(['target' => $url, 'timeout' => 5])->merge($config)->toArray());
         $stream
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to stream", $b))
             ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
@@ -101,7 +108,7 @@ class IO
      */
     public static function sock(string $url, array $config = []): mixed
     {
-        $socket = new Socket(array_merge(['target' => $url, 'timeout' => 5], $config));
+        $socket = new Socket(Arr::make(['target' => $url, 'timeout' => 5])->merge($config)->toArray());
         $socket
             ->when(new Event(Event::CONNECTED), fn ($b) => self::messages("Connected to socket", $b))
             ->when(new Event(Event::COMPLETE), fn ($b) => self::messages("Read complete", $b))
@@ -150,7 +157,7 @@ class IO
         if (self::$_messages === null) {
             self::$_messages = (new Arr())->constraint(function (&$val) {
                 if (Arr::size($val) > 100) {
-                    array_shift($val);
+                    $val = Arr::make($val)->slice(1)->toArray();
                 }
             });
         }
