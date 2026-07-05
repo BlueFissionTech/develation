@@ -4,6 +4,7 @@ namespace BlueFission\System;
 
 use BlueFission\Arr;
 use BlueFission\Data\FileSystem;
+use BlueFission\Flag;
 use BlueFission\Str;
 use BlueFission\DevElation as Dev;
 
@@ -21,50 +22,53 @@ class CommandLocator
             'use_shell' => true,
             'cache' => true,
         ], $options);
+        $options = Arr::make($options);
 
         $command = Str::trim((string)$command);
         if ($command === '') {
             return null;
         }
 
-        if (!empty($options['cache']) && Arr::hasKey(self::$_cache, $command)) {
+        if (self::optionEnabled($options, 'cache', true) && Arr::hasKey(self::$_cache, $command)) {
             return self::$_cache[$command];
         }
 
         if (self::isAbsolutePath($command)) {
             $resolved = self::resolvePath($command);
-            return self::remember($command, $resolved, $options);
+            return self::remember($command, $resolved, $options->val());
         }
 
         $paths = Arr::toArray($options['paths'] ?? []);
         $envPath = $options['env_path'] ?? null;
-        if (!Str::is($envPath) || Str::trim((string)$envPath) === '') {
+        if (!Str::is($envPath) || Str::make((string)$envPath)->trim()->isEmpty()) {
             $envPath = getenv('PATH') ?: '';
         }
 
-        $searchPaths = Arr::merge($paths, Str::make((string)$envPath)->split(PATH_SEPARATOR)->val());
+        $searchPaths = Arr::make($paths)
+            ->merge(Str::make((string)$envPath)->split(PATH_SEPARATOR))
+            ->val();
         $extensions = self::extensions();
         $hasExtension = self::hasExtension($command);
 
         foreach ($searchPaths as $path) {
-            $path = Str::trim((string)$path);
-            if ($path === '') {
+            $path = Str::make((string)$path)->trim();
+            if ($path->isEmpty()) {
                 continue;
             }
 
-            $candidateBase = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $command;
+            $candidateBase = $path->trim(DIRECTORY_SEPARATOR)->append(DIRECTORY_SEPARATOR)->append($command)->val();
             $result = self::matchExecutable($candidateBase, $extensions, $hasExtension);
             if ($result) {
-                return self::remember($command, $result, $options);
+                return self::remember($command, $result, $options->val());
             }
         }
 
-        if (!empty($options['use_shell'])) {
+        if (self::optionEnabled($options, 'use_shell', true)) {
             $result = self::shellLocate($command);
-            return self::remember($command, $result, $options);
+            return self::remember($command, $result, $options->val());
         }
 
-        return self::remember($command, null, $options);
+        return self::remember($command, null, $options->val());
     }
 
     public static function isWindows(): bool
@@ -75,7 +79,7 @@ class CommandLocator
     protected static function remember(string $command, ?string $value, array $options): ?string
     {
         $value = Dev::apply('_out', $value);
-        if (!empty($options['cache'])) {
+        if (self::optionEnabled(Arr::make($options), 'cache', true)) {
             self::$_cache[$command] = $value;
         }
 
@@ -103,7 +107,7 @@ class CommandLocator
         }
 
         if (self::isWindows()) {
-            if (preg_match('/^[A-Za-z]:\\\\/', $command)) {
+            if (Str::matchPattern($command, '/^[A-Za-z]:\\\\/')) {
                 return true;
             }
 
@@ -121,20 +125,20 @@ class CommandLocator
 
         $pathext = getenv('PATHEXT') ?: '.EXE;.BAT;.CMD;.COM';
         $extensions = Str::make($pathext)->split(';')->val();
-        $normalized = [];
+        $normalized = Arr::make();
 
         foreach ($extensions as $ext) {
-            $ext = Str::trim((string)$ext);
-            if ($ext === '') {
+            $ext = Str::make((string)$ext)->trim();
+            if ($ext->isEmpty()) {
                 continue;
             }
-            if (Str::sub($ext, 0, 1) !== '.') {
-                $ext = '.' . $ext;
+            if (!$ext->startsWith('.')) {
+                $ext->prepend('.');
             }
-            $normalized[] = $ext;
+            $normalized[] = $ext->val();
         }
 
-        return $normalized;
+        return $normalized->val();
     }
 
     protected static function hasExtension(string $command): bool
@@ -145,7 +149,7 @@ class CommandLocator
 
     protected static function matchExecutable(string $candidateBase, array $extensions, bool $hasExtension): ?string
     {
-        if ($hasExtension || count($extensions) === 0) {
+        if ($hasExtension || Arr::count($extensions) === 0) {
             return self::resolvePath($candidateBase);
         }
 
@@ -172,7 +176,7 @@ class CommandLocator
             }
         }
 
-        if (!$output) {
+        if (Str::isEmpty($output)) {
             return null;
         }
 
@@ -189,5 +193,14 @@ class CommandLocator
         }
 
         return null;
+    }
+
+    protected static function optionEnabled(Arr $options, string $key, bool $default = false): bool
+    {
+        if (!$options->hasKey($key)) {
+            return $default;
+        }
+
+        return Flag::parseBool($options[$key], $default);
     }
 }
