@@ -9,6 +9,7 @@ use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Connections\Stdio;
 use BlueFission\Data\FileSystem;
 use BlueFission\Flag;
 use BlueFission\Str;
@@ -205,7 +206,7 @@ class Process implements IDispatcher
         if ($this->_windowsSafeMode && $this->_stdoutFile && FileSystem::fileExists($this->_stdoutFile)) {
             $this->_output = (string)FileSystem::fileContents($this->_stdoutFile);
         } else {
-            $this->_output = Arr::hasKey($this->_pipes, 1) ? stream_get_contents($this->_pipes[1]) : '';
+            $this->_output = Arr::hasKey($this->_pipes, 1) ? Stdio::readInput($this->_pipes[1]) : '';
         }
         $this->trigger(Event::READ);
 
