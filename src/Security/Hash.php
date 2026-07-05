@@ -3,6 +3,7 @@
 namespace BlueFission\Security;
 
 use BlueFission\Arr;
+use BlueFission\Data\FileSystem;
 use BlueFission\Flag;
 use BlueFission\IVal;
 use BlueFission\Net\HTTP;
@@ -186,7 +187,7 @@ class Hash extends Obj
         $this->clearErrors();
         $this->perform(new Action(Action::PROCESS), new Meta(data: ['algo' => $algo, 'file' => $path]));
 
-        if (!is_file($path)) {
+        if (!FileSystem::fileExists($path)) {
             $this->addError('file', 'file_not_found');
             $this->perform(Event::FAILURE, new Meta(data: $this->errors()));
             Dev::do('_after', [$this]);

@@ -7,6 +7,7 @@ use BlueFission\Val;
 use BlueFission\Net\Email;
 use BlueFission\Net\HTTP;
 use BlueFission\Data\Storage\Disk;
+use BlueFission\Data\FileSystem;
 use BlueFission\Security\Hash;
 
 class Util {
@@ -57,7 +58,7 @@ class Util {
     static function globals($var, $value = null)
     {
         if (Val::isNull($value) )
-            return isset( $GLOBALS[$var] ) ? $GLOBALS[$var] : null;
+            return Arr::hasKey($GLOBALS, $var) ? $GLOBALS[$var] : null;
             
         $GLOBALS[$var] = $value;
             
@@ -70,7 +71,7 @@ class Util {
     static function getStoragePath() {
         // Use an environment variable or fallback to a default path
         $storagePath = getenv('STORAGE_PATH') ?: __DIR__ . '/storage/data';
-        if (!is_dir($storagePath)) {
+        if (!FileSystem::directoryExists($storagePath)) {
             mkdir($storagePath, 0777, true);
         }
         return $storagePath;
@@ -81,9 +82,9 @@ class Util {
         try {
             $userHome = self::getUserHomeDir();
             $sessionIdFile = $userHome . DIRECTORY_SEPARATOR . '.cli_session_id';
-            if (file_exists($sessionIdFile)) {
+            if (FileSystem::fileExists($sessionIdFile)) {
                 // Retrieve existing session ID
-                $sessionId = file_get_contents($sessionIdFile);
+                $sessionId = FileSystem::fileContents($sessionIdFile);
             } else {
                 // Generate a new session ID
                 $sessionId = bin2hex(random_bytes(16)); // Generate a random session ID
@@ -153,7 +154,8 @@ class Util {
 
             if ($value === null) {
                 // Return the value if $value is null
-                return isset($storedData[$name]) ? $storedData[$name] : null;
+                $storedData = Arr::make($storedData);
+                return $storedData->hasKey($name) ? $storedData[$name] : null;
             }
 
             $storedData[$name] = $value;
