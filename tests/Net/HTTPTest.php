@@ -54,6 +54,24 @@ class HTTPTest extends TestCase {
         $this->assertSame(['fallback' => true], HTTP::jsonDecode('{bad json', true, ['fallback' => true]));
     }
 
+    public function testJsonEncodeUsesNativeEncoderWhenAvailable() {
+        $payload = ['ok' => true, 'items' => [1, 'two']];
+
+        $this->assertSame(json_encode($payload), HTTP::jsonEncode($payload));
+    }
+
+    public function testJsonEncodeFallbackHandlesListsObjectsAndEscapes() {
+        $payload = [
+            'title' => "Hello\nWorld",
+            'items' => [1, true, null, 'path/file'],
+        ];
+
+        $this->assertSame(
+            '{"title":"Hello\\nWorld","items":[1,true,null,"path\\/file"]}',
+            $this->invokeStaticHttpMethod('jsonEncodeFallback', [$payload])
+        );
+    }
+
     public function testHeaderLineNormalizesNameAndValue() {
         $this->assertSame('Content-Type: application/json', HTTP::headerLine(' Content-Type ', ' application/json '));
     }
@@ -126,6 +144,14 @@ class HTTPTest extends TestCase {
         $expected = 'http://www.bluefission.com/test';
         $actual = HTTP::url();
         $this->assertEquals($expected, $actual);
+    }
+
+    private function invokeStaticHttpMethod(string $method, array $arguments = []): mixed {
+        $reflection = new \ReflectionClass(HTTP::class);
+        $method = $reflection->getMethod($method);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs(null, $arguments);
     }
 
 }
