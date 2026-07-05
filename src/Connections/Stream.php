@@ -64,7 +64,7 @@ class Stream extends Connection implements IConfigurable
 
         $target = $this->config('target') ?? HTTP::domain();
         $method = $this->config('method');
-        $header = $this->config('header');
+        $header = Str::make($this->config('header') ?? '');
         $wrapper = $this->config('wrapper');
         $timeout = (float)$this->config('timeout');
         $protocolVersion = (float)$this->config('protocol_version');
@@ -76,8 +76,8 @@ class Stream extends Connection implements IConfigurable
             return;
         }
 
-        if (!Str::has(Str::lower($header), 'connection: close')) {
-            $header .= "Connection: close\r\n";
+        if (!$header->copy()->lower()->has('connection: close')) {
+            $header->append("Connection: close\r\n");
         }
 
         // Check if target URL exists
@@ -86,7 +86,7 @@ class Stream extends Connection implements IConfigurable
             // Create a stream context with the options provided in the config
             $options = [
                 $wrapper => [
-                    'header'	=>	$header,
+                    'header'	=>	$header->val(),
                     'method'	=>	$method,
                     'timeout'   =>  $timeout,
                     'protocol_version' => $protocolVersion,
@@ -146,13 +146,14 @@ class Stream extends Connection implements IConfigurable
                 if (Arr::isAssoc($query)) {
                     $this->assign($query);
                 } elseif (Str::is($query)) {
-                    $data = urlencode($query);
+                    $data = Str::make(urlencode($query))->val();
                 }
             }
 
             $data = $data ?? HTTP::query($this->_data);
+            $payload = Str::make($data);
 
-            if (!Val::isEmpty($data) || Arr::size($data) > 0) {
+            if ($payload->isNotEmpty()) {
                 $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $data));
             }
 
@@ -166,6 +167,7 @@ class Stream extends Connection implements IConfigurable
             if ($this->_handle) {
                 stream_set_timeout($this->_handle, $timeout);
                 $this->perform([Action::RECEIVE, State::RECEIVING, State::PROCESSING, State::BUSY]);
+                $response = Str::make();
                 while (!feof($this->_handle)) {
                     $chunk = fread($this->_handle, 8192);
                     $meta = stream_get_meta_data($this->_handle);
@@ -177,8 +179,9 @@ class Stream extends Connection implements IConfigurable
 
                     $this->dispatch(Event::RECEIVED, new Meta(when: Action::RECEIVE, data: $chunk));
 
-                    $this->_result .= $chunk;
+                    $response->append($chunk);
                 }
+                $this->_result = $response->val();
                 $this->halt([State::BUSY, State::RECEIVING, State::PROCESSING]);
             } else {
                 $this->perform(Event::ERROR, new Meta(when: Action::RECEIVE, info: "Failed to open stream"));

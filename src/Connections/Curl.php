@@ -96,17 +96,86 @@ class Curl extends Connection implements IConfigurable
 
         $headers = Arr::grab();
         if (Arr::isAssoc($headers)) {
-            $normalized = [];
-            foreach ($headers as $name => $value) {
-                if (is_array($value)) {
-                    $value = implode(', ', $value);
-                }
-                $normalized[] = $name . ': ' . $value;
-            }
-            $headers = $normalized;
+            $headers = Arr::make($headers)
+                ->map(function ($value, $name) {
+                    if (Arr::is($value)) {
+                        $value = Arr::make($value)->join(', ')->val();
+                    }
+
+                    return Str::make($name)->append(': ')->append($value)->val();
+                })
+                ->values()
+                ->toArray();
         }
 
         return $headers;
+    }
+
+    /**
+     * Determine whether a normalized header list contains a header name.
+     *
+     * @param array $headers
+     * @param string $name
+     * @return bool
+     */
+    protected function hasHeader(array $headers, string $name): bool
+    {
+        $needle = Str::make($name)->lower()->append(':')->val();
+
+        foreach (Arr::make($headers) as $header) {
+            if (Str::is($header) && Str::make($header)->lower()->startsWith($needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Build a request payload from the current connection data.
+     *
+     * @param mixed $data
+     * @return string
+     */
+    protected function payloadFromData(mixed $data): string
+    {
+        if (Str::is($data)) {
+            return $data;
+        }
+
+        $payload = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        if (!Str::is($payload)) {
+            return '';
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Ensure JSON request headers are present for generated request payloads.
+     *
+     * @param array $headers
+     * @param string $payload
+     * @return array
+     */
+    protected function jsonPayloadHeaders(array $headers, string $payload): array
+    {
+        $headers = Arr::make($headers);
+
+        if (!$this->hasHeader($headers->toArray(), 'content-type')) {
+            $headers[] = 'Content-Type: application/json';
+        }
+
+        if (!$this->hasHeader($headers->toArray(), 'accept')) {
+            $headers[] = 'Accept: application/json';
+        }
+
+        if (!$this->hasHeader($headers->toArray(), 'content-length')) {
+            $headers[] = 'Content-Length: ' . Str::size($payload);
+        }
+
+        return $headers->toArray();
     }
 
     /**
@@ -216,32 +285,11 @@ class Curl extends Connection implements IConfigurable
             //set the url, number of POST vars, POST data
             if ($method == 'post') {
                 if (Arr::size($data) > 0 || Str::is($data)) {
-                    $payload = $data;
-                    if (!Str::is($payload)) {
-                        $payload = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-                    }
-                    if (!Str::is($payload)) {
-                        $payload = '';
-                    }
-                    $headers = $this->normalizeHeaders($this->config('headers'));
-                    $hasContentType = false;
-                    $hasAccept = false;
-                    $hasContentLength = false;
-                    foreach ($headers as $header) {
-                        $header = is_string($header) ? strtolower($header) : '';
-                        $hasContentType = $hasContentType || str_starts_with($header, 'content-type:');
-                        $hasAccept = $hasAccept || str_starts_with($header, 'accept:');
-                        $hasContentLength = $hasContentLength || str_starts_with($header, 'content-length:');
-                    }
-                    if (!$hasContentType) {
-                        $headers[] = 'Content-Type: application/json';
-                    }
-                    if (!$hasAccept) {
-                        $headers[] = 'Accept: application/json';
-                    }
-                    if (!$hasContentLength) {
-                        $headers[] = 'Content-Length: ' . strlen($payload);
-                    }
+                    $payload = $this->payloadFromData($data);
+                    $headers = $this->jsonPayloadHeaders(
+                        $this->normalizeHeaders($this->config('headers')),
+                        $payload
+                    );
                     curl_setopt($curl, CURLOPT_POST, true);
                     curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
                     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
