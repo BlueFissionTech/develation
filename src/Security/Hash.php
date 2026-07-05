@@ -256,7 +256,7 @@ class Hash extends Obj
             return HTTP::jsonEncode($data);
         }
 
-        if (is_resource($data)) {
+        if (Ref::is($data)) {
             $contents = Ref::resource($data)->read();
             return $contents === false ? '' : $contents;
         }

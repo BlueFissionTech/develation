@@ -54,11 +54,11 @@ class Stdio extends Connection implements IConfigurable
     public static function readInput(mixed $source = null): string
     {
         $source = Val::isNull($source) ? 'php://input' : Dev::apply('_in', $source);
-        if (is_resource($source)) {
+        if (Ref::is($source)) {
             $ref = Ref::resource($source);
         } elseif (Str::is($source) && Str::isNotEmpty($source)) {
             $handle = @fopen($source, 'r');
-            $ref = is_resource($handle) ? Ref::resource($handle, ['owned' => true]) : null;
+            $ref = Ref::is($handle) ? Ref::resource($handle, ['owned' => true]) : null;
         } else {
             $ref = null;
         }
@@ -102,11 +102,11 @@ class Stdio extends Connection implements IConfigurable
             $source = Dev::apply('_in', $source);
         }
 
-        if (is_resource($source)) {
+        if (Ref::is($source)) {
             $ref = Ref::resource($source);
         } elseif (Str::is($source) && Str::isNotEmpty($source)) {
             $handle = @fopen($source, 'r');
-            $ref = is_resource($handle) ? Ref::resource($handle, ['owned' => true]) : null;
+            $ref = Ref::is($handle) ? Ref::resource($handle, ['owned' => true]) : null;
         } else {
             $ref = null;
         }
@@ -228,11 +228,11 @@ class Stdio extends Connection implements IConfigurable
      */
     protected function _close(): void
     {
-        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'in') && is_resource($this->_connection['in'])) {
-            fclose($this->_connection['in']);
+        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'in') && Ref::is($this->_connection['in'])) {
+            Ref::resource($this->_connection['in'], ['owned' => true])->close();
         }
-        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'out') && is_resource($this->_connection['out'])) {
-            fclose($this->_connection['out']);
+        if (Arr::is($this->_connection) && Arr::hasKey($this->_connection, 'out') && Ref::is($this->_connection['out'])) {
+            Ref::resource($this->_connection['out'], ['owned' => true])->close();
         }
         $this->perform(Event::DISCONNECTED); // Signal that the stream has been unloaded
     }

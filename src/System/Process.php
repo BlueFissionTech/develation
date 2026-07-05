@@ -171,13 +171,13 @@ class Process implements IDispatcher
         $this->_process = proc_open($this->_command, $descriptorSpec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
         $this->trigger(Action::CONNECT);
 
-        if (is_resource($this->_process)) {
+        if (Ref::is($this->_process)) {
             $this->trigger(Event::STARTED);
             // Make the streams non-blocking
-            if (Arr::hasKey($this->_pipes, 1) && is_resource($this->_pipes[1])) {
+            if (Arr::hasKey($this->_pipes, 1) && Ref::is($this->_pipes[1])) {
                 stream_set_blocking($this->_pipes[1], false);
             }
-            if (Arr::hasKey($this->_pipes, 2) && is_resource($this->_pipes[2])) {
+            if (Arr::hasKey($this->_pipes, 2) && Ref::is($this->_pipes[2])) {
                 stream_set_blocking($this->_pipes[2], false);
             }
             $this->trigger(Event::CONNECTED);
@@ -241,7 +241,7 @@ class Process implements IDispatcher
         $this->trigger(Action::STOP);
 
         foreach ($this->_pipes as $pipe) {
-            if (is_resource($pipe)) {
+            if (Ref::is($pipe)) {
                 Ref::resource($pipe, ['owned' => true])->close();
                 $this->trigger(Event::DISCONNECTED);
             }

@@ -38,7 +38,7 @@ class Memory extends Storage
     protected function _read(): void
     {
         $handle = $this->_stream?->unwrap();
-        if (!is_resource($handle)) {
+        if (!Ref::is($handle)) {
             $this->_contents = [];
             return;
         }
@@ -54,7 +54,7 @@ class Memory extends Storage
     protected function _write(): void
     {
         $handle = $this->_stream?->unwrap();
-        if (!is_resource($handle)) {
+        if (!Ref::is($handle)) {
             return;
         }
 
@@ -69,7 +69,7 @@ class Memory extends Storage
     protected function _delete(): void
     {
         $handle = $this->_stream?->unwrap();
-        if (!is_resource($handle)) {
+        if (!Ref::is($handle)) {
             return;
         }
 
