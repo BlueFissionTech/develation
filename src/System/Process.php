@@ -2,12 +2,17 @@
 
 namespace BlueFission\System;
 
+use BlueFission\Arr;
 use BlueFission\Behavioral\Dispatches;
 use BlueFission\Behavioral\IDispatcher;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
 use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Connections\Stdio;
+use BlueFission\Data\FileSystem;
+use BlueFission\Flag;
+use BlueFission\Str;
 
 /**
  * Class Process is a wrapper class for the PHP proc_open function
@@ -126,13 +131,14 @@ class Process implements IDispatcher
     public function __construct($command, $cwd = null, $env = null, $descriptorspec = null, $options = [])
     {
         $this->__dConstruct();
+        $options = Arr::make($options);
         $this->_command = $command;
         $this->_cwd = $cwd ?? getcwd();
         $this->_env = $env;
         $this->_descriptorspec = $descriptorspec ?? $this->_spec;
-        $this->_options = $options;
+        $this->_options = $options->val();
         $windowsSafe = $options['windows_safe'] ?? $options['windowsSafe'] ?? false;
-        $this->_windowsSafeMode = $this->isWindows() && (bool)$windowsSafe;
+        $this->_windowsSafeMode = $this->isWindows() && Flag::parseBool($windowsSafe, false);
 
         $this->trigger(Event::LOAD);
     }
@@ -167,10 +173,10 @@ class Process implements IDispatcher
         if (is_resource($this->_process)) {
             $this->trigger(Event::STARTED);
             // Make the streams non-blocking
-            if (isset($this->_pipes[1]) && is_resource($this->_pipes[1])) {
+            if (Arr::hasKey($this->_pipes, 1) && is_resource($this->_pipes[1])) {
                 stream_set_blocking($this->_pipes[1], false);
             }
-            if (isset($this->_pipes[2]) && is_resource($this->_pipes[2])) {
+            if (Arr::hasKey($this->_pipes, 2) && is_resource($this->_pipes[2])) {
                 stream_set_blocking($this->_pipes[2], false);
             }
             $this->trigger(Event::CONNECTED);
@@ -197,10 +203,10 @@ class Process implements IDispatcher
     {
         $this->trigger(Action::READ);
         $this->trigger(State::READING);
-        if ($this->_windowsSafeMode && $this->_stdoutFile && file_exists($this->_stdoutFile)) {
-            $this->_output = (string)file_get_contents($this->_stdoutFile);
+        if ($this->_windowsSafeMode && $this->_stdoutFile && FileSystem::fileExists($this->_stdoutFile)) {
+            $this->_output = (string)FileSystem::fileContents($this->_stdoutFile);
         } else {
-            $this->_output = isset($this->_pipes[1]) ? stream_get_contents($this->_pipes[1]) : '';
+            $this->_output = Arr::hasKey($this->_pipes, 1) ? Stdio::readInput($this->_pipes[1]) : '';
         }
         $this->trigger(Event::READ);
 
@@ -218,10 +224,10 @@ class Process implements IDispatcher
         if ($this->_status) {
             return $this->_status['running'];
         } else {
-            if ($this->_windowsSafeMode && $this->_stderrFile && file_exists($this->_stderrFile)) {
-                return (string)file_get_contents($this->_stderrFile);
+            if ($this->_windowsSafeMode && $this->_stderrFile && FileSystem::fileExists($this->_stderrFile)) {
+                return (string)FileSystem::fileContents($this->_stderrFile);
             }
-            return fread($this->_pipes[2], 2096);
+            return Arr::hasKey($this->_pipes, 2) ? fread($this->_pipes[2], 2096) : '';
         }
     }
 
@@ -268,7 +274,7 @@ class Process implements IDispatcher
      */
     protected function isWindows(): bool
     {
-        return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        return Str::make(PHP_OS)->upper()->startsWith('WIN');
     }
 
     /**
@@ -289,10 +295,10 @@ class Process implements IDispatcher
      */
     protected function cleanupWindowsSafeCapture(): void
     {
-        if ($this->_stdoutFile && file_exists($this->_stdoutFile)) {
+        if ($this->_stdoutFile && FileSystem::fileExists($this->_stdoutFile)) {
             @unlink($this->_stdoutFile);
         }
-        if ($this->_stderrFile && file_exists($this->_stderrFile)) {
+        if ($this->_stderrFile && FileSystem::fileExists($this->_stderrFile)) {
             @unlink($this->_stderrFile);
         }
 
