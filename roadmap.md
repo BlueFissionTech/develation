@@ -1,156 +1,137 @@
-Your roadmap for DevElation and Automata is quite comprehensive and ambitious. Here are some suggestions on how to proceed with the implementation of your goals:
+# DevElation Stable Roadmap
 
-### Global Helper Function Roadmap
+DevElation is the low-level PHP substrate for Blue Fission projects: primitive
+value objects, resource handles, data/storage abstractions, behaviors, services,
+connections, parsing, CLI, and package-owned helper conventions. Its direction
+should stay broad enough for the Materia suite, Kyber suite, Opus and add-ons,
+Automata, Reactor, Annex, JenSS, BlueCore, and microservice consumers without
+turning DevElation into any one of those higher-level products.
 
-Global helpers should remain constructor and factory shortcuts for high-use
-DevElation objects. They should not become alternate names for object methods,
-static helper calls, transforms, or one-off feature shortcuts. The expected
-pattern is:
+## Release Baseline
 
-```php
-$name = str('Ada Lovelace')->snake()->val();
-$items = arr(['first', 'second'])->reverse()->val();
-$record = obj(['name' => 'Ada'], ['name' => DataTypes::STRING]);
-$document = doc()->contents('Draft text');
-```
+- `v1.3.37-alpha` captured the pre-Ref master state.
+- `v1.3.38-alpha` introduced the `Ref` primitive, ownership-aware handle
+  helpers, conditional `Val` chain behavior, and scalar predicate naming cleanup.
+- `v1.3.39` is the first stable release candidate line after production comment
+  cleanup, Composer metadata refresh, and grouped PHPUnit validation.
 
-Helpers should be considered when they improve fluency, reduce ceremony around
-common object lifecycles, preserve hook/event behavior, and keep the resulting
-object in charge of its own feature surface. They should be avoided when they
-would hide IO, locks, resource lifecycle, ambiguous global names, by-reference
-semantics, or method behavior that already chains cleanly from an instantiated
-object.
+Stable releases should preserve raw PHP interop where native contracts matter.
+DevElation should wrap values and handles when lifecycle, hooks, metadata,
+events, or reuse make that useful; it should not hide native PHP APIs merely for
+surface consistency.
 
-| Candidate | Strength | Suggested shape | Rationale |
-| --- | --- | --- | --- |
-| `schema()` | Strong | `schema(array $fields = [], array $config = [])` | Schema construction is common, package-owned, and naturally object-first. |
-| `fieldDef()` | Moderate | `fieldDef(string $name, array $config = [])` | Useful with schemas, but the name should avoid vague `field()` collisions. |
-| `node()` | Moderate | `node(string $id, mixed $data = null, array $edges = [], array $meta = [])` | Graph work benefits from short constructors, but only if graph helpers are being used heavily in examples. |
-| `graph()` | Strong | `graph(array $graph = [], bool $directed = true)` | A natural object lifecycle helper for graph workflows and prototypes. |
-| `template()` | Strong | `template(mixed $config = null)` | Template objects are common in examples and applications, and the name is clear. |
-| `parser()` | Moderate | `parser(string $input = '', string $open = '{', string $close = '}')` | Valuable for parsing workflows, but constructor arguments are more domain-specific than primitive helpers. |
-| `console()` | Strong | `console(mixed $config = null)` | CLI applications repeatedly instantiate console utilities and then chain output helpers. |
-| `args()` | Strong | `args(array $config = [])` | Command-line argument parsing is a frequent application boundary with a clear object lifecycle. |
-| `prompt()` | Moderate | `prompt()` | Useful in CLI flows, but the narrower utility may be less universal than `console()` or `args()`. |
-| `logger()` | Moderate | `logger(mixed $config = null)` | Logging is common, but name collision risk and side-effect expectations need care. Avoid `log()` because PHP already defines it for natural logarithms. |
-| `uri()` | Strong | `uri(string $path = '')` | URI objects are broadly useful and construction is side-effect-free. |
-| `request()` | Moderate | `request(...)` | Useful, but DevElation has multiple request concepts. Add only after the target request class and constructor contract are unambiguous. |
-| `response()` | Moderate | `response(...)` | Same concern as `request()`. Keep side-effect-free and object-returning if added. |
-| `email()` | Moderate | `email(...)` | The email object has several constructor fields. Useful, but should not send or validate transport as a helper side effect. |
-| `curl()` | Weak | `curl(mixed $config = null)` | It is an object constructor, but the name is broad and associated with external IO. Prefer explicit examples before adding. |
-| `stream()` | Weak | `stream(mixed $config = null)` | Resource lifecycle and external target ambiguity make this less suitable as a global helper. |
-| `stdio()` | Moderate | `stdio(mixed $config = null)` | Good for CLI, but should be side-effect-free and not read input during helper construction. |
-| `service()` | Moderate | `service()` | Service lifecycles are central, but naming and initialization should be settled before globalizing. |
-| `gateway()` | Weak | `gateway()` | Too application-framework-specific unless service helpers become a focused milestone. |
-| `app()` | Weak | `app(array $config = [])` | Common in frameworks and likely to collide conceptually. Use only if DevElation defines a clear application-kernel convention. |
-| `event()` | Moderate | `event(string $name)` | Behavior construction is common, but `event` is generic and may collide with framework conventions. |
-| `state()` | Moderate | `state(string $name)` | Same as `event()`. Useful if behavior helpers are added as a group. |
-| `action()` | Moderate | `action(string $name)` | Same as `event()`. Avoid any helper behavior that performs the action. |
-| `meta()` | Strong | `meta(...)` | Metadata construction is side-effect-free and commonly paired with behavior dispatch. |
-| `hasher()` | Moderate | `hasher(?string $algo = null)` | Security hash helper is useful, but `hash()` is a PHP built-in and must not be shadowed. |
-| `memoryStore()` | Weak | `memoryStore(mixed $config = null)` | Storage helpers can be useful, but storage names should be explicit and should not imply connection or activation. |
-| `sessionStore()` | Weak | `sessionStore(mixed $config = null)` | Session behavior has side-effect expectations. Add only with docs that construction does not activate or write. |
-| `diskStore()` | Weak | `diskStore(mixed $config = null)` | Useful in data workflows but should wait for a coherent storage-helper naming set. |
-| `mysqlStore()` / `sqliteStore()` | Weak | `mysqlStore(mixed $config = null)` | Database helpers are better deferred until constructor-only, no-connect behavior is guaranteed and documented. |
+## Strategic Pillars
 
-Names to avoid:
+### 1. Primitive And Helper Consistency
 
-- `file()` because PHP already defines it. Use `doc()` for the DevElation file
-  object helper.
-- `date()` because PHP already defines it. Use `datetime()` for the DevElation
-  date object helper.
-- `hash()` because PHP already defines it. Prefer `hasher()` if a security hash
-  helper is added.
-- `log()` because PHP already defines it for natural logarithms. Prefer
-  `logger()` if a log object helper is added.
-- `map()`, `filter()`, `match()`, `merge()`, `json()`, `header()`, and similar
-  verbs because these are operations, not object lifecycles.
-- Broad framework names such as `app()`, `config()`, `env()`, `route()`, or
-  `view()` unless DevElation owns a clear, stable convention for that helper.
+The primitive family should remain coherent across `Val`, `Str`, `Arr`, `Num`,
+`Flag`, `Date`, `Func`, `Ref`, `Obj`, and collection objects.
 
-Recommended sequencing:
+- Keep `make()` as the generic factory surface.
+- Keep named constructors such as `Ref::resource()`, `Ref::open()`, and
+  `Ref::bind()` for lifecycle-specific intent.
+- Keep `Class::is($value)` predicates aligned with the primitive's actual type
+  contract.
+- Add global helpers only for object lifecycles, not one-off operations.
+- Avoid helper names that collide with PHP built-ins or framework-level
+  concepts DevElation does not own.
 
-1. Land the base helper file with primitive, collection, object, date, file,
-   directory, and filesystem instantiation helpers.
-2. Add docs and examples that show helpers as entrypoints into fluent objects,
-   not replacements for methods.
-3. Consider `schema()`, `graph()`, `template()`, `console()`, `args()`, `uri()`,
-   and `meta()` as the next strongest candidates.
-4. Defer request/response, connection, service, and storage helpers until their
-   target class, constructor side effects, and naming conventions are clear.
-5. Reject operation helpers unless they instantiate an object and return it.
-   The object method or static helper surface should own the actual operation.
+### 2. Resource, Process, And Stream Lifecycle
 
-### Data Pipeline and Stream Processing
-A data pipeline refers to a set of data processing elements connected in series, where the output of one element is the input of the next. Stream processing is the real-time processing of data continuously, sequentially, and in parallel.
+`Ref` is now the common language for references, stream resources, process
+pipes, caller-owned handles, owned handles, read/write hooks, cursor movement,
+truncation, and chunked reads.
 
-For example, imagine a system where you receive real-time temperature data from sensors. You could have a pipeline that reads the data, processes it to calculate average temperatures, and then outputs the data to a storage system or real-time dashboard.
+Next steps:
 
-```php
-class TemperatureDataStream {
-    protected $queue;
-    protected $processing;
-    protected $storage;
+- Continue migrating resource boundaries only where `Ref` clarifies ownership.
+- Leave native `is_resource()`, `fread()`, `fwrite()`, `fseek()`, and related
+  APIs inside low-level stream implementations where exact PHP semantics matter.
+- Add examples for stream reads, process pipes, storage-backed streams, and hash
+  normalization.
+- Keep object-handle support conservative: readable, writable, closeable,
+  callable, or explicitly bound values.
 
-    public function __construct(IQueue $queue, TempProcessing $processing, DataStorage $storage) {
-        $this->queue = $queue;
-        $this->processing = $processing;
-        $this->storage = $storage;
-    }
+### 3. Data, Storage, And Service Contracts
 
-    public function handle() {
-        while ($data = $this->queue->next()) {
-            $processed = $this->processing->average($data);
-            $this->storage->save($processed);
-        }
-    }
-}
-```
+Materia, Kyber, Opus, BlueCore, and microservice consumers need substitutable
+data access and service primitives more than application-specific shortcuts.
 
-### State Machine and Lifecycle Management
-When designing states and events, consider common lifecycle stages like `Initialization`, `Processing`, `Waiting`, `Termination`. For each of these stages, you can define specific behaviors, events, and allowed transitions.
+- Keep `Storage`, SQL, SQLite, Mongo, session, cookie, memory, disk, queue,
+  schema, and graph APIs consistent around activation, read/write/delete,
+  status, data, and query inspection.
+- Prefer storage injection over concrete datasource assumptions.
+- Keep optional service tests opt-in so clean installs stay reliable.
+- Document which constructors are side-effect-free and which operations connect,
+  create, write, or delete.
+- Treat `Services\Client` as a base HTTP-backed integration contract that
+  downstream clients extend deliberately.
 
-For communicating the application state from server to client, consider implementing a WebSocket connection for real-time updates, or long-polling HTTP endpoints if real-time isn't necessary.
+### 4. Application And Framework Interop
 
-### MQTT and CoAP
-MQTT (Message Queuing Telemetry Transport) is a lightweight messaging protocol for small sensors and mobile devices. It's useful in scenarios of unreliable networks.
+DevElation should support Opus, BlueCore, Reactor, and service add-ons without
+becoming their framework layer.
 
-CoAP (Constrained Application Protocol) is designed for simple electronics with limited processing capabilities. It enables such devices to communicate interactively over the internet; it's especially used in IoT.
+- Keep routing, request, response, mapping, and service execution helpers
+  package-owned and documented.
+- Keep Reactor integration focused on predictable values, forms, templates, and
+  request/response surfaces rather than frontend-specific policy.
+- Let Opus and BlueCore own application assembly while DevElation owns the
+  reusable primitives and contracts beneath them.
+- Keep public docs free of local workflow, workstation, and harness details.
 
-### Security
-Focus on implementing OAuth for token-based authentication and integrate with existing authorization services. Offer guidelines on securing the endpoints, such as proper validation and sanitation of input data.
+### 5. Intelligent And Automation Boundaries
 
-### AI Strategy Integration
-Given your use of the term "strategies" for AI, ensure that each strategy has a uniform interface, for instance, `train`, `predict`, `evaluate`. Abstract these in an interface and use them across different AI integrations.
+Automata, JenSS, Annex, and intelligent microservices should compose DevElation
+instead of being embedded into it.
 
-### Queues and Process Communication
-For your queue system, consider robust message brokers like RabbitMQ or Kafka, which can support complex routing and work well for distributed systems. Ensure your queue interface can accommodate the capabilities of these systems without exposing their complexities.
+- DevElation owns value normalization, dispatch, hooks, resources, storage,
+  parsing, services, CLI, and system utilities.
+- Automata owns AI and automation behavior.
+- JenSS owns configurable intelligence and grammar/runtime configuration.
+- Annex owns workflow/interoperability flows.
+- DevElation examples may show composition points, but automation-specific
+  orchestration belongs in those adjacent packages.
 
-### Event Taxonomy
-Define events based on the domain and the application's needs. Consider `UserRegistered`, `OrderPlaced`, `PaymentProcessed` to signify application-level events and states.
+## Documentation Roadmap
 
-### System Resource Management
-Create a resource monitor that can be queried for current system usage. Use this information to make decisions in your Async classes to start or pause processes.
+The repository documentation and wiki should mirror the library surface:
 
-### Async Class Expansion
-Provide different Async handlers, e.g., `AsyncFork`, `AsyncShell`, `AsyncQueue`, with a common interface but different implementations based on the type of asynchronicity required.
+- Philosophy and release policy.
+- Primitive family and helper conventions.
+- `Ref` lifecycle and resource ownership.
+- Data, storage, queues, schema, and graph.
+- Services, request/response, mappings, clients, and application helpers.
+- Connections, process, system, CLI, and network utilities.
+- Hooks, behaviors, events, states, actions, and metadata.
+- Parsing, HTML, templates, and examples.
+- Testing, optional integrations, and migration guidance.
 
-### Hooks and Filters
-Implement a hook and filter system similar to WordPress's. Provide clear documentation on what hooks and filters are available, and their expected inputs and outputs.
+The GitHub Pages site should stay concise and branded: package identity,
+install command, release status, docs map, examples, and Blue Fission visual
+identity. The provided DevElation circle logo should be used as the primary
+brand asset once the site is added.
 
-### Strategy for Implementation
-1. **Design Interfaces First**: Begin by outlining the interfaces for all your components. This will help you have a clear contract for each part of your system.
+## Near-Term Milestones
 
-2. **Implement in Stages**: Start with core functionality first, then build outwards. This could mean starting with data types, moving to event handling, and then to state machines.
+1. Keep stable branch CI green across supported PHP versions.
+2. Publish the refreshed wiki from the stable documentation set.
+3. Add a small GitHub Pages site with Blue Fission branding and the DevElation
+   circle logo.
+4. Expand examples around `Ref`, storage substitution, request/service mapping,
+   and primitive helper idioms.
+5. Audit Materia, Kyber, Opus, add-ons, and microservice consumers for helper
+   duplication that should move into DevElation.
+6. Open package-specific follow-up issues for any downstream migration that
+   would create breaking behavior if done inside DevElation directly.
 
-3. **Test-Driven Development (TDD)**: Write tests for your expected behavior before implementation. This ensures that your code meets the requirements and helps prevent regressions later.
+## Acceptance Gates For New Public Surface
 
-4. **Documentation**: Keep documentation updated as you develop. This not only helps future contributors and users but can also help clarify your thinking.
-
-5. **Modular Development**: Develop each piece of the system as its own module. This will allow you to develop each piece in isolation and then integrate them into the larger system.
-
-6. **Feedback Loops**: Regularly review your progress, and adjust as necessary. This includes refactoring code, revisiting designs, and ensuring you’re meeting your strategic goals.
-
-7. **Focus on Extensibility and Scalability**: Ensure that the system you build is easily extendable and scalable to handle future requirements.
-
-By methodically following these steps, you can manage the complexity of your libraries while steadily progressing towards your goals.
+- The capability is useful to DevElation as a standalone PHP library.
+- Method names, arguments, return values, and side effects are documented or
+  tested.
+- Static and instance behavior are consistent where both forms are supported.
+- Optional integrations do not make default installs or test runs depend on
+  external services.
+- Native PHP interop remains available where consumer code or PHP extensions
+  expect raw values or resources.
