@@ -3,6 +3,8 @@
 namespace BlueFission\HTML;
 
 use BlueFission\Val;
+use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Net\HTTP;
 use BlueFission\Utils\Util;
@@ -235,32 +237,31 @@ class HTML
     public static function paginate($list_r, $begin = 'start', $end = 'lim', $href = '', $limit = 20)
     {
         $output = '';
-        $chapter_r = array();
-        $count = is_numeric($list_r) ? $list_r : count($list_r);
-        $list_r = (is_array($list_r) && ($count) <= 0) ? array() : $list_r;
+        $chapters = Arr::make([]);
+        $count = Num::is($list_r) ? $list_r : Arr::count($list_r);
+        $list_r = (Arr::is($list_r) && ($count) <= 0) ? [] : $list_r;
         $href = HTML::href($href);
 
-        $start = (isset($_GET[$begin]) && is_numeric($_GET[$begin])) ? $_GET[$begin] : 0;
-        $lim = (isset($_GET[$end]) && is_numeric($_GET[$end])) ? $_GET[$end] : $limit;
-        $query_r = array_merge($_POST, $_GET);
-        unset($query_r[$begin]);
-        unset($query_r[$end]);
-        $get_query = HTTP::query($query_r);
+        $start = (Val::is($_GET[$begin] ?? null) && Num::is($_GET[$begin])) ? (int)$_GET[$begin] : 0;
+        $lim = (Val::is($_GET[$end] ?? null) && Num::is($_GET[$end])) ? (int)$_GET[$end] : (int)$limit;
+        $lim = ($lim > 0) ? $lim : ((int)$limit > 0 ? (int)$limit : 20);
+        $query = Arr::make($_POST)->merge($_GET)->delete($begin)->delete($end);
+        $get_query = HTTP::query($query->val());
 
         if ($start > 0) {
-            $chapter_r[] = '&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ';
+            $chapters->push('&lt; <a href="' . $href . '?' . $begin . '=' . ((($start) >= $lim) ? ($start - $lim) : 0) . '&amp;' . $get_query . '">Previous</a> ');
         }
         if (($count / $lim) > 1) {
             for ($i = 0; $i < (($count / $lim)); $i++) {
-                $chapter_r[] = '<a href="' . $href . '?' . $begin . '=' . ($i * $lim) . '&amp;' . $get_query . '">' . ($i + 1) . '</a>';
+                $chapters->push('<a href="' . $href . '?' . $begin . '=' . ($i * $lim) . '&amp;' . $get_query . '">' . ($i + 1) . '</a>');
             }
         }
-        if ($start < round($count / $lim)) {
-            $chapter_r[] = '<a href="' . $href . '?' . $begin . '=' . (($start + $lim) >= ($count) ? $start : ($start + $lim)) . '&amp;' . $get_query . '">Next</a> &gt;';
+        if ($start < Num::round($count / $lim)) {
+            $chapters->push('<a href="' . $href . '?' . $begin . '=' . (($start + $lim) >= ($count) ? $start : ($start + $lim)) . '&amp;' . $get_query . '">Next</a> &gt;');
         }
 
         $output .= (($count > 0) ? 'Showing ' . ($start + 1) . '-' . (($count < ($start + $lim)) ? $count : ($start + $lim)) . ' of ' . $count . ' results.' : 'No matching results') . '<br />
-		' . implode(' | ', $chapter_r);
+		' . $chapters->join(' | ')->val();
 
         $output .= "<br />\n";
         return $output;
@@ -287,28 +288,32 @@ class HTML
      */
     public static function results($list_r, $begin = 'start', $end = 'lim', $href = '', $chapters = true, $link_style = 1, $query_r = '', $highlight = '#c0c0ff', $img_dir = 'images/', $file_dir = 'assets/', $headers = '', $trunc = '', $limit = 20)
     {
-        $start = (isset($_GET[$begin]) && is_numeric($_GET[$begin])) ? $_GET[$begin] : 0;
-        $end = (isset($_GET[$end]) && is_numeric($_GET[$end])) ? $_GET[$end] : $limit;
-        $list_r = (count($list_r) <= 0) ? array() : $list_r;
+        $limitKey = $end;
+        $start = (Val::is($_GET[$begin] ?? null) && Num::is($_GET[$begin])) ? (int)$_GET[$begin] : 0;
+        $lim = (Val::is($_GET[$limitKey] ?? null) && Num::is($_GET[$limitKey])) ? (int)$_GET[$limitKey] : (int)$limit;
+        $lim = ($lim > 0) ? $lim : ((int)$limit > 0 ? (int)$limit : 20);
+        $list = Arr::isEmpty($list_r) ? Arr::make([]) : Arr::make($list_r);
         $href = HTML::href($href);
 
-        if ($chapters) {
-            $chapter_list = dev_list_chapter($list_r, $begin, $end, $href);
-        }
+        $chapterList = $chapters ? HTML::paginate($list_r, $begin, $limitKey, $href, $limit) : '';
+        $output = Str::make($chapterList);
 
-        $output .= $chapter_list;
+        $table = new Table([
+            'href' => $href,
+            'query' => $query_r,
+            'highlight' => $highlight,
+            'headers' => $headers,
+            'link_style' => $link_style,
+            'show_image' => true,
+            'img_dir' => $img_dir,
+            'document_dir' => $file_dir,
+            'truncate' => $trunc,
+        ]);
+        $table->content($list->slice($start, $lim)->val());
 
-        $list_r = array_splice($list_r, $start, $end);
+        $output->append($table->render())->append($chapterList);
 
-        //for ($i = $start; $i < (((count($list_r) - $start) > $end) ? ($start + $end) : count($list_r)); $i++)
-        // $output .= dev_content_box($list_r, '', $href, $query_r, $highlight, $headers, $link_style, true, $img_dir, $file_dir, '', $trunc);
-        $table = new Table();
-        $table->content($list_r);
-        $output .= $table->render();
-
-        $output .= $chapter_list;
-
-        return $output;
+        return $output->val();
     }
 
     /**
@@ -370,14 +375,12 @@ class HTML
      */
     public static function nl2li($str)
     {
-        $output = '';
-        $str_r = explode("\n", $str);
-        foreach ($str_r as $a) {
-            if ($a != '' && $a != ' ') {
-                $output .= "<li>$a</li>\n";
-            }
-        }
-        return $output;
+        return Str::make($str)
+            ->split("\n")
+            ->filter(fn ($line) => Str::trim((string)$line) !== '')
+            ->map(fn ($line) => "<li>{$line}</li>\n")
+            ->join('')
+            ->val();
     }
 
     /**
@@ -389,17 +392,9 @@ class HTML
      */
     public static function br2nl($str)
     {
-        if (version_compare(PHP_VERSION, '5.0.0', '<')) {
-            $str = strtolower($str);
-            $str = str_replace('<br>', "\n", $str);
-            $str = str_replace('<br />', "\n", $str);
-            $str = str_replace('<br/>', "\n", $str);
-        } else {
-            $str = str_ireplace('<br>', "\n", $str);
-            $str = str_ireplace('<br />', "\n", $str);
-            $str = str_ireplace('<br/>', "\n", $str);
-        }
-        return $str;
+        return Str::make($str)
+            ->replacePattern('/<br\s*\/?>/i', "\n")
+            ->val();
     }
 
     /**
@@ -411,7 +406,7 @@ class HTML
      */
     public static function darkerColor($hex)
     {
-        $color = preg_replace("/[^A-Za-z0-9 ]/", '', $hex);
+        $color = Str::replacePattern("/[^A-Za-z0-9 ]/", '', $hex);
         $color2 = '';
         foreach (str_split($color) as $a) {
             $num = hexdec($a);

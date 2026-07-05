@@ -5,6 +5,9 @@ namespace BlueFission\HTML;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Flag;
+use BlueFission\Date;
+use BlueFission\Str;
+use BlueFission\Num;
 
 /**
  * Class Form
@@ -396,7 +399,7 @@ class Form
     public static function date($name = 'date', $label = 'Date', $value = '', $readonly = false)
     {
         if ($value == '') {
-            $value = date("Y-m-d");
+            $value = Date::now()->formatTimestamp('Y-m-d');
         }
         $disabled = ($readonly === false) ? '' : 'readonly';
 
@@ -466,54 +469,119 @@ class Form
      */
     public static function splitDate($date, $section = '', $timestamp = 0)
     {
-        $output = '';
+        $format = match ($section) {
+            'day' => 'd',
+            'month' => 'm',
+            'year' => 'Y',
+            default => 'm/d/Y',
+        };
 
-        if ($timestamp == 1) {
-            $pattern = '/^(\d{4})\-(\d+)\-(\d+)[\w\W\d\D\s]*$/';
-        } else {
-            $pattern = '/^(\d{4})\-(\d+)\-(\d+)/';
-        }
-        switch ($section) {
-            case 'day':
-                $replacement = '$3';
-                break;
-            case 'month':
-                $replacement = '$2';
-                break;
-            case 'year':
-                $replacement = '$1';
-                break;
-            default:
-                $replacement = '$2/$3/$1';
-                break;
+        $formatted = self::formatDateValue($date, $format);
+        if (Val::isNotNull($formatted)) {
+            return $formatted;
         }
 
-        $output = preg_replace($pattern, $replacement, $date);
+        $pattern = $timestamp == 1
+            ? '/^(\d{4})\-(\d+)\-(\d+)[\w\W\d\D\s]*$/'
+            : '/^(\d{4})\-(\d+)\-(\d+)/';
 
-        return $output;
+        $replacement = match ($section) {
+            'day' => '$3',
+            'month' => '$2',
+            'year' => '$1',
+            default => '$2/$3/$1',
+        };
+
+        return Str::replacePattern((string)$date, $pattern, $replacement);
     }
 
     /**
-     * Joins variables from a form post or get into a single date string.
+     * Joins date fields from request/interface data into a single date string.
      *
      * @param string $name The base name for the date elements and the name of the final date var
+     * @param array|null $source Optional request/interface data. When omitted, common request scopes are checked.
+     * @param string $format Date output format used when the submitted parts make a valid date.
      *
-     * @return string A standard format date as a string (MM/DD/YYYY)
+     * @return string A standard format date as a string
      */
-    public static function joinDate($name = 'date')
+    public static function joinDate($name = 'date', ?array $source = null, string $format = 'n/j/Y')
     {
-        $entry_month = $name . '_month';
-        $entry_day = $name . '_day';
-        $entry_year = $name . '_year';
+        $source = Arr::make($source ?? self::dateInputSource($name));
+        $entry_month = Str::make($name)->append('_month')->val();
+        $entry_day = Str::make($name)->append('_day')->val();
+        $entry_year = Str::make($name)->append('_year')->val();
 
-        $array = array_merge($GLOBALS, $_SESSION, $_COOKIE, $_POST, $_GET);
-        //global $$entry_month, $$entry_day, $$entry_year;
+        $month = $source->hasKey($entry_month) ? $source[$entry_month] : null;
+        $day = $source->hasKey($entry_day) ? $source[$entry_day] : null;
+        $year = $source->hasKey($entry_year) ? $source[$entry_year] : null;
 
-        $date = $array[$entry_month] . '/' . $array[$entry_day] . '/' . $array[$entry_year];
-        //$date = $$entry_month . '/' . $$entry_day . '/' . $$entry_year;
+        if (Val::isNotEmpty($month) || Val::isNotEmpty($day) || Val::isNotEmpty($year)) {
+            $date = Arr::make([$month ?? '', $day ?? '', $year ?? ''])->join('/')->val();
 
-        return $date;
+            if (Num::is($month) && Num::is($day) && Num::is($year) && checkdate((int)$month, (int)$day, (int)$year)) {
+                return self::formatDateValue($date, $format) ?? $date;
+            }
 
+            return $date;
+        }
+
+        if ($source->hasKey($name) && Val::isNotEmpty($source[$name])) {
+            return self::formatDateValue($source[$name], $format) ?? (string)$source[$name];
+        }
+
+        return '';
+
+    }
+
+    /**
+     * Collect only the date-related request values needed for joinDate().
+     *
+     * @param string $name
+     * @return array
+     */
+    protected static function dateInputSource(string $name): array
+    {
+        $keys = [
+            $name,
+            Str::make($name)->append('_month')->val(),
+            Str::make($name)->append('_day')->val(),
+            Str::make($name)->append('_year')->val(),
+        ];
+
+        $data = [];
+        foreach ([$GLOBALS ?? [], $_SESSION ?? [], $_COOKIE ?? [], $_POST ?? [], $_GET ?? []] as $scope) {
+            if (!Arr::is($scope)) {
+                continue;
+            }
+
+            foreach ($keys as $key) {
+                if (Arr::hasKey($scope, $key)) {
+                    $data[$key] = $scope[$key];
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Format a date value through the DevElation Date primitive.
+     *
+     * @param mixed $value
+     * @param string $format
+     * @return string|null
+     */
+    protected static function formatDateValue(mixed $value, string $format): ?string
+    {
+        if (Val::isEmpty($value)) {
+            return null;
+        }
+
+        try {
+            return (new Date((string)$value))->formatTimestamp($format);
+        } catch (\Throwable $exception) {
+            return null;
+        }
     }
 
     /**

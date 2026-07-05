@@ -116,17 +116,17 @@ class Template extends Obj {
 
     	$file = $info['basename'];
         $path = $info['dirname'] ?? '.';
-        $isAbsolutePath = (bool)preg_match('/^(?:[A-Za-z]:[\\\\\\/]|[\\\\\\/]{2}|\/)/', $path);
+        $isAbsolutePath = Str::matches($path, '/^(?:[A-Za-z]:[\\\\\\/]|[\\\\\\/]{2}|\/)/');
 
         if (!$isAbsolutePath) {
-        	$path_r = [];
+            $path_r = Arr::make([]);
             if ( Val::isNotEmpty($this->config('template_directory')) ) {
-        	    $path_r[] = $this->config('template_directory');
+                $path_r->push($this->config('template_directory'));
             }
             if ( Val::isNotEmpty($path) && $path !== '.' ) {
-        	    $path_r[] = $path;
+                $path_r->push($path);
             }
-        	$path = implode(DIRECTORY_SEPARATOR, $path_r);
+            $path = $path_r->join(DIRECTORY_SEPARATOR)->val();
         }
 
         if ( Val::isNotNull($file)) {
@@ -380,10 +380,12 @@ class Template extends Obj {
 
 		$parser->setVariables($this->_data->val());
 
-		$includeDirs = array_filter([
+		$includeDirs = Arr::make([
 			'templates' => $this->config('template_directory'),
 			'modules' => $this->config('module_directory'),
-		]);
+		])
+            ->filter(fn ($path) => Val::isNotEmpty($path))
+            ->val();
 
 		$parser->setIncludePaths($includeDirs);
 

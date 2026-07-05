@@ -132,7 +132,7 @@ class Machine {
             $response = (string)$this->_system->response();
 
             //extract the numerical value from the response
-            $cpuUsage = Str::replacePattern("/[^0-9]/", "", $response);
+            $cpuUsage = Str::replacePattern($response, "/[^0-9]/", "");
 
             if ($cpuUsage === null || $cpuUsage === '') {
                 return 0.0;
