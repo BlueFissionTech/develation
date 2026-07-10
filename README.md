@@ -1,4 +1,12 @@
+<p align="center">
+  <img src="docs/assets/develation-circle-logo.png" alt="DevElation logo" width="144">
+</p>
+
 # DevElation: A PHP Library for Graceful Development
+
+[![Packagist Version](https://img.shields.io/packagist/v/bluefission/develation.svg)](https://packagist.org/packages/bluefission/develation)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/bluefission/develation.svg)](https://packagist.org/packages/bluefission/develation)
+[![License](https://img.shields.io/packagist/l/bluefission/develation.svg)](https://packagist.org/packages/bluefission/develation)
 
 Welcome to the central documentation of **DevElation**, a comprehensive PHP library designed to simplify the development of large and complex projects. This library addresses the intricacies of modern PHP development with a suite of tools that cater to a wide range of functionalities, from basic data type handling to advanced system management and beyond. It is a property of Blue Fission Technology and is currently available under the MIT license.
 
@@ -302,6 +310,8 @@ Install DevElation with Composer:
 composer require bluefission/develation
 ```
 
+The canonical package source is [bluefission/develation on Packagist](https://packagist.org/packages/bluefission/develation). Packagist resolves the package to the canonical GitHub source repository and is the recommended install path for applications and libraries.
+
 Composer autoload registers DevElation classes and the global helper function
 file. After requiring `vendor/autoload.php`, helpers such as `arr()`, `str()`,
 `obj()`, `collect()`, `datetime()`, `filesystem()`, `doc()`, and `directory()`
@@ -315,7 +325,7 @@ satisfy its dependency constraints:
 composer require cboden/ratchet
 ```
 
-The canonical source repository is `BlueFissionTech/develation` on GitHub.
+The canonical source repository is [`BlueFissionTech/develation`](https://github.com/BlueFissionTech/develation) on GitHub.
 
 ```bash
 git clone https://github.com/BlueFissionTech/develation.git
