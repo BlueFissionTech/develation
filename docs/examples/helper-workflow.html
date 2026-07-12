@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Helper Workflow Example</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><nav class="shell"><a class="brand" href="index.html"><img src="../assets/develation-circle-logo.png" alt="">Helper Workflow</a><div class="links"><a href="index.html">Examples</a><a href="https://github.com/BlueFissionTech/develation/blob/master/examples/helpers/workflow.php">Source</a><a href="https://codespaces.new/BlueFissionTech/develation">Codespaces</a></div></nav></header>
+  <main class="shell">
+    <h1>Helper Workflow</h1>
+    <p>This is the broadest CLI model for the helper surface. It uses `arr()`, `collect()`, `str()`, `num()`, `flag()`, `datetime()`, `filesystem()`, `doc()`, HTTP helpers, and `Hash` without needing a web server.</p>
+    <h2>Run It</h2>
+    <pre><code>composer install
+php examples/helpers/workflow.php</code></pre>
+    <h2>Expected Output</h2>
+    <pre><code>{
+  "title": "=== DevElation helper workflow ===",
+  "processed_on": "2026-07-12T00:00:00+00:00",
+  "source_file_exists": true,
+  "source_file_reachable": true,
+  "fixture_entries": ["names.txt"],
+  "name_count": 3,
+  "names_latest_first": ["Katherine Johnson", "Grace Hopper", "Ada Lovelace"],
+  "status_line": "HTTP/1.1 200 OK",
+  "encoded_path_segment": "Example%20Report.md",
+  "url_host": "example.test",
+  "content_id": "example:...",
+  "angles": [
+    {"degrees": 0, "radians": 0, "sin": 0, "cos": 1},
+    {"degrees": 45, "radians": 0.785398, "sin": 0.707107, "cos": 0.707107}
+  ]
+}</code></pre>
+    <p class="note">The timestamp and content ID are generated at runtime, so exact values will differ.</p>
+  </main>
+</body>
+</html>

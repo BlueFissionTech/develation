@@ -1,0 +1,26 @@
+{
+  "name": "DevElation Examples",
+  "image": "mcr.microsoft.com/devcontainers/php:1-8.2-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/composer:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-debug"
+      ]
+    }
+  },
+  "postCreateCommand": "composer install",
+  "postAttachCommand": "php -v && composer --version",
+  "forwardPorts": [
+    8080
+  ],
+  "portsAttributes": {
+    "8080": {
+      "label": "PHP example server",
+      "onAutoForward": "notify"
+    }
+  }
+}

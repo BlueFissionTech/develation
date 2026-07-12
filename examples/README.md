@@ -6,6 +6,11 @@ The examples favor DevElation primitives, data objects, storage objects, HTML he
 
 Run `composer install` first. The examples share `examples/support.php`, which loads Composer, keeps local runtime files under `.localappdata/examples`, and provides tiny helpers for input normalization, safe HTML output, IDs, and logging.
 
+Online entry points:
+
+- Browse the hosted examples gallery: <https://bluefissiontech.github.io/develation/examples/>
+- Run the examples in a prepared environment: <https://codespaces.new/BlueFissionTech/develation>
+
 ### 1. Todo List – `examples/todo/index.php`
 
 - **Purpose**: Minimal todo app showing how to track tasks with owners and due dates.

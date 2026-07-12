@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CLI Status Report Example</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><nav class="shell"><a class="brand" href="index.html"><img src="../assets/develation-circle-logo.png" alt="">CLI Status Report</a><div class="links"><a href="index.html">Examples</a><a href="https://github.com/BlueFissionTech/develation/blob/master/examples/cli/report.php">Source</a><a href="https://codespaces.new/BlueFissionTech/develation">Codespaces</a></div></nav></header>
+  <main class="shell">
+    <h1>CLI Status Report</h1>
+    <p>This example models argument parsing, colorized output, terminal tables, progress bars, and status output through DevElation CLI helpers.</p>
+    <h2>Run It</h2>
+    <pre><code>composer install
+php examples/cli/report.php --limit 3 --delay 0 --title "Pages Demo"</code></pre>
+    <h2>Expected Output</h2>
+    <pre><code>Pages Demo
++--------+--------+
+| Item   | Status |
++--------+--------+
+| Item 1 |  ready |
+| Item 2 |  ready |
+| Item 3 |  ready |
++--------+--------+
+total: 3 | mode: demo | date: 2026-07-12
+[#############---------------------------]  33% (1/3)
+[##########################--------------]  67% (2/3)
+[########################################] 100% (3/3)</code></pre>
+    <p class="note">The real terminal output rewrites the progress line in place; the static transcript expands it into visible steps.</p>
+  </main>
+</body>
+</html>

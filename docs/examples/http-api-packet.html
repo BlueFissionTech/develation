@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTTP API Packet Example</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><nav class="shell"><a class="brand" href="index.html"><img src="../assets/develation-circle-logo.png" alt="">HTTP/API Packet</a><div class="links"><a href="index.html">Examples</a><a href="https://github.com/BlueFissionTech/develation/blob/master/examples/http/api_packet.php">Source</a><a href="https://codespaces.new/BlueFissionTech/develation">Codespaces</a></div></nav></header>
+  <main class="shell">
+    <h1>HTTP/API Packet</h1>
+    <p>This CLI example builds a deterministic request/response packet without calling an external service. It models `Obj` request data, `HTTP` helpers, headers, JSON, dates, flags, strings, and deterministic content IDs.</p>
+    <h2>Run It</h2>
+    <pre><code>composer install
+php examples/http/api_packet.php</code></pre>
+    <h2>Expected Output</h2>
+    <pre><code>{
+  "request": {
+    "method": "GET",
+    "url": "https://api.example.test/v1/Example%20Report.md?limit=3&amp;include=summary&amp;active=true",
+    "scheme": "https",
+    "host": "api.example.test",
+    "path_segment": "Example%20Report.md"
+  },
+  "headers": [
+    "Accept: application/json",
+    "X-Request-Date: 2026-07-12",
+    "X-Request-Id: api_..."
+  ],
+  "expected_response": {
+    "status": "HTTP/1.1 202 Accepted",
+    "body": {"accepted": true, "message": "queued"}
+  },
+  "content_id": "api-example:..."
+}</code></pre>
+  </main>
+</body>
+</html>
