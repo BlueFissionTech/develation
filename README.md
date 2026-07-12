@@ -177,6 +177,8 @@ Guidance for running PHPUnit tests and enabling optional integration coverage.
 ### Examples
 Sample applications that demonstrate DevElation’s flexibility:
 
+- Browse the hosted examples gallery: [GitHub Pages examples](https://bluefissiontech.github.io/develation/examples/)
+- Run the examples online: [Open in GitHub Codespaces](https://codespaces.new/BlueFissionTech/develation)
 - Session-backed todo list using `Arr`, `Date`, `Session` storage, HTML helpers, and templates: `examples/todo/index.php`
 - Simple comment thread with voting using `Arr`, `Str`, `Session` storage, HTML helpers, and templates: `examples/comments/index.php`
 - CLI territory game using the behavioral engine (`Behaves`) and an `Arr`-backed log: `examples/game/gangs.php`
@@ -184,6 +186,15 @@ Sample applications that demonstrate DevElation’s flexibility:
 - Helper workflow using global factory helpers plus primitive, file, HTTP, date, flag, and security objects: `examples/helpers/workflow.php`
 - HTTP/API packet builder using request normalization, headers, JSON, and status helpers: `examples/http/api_packet.php`
 - Additional walkthroughs live in `examples/README.md`
+
+Codespaces runs `composer install` automatically through `.devcontainer/devcontainer.json`. Once it opens, try:
+
+```bash
+php examples/helpers/workflow.php
+php examples/http/api_packet.php
+php examples/cli/report.php --limit 3 --delay 0 --title "Codespaces Demo"
+php examples/game/gangs.php script
+```
 
 ## Quick Start Examples
 

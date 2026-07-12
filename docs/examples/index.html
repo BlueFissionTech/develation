@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevElation Examples</title>
+  <meta name="description" content="Browse DevElation examples, CLI transcripts, and Codespaces commands.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <nav class="shell" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <img src="../assets/develation-circle-logo.png" alt="DevElation logo">
+        <span>DevElation Examples</span>
+      </a>
+      <div class="links">
+        <a href="../index.html">Home</a>
+        <a href="https://github.com/BlueFissionTech/develation">Source</a>
+        <a href="https://codespaces.new/BlueFissionTech/develation">Codespaces</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <h1>Examples That Model The Library</h1>
+      <p>These examples are small reference apps and scripts for learning DevElation primitives, storage, services, templates, CLI helpers, HTTP utilities, and behavior patterns. Static pages show commands and expected output; Codespaces runs the examples in a prepared PHP environment.</p>
+      <div class="actions">
+        <a class="button" href="https://codespaces.new/BlueFissionTech/develation">Open In Codespaces</a>
+        <a class="button secondary" href="https://github.com/BlueFissionTech/develation/tree/master/examples">View Source Examples</a>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Example gallery">
+      <article class="card">
+        <h3>Todo List</h3>
+        <p>Session-backed web flow using `Arr`, `Date`, Vibe templates, and storage lifecycle calls.</p>
+        <div class="meta"><span class="pill">web</span><span class="pill">storage</span><span class="pill">templates</span></div>
+        <a href="todo.html">Open tutorial</a>
+      </article>
+      <article class="card">
+        <h3>Comment Thread</h3>
+        <p>Voting and threaded rendering with session storage, `Arr`, `Str::pluralize()`, and Vibe templates.</p>
+        <div class="meta"><span class="pill">web</span><span class="pill">session</span><span class="pill">html</span></div>
+        <a href="comments.html">Open tutorial</a>
+      </article>
+      <article class="card">
+        <h3>Helper Workflow</h3>
+        <p>Non-interactive CLI script covering factory helpers, primitives, files, HTTP helpers, dates, flags, and hashes.</p>
+        <div class="meta"><span class="pill">cli</span><span class="pill">helpers</span><span class="pill">json</span></div>
+        <a href="helper-workflow.html">Open tutorial</a>
+      </article>
+      <article class="card">
+        <h3>CLI Status Report</h3>
+        <p>Argument parsing, terminal tables, progress output, status bars, and prompt-ready CLI composition.</p>
+        <div class="meta"><span class="pill">cli</span><span class="pill">console</span><span class="pill">args</span></div>
+        <a href="cli-report.html">Open tutorial</a>
+      </article>
+      <article class="card">
+        <h3>HTTP/API Packet</h3>
+        <p>Deterministic API packet construction with `Obj`, `HTTP`, `Arr`, `Flag`, `Date`, `Str`, and `Hash`.</p>
+        <div class="meta"><span class="pill">cli</span><span class="pill">http</span><span class="pill">security</span></div>
+        <a href="http-api-packet.html">Open tutorial</a>
+      </article>
+      <article class="card">
+        <h3>Territory Game</h3>
+        <p>Scripted CLI game showing `Behaves`, behavioral state transitions, and an `Arr`-backed narration log.</p>
+        <div class="meta"><span class="pill">cli</span><span class="pill">behavior</span><span class="pill">scripted</span></div>
+        <a href="game-gangs.html">Open tutorial</a>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">Run the examples locally or in Codespaces with `composer install` first.</div>
+  </footer>
+</body>
+</html>

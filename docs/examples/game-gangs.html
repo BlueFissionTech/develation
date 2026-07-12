@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Territory Game Example</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><nav class="shell"><a class="brand" href="index.html"><img src="../assets/develation-circle-logo.png" alt="">Territory Game</a><div class="links"><a href="index.html">Examples</a><a href="https://github.com/BlueFissionTech/develation/blob/master/examples/game/gangs.php">Source</a><a href="https://codespaces.new/BlueFissionTech/develation">Codespaces</a></div></nav></header>
+  <main class="shell">
+    <h1>Territory Game</h1>
+    <p>This scripted CLI example shows `Behavioral\Behaves`, behavioral state transitions, and an `Arr`-backed narration log in a small turn-driven game.</p>
+    <h2>Run It</h2>
+    <pre><code>composer install
+php examples/game/gangs.php script</code></pre>
+    <h2>Expected Output</h2>
+    <pre><code>Scripted DevElation Gangs run.
+
+Territory:
+  You   : 1
+  Rival : 1
+&gt; attack
+You make a move on rival territory.
+The move fails and you lose ground.
+Rival is waiting for a move.
+You have lost all territory. Game over.
+
+Recap of NPC actions:
+Actions logged: 1
+- Rival is waiting for a move.</code></pre>
+    <p class="note">Run without `script` for the interactive terminal game.</p>
+  </main>
+</body>
+</html>
