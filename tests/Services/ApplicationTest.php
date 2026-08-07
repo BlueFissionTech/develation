@@ -51,6 +51,33 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($first, $second);
     }
 
+    public function testResolvesClassWithoutExplicitConstructor()
+    {
+        $instance = $this->object->resolve(ConstructorlessApplicationService::class);
+
+        $this->assertInstanceOf(ConstructorlessApplicationService::class, $instance);
+    }
+
+    public function testResolvesConstructorlessNestedDependency()
+    {
+        $instance = $this->object->resolve(ApplicationServiceWithDependency::class);
+
+        $this->assertInstanceOf(ApplicationServiceWithDependency::class, $instance);
+        $this->assertInstanceOf(ConstructorlessApplicationDependency::class, $instance->dependency);
+    }
+
+    public function testResolvesClassWithBoundScalarConstructorArgument()
+    {
+        $this->object->bindArgs(
+            ['name' => 'configured'],
+            ApplicationServiceWithBoundArgument::class
+        );
+
+        $instance = $this->object->resolve(ApplicationServiceWithBoundArgument::class);
+
+        $this->assertSame('configured', $instance->name);
+    }
+
     public function testApplicationInstanceReturnsFirstRegisteredInstance()
     {
         $first = Application::instance();
@@ -365,5 +392,27 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         }
 
         rmdir($directory);
+    }
+}
+
+class ConstructorlessApplicationService
+{
+}
+
+class ConstructorlessApplicationDependency
+{
+}
+
+class ApplicationServiceWithDependency
+{
+    public function __construct(public ConstructorlessApplicationDependency $dependency)
+    {
+    }
+}
+
+class ApplicationServiceWithBoundArgument
+{
+    public function __construct(public string $name)
+    {
     }
 }
