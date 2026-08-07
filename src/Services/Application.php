@@ -1204,9 +1204,12 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function getDynamicInstance(string $class )
 	{
-		$constructor = new \ReflectionMethod($class, '__construct');
+		$reflection = new \ReflectionClass($class);
+		$constructor = $reflection->getConstructor();
 
-		$dependencies = [];
+		if ( Val::isNull($constructor) ) {
+			return $reflection->newInstance();
+		}
 
 		$arguments = $this->boundArguments($class);
 
@@ -1214,9 +1217,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 
 		$values = Arr::make($dependencies)->values()->val();
 
-		$instance = new $class(...$values);
-	
-		return $instance;
+		return $reflection->newInstanceArgs($values);
 	}
 
 	/**
@@ -1359,11 +1360,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			if ( $varTypes->has($dependencyClass) ) {
 				$dependencies[$dependencyName] = $arguments[$dependencyName] ?? ( $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null );
 			} elseif ( $dependencyClass ) {
-				$values = Arr::make($this->handleDependencies(new \ReflectionMethod($dependencyClass.'::__construct')))->values()->val();
-
-				$dependencies[$dependencyName] = 
-					$arguments[$dependencyName] ?? 
-					new $dependencyClass(...$values);
+				$dependencies[$dependencyName] =
+					$arguments[$dependencyName] ??
+					$this->getDynamicInstance($dependencyClass);
 			}
 		}
 
