@@ -214,17 +214,6 @@ class Val implements IVal, IDispatcher {
 	}
 
 	/**
-	 * Records the last value inspected by a static predicate.
-	 *
-	 * @param mixed $value
-	 * @return void
-	 */
-	protected static function remember($value): void
-	{
-		self::$_last = $value;
-	}
-
-	/**
 	 * Use the last instance of the class
 	 * @return IVal
 	 */
@@ -935,8 +924,16 @@ class Val implements IVal, IDispatcher {
 			$value = array_shift( $args );
 
 			self::$_last = $value;
-			
-			$object = new $class( $value, false, false );
+
+			try {
+				$object = new $class( $value, false, false );
+			} catch ( \Throwable $exception ) {
+				if ( $method === 'is' ) {
+					return false;
+				}
+
+				throw $exception;
+			}
 			$output = call_user_func_array([$object, self::PRIVATE_PREFIX.$method], $args);
 			unset($object);
 			if ($output instanceof IVal) {
