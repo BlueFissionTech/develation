@@ -11,6 +11,8 @@
 namespace BlueFission\Services;
 
 use BlueFission\Arr;
+use BlueFission\Date;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\Behavioral\Configurable;
@@ -34,7 +36,7 @@ class Authenticator extends Service
         'id_field' => 'user_id',
         'username_field' => 'username',
         'password_field' => 'password',
-        'lockout_interval' => 10,
+        'lockout_interval' => 600, // Seconds before the attempt counter resets.
         'duration' => 3600,
         'max_attempts' => 10,
     ];
@@ -208,12 +210,11 @@ class Authenticator extends Service
         $last = Arr::make(Arr::toArray($attempts->data()));
 
 
-        if ($last->hasKey('last_attempt') && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
-            $attemptCount = (int)($last['attempts'] ?? 0) + 1;
-        } else {
-            $attemptCount = 0;
-        }
-        $attempts->field('last_attempt', date('Y-m-d G:i:s', strtotime('now')));
+        $attemptCount = $this->isWithinLockoutWindow($last)
+            ? (int)Num::make($last['attempts'] ?? 0)->add(1)->val()
+            : 0;
+
+        $attempts->field('last_attempt', Date::now()->formatTimestamp('Y-m-d H:i:s'));
         $attempts->field('attempts', $attemptCount);
         $attempts->write();
 
@@ -239,7 +240,7 @@ class Authenticator extends Service
         $last = Arr::make(Arr::toArray($attempts->data()));
 
 
-        if ($last->hasKey('last_attempt') && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
+        if ($this->isWithinLockoutWindow($last)) {
             if ($last->hasKey('attempts') && $last['attempts'] >= $this->config('max_attempts')) {
                 return true;
             }
@@ -260,9 +261,35 @@ class Authenticator extends Service
         $attempts->read();
         $last = Arr::make(Arr::toArray($attempts->data()));
 
-        if ($last->hasKey('last_attempt') && strtotime($last['last_attempt']) > strtotime($this->config('lockout_interval'))) {
+        if ($this->isWithinLockoutWindow($last)) {
             $attempts->delete();
         }
+    }
+
+    private function isWithinLockoutWindow(Arr $attempt): bool
+    {
+        if (!$attempt->hasKey('last_attempt')) {
+            return false;
+        }
+
+        $lastAttempt = $attempt['last_attempt'];
+        if (Val::isNull($lastAttempt) || !Date::is($lastAttempt)) {
+            return false;
+        }
+
+        $interval = $this->config('lockout_interval');
+        if (!Num::is($interval)) {
+            return false;
+        }
+
+        $intervalSeconds = (int)Num::make($interval)->abs()->val();
+        $windowStart = (int)Num::make(Date::now()->timestamp())
+            ->sub($intervalSeconds)
+            ->val();
+        $lastAttemptTimestamp = Date::timestamp($lastAttempt);
+
+        return Val::isNotNull($lastAttemptTimestamp)
+            && $lastAttemptTimestamp >= $windowStart;
     }
 
     private function loginAttemptsStorage(): Storage

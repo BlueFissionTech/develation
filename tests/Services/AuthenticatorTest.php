@@ -96,4 +96,129 @@ class AuthenticatorTest extends TestCase
 
         $this->assertTrue($method->invoke($authenticator, '127.0.0.1'));
     }
+
+    public function testFreshLoginAttemptDoesNotEmitTimestampWarnings()
+    {
+        $fields = [];
+        $authenticator = $this->authenticatorWithAttemptData([
+            'last_attempt' => null,
+            'attempts' => 0,
+        ], $fields);
+        $hadRemoteAddress = array_key_exists('REMOTE_ADDR', $_SERVER);
+        $remoteAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        set_error_handler(function ($severity, $message, $file, $line) {
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        });
+
+        try {
+            $this->assertTrue($this->invokeAuthenticatorMethod(
+                $authenticator,
+                'confirmIPAddress',
+                ['127.0.0.1']
+            ));
+            $this->assertFalse($this->invokeAuthenticatorMethod(
+                $authenticator,
+                'blockIPAddress'
+            ));
+            $this->assertNull($this->invokeAuthenticatorMethod(
+                $authenticator,
+                'clearIPAddress'
+            ));
+        } finally {
+            restore_error_handler();
+
+            if ($hadRemoteAddress) {
+                $_SERVER['REMOTE_ADDR'] = $remoteAddress;
+            } else {
+                unset($_SERVER['REMOTE_ADDR']);
+            }
+        }
+
+        $this->assertSame(600, $authenticator->config('lockout_interval'));
+        $this->assertSame(0, $fields['attempts']);
+        $this->assertNotEmpty($fields['last_attempt']);
+    }
+
+    public function testLoginAttemptWithinWindowIncrementsCount()
+    {
+        $fields = [];
+        $authenticator = $this->authenticatorWithAttemptData([
+            'last_attempt' => date('Y-m-d H:i:s', time() - 60),
+            'attempts' => 4,
+        ], $fields);
+
+        $this->assertTrue($this->invokeAuthenticatorMethod(
+            $authenticator,
+            'confirmIPAddress',
+            ['127.0.0.1']
+        ));
+        $this->assertSame(5, $fields['attempts']);
+    }
+
+    public function testExpiredLoginAttemptResetsCount()
+    {
+        $fields = [];
+        $authenticator = $this->authenticatorWithAttemptData([
+            'last_attempt' => date('Y-m-d H:i:s', time() - 601),
+            'attempts' => 9,
+        ], $fields);
+
+        $this->assertTrue($this->invokeAuthenticatorMethod(
+            $authenticator,
+            'confirmIPAddress',
+            ['127.0.0.1']
+        ));
+        $this->assertSame(0, $fields['attempts']);
+    }
+
+    public function testMaximumLoginAttemptsAreRejected()
+    {
+        $fields = [];
+        $authenticator = $this->authenticatorWithAttemptData([
+            'last_attempt' => date('Y-m-d H:i:s', time() - 60),
+            'attempts' => 9,
+        ], $fields);
+
+        $this->assertFalse($this->invokeAuthenticatorMethod(
+            $authenticator,
+            'confirmIPAddress',
+            ['127.0.0.1']
+        ));
+        $this->assertSame(10, $fields['attempts']);
+    }
+
+    private function authenticatorWithAttemptData(array $data, array &$fields): Authenticator
+    {
+        $session = new Cookie();
+        $datasource = $this->createMock(Storage::class);
+        $attempts = $this->createMock(Storage::class);
+
+        $attempts->method('config')->willReturnSelf();
+        $attempts->method('activate')->willReturnSelf();
+        $attempts->method('read')->willReturnSelf();
+        $attempts->method('data')->willReturn($data);
+        $attempts->method('write')->willReturnSelf();
+        $attempts->method('field')->willReturnCallback(
+            function ($field, $value = null) use (&$fields, $attempts) {
+                $fields[$field] = $value;
+
+                return $attempts;
+            }
+        );
+
+        return new Authenticator($session, $datasource, null, $attempts);
+    }
+
+    private function invokeAuthenticatorMethod(
+        Authenticator $authenticator,
+        string $method,
+        array $arguments = []
+    ): mixed {
+        $reflection = new \ReflectionMethod($authenticator, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invokeArgs($authenticator, $arguments);
+    }
 }
