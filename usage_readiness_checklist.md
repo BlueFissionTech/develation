@@ -141,6 +141,9 @@ Repository-style code should keep domain names at the application layer and use 
 - String and array normalization paths are covered by helper calls or tests.
 - Object population uses `assign()` or `field()` rather than ad hoc property mutation.
 - Storage code checks `status()` and uses documented result materialization.
+- File and directory code uses package-owned `FileSystem` operations for
+  bounded creation, copy, move, status, and event metadata when lifecycle
+  visibility matters.
 - Query diagnostics are logged or traced only as diagnostics.
 - Optional integrations remain opt-in.
 - Public code depends only on documented methods, constants, and return shapes.

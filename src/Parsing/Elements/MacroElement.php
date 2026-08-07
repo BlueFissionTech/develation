@@ -4,6 +4,7 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\Parsing\Contracts\IExecutableElement;
+use BlueFission\Parsing\Block;
 use BlueFission\Parsing\Element;
 use BlueFission\DevElation as Dev;
 
@@ -41,11 +42,15 @@ class MacroElement extends Element implements IRenderableElement, IExecutableEle
         Dev::do('_before', [$args, $this]);
         $this->closed = true; // prevent further scope propogation
 
+        $block = new Block($this->raw, true);
+        $block->setOwner($this);
+        $block->parse();
+
         foreach ($args as $key => $value) {
-            $this->block->setVar($key, $value);
+            $block->setVar($key, $value);
         }
-        $this->block->process();
-        $output = $this->block->content;
+        $block->process();
+        $output = $block->content;
         $output = Dev::apply('_out', $output);
         Dev::do('_after', [$output, $this]);
         return $output;

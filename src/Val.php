@@ -662,7 +662,6 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function val($value = null): mixed
 	{
-		// if ( Val::isNotNull($value) ) {
 		if ( !is_null($value) ) {
 			$value = Dev::apply('_in', $value);
 

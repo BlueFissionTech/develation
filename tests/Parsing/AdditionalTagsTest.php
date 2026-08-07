@@ -55,6 +55,17 @@ class AdditionalTagsTest extends ParsingTestCase
         $this->assertStringContainsString('Hello World!', $output);
     }
 
+    public function testRepeatedMacroInvocationsUseFreshArgumentScope()
+    {
+        $template = "@macro('greet')Hello {\$name}!@endmacro @invoke('greet' name=World) @invoke('greet' name=Codex)";
+        $parser = new Parser($template);
+        $output = $parser->render();
+
+        $this->assertStringContainsString('Hello World!', $output);
+        $this->assertStringContainsString('Hello Codex!', $output);
+        $this->assertSame(1, substr_count($output, 'Hello World!'));
+    }
+
     public function testFunctionDescriptionUsesAssignedName()
     {
         $element = new FunctionElement('function', '', '', [

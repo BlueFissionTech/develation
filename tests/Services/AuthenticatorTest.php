@@ -73,4 +73,27 @@ class AuthenticatorTest extends TestCase
         $method->setAccessible(true);
         $method->invoke($authenticator);
     }
+
+    public function testLoginAttemptsCanUseInjectedStorage()
+    {
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        $session = new Cookie();
+        $datasource = $this->createMock(Storage::class);
+        $datasource->expects($this->never())->method('config');
+
+        $attempts = $this->createMock(Storage::class);
+        $attempts->method('config')->willReturnSelf();
+        $attempts->method('activate')->willReturnSelf();
+        $attempts->method('field')->willReturnSelf();
+        $attempts->method('read')->willReturnSelf();
+        $attempts->method('data')->willReturn([]);
+        $attempts->expects($this->once())->method('write')->willReturnSelf();
+
+        $authenticator = new Authenticator($session, $datasource, null, $attempts);
+        $method = new \ReflectionMethod($authenticator, 'confirmIPAddress');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke($authenticator, '127.0.0.1'));
+    }
 }

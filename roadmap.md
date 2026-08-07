@@ -13,7 +13,9 @@ turning DevElation into any one of those higher-level products.
 - `v1.3.38-alpha` introduced the `Ref` primitive, ownership-aware handle
   helpers, conditional `Val` chain behavior, and scalar predicate naming cleanup.
 - `v1.3.39` is the first stable release candidate line after production comment
-  cleanup, Composer metadata refresh, and grouped PHPUnit validation.
+  cleanup, Composer metadata refresh, grouped PHPUnit validation, and the final
+  issue batch covering PHP 8.2 request dispatch, macro invocation freshness,
+  recursive directory creation, and FileSystem copy/move behavior.
 
 Stable releases should preserve raw PHP interop where native contracts matter.
 DevElation should wrap values and handles when lifecycle, hooks, metadata,
@@ -124,6 +126,21 @@ brand asset once the site is added.
    duplication that should move into DevElation.
 6. Open package-specific follow-up issues for any downstream migration that
    would create breaking behavior if done inside DevElation directly.
+
+## Final Stable Candidate Fixes
+
+- `Application::run()` must convert associative request maps to positional
+  message arguments before dispatch so PHP 8.2 named-argument semantics do not
+  break CLI fallback routing.
+- Vibe macro invocation must render from a fresh argument scope for each
+  `@invoke`, preserving the macro definition while preventing stale rendered
+  content from leaking between calls.
+- `FileSystem::mkdir()` must support explicit recursive creation and
+  permissions while rejecting directory targets outside the configured root.
+- `FileSystem::copy()` and `move()` must be concrete package-owned operations,
+  not placeholders, with success/failure status and event metadata.
+- `Authenticator` login-attempt tracking should accept injected storage so
+  consumers are not forced to reuse the credential datasource for lockout state.
 
 ## Acceptance Gates For New Public Surface
 
