@@ -220,6 +220,31 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $_REQUEST = $originalRequest;
     }
 
+    public function testRunDispatchesAssociativeRequestArgumentsPositionally()
+    {
+        $app = Application::getInstance('AssociativeRunArgsTest');
+        $captured = null;
+
+        $app->register('targetService', 'CaptureRunArgs', function ($behavior, $args) use (&$captured) {
+            $captured = [
+                'behavior' => $behavior->name(),
+                'args' => $args,
+            ];
+        });
+
+        $this->setApplicationArguments($app, [
+            '_method' => 'cli',
+            'service' => 'targetService',
+            'behavior' => 'CaptureRunArgs',
+            'data' => ['query' => 'status'],
+        ]);
+
+        $app->run();
+
+        $this->assertSame('CaptureRunArgs', $captured['behavior']);
+        $this->assertSame(['query' => 'status'], $captured['args']);
+    }
+
     public function testArgsUseRequestMethodAndUriDefaults()
     {
         global $argv, $argc;
@@ -300,6 +325,14 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $property->setAccessible(true);
 
         return $property->getValue($app);
+    }
+
+    private function setApplicationArguments(Application $app, array $arguments): void
+    {
+        $reflection = new \ReflectionClass($app);
+        $property = $reflection->getProperty('_arguments');
+        $property->setAccessible(true);
+        $property->setValue($app, $arguments);
     }
 
     private function invokeApplicationMethod(Application $app, string $method, array $arguments = [])

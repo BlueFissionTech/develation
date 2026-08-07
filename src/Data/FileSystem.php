@@ -124,11 +124,6 @@ class FileSystem extends Data implements IData {
 		if ( $file ) {
 			$this->loadInfo( $file );
 		}
-
-// if (Str::pos($file, 'default') !== false) die(var_dump($this->_config));
-
-			
-		// if ($file && Str::pos($file, 'default') !== false) $this->config('root', 'lfjsjs');
 		$success = false;
 		$path = $this->path();
 		$file = $this->file();
@@ -213,17 +208,13 @@ class FileSystem extends Data implements IData {
 		$root = '/';
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 			$root = '';
-			// We check if there's an existing drive letter at the beginning of $this->_info['dirname'] and use that if so
 			if (preg_match('/^[A-Z]:/', $this->_info['dirname'], $matches)) {
 				$root = $matches[0];
 			} else {
-				// If not, we check the __DIR__ constant
 				$root = substr(__DIR__, 0, 3);
 			}
 
 			if ($root == '') {
-				// If we still don't have a root, we check the drives on the system and use the first one that exists
-				// (this is the most reliable way to get the root on Windows, since __DIR__ might not be set correctly in some cases)
 				$drives = range('A', 'Z');
 				foreach ($drives as $drive) {
 					if (is_dir($drive.':\\')) {
@@ -248,8 +239,6 @@ class FileSystem extends Data implements IData {
 		$info = pathinfo($path);
 
 		$root = $this->config('root') ?? $this->getSystemRoot();
-		// Maybe we should override the root if its passed with the path?
-		// $root = ( $root && Str::pos($path, $root) === 0 ) ? $root : '';
 		$isAbsolutePath = Str::pos($path, DIRECTORY_SEPARATOR) === 0;
 		if (!$isAbsolutePath && Str::is($path)) {
 			$isAbsolutePath = preg_match('/^[A-Z]:\\\\/i', $path) === 1;
@@ -571,8 +560,8 @@ class FileSystem extends Data implements IData {
 	 */
 	public function exists($path = null): bool
 	{
-		$file = Val::isNotNull($path) ? basename($path) : $this->file();
-		$directory = Val::isNotNull($path) ? dirname($path) : $this->path();
+		$file = Val::isNotNull($path) ? self::fileBasename($path) : $this->file();
+		$directory = Val::isNotNull($path) ? self::pathDirectory($path) : $this->path();
 		$directory = realpath($directory);
 
 		if (!$file || !$directory) {
@@ -826,8 +815,6 @@ class FileSystem extends Data implements IData {
 
 		// $files = scandir($this->path());
 		
-		// sort($files);
-	 
 		if ($table) {
 			$output = HTML::table($files, '', $href, $query_r, '#c0c0c0', '', 1, 1, $dir, $dir);
 		} else {
@@ -925,16 +912,14 @@ class FileSystem extends Data implements IData {
 	 *
 	 * @return string A status message indicating the result of the copy
 	 */
-	public function copy( $dest, $original = null, $remove_orig = false ): IObj
+	public function copy( $dest, $original = null, $remove_orig = false, bool $overwrite = false ): IObj
 	{
-		$status = false;
-
-		if (!$original && !$this->file) {
+		if (!$original && !$this->file()) {
 			$this->status("No file specified");
 			return $this;
 		}
 
-		$file = Val::isNotNull($original) ? $original : $this->path(); 
+		$file = Val::isNotNull($original) ? $original : $this->path().DIRECTORY_SEPARATOR.$this->file();
 
 		if (!$this->allowedDir($file)) {
 			$this->status( "Location is outside of allowed path.");
@@ -946,45 +931,38 @@ class FileSystem extends Data implements IData {
 			return $this;
 		}
 
-		if ($file != '') {
-			if ($dest != '' && is_dir($dest)) {
-				if ($this->exists($file)) {
-					if (!$this->exists( $dest ) || $overwrite) {
-						//copy process here
-						if ($success) {
-							$status = "Successfully copied file";
-							$this->status($status);
-							if ( $overwrite && $this->exists( $dest ) ) {
-								$this->trigger([Event::SUCCESS], new Meta(when: Action::UPDATE, info: $this->status()));
-							} else {
-								$this->trigger([Event::SUCCESS], new Meta(when: Action::CREATE, info: $this->status()));
-							}
+		$target = self::directoryExists($dest)
+			? Arr::join([$this->normalizeDirectoryPath($dest), self::fileBasename($file)], DIRECTORY_SEPARATOR)
+			: $dest;
+		$targetDirectory = self::pathDirectory($target);
 
-							if ($remove_orig) {
-								$this->delete($file);
-								if (!$this->exists($this->file())) {
-									$this->dirname = $dest;
-								}
-							}
-
-							return $this;
-						} else {
-							$status = "Copy failed: file could not be moved";
-						}
-					} else {
-						$status = "Copy aborted. File cannot be overwritten";
-					}
-				} else {
-					$status = "File '$file' does not exist";
-				}
-			} else {
-				$status = "No file destination specified or destination does not exist";
-			}
+		if ($target === '' || !self::directoryExists($targetDirectory)) {
+			$status = "No file destination specified or destination does not exist";
+		} elseif (!$this->allowedDir($target)) {
+			$status = "Destination is outside of allowed path.";
+		} elseif (!self::fileExists($file)) {
+			$status = "File '$file' does not exist";
 		} else {
-			$status = "No file specified for deletion";
+			$targetExists = self::fileExists($target);
+			if ($targetExists && !$overwrite) {
+				$status = "Copy aborted. File cannot be overwritten";
+			} elseif (!copy($file, $target)) {
+				$status = "Copy failed: file could not be moved";
+			} else {
+				$status = "Successfully copied file";
+				$this->status($status);
+				$this->trigger([Event::SUCCESS], new Meta(when: $targetExists && $overwrite ? Action::UPDATE : Action::CREATE, info: $this->status(), data: $target));
+
+				if ($remove_orig && unlink($file)) {
+					$this->dirname = $targetDirectory;
+				}
+
+				return $this;
+			}
 		}
-		
+
 		$this->status($status);
+		$this->trigger([Event::FAILURE], new Meta(when: Action::CREATE, info: $this->status(), data: $target ?? $dest));
 
 		return $this;
 	}
@@ -1058,27 +1036,95 @@ class FileSystem extends Data implements IData {
 	/**
 	 * Create a new directory.
 	 *
-	 * @param string|null $dir The name of the directory to be created.
+	 * @param string|null $dir The directory path, relative to the configured target path.
+	 * @param bool $recursive Whether to create missing parent directories.
+	 * @param int $permissions Directory permissions used for newly created directories.
 	 * @return IObj
 	 */
-	public function mkdir( $dir = null ): IObj
+	public function mkdir( $dir = null, bool $recursive = false, int $permissions = 0777 ): IObj
 	{
-	    $dir = $dir ? $this->path().DIRECTORY_SEPARATOR.$dir : $this->path();
+		$dir = $dir ? $this->path().DIRECTORY_SEPARATOR.$dir : $this->path();
 
-	    if (!$this->allowedDir($dir)) {
-	        $this->status( "Location is outside of allowed path.");
+		if (!$this->allowedDirectoryTarget($dir)) {
+			$this->status( "Location is outside of allowed path.");
 			$this->trigger([Event::FAILURE], new Meta(when: Action::CREATE, info: $this->status(), data: $dir));
-	        return $this;
-	    }
+			return $this;
+		}
 
-	    if (!$this->exists($dir)) {
-	        mkdir($dir);
-	        $this->status("Directory created successfully");
-			$this->trigger([Event::SUCCESS], new Meta(when: Action::CREATE, info: $this->status()));
-	    } else {
-	    	$this->status("Directory already exists");
-	    }
+		if (self::directoryExists($dir)) {
+			$this->status("Directory already exists");
+			return $this;
+		}
 
-	    return $this;
+		if (mkdir($dir, $permissions, $recursive)) {
+			$this->status("Directory created successfully");
+			$this->trigger([Event::SUCCESS], new Meta(when: Action::CREATE, info: $this->status(), data: $dir));
+			return $this;
+		}
+
+		$this->status("Directory could not be created");
+		$this->trigger([Event::FAILURE], new Meta(when: Action::CREATE, info: $this->status(), data: $dir));
+
+		return $this;
+	}
+
+	private function allowedDirectoryTarget(string $path): bool
+	{
+		$root = realpath($this->config('root'));
+		if (!$root) {
+			return $this->allowedDir($path);
+		}
+
+		$target = realpath($path) ?: $this->resolvePendingPath($path);
+		$root = $this->normalizeDirectoryPath($root);
+		$target = $this->normalizeDirectoryPath($target);
+
+		return $target === $root || Str::pos($target, $root.DIRECTORY_SEPARATOR) === 0;
+	}
+
+	private function resolvePendingPath(string $path): string
+	{
+		$tail = Arr::make([]);
+		$cursor = $path;
+
+		while (!realpath($cursor)) {
+			$parent = self::pathDirectory($cursor);
+			if ($parent === $cursor) {
+				break;
+			}
+
+			$tail->unshift(self::fileBasename($cursor));
+			$cursor = $parent;
+		}
+
+		$base = realpath($cursor) ?: $cursor;
+
+		return $tail->isNotEmpty()
+			? Arr::join([$base, $tail->join(DIRECTORY_SEPARATOR)->val()], DIRECTORY_SEPARATOR)
+			: $base;
+	}
+
+	/**
+	 * Return the directory component for a concrete path.
+	 *
+	 * @param string $path
+	 * @return string
+	 */
+	public static function pathDirectory(string $path): string
+	{
+		$info = pathinfo($path);
+
+		return Arr::make($info)->get('dirname') ?? '';
+	}
+
+	private function normalizeDirectoryPath(string $path): string
+	{
+		return rtrim(
+			Str::make($path)
+				->replace('/', DIRECTORY_SEPARATOR)
+				->replace('\\', DIRECTORY_SEPARATOR)
+				->val(),
+			DIRECTORY_SEPARATOR
+		);
 	}
 }

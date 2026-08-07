@@ -539,11 +539,11 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			try {
 				$behavior->target = $this->service($args['service']);
 			} catch( Exception $e ) {
-				// Do Nothing
+				// Keep the application as the fallback target when no service is registered.
 			}
 			$args['behavior'] = $behavior;
 
-			call_user_func_array([$this, 'message'], $args);
+			call_user_func_array([$this, 'message'], Arr::make($args)->values()->val());
 		}
 
 		return $this;

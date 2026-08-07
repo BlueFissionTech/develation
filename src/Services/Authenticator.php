@@ -13,10 +13,7 @@ namespace BlueFission\Services;
 use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\Val;
-use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Configurable;
-use BlueFission\Data\IData;
-use BlueFission\Net\HTTP;
 use BlueFission\Data\Storage\Storage;
 
 class Authenticator extends Service
@@ -69,6 +66,13 @@ class Authenticator extends Service
     protected $_session;
 
     /**
+     * The storage used for login attempt tracking.
+     *
+     * @var Storage|null
+     */
+    protected ?Storage $_loginAttempts = null;
+
+    /**
      * The password verification function
      *
      * @var callable
@@ -81,18 +85,23 @@ class Authenticator extends Service
      * @param Storage $datasource
      * @param array|null $config
      */
-    public function __construct(Storage $session, Storage $datasource, $config = null)
+    public function __construct(Storage $session, Storage $datasource, $config = null, ?Storage $loginAttempts = null)
     {
         $this->__configConstruct($config);
         parent::__construct();
-        // if (is_array($config)) {
-        // 	$this->config($config);
-        // }
         $this->_datasource = $datasource;
+        $this->_loginAttempts = $loginAttempts;
 
         $session->config('name', $this->config('session'));
         $session->activate();
         $this->_session = $session;
+    }
+
+    public function loginAttempts(Storage $storage): self
+    {
+        $this->_loginAttempts = $storage;
+
+        return $this;
     }
 
     /**
@@ -258,7 +267,7 @@ class Authenticator extends Service
 
     private function loginAttemptsStorage(): Storage
     {
-        $attempts = $this->_datasource;
+        $attempts = $this->_loginAttempts ?? $this->_datasource;
         $attempts->config('name', $this->config('login_attempts_table'));
         $attempts->activate();
 
@@ -311,10 +320,6 @@ class Authenticator extends Service
      */
     public function setSession()
     {
-        // $this->_session->read();
-        // $data = $this->_session->data();
-        // die(var_dump($_SESSION));
-
         $sessionKey = $this->config('session');
         if (Arr::hasKey($_COOKIE, $sessionKey)) {
             if ($this->setAuthCookie(stripslashes($_COOKIE[$sessionKey]))) {
@@ -333,8 +338,6 @@ class Authenticator extends Service
             'id' => $this->id,
             'duration' => $this->config('duration')
         ];
-
-        // $cookie = HTTP::jsonEncode( ($loginData) );
 
         if ($this->setAuthCookie($loginData, $loginData['duration'])) {
             return true;
@@ -364,20 +367,6 @@ class Authenticator extends Service
      */
     private function setAuthCookie($value, $duration = "")
     {
-        /*
-        if($duration == ""){
-            $duration = $this->config('duration');
-        }
-
-        $url = parse_url($_SERVER["HTTP_HOST"]);
-        $domain = isset($url['host']) ? $url['host'] : null;
-        $dir = "/";
-        $cookiedie = ($duration > 0) ? time()+(int)$duration : (int)$duration; //expire in one hour
-        $cookiesecure = false;
-
-        $var = $this->config('session');
-        */
-
         $this->_session->clear();
         $this->_session->username = $value['username'];
         $this->_session->id = $value['id'];

@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Tests\Data;
 
+use BlueFission\Arr;
 use BlueFission\Data\FileSystem;
 use BlueFission\Tests\Support\TestEnvironment;
 
@@ -62,7 +63,32 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 
 		$dir = $this->object->listDir();
 
-		$this->assertTrue(count($dir) > 0);
+		$this->assertTrue(Arr::count($dir) > 0);
+	}
+
+	public function testCanCreateNestedDirectoryRecursively()
+	{
+		$this->object->mkdir('one'.DIRECTORY_SEPARATOR.'two'.DIRECTORY_SEPARATOR.'three', true);
+
+		$this->assertTrue(FileSystem::directoryExists($this->testdirectory.DIRECTORY_SEPARATOR.'one'.DIRECTORY_SEPARATOR.'two'.DIRECTORY_SEPARATOR.'three'));
+		$this->assertSame('Directory created successfully', $this->object->status());
+	}
+
+	public function testCreateDirectoryReportsExistingDirectory()
+	{
+		mkdir($this->testdirectory.DIRECTORY_SEPARATOR.'existing');
+
+		$this->object->mkdir('existing', true);
+
+		$this->assertSame('Directory already exists', $this->object->status());
+	}
+
+	public function testCreateDirectoryRejectsTargetsOutsideConfiguredRoot()
+	{
+		$this->object->mkdir('..'.DIRECTORY_SEPARATOR.'outside-root', true);
+
+		$this->assertSame('Location is outside of allowed path.', $this->object->status());
+		$this->assertFalse(FileSystem::directoryExists(Arr::join([FileSystem::pathDirectory($this->testdirectory), 'outside-root'], DIRECTORY_SEPARATOR)));
 	}
 
 	public function testCanCreateFile()
@@ -71,6 +97,32 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->object->write();
 
 		$this->assertTrue(FileSystem::fileExists($this->testdirectory.DIRECTORY_SEPARATOR.'testfile.txt'));
+	}
+
+	public function testCanCopyFileToDirectory()
+	{
+		$source = $this->testdirectory.DIRECTORY_SEPARATOR.'source.txt';
+		$targetDirectory = $this->testdirectory.DIRECTORY_SEPARATOR.'target';
+		mkdir($targetDirectory);
+		file_put_contents($source, 'copy me');
+
+		$this->object->copy($targetDirectory, $source);
+
+		$this->assertSame('Successfully copied file', $this->object->status());
+		$this->assertSame('copy me', FileSystem::fileContents($targetDirectory.DIRECTORY_SEPARATOR.'source.txt'));
+	}
+
+	public function testMoveRemovesOriginalFile()
+	{
+		$source = $this->testdirectory.DIRECTORY_SEPARATOR.'move.txt';
+		$targetDirectory = $this->testdirectory.DIRECTORY_SEPARATOR.'moved';
+		mkdir($targetDirectory);
+		file_put_contents($source, 'move me');
+
+		$this->object->move($targetDirectory, $source);
+
+		$this->assertFileDoesNotExist($source);
+		$this->assertSame('move me', FileSystem::fileContents($targetDirectory.DIRECTORY_SEPARATOR.'move.txt'));
 	}
 
 	public function testStaticFileExistsChecksConcretePathWithoutConstructingStorage()

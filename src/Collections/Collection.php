@@ -6,6 +6,7 @@ use ArrayObject;
 use ArrayIterator;
 use IteratorAggregate;
 use InvalidArgumentException;
+use BlueFission\Arr;
 use BlueFission\Collections\Support\MapsAndFilters;
 
 /**
@@ -488,16 +489,9 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return mixed The randomly selected value from the array.
 	 */
 	public function rand() {
- 		// Doesn't work for associative key based arrays
-    	// $rand = 0;
-    	// if ( function_exists('mt_rand') ) {
-    	// 	$rand = mt_rand(0, $this->_value->count() - 1)];
-    	// } else {
-    	// 	$rand = array_rand( $this->_value->getArrayCopy() );
-    	// }
-		if (count($this->_value) == 0) {
-    		return null;
-    	}
+		if (Arr::count($this->_value->getArrayCopy()) == 0) {
+			return null;
+		}
     	$rand = array_rand( $this->_value->getArrayCopy() );
 
     	return $this->_value[$rand];

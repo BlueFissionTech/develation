@@ -513,16 +513,7 @@ class MySQL extends Storage implements IData
 
         $left_join = $this->innerJoinClause($tables, $on);
 
-        // $select = []
-        // foreach($active_fields as $a) if ($this->exists($a)) $select[] = $field_info[$a]['Table'].'.'.$a;
-        // if (count($select) <= 0) $select_r[] = '*';
-
-        // Build query
-        //$query = "SELECT " . implode(', ', $select) . " FROM `$table` $left_join WHERE " . implode(' AND ', $where);
         $query = "DELETE FROM `$table` $left_join WHERE " . Arr::join($where, ' AND ');
-
-        //if (count($distinct) > 0) $query .= " GROUP BY " . implode(', ', $distinct);
-        //if (count($sort) > 0) $query .= " ORDER BY " . implode(', ', $sort);
 
         //$start = $this->start();
         //$end = $this->end();
@@ -654,8 +645,6 @@ class MySQL extends Storage implements IData
     public function fields()
     {
         $db = $this->_source;
-        // var_dump($this->config('name'));
-        //if (!$this->_fields || count( $this->config(self::NAME_FIELD) ) > 0 )
 
         $tableDiff = array_merge(Arr::diff($this->tables(), Arr::toArray($this->config('name'))), Arr::diff(Arr::toArray($this->config('name')), $this->tables()));
         if (Arr::size($tableDiff) > 0) {
@@ -774,7 +763,6 @@ class MySQL extends Storage implements IData
     private function validate($field_name = null, $table = null)
     {
         $fields = $this->fields();
-        // if no table is specified, used the first available entry.
         $table = $table ? $table : (isset($tables[0]) ? $tables[0] : current(Arr::toArray($this->config(self::NAME_FIELD))));
 
         $passed = true;

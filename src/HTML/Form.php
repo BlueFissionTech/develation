@@ -49,7 +49,6 @@ class Form
                 if ($i > $fields) {
                     break;
                 }
-                // if ($i > 0) $value_r[] = HTML::format($b, '', $trunc);
                 if ($i > 0) {
                     $value_r[] = HTML::format($b);
                 }
@@ -671,13 +670,11 @@ class Form
         }
         $output .= '<table>';
         foreach ($this->getFullFieldArray() as $a => $b) {
-            // if ($this->memberExists($a))	 {
             $type = (array_key_exists($a, $field_type_r)) ? $field_type_r[$a] : '';
             $properties = (array_key_exists($a, $property_r)) ? $property_r[$a] : '';
             $label_r = (Arr::isAssoc($active_field_r) && in_array($a, $active_field_r)) ? array_keys($active_field_r, $a) : '';
             $label = (is_array($label_r)) ? $label_r[0] : '';
             $output .= Form::field($a, $b, $label, $type, $required, $readonly, $id, $properties);
-            // }
         }
         $output .= '</table>';
         return $output;

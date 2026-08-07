@@ -4,29 +4,11 @@ namespace BlueFission\Parsing\Elements;
 
 use BlueFission\Parsing\Element;
 use BlueFission\Collections\Collection;
-use BlueFission\Parsing\Elements\TemplateElement;
 use BlueFission\Parsing\Contracts\IRenderableElement;
 use BlueFission\DevElation as Dev;
 
 class SectionElement extends Element implements IRenderableElement
 {
-    // public function render(): string
-    // {
-    //     $output = $this->getContent();
-
-    //     $sectionName = $this->getAttribute('name');
-    //     $template = $this->getTemplate();
-    //     die($sectionName."!!");
-
-    //     if (!$sectionName || !$template) return $output;
-
-    //     $output = $template->getSection($sectionName);
-
-    //     $template->addOutput($sectionName, $output);
-
-    //     return $output;
-    // }
-
     public function getTemplate(): ?Element
     {
         Dev::do('_before', [$this]);
@@ -74,7 +56,6 @@ class SectionElement extends Element implements IRenderableElement
         $output = Dev::apply('_out', $output);
         Dev::do('_after', [$output, $this]);
         return $output;
-        // return $this->render();
     }
 
     public function getDescription(): string
