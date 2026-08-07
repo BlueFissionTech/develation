@@ -560,8 +560,8 @@ class FileSystem extends Data implements IData {
 	 */
 	public function exists($path = null): bool
 	{
-		$file = Val::isNotNull($path) ? basename($path) : $this->file();
-		$directory = Val::isNotNull($path) ? dirname($path) : $this->path();
+		$file = Val::isNotNull($path) ? self::fileBasename($path) : $this->file();
+		$directory = Val::isNotNull($path) ? self::pathDirectory($path) : $this->path();
 		$directory = realpath($directory);
 
 		if (!$file || !$directory) {
@@ -931,19 +931,19 @@ class FileSystem extends Data implements IData {
 			return $this;
 		}
 
-		$target = is_dir($dest)
-			? rtrim($dest, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.basename($file)
+		$target = self::directoryExists($dest)
+			? Arr::join([$this->normalizeDirectoryPath($dest), self::fileBasename($file)], DIRECTORY_SEPARATOR)
 			: $dest;
-		$targetDirectory = dirname($target);
+		$targetDirectory = self::pathDirectory($target);
 
-		if ($target === '' || !is_dir($targetDirectory)) {
+		if ($target === '' || !self::directoryExists($targetDirectory)) {
 			$status = "No file destination specified or destination does not exist";
 		} elseif (!$this->allowedDir($target)) {
 			$status = "Destination is outside of allowed path.";
-		} elseif (!is_file($file)) {
+		} elseif (!self::fileExists($file)) {
 			$status = "File '$file' does not exist";
 		} else {
-			$targetExists = file_exists($target);
+			$targetExists = self::fileExists($target);
 			if ($targetExists && !$overwrite) {
 				$status = "Copy aborted. File cannot be overwritten";
 			} elseif (!copy($file, $target)) {
@@ -954,7 +954,7 @@ class FileSystem extends Data implements IData {
 				$this->trigger([Event::SUCCESS], new Meta(when: $targetExists && $overwrite ? Action::UPDATE : Action::CREATE, info: $this->status(), data: $target));
 
 				if ($remove_orig && unlink($file)) {
-					$this->dirname = dirname($target);
+					$this->dirname = $targetDirectory;
 				}
 
 				return $this;
@@ -1051,7 +1051,7 @@ class FileSystem extends Data implements IData {
 			return $this;
 		}
 
-		if (is_dir($dir)) {
+		if (self::directoryExists($dir)) {
 			$this->status("Directory already exists");
 			return $this;
 		}
@@ -1076,29 +1076,55 @@ class FileSystem extends Data implements IData {
 		}
 
 		$target = realpath($path) ?: $this->resolvePendingPath($path);
-		$root = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $root), DIRECTORY_SEPARATOR);
-		$target = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $target), DIRECTORY_SEPARATOR);
+		$root = $this->normalizeDirectoryPath($root);
+		$target = $this->normalizeDirectoryPath($target);
 
 		return $target === $root || Str::pos($target, $root.DIRECTORY_SEPARATOR) === 0;
 	}
 
 	private function resolvePendingPath(string $path): string
 	{
-		$tail = [];
+		$tail = Arr::make([]);
 		$cursor = $path;
 
 		while (!realpath($cursor)) {
-			$parent = dirname($cursor);
+			$parent = self::pathDirectory($cursor);
 			if ($parent === $cursor) {
 				break;
 			}
 
-			array_unshift($tail, basename($cursor));
+			$tail->unshift(self::fileBasename($cursor));
 			$cursor = $parent;
 		}
 
 		$base = realpath($cursor) ?: $cursor;
 
-		return $tail ? $base.DIRECTORY_SEPARATOR.Arr::join($tail, DIRECTORY_SEPARATOR) : $base;
+		return $tail->isNotEmpty()
+			? Arr::join([$base, $tail->join(DIRECTORY_SEPARATOR)->val()], DIRECTORY_SEPARATOR)
+			: $base;
+	}
+
+	/**
+	 * Return the directory component for a concrete path.
+	 *
+	 * @param string $path
+	 * @return string
+	 */
+	public static function pathDirectory(string $path): string
+	{
+		$info = pathinfo($path);
+
+		return Arr::make($info)->get('dirname') ?? '';
+	}
+
+	private function normalizeDirectoryPath(string $path): string
+	{
+		return rtrim(
+			Str::make($path)
+				->replace('/', DIRECTORY_SEPARATOR)
+				->replace('\\', DIRECTORY_SEPARATOR)
+				->val(),
+			DIRECTORY_SEPARATOR
+		);
 	}
 }

@@ -1,9 +1,11 @@
 <?php
 namespace BlueFission\Tests\Parsing;
 
+use BlueFission\Arr;
 use BlueFission\Parsing\Elements\FunctionElement;
 use BlueFission\Parsing\Parser;
 use BlueFission\Parsing\Registry\TagRegistry;
+use BlueFission\Str;
 
 class AdditionalTagsTest extends ParsingTestCase
 {
@@ -63,7 +65,7 @@ class AdditionalTagsTest extends ParsingTestCase
 
         $this->assertStringContainsString('Hello World!', $output);
         $this->assertStringContainsString('Hello Codex!', $output);
-        $this->assertSame(1, substr_count($output, 'Hello World!'));
+        $this->assertSame(1, Arr::count(Str::split($output, 'Hello World!')) - 1);
     }
 
     public function testFunctionDescriptionUsesAssignedName()
