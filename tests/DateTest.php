@@ -267,6 +267,18 @@ class DateTest extends ValTest {
 		$this->assertTrue( $trueResult );
 		$this->assertFalse( $falseResult );
 	}
+
+	public function testIsReturnsFalseForArbitraryString()
+	{
+		$this->assertFalse(Date::is('2022_08_03_000000_scaffold_framework_tables.php'));
+	}
+
+	public function testIsReturnsTrueForSupportedDateValues()
+	{
+		$this->assertTrue(Date::is('2012-12-12'));
+		$this->assertTrue(Date::is((string)strtotime('2012-12-12')));
+		$this->assertTrue(Date::is(new \DateTime('2012-12-12')));
+	}
 	
 	public function testRecognizesNullAsEmptyStatically()
 	{

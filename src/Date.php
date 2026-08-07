@@ -7,6 +7,7 @@ use BlueFission\Num;
 use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Event;
 use DateTime;
+use DateTimeInterface;
 
 class Date extends Val implements IVal
 {
@@ -203,7 +204,42 @@ class Date extends Val implements IVal
      */
     public function _is(): bool
     {
-        return ($this->isValidTimestamp($this->timestamp()));
+        return $this->_datetime instanceof DateTimeInterface
+            && self::isValidTimestamp($this->timestamp());
+    }
+
+    /**
+     * Checks if a value is a DateTime, parseable date string, or valid unix timestamp.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    public static function is($value = null): bool
+    {
+        self::remember($value);
+
+        if ($value instanceof DateTimeInterface) {
+            return true;
+        }
+
+        if (self::isValidTimestamp($value)) {
+            return true;
+        }
+
+        if (!is_string($value) || trim($value) === '') {
+            return false;
+        }
+
+        if (strtotime($value) !== false) {
+            return true;
+        }
+
+        try {
+            new DateTime($value);
+            return true;
+        } catch (\Throwable $exception) {
+            return false;
+        }
     }
 
     /**
@@ -212,7 +248,7 @@ class Date extends Val implements IVal
      * @param  int  $timestamp the proposed unix timestamp
      * @return bool 		 true if the value is a valid unix timestamp
      */
-    private function isValidTimestamp($timestamp): bool
+    private static function isValidTimestamp($timestamp): bool
     {
         return is_numeric($timestamp)
             && ($timestamp <= PHP_INT_MAX)
