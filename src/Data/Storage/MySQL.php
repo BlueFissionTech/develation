@@ -116,6 +116,11 @@ class MySQL extends Storage implements IData
     {
         $tables = $this->tables();
         $keys = [];
+
+        if (Arr::isEmpty($tables)) {
+            return null;
+        }
+
         $table = $tables[0];
 
         foreach ($this->fields() as $field => $column) {

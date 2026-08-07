@@ -924,8 +924,16 @@ class Val implements IVal, IDispatcher {
 			$value = array_shift( $args );
 
 			self::$_last = $value;
-			
-			$object = new $class( $value, false, false );
+
+			try {
+				$object = new $class( $value, false, false );
+			} catch ( \Throwable $exception ) {
+				if ( $method === 'is' ) {
+					return false;
+				}
+
+				throw $exception;
+			}
 			$output = call_user_func_array([$object, self::PRIVATE_PREFIX.$method], $args);
 			unset($object);
 			if ($output instanceof IVal) {

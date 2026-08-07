@@ -203,7 +203,8 @@ class Date extends Val implements IVal
      */
     public function _is(): bool
     {
-        return ($this->isValidTimestamp($this->timestamp()));
+        return $this->_datetime instanceof DateTime
+            && self::isValidTimestamp($this->timestamp());
     }
 
     /**
@@ -212,7 +213,7 @@ class Date extends Val implements IVal
      * @param  int  $timestamp the proposed unix timestamp
      * @return bool 		 true if the value is a valid unix timestamp
      */
-    private function isValidTimestamp($timestamp): bool
+    private static function isValidTimestamp($timestamp): bool
     {
         return is_numeric($timestamp)
             && ($timestamp <= PHP_INT_MAX)
