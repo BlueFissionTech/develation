@@ -595,6 +595,16 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
      */
     private function mergeArrays(array $base, array $incoming): array
     {
+        if (array_is_list($base) && array_is_list($incoming)) {
+            foreach ($incoming as $value) {
+                if (!in_array($value, $base)) {
+                    $base[] = $value;
+                }
+            }
+
+            return $base;
+        }
+
         foreach ($incoming as $key => $value) {
             if (is_array($value) && isset($base[$key]) && is_array($base[$key])) {
                 $base[$key] = $this->mergeArrays($base[$key], $value);
