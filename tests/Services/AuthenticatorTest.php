@@ -189,6 +189,28 @@ class AuthenticatorTest extends TestCase
         $this->assertSame(10, $fields['attempts']);
     }
 
+    public function testDestroySessionClearsAuthenticatedStorageWithoutWarnings()
+    {
+        $authenticator = $this->authenticatorWithExpectedSessionDeletion();
+        $authenticator->assign([
+            'username' => 'username',
+            'displayname' => 'Display Name',
+            'id' => 42,
+        ]);
+
+        $this->assertWarningFreeSessionDestruction($authenticator);
+        $this->assertSame('', $authenticator->username);
+        $this->assertSame('', $authenticator->displayname);
+        $this->assertSame(0, $authenticator->id);
+    }
+
+    public function testDestroySessionIsWarningFreeWhenSessionIsAlreadyEmpty()
+    {
+        $authenticator = $this->authenticatorWithExpectedSessionDeletion();
+
+        $this->assertWarningFreeSessionDestruction($authenticator);
+    }
+
     private function authenticatorWithAttemptData(array $data, array &$fields): Authenticator
     {
         $session = new Cookie();
@@ -220,5 +242,33 @@ class AuthenticatorTest extends TestCase
         $reflection->setAccessible(true);
 
         return $reflection->invokeArgs($authenticator, $arguments);
+    }
+
+    private function authenticatorWithExpectedSessionDeletion(): Authenticator
+    {
+        $session = $this->createMock(Storage::class);
+        $session->method('config')->willReturnSelf();
+        $session->method('activate')->willReturnSelf();
+        $session->expects($this->once())->method('clear')->willReturnSelf();
+        $session->expects($this->once())->method('write')->willReturnSelf();
+        $session->expects($this->once())->method('delete')->willReturnSelf();
+        $session->expects($this->never())->method('field');
+
+        $datasource = $this->createMock(Storage::class);
+
+        return new Authenticator($session, $datasource);
+    }
+
+    private function assertWarningFreeSessionDestruction(Authenticator $authenticator): void
+    {
+        set_error_handler(function ($severity, $message, $file, $line) {
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        });
+
+        try {
+            $this->assertTrue($authenticator->destroySession());
+        } finally {
+            restore_error_handler();
+        }
     }
 }

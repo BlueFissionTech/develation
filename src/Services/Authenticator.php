@@ -306,16 +306,20 @@ class Authenticator extends Service
      */
     public function destroySession()
     {
-        $this->setAuthCookie([], -3600);
+        $this->clearAuthStorage();
+
+        $this->_data['displayname'] = '';
+        $this->_data['username'] = '';
+        $this->_data['id'] = 0;
+
+        return true;
+    }
+
+    private function clearAuthStorage(): void
+    {
         $this->_session->clear();
         $this->_session->write();
         $this->_session->delete();
-
-        $this->displayname = '';
-        $this->username = '';
-        $this->id = 0;
-
-        return true;
     }
 
     /**
