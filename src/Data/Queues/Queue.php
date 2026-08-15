@@ -95,8 +95,8 @@ class Queue implements IQueue
      * Dequeues an item from the queue.
      *
      * @param string $queue the name of the queue.
-     * @param int $after_id the item after which to start dequeuing.
-     * @param int $till_id the item until which to dequeue.
+     * @param int|bool $after_id the item after which to start dequeuing.
+     * @param int|bool $till_id the item until which to dequeue.
      *
      * @return mixed the item that was dequeued.
      */
@@ -126,7 +126,7 @@ class Queue implements IQueue
      * @param string $queue The name of the queue to add the item to.
      * @param mixed $item The item to add to the queue.
      *
-     * @return void
+     * @return mixed A backend-specific identifier or success value.
      */
     public static function enqueue($queue, $item)
     {

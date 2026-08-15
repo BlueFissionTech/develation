@@ -56,7 +56,9 @@
         "friendsofphp/php-cs-fixer": "^3.0"
     },
     "suggest": {
-        "cboden/ratchet": "Install to use the optional BlueFission\\Async\\Sock Ratchet websocket transport."
+        "cboden/ratchet": "Install to use the optional BlueFission\\Async\\Sock Ratchet websocket transport.",
+        "ext-redis": "Install to use Redis connections, storage, and reliable queues.",
+        "ext-memcached": "Install to use Memcached storage and MemQueue."
     },
     "config": {
         "platform-check": true,

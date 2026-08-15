@@ -99,6 +99,54 @@ Queue::enqueue('jobs', ['id' => 1, 'task' => 'sync']);
 $job = Queue::dequeue('jobs');
 ```
 
+## Redis Storage
+
+Redis remains an optional integration and requires `ext-redis`.
+
+```php
+use BlueFission\Data\Storage\Redis;
+
+$cache = new Redis([
+    'host' => '127.0.0.1',
+    'key' => 'profiles:42',
+    'ttl' => 300,
+]);
+
+$cache->activate();
+$cache->contents(['name' => 'Ada']);
+$cache->write()->read();
+```
+
+## Reliable Redis Queue
+
+`RedisQueue` preserves `enqueue()`, `dequeue()`, `isEmpty()`, FIFO, and FILO.
+Workers that need delivery guarantees should use `claim()` and explicitly
+`acknowledge()` or `release()` the returned receipt. Expired leases are recovered
+before the next claim; jobs reaching `max_attempts` move to `failed()`. Operators
+can return a failed job with `retryFailed()` or remove it with `discardFailed()`.
+
+```php
+use BlueFission\Data\Queues\Queue;
+use BlueFission\Data\Queues\RedisQueue;
+
+RedisQueue::configure([
+    'host' => '127.0.0.1',
+    'lease_seconds' => 30,
+    'max_attempts' => 3,
+]);
+RedisQueue::setMode(Queue::FIFO);
+RedisQueue::enqueue('jobs', ['task' => 'sync']);
+
+$receipt = RedisQueue::claim('jobs');
+
+try {
+    // Process $receipt->payload.
+    RedisQueue::acknowledge('jobs', $receipt);
+} catch (Throwable $exception) {
+    RedisQueue::release('jobs', $receipt);
+}
+```
+
 ## Logging Example
 
 ```php
@@ -110,7 +158,7 @@ $log->push('queue processed')->write();
 
 ## Related
 
-- Storage implementations live under `src/Data/Storage` (MySQL, SQLite, Mongo, Memcached, Disk, Session).
+- Storage implementations live under `src/Data/Storage` (MySQL, SQLite, Mongo, Redis, Memcached, Disk, Session).
 - SQLite storage result and schema contract: `sqlite.md`.
 - Queue implementations live under `src/Data/Queues`.
 - Optional integration test setup is documented in `tests.md`.

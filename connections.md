@@ -53,6 +53,28 @@ Implements `Connection` to handle stream-based communications. Uses PHP's stream
 
 `Stream` is suitable for handling file streams, network streams, or data streams that require a context, such as HTTP streams with specific headers or configurations.
 
+## Redis
+
+`Redis` wraps optional `ext-redis` connectivity with the standard connection
+lifecycle. It supports TCP or TLS host values, timeouts, authentication, logical
+database selection, persistent connections, and application key prefixes.
+
+```php
+use BlueFission\Connections\Redis;
+
+$redis = new Redis([
+    'host' => '127.0.0.1',
+    'port' => 6379,
+    'database' => 1,
+    'prefix' => 'application:',
+]);
+
+$redis->open();
+$redis->command('set', [$redis->key('status'), 'ready']);
+$status = $redis->command('get', [$redis->key('status')]);
+$redis->close();
+```
+
 ## Usage and Implementation
 
 To utilize these classes, ensure your application configuration includes parameters suited for each type of connection. For instance, when using `Curl`, configure endpoints and authentication details. For `Socket` or `Stream`, specify the target and parameters like port numbers or stream contexts.

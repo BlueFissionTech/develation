@@ -12,7 +12,7 @@ interface IQueue
     /**
      * Check if the queue is empty.
      *
-     * @param array $queue The queue data structure.
+     * @param string $queue The queue name.
      *
      * @return bool Returns true if the queue is empty, otherwise false.
      */
@@ -21,9 +21,9 @@ interface IQueue
     /**
      * Remove an item from the front of the queue.
      *
-     * @param array $queue The queue data structure.
-     * @param bool $after  Determines if the item should be removed after a certain condition.
-     * @param bool $until  Determines if the item should be removed until a certain condition.
+     * @param string $queue The queue name.
+     * @param int|bool $after The item or offset after which dequeuing starts.
+     * @param int|bool $until The item or offset at which dequeuing stops.
      *
      * @return mixed Returns the removed item.
      */
@@ -32,10 +32,10 @@ interface IQueue
     /**
      * Add an item to the back of the queue.
      *
-     * @param array $queue The queue data structure.
+     * @param string $queue The queue name.
      * @param mixed $item  The item to be added to the queue.
      *
-     * @return void
+     * @return mixed A backend-specific identifier or success value.
      */
     public static function enqueue($queue, $item);
 }
