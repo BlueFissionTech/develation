@@ -147,6 +147,27 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['meta' => ['tags' => ['alpha', 'beta'], 'status' => 'ready']], $merged);
 	}
 
+	public function testMergeAppendsDistinctRowsWhenBothOperandsAreLists()
+	{
+		$rows = new static::$classname([
+			['code' => 'a'],
+		]);
+
+		$merged = $rows->merge([
+			['code' => 'b'],
+			['code' => 'a'],
+		]);
+
+		$this->assertSame($rows, $merged);
+		$this->assertEquals(
+			[
+				['code' => 'a'],
+				['code' => 'b'],
+			],
+			$rows->values()->toArray()
+		);
+	}
+
 	public function testMergeRecursiveReplacesNestedAssociativeValues()
 	{
 		$merged = static::$classname::mergeRecursive(
