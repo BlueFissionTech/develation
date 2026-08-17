@@ -76,6 +76,26 @@ final class TestEnvironment
         ];
     }
 
+    public static function redisConfig(): ?array
+    {
+        $host = getenv('DEV_ELATION_REDIS_HOST');
+        if ($host === false) {
+            return null;
+        }
+
+        $password = getenv('DEV_ELATION_REDIS_PASSWORD');
+        $username = getenv('DEV_ELATION_REDIS_USERNAME');
+
+        return [
+            'host' => $host,
+            'port' => (int)(getenv('DEV_ELATION_REDIS_PORT') ?: 6379),
+            'database' => (int)(getenv('DEV_ELATION_REDIS_DATABASE') ?: 0),
+            'username' => $username === false ? null : $username,
+            'password' => $password === false ? null : $password,
+            'prefix' => 'develation:test:',
+        ];
+    }
+
     public static function tempDir(string $prefix): string
     {
         $base = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR);

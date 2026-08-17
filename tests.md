@@ -66,6 +66,20 @@ setx DEV_ELATION_MEMCACHED_HOST 127.0.0.1
 setx DEV_ELATION_MEMCACHED_PORT 11211
 ```
 
+### Redis
+
+Required PHP extension: `redis`
+
+```
+setx DEV_ELATION_REDIS_HOST 127.0.0.1
+setx DEV_ELATION_REDIS_PORT 6379
+setx DEV_ELATION_REDIS_DATABASE 0
+```
+
+Authenticated Redis deployments may also set `DEV_ELATION_REDIS_USERNAME` and
+`DEV_ELATION_REDIS_PASSWORD`. Redis integration tests remain skipped until the
+host variable is present.
+
 ### DB Queue Integration
 
 Runs MySQL-backed queue tests (requires MySQL env vars above):

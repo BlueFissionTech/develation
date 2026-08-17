@@ -2,6 +2,7 @@
 
 namespace BlueFission\Data\Storage;
 
+use BlueFission\IObj;
 use Memcached as MemcachedClient;
 
 class Memcached extends Storage

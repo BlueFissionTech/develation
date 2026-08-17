@@ -25,7 +25,7 @@ abstract class Connection extends Obj implements IConfigurable
     /**
      * Connection resource
      *
-     * @var resource|null
+     * @var mixed
      */
     protected $_connection = null;
 
