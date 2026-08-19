@@ -73,6 +73,45 @@ class SQLiteLinkTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(SQLiteLink::tableExists('beta', $databaseB));
     }
 
+    public function testSuccessfulRawQueryReportsSuccess(): void
+    {
+        [$database] = $this->databasePair();
+        $link = $this->linkFor($database);
+
+        $link->query('SELECT 1');
+
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+    }
+
+    public function testFailedRawQueryPreservesSqliteError(): void
+    {
+        [$database] = $this->databasePair();
+        $link = $this->linkFor($database);
+
+        $link->query('SELECT * FROM missing_table');
+
+        $this->assertStringContainsString('no such table', $link->status());
+    }
+
+    public function testClosingSharedLinkDoesNotInvalidatePeerAndCanReopen(): void
+    {
+        [$database] = $this->databasePair();
+        $linkA = $this->linkFor($database);
+        $linkB = $this->linkFor($database);
+
+        $this->assertSame($linkA->connection(), $linkB->connection());
+
+        $linkA->close();
+
+        $this->assertTrue($linkB->connection()->exec('CREATE TABLE shared_probe (id INTEGER PRIMARY KEY)'));
+        $this->assertTrue(SQLiteLink::tableExists('shared_probe', $database));
+
+        $linkA->open();
+
+        $this->assertSame(SQLiteLink::STATUS_CONNECTED, $linkA->status());
+        $this->assertSame($linkA->connection(), $linkB->connection());
+    }
+
     private function linkFor(string $database): SQLiteLink
     {
         $link = new SQLiteLink(['database' => $database]);
