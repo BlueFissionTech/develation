@@ -18,7 +18,10 @@ class MemQueueTest extends TestCase {
             $this->markTestSkipped('Memcached tests require ext-memcached and DEV_ELATION_MEMCACHED_HOST');
         }
 
+        MemQueue::reset();
+        MemQueue::setPool($config['host'] . ':' . $config['port']);
         MemQueue::setMode(MemQueue::FIFO); // Default to FIFO for consistency in testing
+        MemQueue::purge(self::$testQueueName);
         $this->memcachedEnabled = true;
     }
 
@@ -27,9 +30,8 @@ class MemQueueTest extends TestCase {
             return;
         }
 
-        while (!MemQueue::isEmpty(self::$testQueueName)) {
-            MemQueue::dequeue(self::$testQueueName);
-        }
+        MemQueue::purge(self::$testQueueName);
+        MemQueue::reset();
     }
 
     public function testQueueIsEmptyInitially() {

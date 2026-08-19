@@ -66,6 +66,10 @@ setx DEV_ELATION_MEMCACHED_HOST 127.0.0.1
 setx DEV_ELATION_MEMCACHED_PORT 11211
 ```
 
+The deterministic `MemQueueReliableTest` suite does not require the extension or
+a server. With the variables above, `MemQueueTest` also verifies the queue
+contract against a live Memcached service.
+
 ### Redis
 
 Required PHP extension: `redis`

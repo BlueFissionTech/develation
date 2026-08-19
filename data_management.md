@@ -147,6 +147,41 @@ try {
 }
 ```
 
+## Reliable Memcached Queue
+
+`MemQueue` implements the same receipt lifecycle as `RedisQueue`. Its queue state
+is updated with Memcached compare-and-swap operations, so a claimed payload is
+unavailable to other workers until it is acknowledged, released, or its lease
+expires. Retry exhaustion, failed-job inspection, retry, discard, FIFO, and FILO
+follow the Redis queue contract.
+
+```php
+use BlueFission\Data\Queues\MemQueue;
+use BlueFission\Data\Queues\Queue;
+
+MemQueue::setPool('127.0.0.1:11211');
+MemQueue::configure([
+    'lease_seconds' => 30,
+    'max_attempts' => 3,
+]);
+MemQueue::setMode(Queue::FIFO);
+MemQueue::enqueue('jobs', ['task' => 'sync']);
+
+$receipt = MemQueue::claim('jobs');
+
+try {
+    // Process $receipt->payload.
+    MemQueue::acknowledge('jobs', $receipt);
+} catch (Throwable $exception) {
+    MemQueue::release('jobs', $receipt);
+}
+```
+
+The reliable implementation uses CAS state and payload keys instead of the
+legacy `<queue>_head`, `<queue>_tail`, and numeric item keys. `enqueue()`,
+`dequeue()`, and `isEmpty()` remain source compatible, but existing legacy queue
+contents are not imported. Drain legacy `MemQueue` queues before upgrading.
+
 ## Logging Example
 
 ```php
