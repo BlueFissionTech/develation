@@ -32,6 +32,7 @@ class SQLiteLink extends Connection implements IConfigurable
     private $_query;
     private $_last_row;
     protected $_database_key = null;
+    private bool $_connection_acquired = false;
 
     // property to store the configuration
     protected $_config = [
@@ -71,7 +72,12 @@ class SQLiteLink extends Connection implements IConfigurable
         $database = $this->config('database');
         $databaseKey = self::databaseKey($database);
 
-        if ($this->_connection && $this->_database_key === $databaseKey) {
+        if (
+            $this->_connection_acquired
+            && $this->_database_key === $databaseKey
+            && self::isConnectionUsable($this->_connection)
+        ) {
+            $this->status(self::STATUS_CONNECTED);
             return;
         }
 
@@ -79,22 +85,23 @@ class SQLiteLink extends Connection implements IConfigurable
             throw new \Exception("SQLite3 not found");
         }
 
-        $db = self::connectionFor($database);
-
-        if (!$db) {
-            $db = new \SQLite3($database);
+        if ($this->_connection_acquired) {
+            $this->releaseConnection();
         }
 
-        if ($db) {
-            self::$_database[$databaseKey] = $db;
+        try {
+            $db = self::acquireConnection($database);
             $this->_connection = $db;
             $this->_database_key = $databaseKey;
+            $this->_connection_acquired = true;
             $status = self::STATUS_CONNECTED;
 
             $this->perform($this->_connection
                 ? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
-        } else {
-            $status = self::STATUS_FAILED;
+        } catch (\Throwable $exception) {
+            $this->_connection = null;
+            $this->_connection_acquired = false;
+            $status = $exception->getMessage() ?: self::STATUS_FAILED;
             $this->perform([Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
         }
 
@@ -106,14 +113,8 @@ class SQLiteLink extends Connection implements IConfigurable
      */
     protected function _close(): void
     {
-        if ($this->_connection) {
-            $this->_connection->close();
-        }
-
-        if ($this->_database_key && Arr::hasKey(self::$_database, $this->_database_key)) {
-            unset(self::$_database[$this->_database_key]);
-        }
-
+        $this->releaseConnection();
+        $this->_connection = null;
         $this->_database_key = null;
         $this->perform(State::DISCONNECTED);
     }
@@ -150,10 +151,13 @@ class SQLiteLink extends Connection implements IConfigurable
                 } elseif (Str::is($query)) {
                     try {
                         $this->_result = $db->query($query);
-                        $this->status($db->lastErrorMsg() ? $db->lastErrorMsg() : self::STATUS_SUCCESS);
-                    } catch (\Exception $e) {
+                        $status = $this->_result !== false
+                            ? self::STATUS_SUCCESS
+                            : ($db->lastErrorMsg() ?: self::STATUS_FAILED);
+                        $this->status($status);
+                    } catch (\Throwable $e) {
                         $this->_result = false;
-                        $this->status(self::STATUS_FAILED);
+                        $this->status($e->getMessage() ?: self::STATUS_FAILED);
                     }
 
                     return $this;
@@ -504,14 +508,15 @@ class SQLiteLink extends Connection implements IConfigurable
             return $this->config('database');
         }
 
-        $previousKey = $this->_database_key;
-        $this->config('database', $database);
         $databaseKey = self::databaseKey($database);
 
-        if ($previousKey !== $databaseKey) {
+        if ($this->_database_key !== $databaseKey) {
+            $this->releaseConnection();
+            $this->_connection = null;
             $this->_database_key = $databaseKey;
-            $this->_connection = self::connectionFor($database);
         }
+
+        $this->config('database', $database);
 
         return $this;
     }
@@ -584,11 +589,12 @@ class SQLiteLink extends Connection implements IConfigurable
     public static function tableExists($table, $database = null)
     {
         $db = self::connectionFor($database);
+        $temporary = false;
 
         if (!$db && Val::isNotEmpty($database) && class_exists('SQLite3')) {
-            $databaseKey = self::databaseKey($database);
             $db = new \SQLite3($database);
-            self::$_database[$databaseKey] = $db;
+            $db->enableExceptions(true);
+            $temporary = true;
         }
 
         if (!$db) {
@@ -598,18 +604,21 @@ class SQLiteLink extends Connection implements IConfigurable
         $table = self::sanitize($table, false, $database);
         $result = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name={$table}");
 
-        if ($result && $result->fetchArray()) {
-            return true;
-        } else {
-            return false;
+        $exists = $result && $result->fetchArray();
+
+        if ($temporary) {
+            $db->close();
         }
+
+        return (bool)$exists;
     }
 
     protected function syncConnection(): void
     {
         $database = $this->config('database');
         $this->_database_key = self::databaseKey($database);
-        $this->_connection = self::connectionFor($database);
+        $this->_connection = null;
+        $this->_connection_acquired = false;
     }
 
     protected static function connectionFor($database = null)
@@ -619,12 +628,91 @@ class SQLiteLink extends Connection implements IConfigurable
         }
 
         if (Val::isEmpty($database)) {
-            return Arr::size(self::$_database) > 0 ? end(self::$_database) : null;
+            $entry = Arr::size(self::$_database) > 0 ? end(self::$_database) : null;
+            return self::entryConnection($entry);
         }
 
         $databaseKey = self::databaseKey($database);
 
-        return Arr::hasKey(self::$_database, $databaseKey) ? self::$_database[$databaseKey] : null;
+        if (!Arr::hasKey(self::$_database, $databaseKey)) {
+            return null;
+        }
+
+        $connection = self::entryConnection(self::$_database[$databaseKey]);
+
+        return self::isConnectionUsable($connection) ? $connection : null;
+    }
+
+    protected static function acquireConnection($database): \SQLite3
+    {
+        $databaseKey = self::databaseKey($database);
+        $connection = self::connectionFor($database);
+
+        if ($connection) {
+            self::$_database[$databaseKey]['references']++;
+            return $connection;
+        }
+
+        unset(self::$_database[$databaseKey]);
+        $connection = new \SQLite3($database);
+        $connection->enableExceptions(true);
+        self::$_database[$databaseKey] = [
+            'connection' => $connection,
+            'references' => 1,
+        ];
+
+        return $connection;
+    }
+
+    protected function releaseConnection(): void
+    {
+        if (!$this->_connection_acquired || Val::isNull($this->_database_key)) {
+            return;
+        }
+
+        $databaseKey = $this->_database_key;
+        $entry = self::$_database[$databaseKey] ?? null;
+        $connection = self::entryConnection($entry);
+
+        if ($connection === $this->_connection && Arr::is($entry)) {
+            self::$_database[$databaseKey]['references']--;
+
+            if (self::$_database[$databaseKey]['references'] <= 0) {
+                if (self::isConnectionUsable($connection)) {
+                    $connection->close();
+                }
+                unset(self::$_database[$databaseKey]);
+            }
+        }
+
+        $this->_connection_acquired = false;
+    }
+
+    protected static function entryConnection($entry): ?\SQLite3
+    {
+        if ($entry instanceof \SQLite3) {
+            return $entry;
+        }
+
+        if (Arr::is($entry) && ($entry['connection'] ?? null) instanceof \SQLite3) {
+            return $entry['connection'];
+        }
+
+        return null;
+    }
+
+    protected static function isConnectionUsable($connection): bool
+    {
+        if (!$connection instanceof \SQLite3) {
+            return false;
+        }
+
+        try {
+            $connection->lastErrorCode();
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     protected static function databaseKey($database): string
