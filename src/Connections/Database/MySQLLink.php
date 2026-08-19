@@ -73,9 +73,11 @@ class MySQLLink extends Connection implements IConfigurable
      */
     protected function _open(): void
     {
-        if ($this->_connection) {
+        if ($this->activateSharedConnection()) {
             return;
         }
+
+        $this->_connection = null;
 
         $host = ($this->config('target')) ? $this->config('target') : 'localhost';
         $username = $this->config('username');
@@ -83,16 +85,14 @@ class MySQLLink extends Connection implements IConfigurable
         $database = $this->config('database');
         $port = $this->config('port');
 
-        $connection_id = Arr::size(self::$_database);
-
         if (!class_exists('mysqli')) {
             throw new \Exception("mysqli not found");
         }
 
-        $db = $connection_id > 0 ? end(self::$_database) : new \mysqli($host, $username, $password, $database, $port);
+        $db = new \mysqli($host, $username, $password, $database, $port);
 
         if (!$db->connect_error) {
-            self::$_database[$connection_id] = $this->_connection = $db;
+            self::$_database[] = $this->_connection = $db;
 
             $status = $this->_connection ? self::STATUS_CONNECTED : self::STATUS_NOTCONNECTED;
 
@@ -104,6 +104,39 @@ class MySQLLink extends Connection implements IConfigurable
         }
 
         $this->status($status);
+    }
+
+    private function activateSharedConnection(): bool
+    {
+        if (!$this->connectionIsUsable($this->_connection)) {
+            return false;
+        }
+
+        $status = self::STATUS_CONNECTED;
+        $this->perform(
+            [Event::SUCCESS, Event::CONNECTED],
+            new Meta(when: Action::CONNECT, info: $status)
+        );
+        $this->status($status);
+
+        return true;
+    }
+
+    private function connectionIsUsable(mixed $connection): bool
+    {
+        if (!$connection) {
+            return false;
+        }
+
+        if (!$connection instanceof \mysqli) {
+            return true;
+        }
+
+        try {
+            return $connection->thread_id > 0;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -317,10 +350,9 @@ class MySQLLink extends Connection implements IConfigurable
                 $this->field($this->config('key'), $this->_last_row);
             } catch (\Exception | \MySQLiQueryException $e) {
                 error_log($e->getMessage());
-                $status = self::STATUS_FAILED;
+                $status = $e->getMessage();
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
                 $success = false;
-                $this->status($e->getMessage());
             }
             $this->_result = $success;
             $this->halt([State::BUSY, State::SENDING, State::PROCESSING]);
@@ -336,7 +368,6 @@ class MySQLLink extends Connection implements IConfigurable
         }
 
         $this->halt(State::CREATING);
-        $status = ($success) ? $db->error : self::STATUS_SUCCESS;
         $this->status($status);
 
         return;
@@ -400,10 +431,9 @@ class MySQLLink extends Connection implements IConfigurable
                 $status = ($success) ? self::STATUS_SUCCESS : ($db->error ?? self::STATUS_FAILED);
             } catch (\Exception | \MySQLiQueryException $e) {
                 error_log($e->getMessage());
-                $status = self::STATUS_FAILED;
+                $status = $e->getMessage();
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
                 $success = false;
-                $this->status($e->getMessage());
             }
 
             $this->_result = $success;
@@ -421,7 +451,6 @@ class MySQLLink extends Connection implements IConfigurable
         }
 
         $this->halt(State::CREATING);
-        $status = ($success) ? $db->error : self::STATUS_SUCCESS;
         $this->status($status);
 
         return;
