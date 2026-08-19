@@ -2,526 +2,501 @@
 
 namespace BlueFission\Connections\Database;
 
-use BlueFission\Connections\Connection;
-use BlueFission\Val;
-use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Connections\Connection;
 use BlueFission\IObj;
+use BlueFission\IVal;
+use BlueFission\Net\HTTP;
+use BlueFission\Str;
+use BlueFission\Val;
+use InvalidArgumentException;
 use MongoDB\BSON\Javascript;
 use MongoDB\Client;
-use Exception;
+use RuntimeException;
+use Throwable;
 
 /**
- * Class MongoLink
- *
- * Implements a connection to a MongoDB database
+ * MongoDB connection adapter using the current mongodb/mongodb client API.
  */
 class MongoLink extends Connection
 {
-    /**
-     * Insert type constant
-     */
     public const INSERT = 1;
-
-    /**
-     * Update type constant
-     */
     public const UPDATE = 2;
-
-    /**
-     * Replace type constant
-     */
     public const REPLACE = 3;
 
-    /**
-     * Database instance variable
-     *
-     * @var array
-     */
-    protected static $_database;
+    protected mixed $_current = null;
 
-    /**
-     * Current instance variable
-     *
-     * @var mixed
-     */
-    protected $_current;
+    private mixed $_query = null;
 
-    /**
-     * Query instance variable
-     *
-     * @var mixed
-     */
-    private static $_query;
+    private mixed $_last_row = null;
 
-    /**
-     * Last row instance variable
-     *
-     * @var mixed
-     */
-    private static $_last_row;
+    private ?array $_dataset = null;
 
-    /**
-     * Dataset instance variable
-     *
-     * @var mixed
-     */
-    private $_dataset;
-
-    /**
-     * Configuration array
-     *
-     * @var array
-     */
-    protected $_config = array( 'target' => 'localhost',
+    protected $_config = [
+        'target' => 'localhost',
+        'port' => 27017,
         'username' => '',
         'password' => '',
         'database' => '',
         'collection' => '',
         'key' => '_id',
-    );
+        'replace' => false,
+        'options' => [],
+    ];
 
-    /**
-     * Constructor method
-     *
-     * @param mixed $config Configuration array or null
-     *
-     * @return object
-     */
-    public function __construct($config = null)
-    {
-        parent::__construct($config);
-        if (Val::isNull(self::$_database)) {
-            self::$_database = array();
-        } else {
-            $this->_current = end(self::$_database);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Opens a connection to the MongoDB database
-     *
-     * @return void
-     */
     protected function _open(): void
     {
-        $host = ($this->config('target')) ? $this->config('target') : 'localhost';
-        $username = $this->config('username');
-        $password = $this->config('password');
-        $database = $this->config('database');
-
-        $connection_id = count(self::$_database);
-
-        if (!class_exists('MongoDB\Client')) {
-            throw new \Exception("MongoDB\Client not found");
-        }
+        $database = (string)$this->config('database');
 
         try {
-            $mongo = new Client("mongodb://{$username}:{$password}@{$host}:27017");
-            self::$_database[$connection_id] = $mongo;
-            $this->_connection = ($this->config('database') ? $mongo->{$this->config('database')} : null);
-            $this->_current = $mongo;
-        } catch (Exception $e) {
-            $error = ($e->getMessage() ?? $this->error()) ?? self::STATUS_FAILED;
+            if (Str::isEmpty($database)) {
+                throw new InvalidArgumentException('MongoDB database name is required.');
+            }
 
+            $options = Arr::is($this->config('options'))
+                ? Arr::toArray($this->config('options'))
+                : [];
+            $client = $this->createClient($this->connectionUri(), $options);
+            $this->_current = $client;
+            $this->_connection = $this->selectDatabase($client, $database);
+            $this->_connection->command(['ping' => 1]);
+            $status = self::STATUS_CONNECTED;
+            $this->perform(
+                [Event::SUCCESS, Event::CONNECTED],
+                new Meta(when: Action::CONNECT, info: $status)
+            );
+        } catch (Throwable $exception) {
+            $this->_current = null;
+            $this->_connection = null;
+            $status = $exception->getMessage() ?: self::STATUS_NOTCONNECTED;
+            $this->perform(
+                [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(when: Action::CONNECT, info: $status)
+            );
         }
-
-        $status = $this->_connection ? self::STATUS_CONNECTED : ($error ?? self::STATUS_NOTCONNECTED);
-
-        $this->perform($this->_connection
-            ? [Event::SUCCESS, Event::CONNECTED] : [Event::ACTION_FAILED, Event::FAILURE], new Meta(when: Action::CONNECT, info: $status));
 
         $this->status($status);
     }
 
-    /**
-     * Close the connection to the MongoDB server.
-     */
     protected function _close(): void
     {
+        $this->_connection = null;
+        $this->_current = null;
         $this->perform(State::DISCONNECTED);
     }
 
     /**
-     * Queries the MongoDB server and updates or inserts data.
-     *
-     * @param mixed $query The query to be executed.
-     *
-     * @return IObj
+     * @param mixed $query
      */
     public function query($query = null): IObj
     {
         $this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
-        $db = $this->_connection;
-
-        if ($db) {
-            if (Val::isNotNull($query)) {
-                $this->_query = $query;
-
-                if (Arr::isAssoc($query)) {
-                    $this->_dataset = null;
-                    $this->_data = $query;
-                } elseif (Arr::is($query) && !Arr::isAssoc($query)) {
-                    $this->_dataset = $query;
-                    $this->_data = $query[0];
-                } elseif (Str::is($query)) {
-                    $this->_result = $db->command(json_decode($query));
-                    $this->status($this->error() ? $this->error() : self::STATUS_SUCCESS);
-
-                    return $this;
-                }
-            }
-
-            $collection = $this->config('collection');
-            $filter = null;
-            $update = false;
-            $key = self::sanitize($this->config('key'));
-
-            if ($this->field($key)) {
-                $value = self::sanitize($this->field($key));
-                $filter = $key ? array($key => $value) : '';
-                $update = true;
-            }
-
-            $data = $this->_dataset ? $this->_dataset : $this->_data;
-            $type = ($update) ? ($this->config('replace') ? self::REPLACE : self::UPDATE) : self::INSERT;
-            $result = false;
-
-            try {
-                $this->post($collection, $data, $filter, $type);
-            } catch (Exception $e) {
-                $error = $e->getMessage();
-                $this->_result = false;
-                $this->status($error ?? self::STATUS_FAILED);
-            }
-        } else {
+        if (Val::isNull($this->_connection)) {
+            $this->_result = false;
             $this->status(self::STATUS_NOTCONNECTED);
+            return $this;
         }
 
+        if (Str::is($query)) {
+            $this->_query = $query;
+            $command = HTTP::jsonDecode($query, true);
+            if (!Arr::is($command) || Arr::isEmpty($command)) {
+                $this->_result = false;
+                $this->status('Invalid MongoDB command JSON.');
+                return $this;
+            }
+
+            $this->executeOperation(fn () => $this->_connection->command($command));
+            return $this;
+        }
+
+        if (Val::isNotNull($query)) {
+            if (!Arr::is($query)) {
+                $this->_result = false;
+                $this->status('MongoDB query data must be an array or JSON command.');
+                return $this;
+            }
+
+            $this->_query = $query;
+            if (Arr::isAssoc($query)) {
+                $this->_dataset = null;
+                $this->_data = Arr::toArray($query);
+            } else {
+                $this->_dataset = Arr::toArray($query);
+                $this->_data = $this->_dataset[0] ?? [];
+            }
+        } else {
+            $this->_dataset = null;
+        }
+
+        $collection = (string)$this->config('collection');
+        $data = $this->normalizeDocument($this->_data);
+
+        if (Str::isEmpty($collection)) {
+            $this->_result = false;
+            $this->status('No target collection specified.');
+            return $this;
+        }
+
+        if ($this->_dataset !== null) {
+            $documents = (new Arr($this->_dataset))
+                ->map(fn ($document) => $this->normalizeDocument($document))
+                ->val();
+
+            if (Arr::isEmpty($documents)) {
+                $this->_result = false;
+                $this->status('No MongoDB documents supplied.');
+                return $this;
+            }
+
+            $this->insert($collection, $documents, true);
+            return $this;
+        }
+
+        if (Arr::isEmpty($data)) {
+            $this->_result = false;
+            $this->status('No MongoDB document supplied.');
+            return $this;
+        }
+
+        $key = (string)$this->config('key');
+        if (!Str::isEmpty($key) && Arr::hasKey($data, $key)) {
+            $filter = [$key => $data[$key]];
+            $type = $this->config('replace') ? self::REPLACE : self::UPDATE;
+            $this->post($collection, $data, $filter, $type);
+            return $this;
+        }
+
+        $this->post($collection, $data, null, self::INSERT);
         return $this;
     }
 
-    /**
-     * Finds documents in a collection.
-     *
-     * @param string $collection The name of the collection.
-     * @param mixed  $data       The data to search for.
-     *
-     * @return IObj
-     */
     public function find($collection, $data): IObj
     {
-        $status = self::STATUS_NOTCONNECTED;
-
-        $db = $this->_connection;
-        $success = false;
-
-        if (Val::isNotNull($db)) {
-            $document = $db->{$collection}->find($data);
-
-            $this->_result = $document;
-        } else {
-            $this->status($status);
-            return $this;
-        }
-
-        $status = ($success) ? $db->error : self::STATUS_SUCCESS;
-        $this->status($status);
-
-        return $this;
-    }
-
-    /**
-     * Inserts data into a specified collection
-     *
-     * @param string $collection The name of the collection
-     * @param array &$data The data to be inserted
-     * @return IObj
-     */
-    private function insert($collection, &$data): IObj
-    {
-        $status = self::STATUS_NOTCONNECTED;
-
-        $db = $this->_connection;
-        $success = false;
-
-        if ($db) {
-            if (count($this->_dataset) > 0) {
-                foreach (array_chunk($data, 500) as $smallbatch) {
-                    $success = ($db->{$collection}->insertMany($smallbatch)) ? true : false;
-                }
-            } else {
-                $success = ($db->{$collection}->insertOne($data)) ? true : false;
-            }
-
-            $this->_last_row = isset($data[$this->config('key')]) ? $data[$this->config('key')] : $this->_last_row;
-
-            $this->_result = $success;
-        } else {
+        if (Val::isNull($this->_connection)) {
+            $this->_result = false;
             $this->status(self::STATUS_NOTCONNECTED);
             return $this;
         }
 
-        $status = ($success) ? $db->error : self::STATUS_SUCCESS;
-        $this->status($status);
+        $filter = $this->normalizeDocument($data);
+        $this->executeOperation(
+            fn () => $this->collection((string)$collection)->find($filter)
+        );
 
         return $this;
     }
 
-    /**
-     * Updates data in a specified collection
-     *
-     * @param string $collection The name of the collection
-     * @param array &$data The data to be updated
-     * @param array $filter The filter used to determine which data to update
-     * @param bool $replace Whether to replace the data or not
-     * @return IObj
-     */
-    private function update($collection, &$data, $filter, $replace = false): IObj
-    {
-        $status = self::STATUS_NOTCONNECTED;
-
-        $db = $this->_connection;
-        $success = false;
-
-        if (Val::isNotNull($db)) {
-            if ($replace) {
-                $success = ($db->{$collection}->replaceMany($filter, $data)) ? true : false;
-            } else {
-                $success = ($db->{$collection}->updateMany($filter, $data)) ? true : false;
-            }
-
-            $this->_last_row = isset($data[$this->config('key')]) ? $data[$this->config('key')] : $this->_last_row;
-
-            $this->_result = $success;
-
-            $status = ($success) ? $this->error() : self::STATUS_SUCCESS;
-        } else {
-            $this->status($status);
-            return $this;
-        }
-
-        $this->status($status);
-        return $this;
-    }
-
-    /**
-     * Sends a data insertion or update request to the database
-     *
-     * @param string $collection The target collection
-     * @param array $data An array of data to be inserted/updated
-     * @param string $filter A string containing the conditions to be met for the update
-     * @param int $type Specifies the type of query to be executed (INSERT, UPDATE, REPLACE)
-     *
-     * @return IObj
-     */
-    private function post($collection, $data, $filter = null, $type = null): IObj
-    {
-        $db = $this->_connection;
-        $status = '';
-        $success = false;
-        $replace = false;
-        $last_row = null;
-
-        if ($filter == '' && ($type == self::INSERT || $type == self::UPDATE)) {
-            $filter = '';
-        } elseif (isset($filter) && $filter != '' && $type != self::REPLACE) {
-            $type = self::UPDATE;
-        }
-        if (isset($collection) && $collection != '') {
-            //if a collection is specified
-            if (count($data) >= 1) {
-                //validates number of fields and values
-                switch ($type) {
-                    case self::INSERT:
-                        //attempt a database insert
-                        if ($this->insert($collection, $data)) {
-                            $status = "Successfully Inserted Entry.";
-                            $success = true;
-                        } else {
-                            $status = "Insert Failed. Reason: " . $this->error();
-                            ;
-                        }
-                        break;
-                    case self::UPDATE_SPECIFIED:
-                        $replace = true;
-                        // no break
-                    case self::UPDATE:
-                        //attempt a database update
-                        if (isset($filter) && $filter != '') {
-                            if ($this->update($collection, $data, $filter, $replace)) {
-                                $status = "Successfully Updated Entry.";
-                                $last_row = $data[$this->config('key')];
-                                $success = true;
-                            } else {
-                                $status = "Update Failed. Reason: " . $this->error();
-                                ;
-                            }
-                        } else {
-                            //if where clause is empty
-                            $status = "No Target Entry Specified.";
-                        }
-                        break;
-                    default:
-                        //if type is not registered
-                        $status = "Query Type Not Supported.";
-                        break;
-                }
-            } else {
-                //if the arrays do not align or match
-                $status = "Fields and Values do not match or Insufficient Fields.";
-            }
-        } else {
-            //no table has been assigned
-            $status = "No Target Table Specified";
-        }
-
-        $this->status($status);
-
-        $this->_last_row = $last_row ? $last_row : $this->_last_row;
-
-        return $this;
-    }
-
-    /**
-     * Deletes documents from the specified collection.
-     *
-     * @param string $collection Collection name
-     * @param array $data Arr of data to delete
-     * @return IObj
-     */
     public function delete($collection, $data): IObj
     {
-        $status = self::STATUS_NOTCONNECTED;
-
-        $db = $this->_connection;
-        $success = false;
-
-        if ($db) {
-            $success = ($db->{$collection}->deleteMany($data)) ? true : false;
-
-            $this->_result = $success;
-
-            $status = ($success) ? $this->error() : self::STATUS_SUCCESS;
-        } else {
-            $this->status($status);
-
+        if (Val::isNull($this->_connection)) {
+            $this->_result = false;
+            $this->status(self::STATUS_NOTCONNECTED);
             return $this;
         }
 
-        $this->status($status);
+        $filter = $this->normalizeDocument($data);
+        $this->executeOperation(
+            fn () => $this->collection((string)$collection)->deleteMany($filter)
+        );
 
         return $this;
     }
 
-    /** Performs a MapReduce operation on the specified collection.
-     *
-     * @param string $map Map function
-     * @param string $reduce Reduce function
-     * @param string $output Output collection name
-     * @param string $action Action to perform on the output collection
-     * @return array Result of the operation
-     */
     public function mapReduce($map, $reduce, $output, $action = 'replace')
     {
-        $db = $this->_connection;
+        if (Val::isNull($this->_connection)) {
+            $this->status(self::STATUS_NOTCONNECTED);
+            return false;
+        }
 
-        // construct map and reduce functions
-        $map = new Javascript($map);
-        $reduce = new Javascript($reduce);
-        $collection = $this->config('collection');
-
-        $command = [
-            "mapreduce" => $collection,
-            "map" => $map,
-            "reduce" => $reduce,
-            "query" => $this->_data,
-            "out" => array($action => $output)
-        ];
-        // "out" => array("reduce" => $output)));
-
-        $response = $db->command($command);
-
-        return $response;
+        try {
+            $command = [
+                'mapreduce' => (string)$this->config('collection'),
+                'map' => new Javascript($map),
+                'reduce' => new Javascript($reduce),
+                'query' => $this->normalizeDocument($this->_data),
+                'out' => [$action => $output],
+            ];
+            $result = $this->_connection->command($command);
+            $this->_result = $result;
+            $this->status(self::STATUS_SUCCESS);
+            return $result;
+        } catch (Throwable $exception) {
+            $this->_result = false;
+            $this->status($exception->getMessage() ?: self::STATUS_FAILED);
+            return false;
+        }
     }
 
-    /**
-     * Gets the current connection.
-     *
-     * @return mixed Current connection
-     */
     public function connection()
     {
         return $this->_current;
     }
 
-    /**
-     * Gets the result of the last operation.
-     *
-     * @return mixed Result of the last operation
-     */
     public function result()
     {
         return $this->_result;
     }
 
-    /**
-     * Gets the error of the last operation.
-     *
-     * @return mixed Error of the last operation
-     */
     public function error()
     {
-        if ($this->_connection instanceof \MongoDB\Collection) {
-            return $this->_connection->command(['getlasterror' => 1]);
-        } else {
-            return $this->status();
-        }
+        $status = $this->status();
+
+        return Arr::contains([
+            self::STATUS_CONNECTED,
+            self::STATUS_DISCONNECTED,
+            self::STATUS_SUCCESS,
+        ], $status, true) ? null : $status;
     }
 
-    /**
-     * Gets or sets the current database.
-     *
-     * @param string $database Database name
-     * @return string Current database name
-     */
     public function database($database = null)
     {
         if (Val::isNull($database)) {
             return $this->config('database');
         }
 
-        // $this->close();
         $this->config('database', $database);
-        // $this->open();
-        $this->_connection = ($this->config('database') ? $this->_current->{$this->config('database')} : null);
+        if (Val::isNull($this->_current)) {
+            $this->_connection = null;
+            $this->status(self::STATUS_NOTCONNECTED);
+            return $this;
+        }
+
+        try {
+            $this->_connection = $this->selectDatabase($this->_current, (string)$database);
+            $this->status(self::STATUS_CONNECTED);
+        } catch (Throwable $exception) {
+            $this->_connection = null;
+            $this->status($exception->getMessage() ?: self::STATUS_NOTCONNECTED);
+        }
+
+        return $this;
     }
 
-    /**
-     * Returns the last row of data.
-     *
-     * @return mixed The last row of data.
-     */
     public function lastRow()
     {
         return $this->_last_row;
     }
 
-    /**
-     * Sanitizes a given string.
-     *
-     * @param string $string The string to be sanitized.
-     * @param bool $datetime Whether the string is a datetime value or not.
-     *
-     * @return string The sanitized string.
-     */
-    public static function sanitize($string, $datetime = false)
+    public static function sanitize($value, $datetime = false)
     {
-        $string = trim($string);
+        if ($value instanceof IVal) {
+            $value = $value->val();
+        }
 
-        return $string;
+        return Str::is($value) ? Str::make($value)->trim()->val() : $value;
+    }
+
+    protected function createClient(string $uri, array $options): object
+    {
+        if (!class_exists(Client::class)) {
+            throw new RuntimeException('mongodb/mongodb is required for MongoLink.');
+        }
+
+        return new Client($uri, $options);
+    }
+
+    protected function selectDatabase(object $client, string $database): object
+    {
+        if (method_exists($client, 'selectDatabase')) {
+            return $client->selectDatabase($database);
+        }
+
+        return $client->{$database};
+    }
+
+    private function insert(string $collection, array $data, bool $batch = false): bool
+    {
+        return $this->executeOperation(function () use ($collection, $data, $batch) {
+            $target = $this->collection($collection);
+
+            if (!$batch) {
+                $result = $target->insertOne($data);
+                $this->_last_row = Arr::hasKey($data, (string)$this->config('key'))
+                    ? $data[(string)$this->config('key')]
+                    : $this->insertedId($result);
+                return $result;
+            }
+
+            $results = [];
+            foreach (array_chunk($data, 500) as $documents) {
+                $results[] = $target->insertMany($documents);
+            }
+            $this->_last_row = $this->lastInsertedId($results);
+
+            return $results;
+        });
+    }
+
+    private function update(string $collection, array $data, array $filter, bool $replace = false): bool
+    {
+        return $this->executeOperation(function () use ($collection, $data, $filter, $replace) {
+            $target = $this->collection($collection);
+            $key = (string)$this->config('key');
+
+            if ($replace) {
+                $result = $target->replaceOne($filter, $data);
+            } else {
+                unset($data[$key]);
+                if (Arr::isEmpty($data)) {
+                    throw new InvalidArgumentException('No MongoDB update fields supplied.');
+                }
+                $update = $this->hasUpdateOperator($data) ? $data : ['$set' => $data];
+                $result = $target->updateMany($filter, $update);
+            }
+
+            $this->_last_row = $filter[$key] ?? $this->_last_row;
+            return $result;
+        });
+    }
+
+    private function post(string $collection, array $data, ?array $filter, int $type): bool
+    {
+        return match ($type) {
+            self::INSERT => $this->insert($collection, $data),
+            self::UPDATE => $filter !== null
+                ? $this->update($collection, $data, $filter)
+                : $this->failOperation('No target document specified.'),
+            self::REPLACE => $filter !== null
+                ? $this->update($collection, $data, $filter, true)
+                : $this->failOperation('No target document specified.'),
+            default => $this->failOperation('MongoDB query type is not supported.'),
+        };
+    }
+
+    private function executeOperation(callable $operation): bool
+    {
+        try {
+            $result = $operation();
+            if (!$this->operationSucceeded($result)) {
+                throw new RuntimeException('MongoDB operation was not acknowledged.');
+            }
+
+            $this->_result = $result;
+            $this->perform(
+                [Event::SUCCESS, Event::COMPLETE, Event::PROCESSED],
+                new Meta(when: Action::PROCESS, data: $result, info: self::STATUS_SUCCESS)
+            );
+            $this->status(self::STATUS_SUCCESS);
+            return true;
+        } catch (Throwable $exception) {
+            $status = $exception->getMessage() ?: self::STATUS_FAILED;
+            $this->_result = false;
+            $this->perform(
+                [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(when: Action::PROCESS, info: $status)
+            );
+            $this->status($status);
+            return false;
+        }
+    }
+
+    private function failOperation(string $status): bool
+    {
+        $this->_result = false;
+        $this->status($status);
+        return false;
+    }
+
+    private function operationSucceeded(mixed $result): bool
+    {
+        if (Arr::is($result) && Arr::make($result)->isIndexed()) {
+            if (Arr::isEmpty($result)) {
+                return true;
+            }
+
+            return (new Arr($result))
+                ->filter(fn ($item) => !$this->operationSucceeded($item))
+                ->isEmpty();
+        }
+
+        if (is_object($result) && method_exists($result, 'isAcknowledged')) {
+            return $result->isAcknowledged();
+        }
+
+        return $result !== false && $result !== null;
+    }
+
+    private function collection(string $collection): object
+    {
+        if (Str::isEmpty($collection)) {
+            throw new InvalidArgumentException('MongoDB collection name is required.');
+        }
+
+        if (method_exists($this->_connection, 'selectCollection')) {
+            return $this->_connection->selectCollection($collection);
+        }
+
+        return $this->_connection->{$collection};
+    }
+
+    private function normalizeDocument(mixed $document): array
+    {
+        if ($document instanceof IVal) {
+            $document = $document->val();
+        }
+
+        if (is_object($document)) {
+            $document = get_object_vars($document);
+        }
+
+        return Arr::is($document) ? Arr::toArray($document) : [];
+    }
+
+    private function hasUpdateOperator(array $data): bool
+    {
+        return !(new Arr(Arr::keys($data)))
+            ->filter(fn ($key) => Str::make((string)$key)->startsWith('$'))
+            ->isEmpty();
+    }
+
+    private function insertedId(mixed $result): mixed
+    {
+        return is_object($result) && method_exists($result, 'getInsertedId')
+            ? $result->getInsertedId()
+            : null;
+    }
+
+    private function lastInsertedId(array $results): mixed
+    {
+        $lastId = null;
+
+        foreach ($results as $result) {
+            if (!is_object($result) || !method_exists($result, 'getInsertedIds')) {
+                continue;
+            }
+
+            $ids = $result->getInsertedIds();
+            if (!Arr::isEmpty($ids)) {
+                $lastId = Arr::make($ids)->pop();
+            }
+        }
+
+        return $lastId;
+    }
+
+    private function connectionUri(): string
+    {
+        $target = Str::make((string)$this->config('target'))->trim()->val();
+        if (Str::make($target)->startsWith('mongodb://') || Str::make($target)->startsWith('mongodb+srv://')) {
+            return $target;
+        }
+
+        $target = Str::isEmpty($target) ? 'localhost' : $target;
+        $port = (int)$this->config('port');
+        $address = preg_match('/:\d+$/', $target) ? $target : $target . ':' . $port;
+        $username = (string)$this->config('username');
+        $password = (string)$this->config('password');
+        $credentials = Str::isEmpty($username)
+            ? ''
+            : rawurlencode($username) . ':' . rawurlencode($password) . '@';
+
+        return 'mongodb://' . $credentials . $address;
     }
 }

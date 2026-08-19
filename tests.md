@@ -51,7 +51,11 @@ setx DEV_ELATION_MYSQL_DB develation_test
 
 ### MongoDB (mongodb)
 
-Required PHP extension: `mongodb`
+Required package: `mongodb/mongodb`
+
+Required PHP extension: `mongodb`. The deterministic MongoLink behavior suite
+uses an injected client and runs without either dependency. Live connection
+tests remain skipped until the package, extension, and URI are present.
 
 ```
 setx DEV_ELATION_MONGO_URI mongodb://127.0.0.1:27017

@@ -57,6 +57,8 @@
     },
     "suggest": {
         "cboden/ratchet": "Install to use the optional BlueFission\\Async\\Sock Ratchet websocket transport.",
+        "mongodb/mongodb": "Install with ext-mongodb to use the MongoLink database adapter.",
+        "ext-mongodb": "Install with mongodb/mongodb to use the MongoLink database adapter.",
         "ext-redis": "Install to use Redis connections, storage, and reliable queues.",
         "ext-memcached": "Install to use Memcached storage and MemQueue."
     },
