@@ -615,6 +615,64 @@ class ParserBasicTest extends ParsingTestCase
         $this->assertSame('generated', $parser->root()->getScopeVariable('generatedBook'));
     }
 
+    public function testMultilineGeneratorEvalMatchesSingleLineBehavior()
+    {
+        $this->registerExtendedEvalTag(['thread']);
+
+        $singleLine = new Parser('{=bookBlueprint -> generatedBook ref="example.ref" profile="editorial" phase="draft" label="A Book" thread="book:one" silent=true}AFTER');
+        $multiline = new Parser(<<<'VIBE'
+{=bookBlueprint
+    -> generatedBook
+    ref="example.ref"
+    profile="editorial"
+    phase="draft"
+    label="A Book"
+    thread="book:one"
+    silent=true
+}AFTER
+VIBE);
+
+        $singleLineOutput = $singleLine->render();
+        $multilineOutput = $multiline->render();
+
+        $this->assertSame($singleLineOutput, $multilineOutput);
+        $this->assertSame('AFTER', $multilineOutput);
+        $this->assertSame('generated', $multiline->root()->getScopeVariable('generatedBook'));
+        $this->assertSame(
+            $singleLine->root()->children()[0]->getAttributes(),
+            $multiline->root()->children()[0]->getAttributes()
+        );
+        $this->assertSame([], $multiline->diagnostics());
+    }
+
+    public function testMultilineGeneratorEvalSupportsCrLfInput()
+    {
+        $this->registerExtendedEvalTag();
+
+        $parser = new Parser("{=bookBlueprint\r\n    -> generatedBook\r\n    label=\"A Book\"\r\n    silent=true\r\n}AFTER");
+
+        $this->assertSame('AFTER', $parser->render());
+        $this->assertSame('generated', $parser->root()->getScopeVariable('generatedBook'));
+        $this->assertSame('A Book', $parser->root()->children()[0]->getAttribute('label'));
+        $this->assertSame([], $parser->diagnostics());
+    }
+
+    public function testUnterminatedGeneratorEvalRemainsLiteralAndReportsOffset()
+    {
+        $template = "BEFORE\n{=bookBlueprint\n    label=\"A Book\"\nAFTER";
+        $parser = new Parser($template);
+
+        $this->assertSame($template, $parser->render());
+        $this->assertSame([
+            [
+                'code' => 'parsing.unterminated_generation_tag',
+                'message' => 'Unterminated generation tag.',
+                'offset' => 7,
+                'severity' => 'error',
+            ],
+        ], $parser->diagnostics());
+    }
+
     public function testZeroArgDottedStandardEvalAssignsTargetVariable()
     {
         StandardRegistry::register('system', new class {

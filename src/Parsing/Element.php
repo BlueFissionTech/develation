@@ -209,6 +209,11 @@ class Element extends Obj {
         return $this->block->allElements();
     }
 
+    public function diagnostics(): array
+    {
+        return $this->block->diagnostics();
+    }
+
     public function getAttribute($name): mixed
     {
         if (!isset($this->attributes[$name])) {

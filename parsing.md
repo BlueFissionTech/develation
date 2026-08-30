@@ -156,9 +156,12 @@ Supported first-pass filters:
 Behavior:
 
 - interpolation is applied only inside quoted attribute strings
+- balanced generation tags may place assignment and attributes on separate lines, including CRLF input
 - missing values resolve to an empty string unless `default:...` is present
 - unknown filters safely leave the current value unchanged
 - attribute interpolation is value-oriented only; it does not execute arbitrary functions
+
+Malformed generation tags remain literal. After rendering, inspect `$parser->diagnostics()` for structured entries containing `code`, `message`, `offset`, and `severity`; an unclosed `{=...` tag reports `parsing.unterminated_generation_tag` at its byte offset.
 
 ## Loop Scope and Nested Composition
 

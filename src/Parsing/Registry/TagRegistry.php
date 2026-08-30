@@ -227,7 +227,7 @@ class TagRegistry {
             (?:\((?<function_args>[^)]*)\))?               # optional func args
             (?:\s*->\s*(?<assign_target>[a-zA-Z_][a-zA-Z0-9_-]*))? # optional assignment
             (?<raw_attributes>.*)?                          # the rest = attributes
-        /x', $raw, $meta);
+        /xs', $raw, $meta);
 
         $attributeStr = $meta['raw_attributes'] ?? '';
 
