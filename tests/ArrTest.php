@@ -2,6 +2,8 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Arr;
+use BlueFission\Collections\Collection;
+use BlueFission\Collections\Group;
  
 class ArrTest extends ValTest {
  
@@ -114,6 +116,24 @@ class ArrTest extends ValTest {
 	public function testReturnsValuesStatically()
 	{
 		$this->assertEquals(['foo', 'bar'], static::$classname::values(['first' => 'foo', 'second' => 'bar']));
+	}
+
+	public function testToArrayConvertsDevElationCollections()
+	{
+		$rows = [
+			'first' => ['id' => 1],
+			'second' => ['id' => 2],
+		];
+
+		$this->assertSame($rows, Arr::toArray(new Collection($rows)));
+		$this->assertSame($rows, Arr::toArray(new Group($rows)));
+	}
+
+	public function testToArrayKeepsUnrelatedObjectsOpaque()
+	{
+		$object = (object)['id' => 1];
+
+		$this->assertSame([$object], Arr::toArray($object));
 	}
 
 	public function testMergePreservesListAppendsStatically()

@@ -2,6 +2,7 @@
 
 namespace BlueFission;
 
+use BlueFission\Collections\ICollection;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Collections\Support\MapsAndFilters;
 use ArrayAccess;
@@ -509,6 +510,10 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     public function _toArray(bool $allow_empty = false): array
     {
         $value = $this->_data;
+        if ($value instanceof ICollection) {
+            return $value->contents();
+        }
+
         $value_r = [];
         if (!is_string($value) || (!$value == '' || $allow_empty)) {
             (is_array($value)) ? $value_r = $value : ((is_null($value)) ? $value_r : $value_r[] = $value);
