@@ -8,7 +8,7 @@ interface IObj
      * This method sets or gets the value of a field
      *
      * @param string $var the field name
-     * @param mixed $value the value of the field. If null, the method returns the value of the field
+     * @param mixed $value the value of the field. Omit this argument to retrieve the field
      * @return mixed
      */
     public function field(string $var, $value = null);

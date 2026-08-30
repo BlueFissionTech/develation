@@ -4,6 +4,7 @@ namespace BlueFission\Tests\Behavioral;
 
 use BlueFission\Behavioral\Configurable;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\DataTypes;
 use BlueFission\Obj;
 
 class ConfigurableTest extends BehavioralTest
@@ -131,5 +132,54 @@ class ConfigurableTest extends BehavioralTest
         $this->object->var2 = "I won't get this new value";
 
         $this->assertEquals("I'm a variable, too", $this->object->var2);
+    }
+
+    public function testDraftFieldsStoreFalsyValues()
+    {
+        $this->object->perform(State::DRAFT);
+
+        foreach ([false, null, 0, '', []] as $index => $value) {
+            $field = 'value' . $index;
+            $this->assertSame($this->object, $this->object->field($field, $value));
+            $this->assertSame($value, $this->object->field($field));
+        }
+    }
+
+    public function testTypedFieldsStoreFalsyValuesOutsideDraftState()
+    {
+        $object = new class extends Obj implements \BlueFission\Behavioral\IDispatcher {
+            use Configurable;
+
+            protected $_config = [];
+            protected $_types = [
+                'flag' => DataTypes::BOOLEAN,
+                'count' => DataTypes::NUMBER,
+                'name' => DataTypes::STRING,
+                'items' => DataTypes::ARRAY,
+                'optional' => DataTypes::GENERIC,
+            ];
+        };
+
+        $object->field('optional', 'present');
+        foreach ([
+            'flag' => false,
+            'count' => 0,
+            'name' => '',
+            'items' => [],
+            'optional' => null,
+        ] as $field => $value) {
+            $this->assertSame($object, $object->field($field, $value));
+            $this->assertSame($value, $object->field($field));
+        }
+    }
+
+    public function testReadonlyFieldSetterRemainsFluentWithoutChangingValue()
+    {
+        $this->object->perform(State::DRAFT);
+        $this->object->field('enabled', true);
+        $this->object->perform(State::READONLY);
+
+        $this->assertSame($this->object, $this->object->field('enabled', false));
+        $this->assertTrue($this->object->field('enabled'));
     }
 }
