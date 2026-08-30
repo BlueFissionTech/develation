@@ -20,6 +20,7 @@ use BlueFission\DevElation as Dev;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Handler;
+use BlueFission\Exceptions\GatewayHaltException;
 use BlueFission\Net\HTTP;
 use Exception;
 
@@ -212,6 +213,13 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      * @var Request|null
      */
     private $_request = null;
+
+    /**
+     * Halt outcome from the active gateway chain.
+     *
+     * @var GatewayOutcome|null
+     */
+    private $_gatewayOutcome = null;
 
     /**
      * The class constructor
@@ -472,6 +480,9 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	public function process() {
+		$this->_gatewayOutcome = null;
+		$this->_operation = null;
+		$this->_conditions = [];
 		$args = $this->requestArguments();
 
 		$behavior = $args['behavior'];
@@ -491,12 +502,24 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 				if ( isset( $this->_gateways[$gatewayName] ) ) {
 					$gatewayClass = $this->_gateways[$gatewayName];
 					$gateway = $this->resolve($gatewayClass);
-					$gateway->process( $request, $this->_arguments );	
+					try {
+						$outcome = $gateway->process($request, $this->_arguments);
+					} catch (GatewayHaltException $exception) {
+						$outcome = $exception->outcome();
+					}
+
+					if ($outcome instanceof GatewayOutcome && $outcome->halted()) {
+						$this->_gatewayOutcome = $outcome;
+						break;
+					}
 				}
 			}
 
-			$this->_operation = $this->prepareCallable($mapping->callable);
+			if ($this->_gatewayOutcome) {
+				return $this;
+			}
 
+			$this->_operation = $this->prepareCallable($mapping->callable);
 			$this->_conditions = Arr::make($args['data'])->merge($uri->buildArguments($this->_cmdpath))->val();
 		}
 
@@ -509,6 +532,10 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * @return $this
 	 */
 	public function run() {
+		if ($this->_gatewayOutcome && $this->_gatewayOutcome->halted()) {
+			return $this;
+		}
+
 		$args = $this->requestArguments();
 		$behavior = $args['behavior'];
 		$uri = new Uri();
@@ -547,6 +574,16 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		}
 
 		return $this;
+	}
+
+	/**
+	 * Return the outcome from the most recent gateway chain.
+	 *
+	 * @return GatewayOutcome|null
+	 */
+	public function gatewayOutcome(): ?GatewayOutcome
+	{
+		return $this->_gatewayOutcome;
 	}
 
 	private function defaultBehavior(): string

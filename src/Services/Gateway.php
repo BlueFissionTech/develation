@@ -27,7 +27,7 @@ class Gateway implements IGateway
      * @param Request $request The request to process.
      * @param mixed $arguments The arguments to be updated.
      *
-     * @return void
+     * @return GatewayOutcome|null
      */
     public function process(Request $request, &$arguments)
     {

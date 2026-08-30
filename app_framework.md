@@ -25,6 +25,19 @@ $app->map('get', '/health', function() {
 $app->args()->process()->run();
 ```
 
+## Gateway Outcomes
+
+Gateways may continue normally by returning `null` or
+`GatewayOutcome::proceed()`. Return `GatewayOutcome::halt($response)` when the
+mapped callable must not run. A gateway that needs exception-based control flow
+may throw `GatewayHaltException($response)` instead.
+
+The application records the first halt and stops the remaining gateway chain.
+`run()` remains fluent and does not render the response; hosts can inspect
+`$app->gatewayOutcome()->response()` and retain ownership of HTTP status,
+headers, redirects, or other transport behavior. Calling `process()` again
+starts a fresh gateway chain and clears the prior outcome.
+
 ## Service Dispatch Pattern
 
 ```php
