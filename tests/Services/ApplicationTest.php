@@ -4,6 +4,10 @@ namespace BlueFission\Tests\Services;
 
 use BlueFission\Services\Application;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Exceptions\GatewayHaltException;
+use BlueFission\Services\GatewayOutcome;
+use BlueFission\Services\IGateway;
+use BlueFission\Services\Request;
 use BlueFission\Exceptions\DependencyResolutionException;
 
 class ApplicationTest extends \PHPUnit\Framework\TestCase
@@ -454,6 +458,99 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    public function testReturnedGatewayHaltSkipsMappedCallable()
+    {
+        $executed = false;
+        $app = Application::getInstance('ReturnedGatewayHaltTest');
+        $originalServer = $this->configureGatewayRoute(
+            $app,
+            [ReturningHaltGateway::class],
+            function () use (&$executed) {
+                $executed = true;
+            }
+        );
+
+        try {
+            $app->process()->run();
+
+            $this->assertFalse($executed);
+            $this->assertTrue($app->gatewayOutcome()->halted());
+            $this->assertSame('denied', $app->gatewayOutcome()->response());
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
+    public function testThrownGatewayHaltSkipsMappedCallable()
+    {
+        $executed = false;
+        $app = Application::getInstance('ThrownGatewayHaltTest');
+        $originalServer = $this->configureGatewayRoute(
+            $app,
+            [ThrowingHaltGateway::class],
+            function () use (&$executed) {
+                $executed = true;
+            }
+        );
+
+        try {
+            $app->process()->run();
+
+            $this->assertFalse($executed);
+            $this->assertSame(['status' => 403], $app->gatewayOutcome()->response());
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
+    public function testGatewayChainStopsAtFirstHalt()
+    {
+        CountingGateway::$calls = 0;
+        $app = Application::getInstance('GatewayOrderTest');
+        $originalServer = $this->configureGatewayRoute(
+            $app,
+            [ReturningHaltGateway::class, CountingGateway::class],
+            static function () {
+            }
+        );
+
+        try {
+            $app->process();
+
+            $this->assertSame(0, CountingGateway::$calls);
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
+    public function testGatewayOutcomeResetsForRepeatedProcessing()
+    {
+        ToggleGateway::$halt = true;
+        $executions = 0;
+        $app = Application::getInstance('GatewayReuseTest');
+        $originalServer = $this->configureGatewayRoute(
+            $app,
+            [ToggleGateway::class],
+            function () use (&$executions) {
+                $executions++;
+            }
+        );
+
+        try {
+            $app->process()->run();
+            $this->assertSame(0, $executions);
+
+            ToggleGateway::$halt = false;
+            $app->process()->run();
+
+            $this->assertSame(1, $executions);
+            $this->assertNull($app->gatewayOutcome());
+        } finally {
+            ToggleGateway::$halt = true;
+            $_SERVER = $originalServer;
+        }
+    }
+
     private function applicationArguments(Application $app): array
     {
         $reflection = new \ReflectionClass($app);
@@ -461,6 +558,31 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $property->setAccessible(true);
 
         return $property->getValue($app);
+    }
+
+    private function configureGatewayRoute(Application $app, array $gateways, callable $callable): array
+    {
+        $originalServer = $_SERVER;
+        $_SERVER['HTTP_HOST'] = 'example.test';
+        $_SERVER['REQUEST_URI'] = '/gateway-check';
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        unset($_SERVER['HTTPS']);
+
+        $mapping = $app->map('get', '/gateway-check', $callable, 'gateway.check');
+        foreach ($gateways as $index => $gatewayClass) {
+            $name = 'gateway' . $index;
+            $app->gateway($name, $gatewayClass);
+            $mapping->gateway($name);
+        }
+
+        $this->setApplicationArguments($app, [
+            '_method' => 'get',
+            'service' => $app->name(),
+            'behavior' => '',
+            'data' => [],
+        ]);
+
+        return $originalServer;
     }
 
     private function setApplicationArguments(Application $app, array $arguments): void
@@ -531,6 +653,46 @@ class ApplicationServiceWithBoundArgument
 {
     public function __construct(public string $name)
     {
+    }
+}
+
+class ReturningHaltGateway implements IGateway
+{
+    public function process(Request $request, &$arguments)
+    {
+        return GatewayOutcome::halt('denied');
+    }
+}
+
+class ThrowingHaltGateway implements IGateway
+{
+    public function process(Request $request, &$arguments)
+    {
+        throw new GatewayHaltException(['status' => 403]);
+    }
+}
+
+class CountingGateway implements IGateway
+{
+    public static int $calls = 0;
+
+    public function process(Request $request, &$arguments)
+    {
+        self::$calls++;
+
+        return GatewayOutcome::proceed();
+    }
+}
+
+class ToggleGateway implements IGateway
+{
+    public static bool $halt = true;
+
+    public function process(Request $request, &$arguments)
+    {
+        return self::$halt
+            ? GatewayOutcome::halt()
+            : GatewayOutcome::proceed();
     }
 }
 
