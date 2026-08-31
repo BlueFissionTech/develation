@@ -20,6 +20,7 @@ use BlueFission\DevElation as Dev;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Handler;
+use BlueFission\Exceptions\DependencyResolutionException;
 use BlueFission\Net\HTTP;
 use Exception;
 
@@ -34,11 +35,18 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
     }
 
 	/**
-	 * A collection of instances of this class
+	 * Application instances grouped by concrete application class and name.
 	 *
-	 * @var array
+	 * @var array<class-string, array<string, Application>>
 	 */
 	private static $_instances = [];
+
+	/**
+	 * Current lifecycle phase used in dependency-resolution diagnostics.
+	 *
+	 * @var string
+	 */
+	private $_lifecyclePhase = 'initialization';
 
 	/**
 	 * A collection of broadcasted events
@@ -220,21 +228,17 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      */
     public function __construct($config = [])
     {
-        $name = $config['name'] ??
-        	$this->config['name'] ??
-        	get_called_class();
-
-        if (Arr::hasKey(self::$_instances, $name)) {
-            return self::$_instances[$name];
-        }
+        $calledClass = get_called_class();
+        $name = Arr::hasKey($config, 'name') ? $config['name'] : $calledClass;
 
         parent::__construct();
         $this->__tConstruct(); // Call trait constructor
         $this->config($config);
         $this->_services = new Collection();
         $this->_broadcastedEvents[$name] = [];
+		$this->_lifecyclePhase = 'ready';
 
-        self::$_instances[$name] = $this;
+        self::$_instances[$calledClass][$name] = $this;
     }
 
     /**
@@ -244,33 +248,52 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      */
     static function getInstance($name = null)
     {
-        $appName = $name ?? get_called_class();
-        if (!Arr::hasKey(self::$_instances, $appName)) {
+		$calledClass = get_called_class();
+		$appName = $name ?? $calledClass;
+		$classInstances = Arr::hasKey(self::$_instances, $calledClass)
+			? self::$_instances[$calledClass]
+			: [];
+
+		if (!Arr::hasKey($classInstances, $appName)) {
             $config = [];
             if ($name) {
                 $config['name'] = $name;
             }
-            self::$_instances[$appName] = new static($config);
+			new static($config);
         }
 
-        return self::$_instances[$appName];
+		return self::$_instances[$calledClass][$appName];
     }
 
     /**
-     * Get the first instance of the current class.
+     * Get the default instance of the called application class.
      *
-     * @return object The first instance of the current class.
+     * @param string|null $name Optional named instance owned by the called class.
+     * @return object The selected instance of the called class.
      */
-    static function instance()
+    static function instance($name = null)
     {
-		$instances = Arr::make(self::$_instances);
-		if ($instances->isEmpty()) {
-	        $calledClass = get_called_class();
-			self::$_instances[$calledClass] = new static();
-			$instances = Arr::make(self::$_instances);
+		return static::getInstance($name);
+	}
+
+	/**
+	 * Get or set the current lifecycle phase.
+	 *
+	 * Hosts may set a phase before resolving dependencies so failures identify
+	 * the active registration, argument, boot, processing, or runtime step.
+	 *
+	 * @param string|null $phase
+	 * @return string|self
+	 */
+	public function lifecyclePhase(?string $phase = null): string|self
+	{
+		if (func_num_args() > 0 && Str::isNotEmpty($phase)) {
+			$this->_lifecyclePhase = Str::make($phase)->trim()->val();
+
+			return $this;
 		}
 
-		return $instances->values()[0];
+		return $this->_lifecyclePhase;
 	}
 
     /**
@@ -293,6 +316,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
      * @return object The current instance of the class.
      */
 	public function args() {
+		$this->_lifecyclePhase = 'arguments';
 		global $argv;
 
 		$parameters = Arr::make($this->_parameters);
@@ -472,6 +496,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	}
 
 	public function process() {
+		$this->_lifecyclePhase = 'processing';
 		$args = $this->requestArguments();
 
 		$behavior = $args['behavior'];
@@ -509,6 +534,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * @return $this
 	 */
 	public function run() {
+		$this->_lifecyclePhase = 'runtime';
 		$args = $this->requestArguments();
 		$behavior = $args['behavior'];
 		$uri = new Uri();
@@ -680,11 +706,14 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * 
 	 * @param string $classname The name of the original class.
 	 * @param string $newclassname The name of the new class.
-	 * @return void
+	 * @return self
 	 */
-	public function bind( $classname, $newclassname ) 
+	public function bind( $classname, $newclassname ): self
 	{
+		$this->_lifecyclePhase = 'registration';
 		$this->_bindings[$classname] = $newclassname;
+
+		return $this;
 	}
 
 	/**
@@ -692,11 +721,14 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * 
 	 * @param array $arguments The array of arguments.
 	 * @param string $classname The name of the class to be mapped. Default is '_'.
-	 * @return void
+	 * @return self
 	 */
-	public function bindArgs( array $arguments, string $classname = '_' )
+	public function bindArgs( array $arguments, string $classname = '_' ): self
 	{
+		$this->_lifecyclePhase = 'arguments';
 		$this->_boundArguments[$classname] = $arguments;
+
+		return $this;
 	}
 
 	/**
@@ -1188,11 +1220,15 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 * Create an instance of a given class
 	 *
 	 * @param string $class
+	 * @param Application|string|null $application Application instance or name owned by the called class.
 	 * @return object
 	 */
-	static function makeInstance( string $class )
+	static function makeInstance(string $class, Application|string|null $application = null)
 	{
-		$app = self::instance();
+		$app = $application instanceof Application
+			? $application
+			: static::instance($application);
+
 		return $app->getDynamicInstance($class);
 	}
 
@@ -1204,14 +1240,33 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 	 */
 	public function getDynamicInstance(string $class )
 	{
+		$requestedClass = $class;
+		if (Arr::hasKey($this->_bindings, $class)) {
+			$class = $this->_bindings[$class];
+		}
+
 		$reflection = new \ReflectionClass($class);
+		if (!$reflection->isInstantiable()) {
+			throw new DependencyResolutionException(
+				$requestedClass,
+				$this->_lifecyclePhase,
+				(string)$this->name(),
+				$class
+			);
+		}
+
 		$constructor = $reflection->getConstructor();
 
 		if ( Val::isNull($constructor) ) {
 			return $reflection->newInstance();
 		}
 
-		$arguments = $this->boundArguments($class);
+		$arguments = $this->boundArguments($requestedClass);
+		if ($requestedClass !== $class) {
+			$arguments = Arr::make($arguments)
+				->merge($this->boundArguments($class))
+				->val();
+		}
 
 		$dependencies = $this->handleDependencies($constructor, $arguments);
 
@@ -1337,11 +1392,6 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 				$dependencyClass = $dependencyClassObj->getName();
 			}
 			$dependencyName = $parameter->getName();
-
-			// Check if the dependency class has a binding
-			if (Arr::hasKey($this->_bindings, $dependencyClass)) {
-				$dependencyClass = $this->_bindings[$dependencyClass];
-			}
 
 			// Merge the arguments with the application registered named bindings by class
 			$arguments = Arr::make($this->boundArguments($callingClass))->merge($arguments)->val();
