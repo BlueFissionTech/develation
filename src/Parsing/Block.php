@@ -52,6 +52,7 @@ class Block extends Obj {
     public string $close = '}';
     public array $elements = [];
     public array $refs = [];
+    protected array $diagnostics = [];
 
     protected ?Element $owner = null;
 
@@ -72,6 +73,7 @@ class Block extends Obj {
     {
         $this->content = Dev::apply('_in', $this->content);
         Dev::do('_before', [$this->content, $this]);
+        $this->diagnostics = $this->detectSyntaxDiagnostics();
         $pattern = TagRegistry::unifiedPattern();
         $groupMap = TagRegistry::groupMap();
         $offset = 0;
@@ -214,6 +216,11 @@ class Block extends Obj {
         return $this->elements;
     }
 
+    public function diagnostics(): array
+    {
+        return Dev::apply('_out', $this->diagnostics);
+    }
+
     protected function prepareElement($element): void
     {
         foreach (PreparerRegistry::all() as $preparer) {
@@ -222,6 +229,41 @@ class Block extends Obj {
                 $preparer->prepare($element);
             }
         }
+    }
+
+    protected function detectSyntaxDiagnostics(): array
+    {
+        $diagnostics = [];
+        $prefix = $this->open . '=';
+        $cursor = 0;
+        $length = Str::len($this->content);
+
+        while ($cursor < $length) {
+            $remaining = Str::sub($this->content, $cursor);
+            $relativeOffset = Str::pos($remaining, $prefix);
+
+            if ($relativeOffset === false) {
+                break;
+            }
+
+            $offset = $cursor + $relativeOffset;
+            $tagContent = Str::sub($this->content, $offset);
+            $closingOffset = TagRegistry::findOpeningTagEnd($tagContent, $this->open, $this->close);
+
+            if ($closingOffset === false) {
+                $diagnostics[] = [
+                    'code' => 'parsing.unterminated_generation_tag',
+                    'message' => 'Unterminated generation tag.',
+                    'offset' => $offset,
+                    'severity' => 'error',
+                ];
+                break;
+            }
+
+            $cursor = $offset + $closingOffset + Str::len($this->close);
+        }
+
+        return $diagnostics;
     }
 
     protected function extractBalancedBlock(string $tag, int $start): array

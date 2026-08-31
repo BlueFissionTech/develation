@@ -72,4 +72,9 @@ class Parser implements IDispatcher {
     {
         return $this->root;
     }
+
+    public function diagnostics(): array
+    {
+        return $this->root->diagnostics();
+    }
 }
