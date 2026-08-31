@@ -88,12 +88,16 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function field(string $field, $value = null): mixed
     {
-        if ( Val::isNotEmpty($value) ) {
-            if ( $this->_lockDataType 
+        if ( func_num_args() > 1 ) {
+            if ( $this->_lockDataType
                 && isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IVal ) {
                 if ( $this->_data[$field]->isValid($value) ) {
-                    $this->_data[$field]->val($value);
+                    if ( Val::isNull($value) ) {
+                        $this->_data[$field]->clear();
+                    } else {
+                        $this->_data[$field]->val($value);
+                    }
                 } else {
                     $this->trigger(Event::EXCEPTION);
                     throw new \Exception("Invalid value for field $field");
@@ -101,7 +105,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
             } elseif (isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IVal
                 && $this->_data[$field]->isValid($value) ) {
-                $this->_data[$field]->val($value);
+                if ( Val::isNull($value) ) {
+                    $this->_data[$field]->clear();
+                } else {
+                    $this->_data[$field]->val($value);
+                }
             } else {
                 $this->_data[$field] = $value;
             }

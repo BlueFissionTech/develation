@@ -8,6 +8,7 @@ use BlueFission\Exceptions\GatewayHaltException;
 use BlueFission\Services\GatewayOutcome;
 use BlueFission\Services\IGateway;
 use BlueFission\Services\Request;
+use BlueFission\Exceptions\DependencyResolutionException;
 
 class ApplicationTest extends \PHPUnit\Framework\TestCase
 {
@@ -82,12 +83,120 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('configured', $instance->name);
     }
 
-    public function testApplicationInstanceReturnsFirstRegisteredInstance()
+    public function testApplicationDefaultInstanceIsUnaffectedByNamedInstances()
     {
         $first = Application::instance();
         Application::getInstance('LaterInstanceHelperTest');
 
         $this->assertSame($first, Application::instance());
+    }
+
+    public function testBindingsRemainOwnedAcrossLifecyclePhases()
+    {
+        $app = Application::getInstance('BindingPhaseProgression');
+        $app->bind(ApplicationBindingContract::class, ApplicationBoundService::class)
+            ->bindArgs(['source' => 'phase-owner'], ApplicationBoundService::class);
+        $app->lifecyclePhase('boot');
+
+        $service = $app->resolve(ApplicationBindingContract::class);
+        $consumer = $app->resolve(ApplicationBindingConsumer::class);
+
+        $this->assertInstanceOf(ApplicationBoundService::class, $service);
+        $this->assertSame('phase-owner', $service->source);
+        $this->assertInstanceOf(ApplicationBoundService::class, $consumer->dependency);
+        $this->assertSame('phase-owner', $consumer->dependency->source);
+        $this->assertSame('boot', $app->lifecyclePhase());
+    }
+
+    public function testStaticResolutionUsesExplicitApplicationOwner()
+    {
+        $first = Application::getInstance('StaticBindingOwner');
+        $first->bind(ApplicationBindingContract::class, ApplicationBoundService::class);
+
+        $second = Application::getInstance('StaticBindingOther');
+        $second->bind(ApplicationBindingContract::class, AlternateApplicationBoundService::class);
+
+        $firstResult = Application::makeInstance(ApplicationBindingContract::class, $first);
+        $secondResult = Application::makeInstance(ApplicationBindingContract::class, 'StaticBindingOther');
+
+        $this->assertInstanceOf(ApplicationBoundService::class, $firstResult);
+        $this->assertInstanceOf(AlternateApplicationBoundService::class, $secondResult);
+    }
+
+    public function testBaseAndSubclassInstancesWithSameNameDoNotLeakBindings()
+    {
+        $base = Application::getInstance('SharedBindingName');
+        $base->bind(ApplicationBindingContract::class, ApplicationBoundService::class);
+
+        $subclass = BindingApplication::getInstance('SharedBindingName');
+        $subclass->bind(ApplicationBindingContract::class, AlternateApplicationBoundService::class);
+
+        $this->assertNotSame($base, $subclass);
+        $this->assertInstanceOf(ApplicationBoundService::class, $base->resolve(ApplicationBindingContract::class));
+        $this->assertInstanceOf(
+            AlternateApplicationBoundService::class,
+            $subclass->resolve(ApplicationBindingContract::class)
+        );
+    }
+
+    public function testSubclassStaticResolutionUsesSubclassDefaultInstance()
+    {
+        $this->resetApplicationInstances();
+        $subclass = BindingApplication::instance();
+        $subclass->bind(ApplicationBindingContract::class, AlternateApplicationBoundService::class);
+        Application::instance()->bind(ApplicationBindingContract::class, ApplicationBoundService::class);
+
+        $resolved = BindingApplication::makeInstance(ApplicationBindingContract::class);
+
+        $this->assertInstanceOf(AlternateApplicationBoundService::class, $resolved);
+    }
+
+    public function testApplicationFirstConstructionDoesNotOwnSubclassResolution()
+    {
+        $this->resetApplicationInstances();
+        Application::instance()
+            ->bind(ApplicationBindingContract::class, ApplicationBoundService::class);
+        $subclass = SecondBindingApplication::instance();
+        $subclass->bind(ApplicationBindingContract::class, AlternateApplicationBoundService::class);
+
+        $resolved = SecondBindingApplication::makeInstance(ApplicationBindingContract::class);
+
+        $this->assertInstanceOf(AlternateApplicationBoundService::class, $resolved);
+    }
+
+    public function testNamedApplicationRetainsBindingsWhenReused()
+    {
+        $first = Application::getInstance('RebootBindingOwner');
+        $first->bind(ApplicationBindingContract::class, ApplicationBoundService::class);
+        $first->lifecyclePhase('boot');
+
+        $reused = Application::getInstance('RebootBindingOwner');
+
+        $this->assertSame($first, $reused);
+        $this->assertInstanceOf(ApplicationBoundService::class, $reused->resolve(ApplicationBindingContract::class));
+        $this->assertSame('boot', $reused->lifecyclePhase());
+    }
+
+    public function testUnboundInterfaceReportsStructuredLifecycleDiagnostic()
+    {
+        $app = Application::getInstance('UnboundInterfaceOwner');
+        $app->lifecyclePhase('boot');
+
+        try {
+            $app->resolve(ApplicationBindingContract::class);
+            $this->fail('Expected an unbound interface to fail resolution.');
+        } catch (DependencyResolutionException $exception) {
+            $this->assertSame(ApplicationBindingContract::class, $exception->dependency());
+            $this->assertSame('boot', $exception->phase());
+            $this->assertSame('UnboundInterfaceOwner', $exception->application());
+            $this->assertSame(ApplicationBindingContract::class, $exception->resolvedClass());
+            $this->assertSame([
+                'dependency' => ApplicationBindingContract::class,
+                'phase' => 'boot',
+                'application' => 'UnboundInterfaceOwner',
+                'resolvedClass' => ApplicationBindingContract::class,
+            ], $exception->context());
+        }
     }
 
     public function testApplicationReadsFilesFromWebRootFirst()
@@ -493,6 +602,14 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         return $method->invokeArgs($app, $arguments);
     }
 
+    private function resetApplicationInstances(): void
+    {
+        $reflection = new \ReflectionClass(Application::class);
+        $property = $reflection->getProperty('_instances');
+        $property->setAccessible(true);
+        $property->setValue(null, []);
+    }
+
     private function makeTempDirectory(string $prefix): string
     {
         $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid($prefix . '-', true);
@@ -577,4 +694,34 @@ class ToggleGateway implements IGateway
             ? GatewayOutcome::halt()
             : GatewayOutcome::proceed();
     }
+}
+
+interface ApplicationBindingContract
+{
+}
+
+class ApplicationBoundService implements ApplicationBindingContract
+{
+    public function __construct(public string $source = 'default')
+    {
+    }
+}
+
+class AlternateApplicationBoundService implements ApplicationBindingContract
+{
+}
+
+class ApplicationBindingConsumer
+{
+    public function __construct(public ApplicationBindingContract $dependency)
+    {
+    }
+}
+
+class BindingApplication extends Application
+{
+}
+
+class SecondBindingApplication extends Application
+{
 }

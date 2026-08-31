@@ -149,12 +149,15 @@ trait Configurable
         }
 
 
-        if ($value && !$this->is(State::READONLY)) {
-            if ($this->is(State::DRAFT)) {
-                parent::field($field, $value);
-            } elseif (Arr::hasKey($this->_data, $field)) {
-                parent::field($field, $value);
+        if (func_num_args() > 1) {
+            if (!$this->is(State::READONLY)) {
+                if ($this->is(State::DRAFT)) {
+                    parent::field($field, $value);
+                } elseif (Arr::hasKey($this->_data, $field)) {
+                    parent::field($field, $value);
+                }
             }
+
             return $this;
         }
 

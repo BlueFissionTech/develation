@@ -12,6 +12,7 @@ use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Connections\Stdio;
 use BlueFission\Data\FileSystem;
 use BlueFission\Flag;
+use BlueFission\Num;
 use BlueFission\Ref;
 use BlueFission\Str;
 
@@ -28,7 +29,7 @@ class Process implements IDispatcher
     /**
      * The command to be executed
      *
-     * @var string
+     * @var string|array
      */
     protected $_command;
 
@@ -93,6 +94,20 @@ class Process implements IDispatcher
     protected $_status;
 
     /**
+     * Terminal exit code captured while polling process status.
+     *
+     * @var int|null
+     */
+    protected $_exitCode = null;
+
+    /**
+     * Whether the process resource has already been closed.
+     *
+     * @var bool
+     */
+    protected $_closed = false;
+
+    /**
      * The output of the process
      *
      * @var string
@@ -123,7 +138,7 @@ class Process implements IDispatcher
     /**
      * Constructs a new instance of the Process class with the given command, cwd, env, descriptorspec, and options
      *
-     * @param string $command The command to be executed
+     * @param string|array $command The command to be executed
      * @param string|null $cwd The working directory for the command to be executed in
      * @param array|null $env The environment variables for the command to be executed with
      * @param array $descriptorspec The descriptorspec for the command to be executed with
@@ -158,6 +173,8 @@ class Process implements IDispatcher
      */
     public function start()
     {
+        $this->_exitCode = null;
+        $this->_closed = false;
         $descriptorSpec = $this->_descriptorspec;
         if ($this->_windowsSafeMode) {
             $this->prepareWindowsSafeCapture();
@@ -223,6 +240,10 @@ class Process implements IDispatcher
     {
         $this->_status = proc_get_status($this->_process);
         if ($this->_status) {
+            if (!$this->_status['running'] && Num::isInt($this->_status['exitcode']) && $this->_status['exitcode'] >= 0) {
+                $this->_exitCode ??= $this->_status['exitcode'];
+            }
+
             return $this->_status['running'];
         } else {
             if ($this->_windowsSafeMode && $this->_stderrFile && FileSystem::fileExists($this->_stderrFile)) {
@@ -246,7 +267,11 @@ class Process implements IDispatcher
                 $this->trigger(Event::DISCONNECTED);
             }
         }
-        proc_close($this->_process);
+        $status = proc_close($this->_process);
+        if ($status >= 0) {
+            $this->_exitCode = $status;
+        }
+        $this->_closed = true;
         $this->cleanupWindowsSafeCapture();
         $this->trigger(Event::STOPPED);
         // return $status;
@@ -260,12 +285,20 @@ class Process implements IDispatcher
      */
     public function close()
     {
+        if ($this->_closed) {
+            return $this->_exitCode ?? -1;
+        }
+
         $this->trigger(Action::DISCONNECT);
         $status = proc_close($this->_process);
+        if ($status >= 0) {
+            $this->_exitCode = $status;
+        }
+        $this->_closed = true;
         $this->cleanupWindowsSafeCapture();
         $this->trigger(Event::DISCONNECTED);
 
-        return $status;
+        return $this->_exitCode ?? $status;
     }
 
     /**
