@@ -220,6 +220,11 @@ $timestamp = datetime('2026-07-04')->timestamp();
 Global helpers are entrypoints into DevElation objects. They should create the
 object; the object should own the behavior.
 
+`Obj::field()` distinguishes reads from writes by argument count. Call
+`$object->field('name')` to read a field, and pass a second argument to write
+it, including `false`, `null`, `0`, `''`, or `[]`. Code that previously used
+`$object->field('name', null)` as a getter should omit the second argument.
+
 ### CLI utilities: args, tables, and progress
 
 ```php

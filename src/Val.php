@@ -346,7 +346,7 @@ class Val implements IVal, IDispatcher {
 	 */
 	public function _isValid( $value = null ): bool
 	{
-		$var = $value ?? $this->_data;
+		$var = func_num_args() > 0 ? $value : $this->_data;
 		if ( $this->_type ) {
 			switch ($this->_type) {
 				case DataTypes::GENERIC: // redundant catch for no type set
