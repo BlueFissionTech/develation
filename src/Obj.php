@@ -53,9 +53,26 @@ class Obj implements IObj, IDispatcher, IBehavioral
     protected $_lockDataType = false;
 
     /**
+     * Typed fields whose declared default is explicitly null.
+     *
+     * @var array<string, bool>
+     */
+    protected array $_nullableFields = [];
+
+    /**
      * Obj constructor.
      */
     public function __construct() {
+        $declaredNullableFields = [];
+        if ( is_array($this->_data) ) {
+            foreach ( $this->_types as $field => $type ) {
+                if ( array_key_exists($field, $this->_data) && $this->_data[$field] === null ) {
+                    $declaredNullableFields[$field] = true;
+                    $this->_nullableFields[$field] = true;
+                }
+            }
+        }
+
         if ( !Val::is($this->_data) ) {
             $this->_data = new Arr();
         } elseif ( Arr::is($this->_data) ) {
@@ -66,7 +83,10 @@ class Obj implements IObj, IDispatcher, IBehavioral
 
         foreach ( $this->_types as $field=>$type ) {
             $item = Factory::make($type, $this->_data[$field] ?? null);
-            
+            if ( isset($declaredNullableFields[$field]) ) {
+                $item->clear();
+            }
+
             $this->_data[$field] = $item;
             $this->_data->echo($item, [Event::CHANGE]);
         }
@@ -92,7 +112,8 @@ class Obj implements IObj, IDispatcher, IBehavioral
             if ( $this->_lockDataType
                 && isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IVal ) {
-                if ( $this->_data[$field]->isValid($value) ) {
+                if ( $this->_data[$field]->isValid($value)
+                    || ($value === null && isset($this->_nullableFields[$field])) ) {
                     if ( Val::isNull($value) ) {
                         $this->_data[$field]->clear();
                     } else {
@@ -104,7 +125,8 @@ class Obj implements IObj, IDispatcher, IBehavioral
                 }
             } elseif (isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IVal
-                && $this->_data[$field]->isValid($value) ) {
+                && ($this->_data[$field]->isValid($value)
+                    || ($value === null && isset($this->_nullableFields[$field]))) ) {
                 if ( Val::isNull($value) ) {
                     $this->_data[$field]->clear();
                 } else {
@@ -271,7 +293,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
 
     public function __sleep()
     {
-        return ['_data', '_types', '_type', '_exposeValueObject', '_lockDataType'];
+		return ['_data', '_types', '_type', '_exposeValueObject', '_lockDataType'];
     }
 
     public function __wakeup()
