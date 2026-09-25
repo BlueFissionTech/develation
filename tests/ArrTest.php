@@ -141,6 +141,36 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['foo', 'bar'], static::$classname::merge(['foo'], ['bar']));
 	}
 
+	public function testReplaceMatchesArrayReplaceForAssociativeAndNumericKeys()
+	{
+		$base = ['state' => 'draft', 0 => 'first', 1 => 'second'];
+		$overlay = ['state' => 'ready', 1 => 'replacement'];
+
+		$this->assertSame(array_replace($base, $overlay), static::$classname::replace($base, $overlay));
+	}
+
+	public function testReplaceOverwritesNestedValuesAndAppliesMultipleOverlays()
+	{
+		$base = ['settings' => ['first' => true], 'state' => 'draft'];
+		$first = ['settings' => ['second' => true], 'state' => 'review'];
+		$second = ['state' => 'ready'];
+
+		$this->assertSame(
+			array_replace($base, $first, $second),
+			static::$classname::replace($base, $first, $second)
+		);
+		$this->assertSame([], static::$classname::replace([], []));
+	}
+
+	public function testReplaceSupportsFluentArrOverlays()
+	{
+		$object = static::$classname::make(['first', 'second']);
+		$overlay = new static::$classname([1 => 'replacement']);
+
+		$this->assertSame($object, $object->replace($overlay));
+		$this->assertSame(['first', 'replacement'], $object->val());
+	}
+
 	public function testUnshiftMutatesAndReturnsSelfForChaining()
 	{
 		$object = new static::$classname(['middle']);
