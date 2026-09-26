@@ -115,6 +115,58 @@ class ObjTest extends \PHPUnit\Framework\TestCase {
 		$object->field('name', null);
 	}
 
+    public function testDeclaredNullTypedFieldsAcceptNullConstructionAndReset()
+    {
+        $object = new NullableObjFixture();
+
+        foreach (['name', 'count', 'items'] as $field) {
+            $this->assertNull($object->field($field));
+        }
+
+        $object->field('name', 'Ada');
+        $object->assign(['count' => 3.5, 'items' => ['first']]);
+        $this->assertSame('Ada', $object->name);
+        $this->assertSame(3.5, $object->count);
+        $this->assertSame(['first'], $object->items);
+
+        $object->name = null;
+        $object->assign(['count' => null, 'items' => null]);
+        $this->assertNull($object->name);
+        $this->assertNull($object->count);
+        $this->assertNull($object->items);
+        $this->assertInstanceOf(Str::class, $object->exposeValueObject()->field('name'));
+    }
+
+    public function testDeclaredNullTypedFieldStillRejectsInvalidValue()
+    {
+        $object = new class extends Obj {
+            protected $_data = ['name' => null];
+            protected $_types = ['name' => DataTypes::STRING];
+            protected $_lockDataType = true;
+        };
+
+        $this->expectException(\Exception::class);
+        $object->name = [];
+    }
+
+    public function testExplicitValueObjectKeepsItsOwnNullValidation()
+    {
+        $object = new class extends Obj {
+            protected $_data = ['name' => 'Ada'];
+            protected $_types = ['name' => DataTypes::STRING];
+            protected $_lockDataType = true;
+
+            public function replaceValueObject(Str $value): void
+            {
+                $this->_data['name'] = $value;
+            }
+        };
+
+        $object->replaceValueObject(new Str('Ada'));
+        $this->expectException(\Exception::class);
+        $object->field('name', null);
+    }
+
 	public function testToArrayAndToJsonExposeAssignedValues()
 	{
 		$this->object->assign(['name' => 'Ada', 'role' => 'Engineer']);
@@ -122,4 +174,15 @@ class ObjTest extends \PHPUnit\Framework\TestCase {
 		$this->assertSame(['name' => 'Ada', 'role' => 'Engineer'], $this->object->toArray());
 		$this->assertSame('{"name":"Ada","role":"Engineer"}', $this->object->toJson());
 	}
+}
+
+class NullableObjFixture extends Obj
+{
+    protected $_data = ['name' => null, 'count' => null, 'items' => null];
+    protected $_types = [
+        'name' => DataTypes::STRING,
+        'count' => DataTypes::NUMBER,
+        'items' => DataTypes::ARRAY,
+    ];
+    protected $_lockDataType = true;
 }

@@ -32,6 +32,13 @@ public function __construct()
 ```
 Initializes a new instance of the `Obj` class, setting up the data storage and configuring event dispatching for changes.
 
+For typed fields, a key explicitly declared with a `null` default in `_data`
+remains nullable after construction. It can receive a value matching its `_types`
+entry and later be reset with `field($name, null)`, bulk `assign()`, or property
+assignment. A typed field listed only in `_types` has no declared null default
+and still rejects null when type locking is enabled. This rule does not change
+the validation of fields supplied as their own `IVal` objects.
+
 ## Methods
 
 ### field
