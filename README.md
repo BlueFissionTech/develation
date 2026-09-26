@@ -130,6 +130,7 @@ Handle queues, storage solutions, databases, Redis, MemQ, files, and logs with a
 
 - [Data Management Documentation](data_management.md)
 - [SQLite Storage Contract](sqlite.md)
+- [Async and Transport Compatibility](async.md)
 - [Schema Documentation](schema.md)
 - [Graph Documentation](graph.md)
 - [Prototypes Documentation](prototypes.md)
