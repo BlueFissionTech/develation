@@ -130,6 +130,12 @@ See `parse.php` and `templates/` for working examples.
 
 Include search paths are set via `Parser::setIncludePaths()` or by configuring `Template` with `template_directory` and `module_directory`.
 
+For `@template(...)`, an existing empty layout is valid and renders empty output.
+If the layout cannot be read, rendering raises `RuntimeException` rather than
+silently treating that failure as empty content. The parser closes its owned
+file handle after either outcome. Callers that intentionally allow an absent
+layout should check or select their fallback before rendering.
+
 ## Quoted Attribute Interpolation
 
 Quoted attribute strings can interpolate scoped values with `[[...]]` placeholders.
