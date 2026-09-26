@@ -241,7 +241,7 @@ class FileSystem extends Data implements IData {
 		$root = $this->config('root') ?? $this->getSystemRoot();
 		$isAbsolutePath = Str::pos($path, DIRECTORY_SEPARATOR) === 0;
 		if (!$isAbsolutePath && Str::is($path)) {
-			$isAbsolutePath = preg_match('/^[A-Z]:\\\\/i', $path) === 1;
+			$isAbsolutePath = preg_match('~^[A-Z]:[\\\\/]~i', $path) === 1;
 		}
 		if ( $isAbsolutePath && Arr::is($info) ) {
 			$root = $info['dirname'] ?? $root;

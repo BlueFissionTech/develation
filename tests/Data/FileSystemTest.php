@@ -2,6 +2,7 @@
 namespace BlueFission\Tests\Data;
 
 use BlueFission\Arr;
+use BlueFission\Str;
 use BlueFission\Data\FileSystem;
 use BlueFission\Tests\Support\TestEnvironment;
 
@@ -207,6 +208,29 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$filesystem = new FileSystem($path);
 
 		$this->assertSame(['Ada', 'Grace'], $filesystem->lines());
+	}
+
+	public function testAbsolutePathsReadIdenticalBytesWithPortableSeparators()
+	{
+		$directory = $this->testdirectory.DIRECTORY_SEPARATOR.'path with spaces';
+		mkdir($directory);
+		$nativePath = $directory.DIRECTORY_SEPARATOR.'sample.txt';
+		$content = 'portable file contents';
+		file_put_contents($nativePath, $content);
+		$forwardDirectory = Str::replace($directory, '\\', '/');
+		$paths = [$nativePath, $forwardDirectory.'/sample.txt', $forwardDirectory.'/./sample.txt'];
+
+		foreach ($paths as $path) {
+			foreach ([true, false] as $constructorPath) {
+				$filesystem = $constructorPath ? new FileSystem($path) : new FileSystem();
+				try {
+					$constructorPath ? $filesystem->open() : $filesystem->open($path);
+					$this->assertSame($content, $filesystem->read()->contents(), $path);
+				} finally {
+					$filesystem->close();
+				}
+			}
+		}
 	}
 
 	public function testLinesCanSplitInMemoryContents()
