@@ -592,6 +592,36 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Replace matching keys with values from later arrays without merging nested values.
+     *
+     * Unlike merge(), numeric keys are overwritten rather than appended.
+     *
+     * @param array|Arr ...$arrays
+     * @return IVal
+     */
+    public function _replace(...$arrays): IVal
+    {
+        if (!$this->is($this->_data)) {
+            return $this;
+        }
+
+        $array = $this->_data;
+        foreach ($arrays as $arg) {
+            if ($arg instanceof Arr) {
+                $arg = $arg->toArray();
+            }
+
+            if (is_array($arg)) {
+                $array = array_replace($array, $arg);
+            }
+        }
+
+        $this->alter($array);
+
+        return $this;
+    }
+
+    /**
      * Recursively merge arrays using Arr::merge semantics.
      *
      * @param array $base
