@@ -57,7 +57,16 @@ class TemplateElement extends Element implements IRenderableElement
 
         $fs = new FileSystem();
         $file = $fs->open($directory . $templatePath);
-        $this->raw = Dev::apply('_in', $file->read()->contents() ?? '');
+        try {
+            $contents = $file->read()->contents();
+            if ($contents === null || $contents === false) {
+                throw new \RuntimeException(sprintf('Template "%s" could not be read.', $templatePath));
+            }
+
+            $this->raw = Dev::apply('_in', $contents);
+        } finally {
+            $file->close();
+        }
 
         $this->block->setContent($this->raw);
 

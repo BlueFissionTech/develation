@@ -2,6 +2,7 @@
 namespace BlueFission\Tests\Parsing;
 
 use BlueFission\Parsing\Parser;
+use BlueFission\Tests\Support\TestEnvironment;
 
 class TemplateSectionTest extends ParsingTestCase
 {
@@ -56,5 +57,36 @@ class TemplateSectionTest extends ParsingTestCase
         $output = $parser->render();
 
         $this->assertSame('Header:Hi World:Footer', $output);
+    }
+
+    public function testMissingTemplateReportsReadFailure()
+    {
+        $dir = TestEnvironment::tempDir('bf_missing_template');
+
+        try {
+            $parser = new Parser("@template('missing layout.vibe')");
+            $parser->setIncludePaths(['templates' => $dir]);
+
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessage('Template "missing layout.vibe" could not be read.');
+            $parser->render();
+        } finally {
+            TestEnvironment::removeDir($dir);
+        }
+    }
+
+    public function testEmptyTemplateIsNotAReadFailure()
+    {
+        $dir = TestEnvironment::tempDir('bf_empty_template');
+        file_put_contents($dir . DIRECTORY_SEPARATOR . 'empty layout.vibe', '');
+
+        try {
+            $parser = new Parser("@template('empty layout.vibe')");
+            $parser->setIncludePaths(['templates' => $dir]);
+
+            $this->assertSame('', $parser->render());
+        } finally {
+            TestEnvironment::removeDir($dir);
+        }
     }
 }
