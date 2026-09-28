@@ -4,6 +4,8 @@ namespace BlueFission\System\Tests;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\System\Process;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
 
 class ProcessTest extends \PHPUnit\Framework\TestCase
 {
@@ -68,6 +70,37 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame('failed', $process->output());
         $this->assertSame(7, $process->close());
+    }
+
+    public function testStartFailureDoesNotDiscloseCommandInLogOrErrorEvent(): void
+    {
+        $secret = 'synthetic-secret-argument-123';
+        $process = new class([PHP_BINARY, '--token=' . $secret]) extends Process {
+            protected function openProcess(array $descriptorSpec)
+            {
+                return false;
+            }
+        };
+        $events = [];
+        $process->when(Event::ERROR, function ($behavior, $meta) use (&$events): void {
+            $events[] = $meta;
+        });
+
+        $logFile = tempnam(sys_get_temp_dir(), 'bf_proc_log_');
+        $originalLog = ini_get('error_log');
+        try {
+            ini_set('error_log', $logFile);
+            $this->assertSame($process, $process->start());
+
+            $this->assertCount(1, $events);
+            $this->assertInstanceOf(Meta::class, $events[0]);
+            $this->assertSame('Error starting process', $events[0]->info);
+            $this->assertStringNotContainsString($secret, (string) file_get_contents($logFile));
+            $this->assertStringContainsString('Error starting process', (string) file_get_contents($logFile));
+        } finally {
+            ini_set('error_log', $originalLog);
+            @unlink($logFile);
+        }
     }
 
     private function waitForProcess(Process $process): void

@@ -185,7 +185,7 @@ class Process implements IDispatcher
             ];
         }
 
-        $this->_process = proc_open($this->_command, $descriptorSpec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
+        $this->_process = $this->openProcess($descriptorSpec);
         $this->trigger(Action::CONNECT);
 
         if (Ref::is($this->_process)) {
@@ -199,12 +199,21 @@ class Process implements IDispatcher
             }
             $this->trigger(Event::CONNECTED);
         } else {
-            $message = "Error starting process: " . $this->_command;
+            $message = "Error starting process";
             error_log($message);
             $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: $message));
         }
 
         return $this;
+    }
+
+    /**
+     * Open the configured process. Kept separate so start failures can be tested
+     * without executing a command or relying on platform-specific failure modes.
+     */
+    protected function openProcess(array $descriptorSpec)
+    {
+        return proc_open($this->_command, $descriptorSpec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
     }
 
     public function pipes($index = 1)
