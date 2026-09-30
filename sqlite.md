@@ -18,6 +18,28 @@ Common configuration keys:
 
 The class requires PHP's `SQLite3` extension. DevElation tests skip SQLite coverage automatically when that extension is unavailable.
 
+## Connection-Level Bound Queries
+
+`SQLiteLink::query($sql, $bindings)` prepares string SQL on the link's active
+connection when a second argument is supplied. Use a list for positional `?`
+placeholders or an associative array for named placeholders. A missing value,
+unsupported value type, or non-array binding argument fails with a diagnostic
+in `status()`; it does not execute the statement with implicit `NULL` values.
+The one-argument query form retains its existing behavior.
+
+```php
+use BlueFission\Connections\Database\SQLiteLink;
+
+$link = new SQLiteLink(['database' => __DIR__ . '/app.sqlite']);
+$link->open();
+$link->query('INSERT INTO items (label, count) VALUES (?, ?)', ["O'Reilly", 7]);
+$status = $link->status();
+$link->close();
+```
+
+Values may be strings, integers, floats, booleans, or `null`. The API does not
+bind table or column identifiers; those must come from trusted schema code.
+
 ## Result Materialization
 
 `read()` preserves the historical single-row behavior:
@@ -99,6 +121,14 @@ When explicit schema shape matters, use the storage structure helpers instead of
 - `BlueFission\Data\Storage\Structure\SQLiteField`
 - `BlueFission\Data\Storage\Structure\SQLiteScaffold`
 
+`SQLiteScaffold::create($entity, $processor, $link)` and
+`SQLiteScaffold::delete($entity, $link)` accept an already-open `SQLiteLink` as
+an optional final argument. The scaffold uses that connection without closing
+it or committing its owner's transaction. Callers retain responsibility for
+opening, closing, and transaction control. Omitting the link preserves the
+existing default selection. `SQLiteScaffold::alter()` is not implemented; do
+not use it as a migration operation.
+
 Application-level migrations, data backfills, indexes, and destructive schema changes remain outside the responsibility of `SQLite`.
 
 ## Tests
@@ -109,6 +139,7 @@ Relevant coverage:
 - `tests/Data/Storage/SQLiteAutoCreateTest.php`: auto-create type inference.
 - `tests/Data/Storage/Structure/SQLiteFieldTest.php`: explicit SQLite field definitions.
 - `tests/Connections/Database/SQLiteLinkTest.php`: connection-level table detection.
+- `tests/Data/Storage/Structure/SQLiteScaffoldTest.php`: borrowed connection isolation and transaction ownership.
 
 Run the focused suite with:
 
@@ -117,4 +148,5 @@ vendor/bin/phpunit --do-not-cache-result tests/Data/Storage/SQLiteTest.php
 vendor/bin/phpunit --do-not-cache-result tests/Data/Storage/SQLiteAutoCreateTest.php
 vendor/bin/phpunit --do-not-cache-result tests/Data/Storage/Structure/SQLiteFieldTest.php
 vendor/bin/phpunit --do-not-cache-result tests/Connections/Database/SQLiteLinkTest.php
+vendor/bin/phpunit --do-not-cache-result tests/Data/Storage/Structure/SQLiteScaffoldTest.php
 ```

@@ -93,6 +93,48 @@ class SQLiteLinkTest extends \PHPUnit\Framework\TestCase
         $this->assertStringContainsString('no such table', $link->status());
     }
 
+    public function testBoundQueryPreservesQuotedAndTypedValues(): void
+    {
+        [$database] = $this->databasePair();
+        $link = $this->linkFor($database);
+        $link->query('CREATE TABLE fixture (label TEXT, count INTEGER, enabled INTEGER, optional TEXT)');
+
+        $link->query(
+            'INSERT INTO fixture (label, count, enabled, optional) VALUES (?, ?, ?, ?)',
+            ["O'Reilly", 7, false, null]
+        );
+
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+        $row = $link->query('SELECT label, count, enabled, optional FROM fixture')->result()->fetchArray(SQLITE3_ASSOC);
+        $this->assertSame("O'Reilly", $row['label']);
+        $this->assertSame(7, $row['count']);
+        $this->assertSame(0, $row['enabled']);
+        $this->assertNull($row['optional']);
+    }
+
+    public function testNamedBindingsAndMissingValuesHaveExplicitOutcomes(): void
+    {
+        [$database] = $this->databasePair();
+        $link = $this->linkFor($database);
+        $link->query('CREATE TABLE fixture (label TEXT)');
+
+        $link->query('INSERT INTO fixture (label) VALUES (:label)', ['label' => 'named']);
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+
+        $link->query('INSERT INTO fixture (label) VALUES (?)', []);
+        $this->assertNotSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+
+        $link->query('INSERT INTO fixture (label) VALUES (?)', [['unsupported']]);
+        $this->assertNotSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+
+        $link->query('INSERT INTO fixture (label) VALUES (?)', null);
+        $this->assertNotSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+
+        $link->query('INSERT INTO fixture (label) VALUES (:label)', ['missing' => 'value']);
+        $this->assertNotSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+        $this->assertSame(1, $link->query('SELECT COUNT(*) AS total FROM fixture')->result()->fetchArray(SQLITE3_ASSOC)['total']);
+    }
+
     public function testClosingSharedLinkDoesNotInvalidatePeerAndCanReopen(): void
     {
         [$database] = $this->databasePair();

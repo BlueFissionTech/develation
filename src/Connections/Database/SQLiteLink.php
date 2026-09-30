@@ -133,9 +133,10 @@ class SQLiteLink extends Connection implements IConfigurable
      * Perform a query on the database
      *
      * @param string|array $query  The query to perform
+     * @param array|null $bindings Values to bind when supplied with a string query
      * @return IObj
      */
-    public function query($query = null): IObj
+    public function query($query = null, $bindings = null): IObj
     {
         $this->perform(State::PERFORMING_ACTION, new Meta(when: Action::PROCESS));
 
@@ -150,7 +151,9 @@ class SQLiteLink extends Connection implements IConfigurable
                     $this->_data = $query;
                 } elseif (Str::is($query)) {
                     try {
-                        $this->_result = $db->query($query);
+                        $this->_result = func_num_args() > 1
+                            ? $this->executePrepared($db, $query, $bindings)
+                            : $db->query($query);
                         $status = $this->_result !== false
                             ? self::STATUS_SUCCESS
                             : ($db->lastErrorMsg() ?: self::STATUS_FAILED);
@@ -187,6 +190,70 @@ class SQLiteLink extends Connection implements IConfigurable
         }
 
         return $this;
+    }
+
+    /**
+     * Execute a string query with positional or named values on the active connection.
+     * A supplied binding array must cover every placeholder so missing values cannot
+     * silently become SQLite NULL values.
+     */
+    protected function executePrepared(\SQLite3 $db, string $query, $bindings)
+    {
+        if (!Arr::is($bindings)) {
+            throw new \InvalidArgumentException('Query bindings must be an array.');
+        }
+
+        $statement = $db->prepare($query);
+        if ($statement === false) {
+            return false;
+        }
+
+        try {
+            if ($statement->paramCount() !== count($bindings)) {
+                throw new \InvalidArgumentException('Query binding count does not match placeholders.');
+            }
+
+            $positional = array_is_list($bindings);
+            $position = 0;
+            foreach ($bindings as $key => $value) {
+                if (!$positional && (!is_string($key) || $key === '')) {
+                    throw new \InvalidArgumentException('Named query bindings require string keys.');
+                }
+
+                $parameter = $positional
+                    ? ++$position
+                    : (in_array($key[0], [':', '@', '$'], true) ? $key : ':' . $key);
+
+                if (is_null($value)) {
+                    $type = SQLITE3_NULL;
+                } elseif (is_bool($value)) {
+                    $value = (int)$value;
+                    $type = SQLITE3_INTEGER;
+                } elseif (is_int($value)) {
+                    $type = SQLITE3_INTEGER;
+                } elseif (is_float($value)) {
+                    $type = SQLITE3_FLOAT;
+                } elseif (is_string($value)) {
+                    $type = SQLITE3_TEXT;
+                } else {
+                    throw new \InvalidArgumentException('Query bindings must be scalar values or null.');
+                }
+
+                if (!$statement->bindValue($parameter, $value, $type)) {
+                    throw new \RuntimeException('Unable to bind query value.');
+                }
+            }
+
+            $result = $statement->execute();
+            if ($result === false) {
+                $statement->close();
+            }
+
+            return $result;
+        } catch (\Throwable $exception) {
+            $statement->close();
+            throw $exception;
+        }
     }
 
     private function _read(): void
