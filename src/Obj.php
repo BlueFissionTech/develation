@@ -53,6 +53,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
     protected $_lockDataType = false;
 
     /**
+     * @var bool
+     */
+    protected $_immutable = false;
+
+    /**
      * Typed fields whose declared default is explicitly null.
      *
      * @var array<string, bool>
@@ -109,6 +114,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
     public function field(string $field, $value = null): mixed
     {
         if ( func_num_args() > 1 ) {
+			if ( $this->_immutable ) {
+                $this->trigger(Event::EXCEPTION);
+                throw new \Exception("Cannot modify field: object is immutable");
+            }
+			
             if ( $this->_lockDataType
                 && isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IVal ) {
@@ -171,12 +181,27 @@ class Obj implements IObj, IDispatcher, IBehavioral
         return $this;
     }
 
+	/**
+     * Gets the immutability state of the object.
+     * 
+     * @return bool
+     */
+    public function isImmutable(): bool
+    {
+        return $this->_immutable;
+    }
+
     /**
      * clear all the data of the object
      * @return IObj
      */
     public function clear(): IObj
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot clear: object is immutable");
+        }
+		
         foreach ( $this->_data as $key => &$value ) {
             if ( $value instanceof IVal ) {
                 $value->clear();
@@ -212,7 +237,12 @@ class Obj implements IObj, IDispatcher, IBehavioral
      * @throws InvalidArgumentException  If the data is not an object or associative array.
      */
     public function assign( $data ): IObj
-    {
+    {		
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot assign: object is immutable");
+        }
+
         if ( is_object( $data ) || Arr::isAssoc( $data ) ) {
             $this->dispatch( State::BUSY );
             foreach ( $data as $a=>$b ) {
@@ -293,7 +323,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
 
     public function __sleep()
     {
-		return ['_data', '_types', '_type', '_exposeValueObject', '_lockDataType'];
+		return ['_data', '_types', '_type', '_exposeValueObject', '_lockDataType', '_immutable'];
     }
 
     public function __wakeup()
