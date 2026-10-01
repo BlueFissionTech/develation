@@ -32,7 +32,6 @@ class SQLiteScaffold implements IScaffold
 
         if ($connection) {
             $connection->query($query);
-            print("Creating {$entity}. " . $connection->status(). "\n");
             return;
         }
 
@@ -64,7 +63,6 @@ class SQLiteScaffold implements IScaffold
         $query = "DROP TABLE IF EXISTS `{$entity}`";
         if ($connection) {
             $connection->query($query);
-            print("Dropping {$entity}. " . $connection->status(). "\n");
             return;
         }
 

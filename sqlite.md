@@ -124,10 +124,12 @@ When explicit schema shape matters, use the storage structure helpers instead of
 `SQLiteScaffold::create($entity, $processor, $link)` and
 `SQLiteScaffold::delete($entity, $link)` accept an already-open `SQLiteLink` as
 an optional final argument. The scaffold uses that connection without closing
-it or committing its owner's transaction. Callers retain responsibility for
-opening, closing, and transaction control. Omitting the link preserves the
-existing default selection. `SQLiteScaffold::alter()` is not implemented; do
-not use it as a migration operation.
+it or committing its owner's transaction. These borrowed-link calls write
+nothing to stdout; callers inspect the supplied link's `status()` after each
+call. Callers retain responsibility for opening, closing, and transaction
+control. Omitting the link preserves the existing default selection and
+console output. `SQLiteScaffold::alter()` is not implemented; do not use it as
+a migration operation.
 
 Application-level migrations, data backfills, indexes, and destructive schema changes remain outside the responsibility of `SQLite`.
 

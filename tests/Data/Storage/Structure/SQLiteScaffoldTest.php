@@ -48,14 +48,22 @@ class SQLiteScaffoldTest extends TestCase
             SQLiteScaffold::create('fixture', function (SQLiteStructure $structure): void {
                 $structure->text('label');
             }, $link);
+            $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
             $this->assertTrue(SQLiteLink::tableExists('fixture', $target));
             $this->assertFalse(SQLiteLink::tableExists('fixture', $other));
 
+            SQLiteScaffold::create('fixture', function (SQLiteStructure $structure): void {
+                $structure->text('label');
+            }, $link);
+            $this->assertNotSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+
             SQLiteScaffold::delete('fixture', $link);
+            $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
             $this->assertFalse(SQLiteLink::tableExists('fixture', $target));
             $this->assertSame($connection, $link->connection());
             $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->query('SELECT 1')->status());
             $this->assertSame(SQLiteLink::STATUS_CONNECTED, $otherLink->status());
+            $this->assertSame('', ob_get_contents());
         } finally {
             ob_end_clean();
         }
@@ -74,6 +82,7 @@ class SQLiteScaffoldTest extends TestCase
             SQLiteScaffold::create('fixture', function (SQLiteStructure $structure): void {
                 $structure->text('label');
             }, $link);
+            $this->assertSame('', ob_get_contents());
         } finally {
             ob_end_clean();
         }

@@ -5,6 +5,8 @@ namespace BlueFission\Connections\Database;
 use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Str;
+use BlueFission\Num;
+use BlueFission\Flag;
 use BlueFission\IObj;
 use BlueFission\Net\HTTP;
 use BlueFission\Connections\Connection;
@@ -209,31 +211,31 @@ class SQLiteLink extends Connection implements IConfigurable
         }
 
         try {
-            if ($statement->paramCount() !== count($bindings)) {
+            if ($statement->paramCount() !== Arr::count($bindings)) {
                 throw new \InvalidArgumentException('Query binding count does not match placeholders.');
             }
 
-            $positional = array_is_list($bindings);
+            $positional = Arr::isList($bindings);
             $position = 0;
             foreach ($bindings as $key => $value) {
-                if (!$positional && (!is_string($key) || $key === '')) {
+                if (!$positional && (!Str::is($key) || $key === '')) {
                     throw new \InvalidArgumentException('Named query bindings require string keys.');
                 }
 
                 $parameter = $positional
                     ? ++$position
-                    : (in_array($key[0], [':', '@', '$'], true) ? $key : ':' . $key);
+                    : (Arr::has([':', '@', '$'], $key[0], true) ? $key : ':' . $key);
 
-                if (is_null($value)) {
+                if (Val::isNull($value)) {
                     $type = SQLITE3_NULL;
-                } elseif (is_bool($value)) {
+                } elseif (Flag::isBool($value)) {
                     $value = (int)$value;
                     $type = SQLITE3_INTEGER;
-                } elseif (is_int($value)) {
+                } elseif (Num::isInt($value)) {
                     $type = SQLITE3_INTEGER;
-                } elseif (is_float($value)) {
+                } elseif (Num::isFloat($value)) {
                     $type = SQLITE3_FLOAT;
-                } elseif (is_string($value)) {
+                } elseif (Str::is($value)) {
                     $type = SQLITE3_TEXT;
                 } else {
                     throw new \InvalidArgumentException('Query bindings must be scalar values or null.');

@@ -72,6 +72,18 @@ class ArrTest extends ValTest {
 		$this->assertFalse($this->object->isAssoc());
 	}
 
+	public function testListPredicateUsesPhpListSemantics()
+	{
+		$this->assertTrue(Arr::isList([]));
+		$this->assertTrue(Arr::isList(['first', 'second']));
+		$this->assertFalse(Arr::isList([1 => 'second']));
+		$this->assertFalse(Arr::isList([1 => 'second', 0 => 'first']));
+		$this->assertFalse(Arr::isList(['name' => 'first']));
+		$this->assertFalse(Arr::isList('not an array'));
+		$this->assertTrue((new Arr(['first']))->isList());
+		$this->assertFalse((new Arr([2 => 'third']))->isList());
+	}
+
 	public function testAppendingWithAlphaOffset()
 	{
 		$this->object[] = 'Second Item';
