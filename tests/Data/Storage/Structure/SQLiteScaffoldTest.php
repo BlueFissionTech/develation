@@ -128,6 +128,50 @@ class SQLiteScaffoldTest extends TestCase
         $this->assertFalse(SQLiteLink::tableExists('fixture', $directory . DIRECTORY_SEPARATOR . 'transaction.sqlite'));
     }
 
+    public function testBorrowedDeleteCanBeRolledBackByHost(): void
+    {
+        $directory = TestEnvironment::tempDir('sqlite_scaffold');
+        $this->tempDirectories[] = $directory;
+        $database = $directory . DIRECTORY_SEPARATOR . 'delete_rollback.sqlite';
+        $link = $this->linkFor($database);
+        $connection = $link->connection();
+        $link->query('CREATE TABLE fixture (label TEXT)');
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+
+        $events = [];
+        $link->when(Event::DELETED, function ($behavior, $meta) use (&$events): void {
+            $this->assertInstanceOf(Meta::class, $meta);
+            $events[] = [
+                'event' => $behavior->name(),
+                'when' => $meta->when->name(),
+                'info' => $meta->info,
+                'data' => $meta->data,
+            ];
+        });
+
+        $this->assertTrue($connection->exec('BEGIN'));
+        ob_start();
+        try {
+            SQLiteScaffold::delete('fixture', $link);
+            $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+            $this->assertFalse(SQLiteLink::tableExists('fixture', $database));
+            $this->assertSame('', ob_get_contents());
+        } finally {
+            ob_end_clean();
+        }
+
+        $this->assertTrue($connection->exec('ROLLBACK'));
+        $this->assertTrue(SQLiteLink::tableExists('fixture', $database));
+        $this->assertSame($connection, $link->connection());
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->query('SELECT 1')->status());
+        $this->assertSame([[
+            'event' => Event::DELETED,
+            'when' => Action::DELETE,
+            'info' => SQLiteLink::STATUS_SUCCESS,
+            'data' => ['entity' => 'fixture', 'operation' => 'delete'],
+        ]], $events);
+    }
+
     private function linkFor(string $database): SQLiteLink
     {
         $link = new SQLiteLink(['database' => $database]);

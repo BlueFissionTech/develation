@@ -133,7 +133,9 @@ set to the link status, and `data` containing `entity` and `operation`.
 Observers can attach `when()` handlers to the supplied link before the call
 and format their own console output or structured migration log. Callers
 retain responsibility for opening, closing, and transaction
-control. Omitting the link preserves the existing default selection and
+control. Scaffold events report the operation's immediate result, not a
+transaction commit; observers must treat them as provisional until the owner
+commits or rolls back. Omitting the link preserves the existing default selection and
 console output. `SQLiteScaffold::alter()` is not implemented; do not use it as
 a migration operation.
 
