@@ -2,8 +2,12 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Obj;
+use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\DataTypes;
+use BlueFission\Behavioral\Configurable;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\State;
  
 class ObjTest extends \PHPUnit\Framework\TestCase {
  
@@ -174,6 +178,85 @@ class ObjTest extends \PHPUnit\Framework\TestCase {
 		$this->assertSame(['name' => 'Ada', 'role' => 'Engineer'], $this->object->toArray());
 		$this->assertSame('{"name":"Ada","role":"Engineer"}', $this->object->toJson());
 	}
+
+    public function testLockedBooleanDefaultCanBeOverriddenWithFalse(): void
+    {
+        $object = new class extends Obj {
+            protected $_data = ['preferred' => true];
+            protected $_types = ['preferred' => DataTypes::BOOLEAN];
+            protected $_lockDataType = true;
+        };
+
+        $this->assertTrue($object->preferred);
+        $this->assertSame($object, $object->assign(['preferred' => false]));
+        $this->assertFalse($object->preferred);
+        $object->field('preferred', true);
+        $object->preferred = false;
+        $this->assertFalse($object->preferred);
+    }
+
+    public function testImmutableObjRejectsPublicMutators(): void
+    {
+        $object = new ImmutableObjFixture();
+
+        foreach ([
+            fn () => $object->field('name', 'Grace'),
+            function () use ($object): void { $object->name = 'Grace'; },
+            fn () => $object->assign(['name' => 'Grace']),
+            fn () => $object->clear(),
+            fn () => $object->constraint(fn ($value) => $value),
+            function () use ($object): void { unset($object->name); },
+            fn () => $object->unserialize(serialize(['name' => 'Grace'])),
+        ] as $attempt) {
+            $this->assertImmutableMutationRejected($attempt);
+            $this->assertSame('Ada', $object->name);
+        }
+    }
+
+    public function testImmutableObjReturnsDetachedTopLevelSnapshots(): void
+    {
+        $object = new ImmutableObjFixture();
+        $data = $object->data();
+        $this->assertInstanceOf(Arr::class, $data);
+        $data['name'] = 'Grace';
+        $this->assertSame('Ada', $object->name);
+
+        $value = $object->exposeValueObject()->field('name');
+        $this->assertInstanceOf(Str::class, $value);
+        $value->val('Grace');
+        $this->assertSame('Ada', $object->field('name')->val());
+
+        $called = $object->name();
+        $this->assertInstanceOf(Str::class, $called);
+        $called->val('Lin');
+        $this->assertSame('Ada', $object->field('name')->val());
+    }
+
+    public function testImmutableObjRejectsBehavioralAndConfigurableWrites(): void
+    {
+        $object = new ImmutableObjFixture();
+        $object->when(Event::ACTION_PERFORMED, function () use ($object): void {
+            $object->field('name', 'Grace');
+        });
+        $this->assertImmutableMutationRejected(fn () => $object->trigger(Event::ACTION_PERFORMED));
+        $this->assertSame('Ada', $object->name);
+
+        $configurable = new ImmutableConfigurableObjFixture();
+        $configurable->perform(State::READONLY);
+        $this->assertImmutableMutationRejected(fn () => $configurable->field('name', 'Grace'));
+        $this->assertImmutableMutationRejected(fn () => $configurable->assign(['name' => 'Grace']));
+        $this->assertSame('Ada', $configurable->name);
+    }
+
+    private function assertImmutableMutationRejected(callable $attempt): void
+    {
+        try {
+            $attempt();
+            $this->fail('Expected immutable Obj to reject mutation.');
+        } catch (\Exception $exception) {
+            $this->assertStringContainsString('immutable', $exception->getMessage());
+        }
+    }
 }
 
 class NullableObjFixture extends Obj
@@ -185,4 +268,26 @@ class NullableObjFixture extends Obj
         'items' => DataTypes::ARRAY,
     ];
     protected $_lockDataType = true;
+}
+
+class ImmutableObjFixture extends Obj
+{
+    protected $_immutable = true;
+    protected $_data = ['name' => 'Ada'];
+    protected $_types = ['name' => DataTypes::STRING];
+}
+
+class ImmutableConfigurableObjFixture extends Obj
+{
+    use Configurable {
+        Configurable::__construct as private __configConstruct;
+    }
+
+    protected $_immutable = true;
+    protected $_data = ['name' => 'Ada'];
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
 }

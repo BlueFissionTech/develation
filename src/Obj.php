@@ -149,8 +149,10 @@ class Obj implements IObj, IDispatcher, IBehavioral
             return $this;
         } else {
             $value = $this->_data[$field] ?? null;
-            if ( $value instanceof IVal && $this->_exposeValueObject == false ) {
-                $value = $value->val();
+            if ( $value instanceof IVal ) {
+                $value = $this->_exposeValueObject
+                    ? ($this->_immutable ? $value->copy() : $value)
+                    : $value->val();
             }
         }
         return $value;
@@ -163,6 +165,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function constraint( callable $callable ): IObj
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot constrain: object is immutable");
+        }
+
         $this->_data->contraint( $callable );
 
         return $this;
@@ -222,6 +229,10 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function data(): mixed
     {
+        if ($this->_immutable) {
+            return Arr::make($this->toArray());
+        }
+
         if ($this->_data instanceof IVal) {
             return $this->_data->val();
         }
@@ -273,6 +284,10 @@ class Obj implements IObj, IDispatcher, IBehavioral
             $output = call_user_func_array(function() use ( $method ) {
                 return $this->_data[$method];
             }, $args);
+
+            if ($this->_immutable && $output instanceof IVal) {
+                $output = $output->copy();
+            }
             
             $this->trigger(Event::ACTION_PERFORMED);
 
@@ -318,6 +333,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function __unset( $field ): void
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot unset field: object is immutable");
+        }
+
         unset ( $this->_data[$field] );
     }
 
@@ -383,6 +403,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function unserialize($data): void
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot unserialize: object is immutable");
+        }
+
         $this->_data = unserialize($data);
     }
 }

@@ -228,6 +228,15 @@ object; the object should own the behavior.
 it, including `false`, `null`, `0`, `''`, or `[]`. Code that previously used
 `$object->field('name', null)` as a getter should omit the second argument.
 
+Subclasses may opt into shallow field immutability with `protected $_immutable =
+true`. Public Obj setters, assignment, clear, unset, constraint registration,
+and data deserialization then reject writes. `data()` and exposed `IVal`
+fields return detached top-level snapshots, so callers cannot mutate the
+object through those handles. Nested mutable objects are not deeply frozen;
+copy or constrain those values separately when their own state must be fixed.
+`Configurable` read-only state remains an independent configuration policy and
+does not bypass the immutable Obj guard.
+
 ### CLI utilities: args, tables, and progress
 
 ```php

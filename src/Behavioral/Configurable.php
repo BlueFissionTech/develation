@@ -6,6 +6,7 @@ use BlueFission\Val;
 use BlueFission\Arr;
 use BlueFission\Str;
 use BlueFission\IObj;
+use BlueFission\Obj;
 use BlueFission\Behavioral\Behaviors\Behavior;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\State;
@@ -150,6 +151,10 @@ trait Configurable
 
 
         if (func_num_args() > 1) {
+            if ($this instanceof Obj && $this->isImmutable()) {
+                return parent::field($field, $value);
+            }
+
             if (!$this->is(State::READONLY)) {
                 if ($this->is(State::DRAFT)) {
                     parent::field($field, $value);
@@ -182,6 +187,10 @@ trait Configurable
                     __TRAIT__
                 )
             );
+        }
+
+        if ($this instanceof Obj && $this->isImmutable()) {
+            return parent::assign($data);
         }
 
         if (is_object($data) || Arr::isAssoc($data)) {
