@@ -98,12 +98,12 @@ class Table extends Obj
         $new_row = 1;
 
         foreach ($content_r as $row) {
-            $rowSize = Arr::count($row);
+            $rowSize = Arr::size($row);
             $fields = ($fields != '' && $fields >= 0 && $fields < $rowSize) ? $fields : $rowSize;
 
             if ($count == 0) {
                 if ($header !== false) {
-                    $header = (Arr::is($header) && Arr::count($header) == $rowSize) ? $header : $row;
+                    $header = (Arr::is($header) && Arr::size($header) == $rowSize) ? $header : $row;
                     if (Arr::isAssoc($header)) {
                         $header = Arr::make($header)->keys()->val();
                     }

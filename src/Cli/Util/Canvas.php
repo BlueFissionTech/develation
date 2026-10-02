@@ -127,7 +127,7 @@ class Canvas extends Obj
 
         $prior = $previous->toLines();
         $diffs = [];
-        $max = (int)Num::max(Arr::count($current), Arr::count($prior));
+        $max = (int)Num::max(Arr::size($current), Arr::size($prior));
 
         for ($index = 0; $index < $max; $index++) {
             $line = $current[$index] ?? '';
@@ -144,7 +144,7 @@ class Canvas extends Obj
     {
         Dev::do('_before', [$this, $previous]);
         $diffs = $this->diffLines($previous);
-        if (Arr::count($diffs) === 0) {
+        if (Arr::size($diffs) === 0) {
             return '';
         }
 

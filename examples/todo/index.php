@@ -97,7 +97,7 @@ $viewData = [
 ];
 
 // Total count via Arr instance; append space so Template::field() does not treat zero as empty.
-$viewData['total_count'] = Arr::count($todosArr->val()) . ' ';
+$viewData['total_count'] = Arr::size($todosArr->val()) . ' ';
 
 $items = [];
 foreach ($todosArr->val() ?? [] as $todo) {
@@ -132,7 +132,7 @@ foreach ($todosArr->val() ?? [] as $todo) {
 
 // Use Arr pipeline for counting overdue tasks.
 $overdueItems = Arr::make($items)->filter(fn (array $item): bool => !Val::isEmpty($item['overdue']));
-$viewData['overdue_count'] = Arr::count($overdueItems->val()) . ' ';
+$viewData['overdue_count'] = Arr::size($overdueItems->val()) . ' ';
 
 // Build forms and table using DevElation HTML helpers.
 $addForm = '';

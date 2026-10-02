@@ -211,7 +211,7 @@ class SQLiteLink extends Connection implements IConfigurable
         }
 
         try {
-            if ($statement->paramCount() !== Arr::count($bindings)) {
+            if ($statement->paramCount() !== Arr::size($bindings)) {
                 throw new \InvalidArgumentException('Query binding count does not match placeholders.');
             }
 

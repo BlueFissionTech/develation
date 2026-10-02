@@ -426,7 +426,7 @@ class Schema extends Obj
     protected function callableArity(callable $callable): int
     {
         try {
-            return Arr::count(Func::make($callable)->expects());
+            return Arr::size(Func::make($callable)->expects());
         } catch (\Throwable $e) {
             return 1;
         }

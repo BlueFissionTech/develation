@@ -2,6 +2,9 @@
 
 namespace BlueFission\Data\Storage\Structure;
 
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Connections\Database\SQLiteLink;
 use BlueFission\Data\Storage\SQLite;
 
@@ -32,6 +35,16 @@ class SQLiteScaffold implements IScaffold
 
         if ($connection) {
             $connection->query($query);
+            $connection->perform(
+                $connection->status() === SQLiteLink::STATUS_SUCCESS
+                    ? Event::CREATED
+                    : [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(
+                    when: Action::CREATE,
+                    info: $connection->status(),
+                    data: ['entity' => $entity, 'operation' => 'create']
+                )
+            );
             return;
         }
 
@@ -63,6 +76,16 @@ class SQLiteScaffold implements IScaffold
         $query = "DROP TABLE IF EXISTS `{$entity}`";
         if ($connection) {
             $connection->query($query);
+            $connection->perform(
+                $connection->status() === SQLiteLink::STATUS_SUCCESS
+                    ? Event::DELETED
+                    : [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(
+                    when: Action::DELETE,
+                    info: $connection->status(),
+                    data: ['entity' => $entity, 'operation' => 'delete']
+                )
+            );
             return;
         }
 

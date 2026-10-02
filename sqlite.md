@@ -126,7 +126,13 @@ When explicit schema shape matters, use the storage structure helpers instead of
 an optional final argument. The scaffold uses that connection without closing
 it or committing its owner's transaction. These borrowed-link calls write
 nothing to stdout; callers inspect the supplied link's `status()` after each
-call. Callers retain responsibility for opening, closing, and transaction
+call. The link also dispatches `Event::CREATED` or `Event::DELETED` on success,
+or `Event::ACTION_FAILED` and `Event::FAILURE` on failure. Each scaffold event
+passes `Meta` with `when` set to `Action::CREATE` or `Action::DELETE`, `info`
+set to the link status, and `data` containing `entity` and `operation`.
+Observers can attach `when()` handlers to the supplied link before the call
+and format their own console output or structured migration log. Callers
+retain responsibility for opening, closing, and transaction
 control. Omitting the link preserves the existing default selection and
 console output. `SQLiteScaffold::alter()` is not implemented; do not use it as
 a migration operation.

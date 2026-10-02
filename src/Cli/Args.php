@@ -88,12 +88,12 @@ class Args extends Obj
         $definitions = $this->arrayValue($this->field('definitions'));
         $map = $this->buildOptionMap($definitions);
 
-        if (Arr::count($argv) > 0) {
+        if (Arr::size($argv) > 0) {
             $this->field('command', (string)array_shift($argv));
         }
 
         $index = 0;
-        $count = Arr::count($argv);
+        $count = Arr::size($argv);
         while ($index < $count) {
             $arg = $argv[$index];
             if ($arg === '--') {
@@ -258,7 +258,7 @@ class Args extends Obj
         $results = [];
         $letters = Str::make($chunk)->splitBy('//', -1, PREG_SPLIT_NO_EMPTY)->val();
 
-        if (Arr::count($letters) === 1) {
+        if (Arr::size($letters) === 1) {
             $letter = $letters[0];
             $definition = $map['short'][$letter] ?? null;
             if (!$definition) {

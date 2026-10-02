@@ -222,7 +222,7 @@ class GangGame
 
         $this->line('');
         $this->line('Recap of NPC actions:');
-        $this->line('Actions logged: ' . Arr::count($entries));
+        $this->line('Actions logged: ' . Arr::size($entries));
         foreach ($entries as $entry) {
             $this->line('- ' . $entry);
             $logger->push("gangs.npc: {$entry}");
