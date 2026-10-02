@@ -53,6 +53,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
     protected $_lockDataType = false;
 
     /**
+     * @var bool
+     */
+    protected $_immutable = false;
+
+    /**
      * Typed fields whose declared default is explicitly null.
      *
      * @var array<string, bool>
@@ -109,6 +114,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
     public function field(string $field, $value = null): mixed
     {
         if ( func_num_args() > 1 ) {
+			if ( $this->_immutable ) {
+                $this->trigger(Event::EXCEPTION);
+                throw new \Exception("Cannot modify field: object is immutable");
+            }
+			
             if ( $this->_lockDataType
                 && isset( $this->_data[$field] )
                 && $this->_data[$field] instanceof IVal ) {
@@ -139,8 +149,10 @@ class Obj implements IObj, IDispatcher, IBehavioral
             return $this;
         } else {
             $value = $this->_data[$field] ?? null;
-            if ( $value instanceof IVal && $this->_exposeValueObject == false ) {
-                $value = $value->val();
+            if ( $value instanceof IVal ) {
+                $value = $this->_exposeValueObject
+                    ? ($this->_immutable ? $value->copy() : $value)
+                    : $value->val();
             }
         }
         return $value;
@@ -153,6 +165,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function constraint( callable $callable ): IObj
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot constrain: object is immutable");
+        }
+
         $this->_data->contraint( $callable );
 
         return $this;
@@ -171,12 +188,27 @@ class Obj implements IObj, IDispatcher, IBehavioral
         return $this;
     }
 
+	/**
+     * Gets the immutability state of the object.
+     * 
+     * @return bool
+     */
+    public function isImmutable(): bool
+    {
+        return $this->_immutable;
+    }
+
     /**
      * clear all the data of the object
      * @return IObj
      */
     public function clear(): IObj
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot clear: object is immutable");
+        }
+		
         foreach ( $this->_data as $key => &$value ) {
             if ( $value instanceof IVal ) {
                 $value->clear();
@@ -197,6 +229,10 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function data(): mixed
     {
+        if ($this->_immutable) {
+            return Arr::make($this->toArray());
+        }
+
         if ($this->_data instanceof IVal) {
             return $this->_data->val();
         }
@@ -212,7 +248,12 @@ class Obj implements IObj, IDispatcher, IBehavioral
      * @throws InvalidArgumentException  If the data is not an object or associative array.
      */
     public function assign( $data ): IObj
-    {
+    {		
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot assign: object is immutable");
+        }
+
         if ( is_object( $data ) || Arr::isAssoc( $data ) ) {
             $this->dispatch( State::BUSY );
             foreach ( $data as $a=>$b ) {
@@ -243,6 +284,10 @@ class Obj implements IObj, IDispatcher, IBehavioral
             $output = call_user_func_array(function() use ( $method ) {
                 return $this->_data[$method];
             }, $args);
+
+            if ($this->_immutable && $output instanceof IVal) {
+                $output = $output->copy();
+            }
             
             $this->trigger(Event::ACTION_PERFORMED);
 
@@ -288,12 +333,17 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function __unset( $field ): void
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot unset field: object is immutable");
+        }
+
         unset ( $this->_data[$field] );
     }
 
     public function __sleep()
     {
-		return ['_data', '_types', '_type', '_exposeValueObject', '_lockDataType'];
+		return ['_data', '_types', '_type', '_exposeValueObject', '_lockDataType', '_immutable'];
     }
 
     public function __wakeup()
@@ -353,6 +403,11 @@ class Obj implements IObj, IDispatcher, IBehavioral
      */
     public function unserialize($data): void
     {
+        if ( $this->_immutable ) {
+            $this->trigger(Event::EXCEPTION);
+            throw new \Exception("Cannot unserialize: object is immutable");
+        }
+
         $this->_data = unserialize($data);
     }
 }
