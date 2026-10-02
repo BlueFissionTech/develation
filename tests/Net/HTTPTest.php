@@ -60,6 +60,26 @@ class HTTPTest extends TestCase {
         $this->assertSame(json_encode($payload), HTTP::jsonEncode($payload));
     }
 
+    public function testJsonEncodeAcceptsNativeFlagsWithoutChangingDefault() {
+        $payload = ['path' => 'assets/icon.svg'];
+
+        $this->assertSame('{"path":"assets\\/icon.svg"}', HTTP::jsonEncode($payload));
+        $this->assertSame(
+            json_encode($payload, JSON_UNESCAPED_SLASHES),
+            HTTP::jsonEncode($payload, JSON_UNESCAPED_SLASHES)
+        );
+    }
+
+    public function testJsonEncodePreservesNativeFailureAndFallbackFlagBoundary() {
+        $this->assertFalse(HTTP::jsonEncode("\xB1"));
+        $this->assertFalse(
+            $this->invokeStaticHttpMethod('jsonEncodeFallback', [
+                ['path' => 'assets/icon.svg'],
+                JSON_UNESCAPED_SLASHES,
+            ])
+        );
+    }
+
     public function testJsonEncodeFallbackHandlesListsObjectsAndEscapes() {
         $payload = [
             'title' => "Hello\nWorld",
