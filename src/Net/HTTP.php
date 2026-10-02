@@ -368,26 +368,30 @@ class HTTP {
 	 * Function to encode PHP variables as JSON string
 	 *
 	 * @param mixed $a
-	 * @return string
+	 * @param int $flags Native JSON encoding options.
+	 * @return string|false
 	 */
-	static function jsonEncode($a=false)
+	static function jsonEncode($a=false, int $flags=0)
 	{
 		if (function_exists('json_encode'))
 		{
-			return json_encode($a);
+			return json_encode($a, $flags);
 		}
 
-		return self::jsonEncodeFallback($a);
+		return self::jsonEncodeFallback($a, $flags);
 	}
 
 	/**
 	 * Encode values without relying on the native JSON extension.
 	 *
 	 * @param mixed $value
-	 * @return string
+	 * @param int $flags
+	 * @return string|false
 	 */
-	private static function jsonEncodeFallback($value): string
+	private static function jsonEncodeFallback($value, int $flags=0): string|false
 	{
+		if ($flags !== 0) return false;
+
 		if (Val::isNull($value)) return 'null';
 		if ($value === false) return 'false';
 		if ($value === true) return 'true';
