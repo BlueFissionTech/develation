@@ -674,6 +674,34 @@ class Num extends Val implements IVal {
         return max($this->numericValue($this->_data), $this->numericValue($number));
     }
 
+    /**
+     * Return this number within inclusive lower and upper bounds.
+     *
+     * @param mixed $lower The minimum allowed value.
+     * @param mixed $upper The maximum allowed value.
+     * @return float|int The bounded value without changing this Num.
+     * @throws \InvalidArgumentException For non-numeric values or reversed bounds.
+     */
+    public function _clamp(mixed $lower, mixed $upper): float|int
+    {
+        $value = $this->_data instanceof IVal ? $this->_data->val() : $this->_data;
+        $lower = $lower instanceof IVal ? $lower->val() : $lower;
+        $upper = $upper instanceof IVal ? $upper->val() : $upper;
+
+        if (!is_numeric($value) || !is_numeric($lower) || !is_numeric($upper)) {
+            throw new \InvalidArgumentException('Number and bounds must be numeric');
+        }
+
+        $value += 0;
+        $lower += 0;
+        $upper += 0;
+        if ($lower > $upper) {
+            throw new \InvalidArgumentException('Lower bound cannot exceed upper bound');
+        }
+
+        return min(max($value, $lower), $upper);
+    }
+
 	/**
 	 * Unwrap value objects and normalize numeric operands.
 	 *

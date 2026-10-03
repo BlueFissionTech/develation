@@ -64,6 +64,38 @@ class NumTest extends ValTest
         $this->assertFalse(Num::isDouble('2.5'));
     }
 
+    public function testClampUsesInclusiveBoundsWithoutMutatingTheNumber()
+    {
+        $number = new Num(5);
+
+        $this->assertSame(5, $number->clamp(0, 10));
+        $this->assertSame(5, $number->val());
+        $this->assertSame(0, Num::clamp(-2, 0, 10));
+        $this->assertSame(10, Num::clamp(12, 0, 10));
+        $this->assertSame(-2, Num::clamp(-2, -2, 3));
+        $this->assertSame(3, Num::clamp(3, -2, 3));
+        $this->assertSame(4, Num::clamp(8, 4, 4));
+        $this->assertSame(1.5, Num::clamp('1.5', Num::make(0), Num::make(2)));
+    }
+
+    public function testClampRejectsReversedBounds()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Num::clamp(5, 10, 0);
+    }
+
+    public function testClampRejectsNonNumericBounds()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Num::clamp(5, 0, 'invalid');
+    }
+
+    public function testClampRejectsNonNumericSource()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Num::clamp('invalid', 0, 10);
+    }
+
     public function testPercentageReturnsCorrectValue()
     {
         $this->assertEquals(0.058, $this->largeObject->percentage(5));
