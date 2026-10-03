@@ -633,6 +633,36 @@ class FileSystem extends Data implements IData {
 	}
 
 	/**
+	 * Advise whether an existing file, or the parent of a missing file, is writable.
+	 * This does not create a file or guarantee that a later write will succeed.
+	 *
+	 * @param string|null $path Concrete target file path.
+	 * @return bool
+	 */
+	public static function isWritable(?string $path): bool
+	{
+		if (Val::isNull($path) || $path === '') {
+			return (bool)Dev::apply('_out', false);
+		}
+
+		$path = Dev::apply('_in', $path);
+		if (!is_string($path) || $path === '') {
+			return (bool)Dev::apply('_out', false);
+		}
+
+		if (is_file($path)) {
+			$writable = is_writable($path);
+		} elseif (file_exists($path) || is_link($path)) {
+			$writable = false;
+		} else {
+			$parent = dirname($path);
+			$writable = is_dir($parent) && is_writable($parent);
+		}
+
+		return (bool)Dev::apply('_out', $writable);
+	}
+
+	/**
 	 * Read concrete file contents without initializing storage state.
 	 *
 	 * @param string|null $path

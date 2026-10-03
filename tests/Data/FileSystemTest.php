@@ -164,6 +164,41 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFileDoesNotExist($missing);
 	}
 
+	public function testStaticIsWritableChecksFilesAndMissingTargetsWithoutCreatingThem()
+	{
+		$directory = $this->testdirectory.DIRECTORY_SEPARATOR.'path with spaces';
+		mkdir($directory);
+		$existing = $directory.DIRECTORY_SEPARATOR.'existing file.txt';
+		$missing = $directory.DIRECTORY_SEPARATOR.'missing file.txt';
+		$missingParent = $directory.DIRECTORY_SEPARATOR.'missing parent';
+		file_put_contents($existing, 'unchanged');
+
+		$this->assertTrue(FileSystem::isWritable($existing));
+		$this->assertTrue(FileSystem::isWritable($missing));
+		$this->assertFalse(FileSystem::isWritable($missingParent.DIRECTORY_SEPARATOR.'file.txt'));
+		$this->assertFalse(FileSystem::isWritable($directory));
+		$this->assertFalse(FileSystem::isWritable(null));
+		$this->assertFalse(FileSystem::isWritable(''));
+		$this->assertSame('unchanged', file_get_contents($existing));
+		$this->assertFileDoesNotExist($missing);
+		$this->assertDirectoryDoesNotExist($missingParent);
+	}
+
+	public function testStaticIsWritableFollowsPlatformReadOnlyResult()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'read only.txt';
+		file_put_contents($path, 'unchanged');
+		chmod($path, 0444);
+		clearstatcache(true, $path);
+
+		try {
+			$this->assertSame(is_writable($path), FileSystem::isWritable($path));
+			$this->assertSame('unchanged', file_get_contents($path));
+		} finally {
+			chmod($path, 0666);
+		}
+	}
+
 	public function testStaticFileContentsReadsConcretePathWithoutConstructingStorage()
 	{
 		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'contents.txt';
