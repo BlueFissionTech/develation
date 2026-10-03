@@ -1017,6 +1017,33 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Sum numeric array values without changing the source array.
+     *
+     * Numeric strings follow PHP's numeric conversion rules. Unlike
+     * array_sum(), non-numeric entries are rejected instead of ignored.
+     *
+     * @return int|float The total, or zero for an empty array.
+     * @throws \InvalidArgumentException When an entry is not numeric.
+     */
+    public function _sum(): int|float
+    {
+        if (!$this->is($this->_data)) {
+            return 0;
+        }
+
+        $total = 0;
+        foreach ($this->_data as $value) {
+            if (!is_int($value) && !is_float($value) && !(is_string($value) && is_numeric($value))) {
+                throw new \InvalidArgumentException('Array summation requires numeric values');
+            }
+
+            $total += $value;
+        }
+
+        return $total;
+    }
+
+    /**
      * Remove duplicate values from an array as a reference
      * @return IVal
      */
