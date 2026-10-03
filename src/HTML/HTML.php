@@ -238,7 +238,7 @@ class HTML
     {
         $output = '';
         $chapters = Arr::make([]);
-        $count = Num::is($list_r) ? $list_r : Arr::count($list_r);
+        $count = Num::is($list_r) ? $list_r : Arr::size($list_r);
         $list_r = (Arr::is($list_r) && ($count) <= 0) ? [] : $list_r;
         $href = HTML::href($href);
 

@@ -489,7 +489,7 @@ class Collection implements ICollection, ArrayAccess, IteratorAggregate {
 	 * @return mixed The randomly selected value from the array.
 	 */
 	public function rand() {
-		if (Arr::count($this->_value->getArrayCopy()) == 0) {
+		if (Arr::size($this->_value->getArrayCopy()) == 0) {
 			return null;
 		}
     	$rand = array_rand( $this->_value->getArrayCopy() );

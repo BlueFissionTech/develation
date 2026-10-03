@@ -65,7 +65,7 @@ class AdditionalTagsTest extends ParsingTestCase
 
         $this->assertStringContainsString('Hello World!', $output);
         $this->assertStringContainsString('Hello Codex!', $output);
-        $this->assertSame(1, Arr::count(Str::split($output, 'Hello World!')) - 1);
+        $this->assertSame(1, Arr::size(Str::split($output, 'Hello World!')) - 1);
     }
 
     public function testFunctionDescriptionUsesAssignedName()

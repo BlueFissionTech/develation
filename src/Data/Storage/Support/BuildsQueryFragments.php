@@ -18,7 +18,7 @@ trait BuildsQueryFragments
      */
     protected function innerJoinClause(array $tables, array $conditions): string
     {
-        if (Arr::count($tables) <= 1) {
+        if (Arr::size($tables) <= 1) {
             return '';
         }
 

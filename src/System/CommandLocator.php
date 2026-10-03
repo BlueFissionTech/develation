@@ -149,7 +149,7 @@ class CommandLocator
 
     protected static function matchExecutable(string $candidateBase, array $extensions, bool $hasExtension): ?string
     {
-        if ($hasExtension || Arr::count($extensions) === 0) {
+        if ($hasExtension || Arr::size($extensions) === 0) {
             return self::resolvePath($candidateBase);
         }
 

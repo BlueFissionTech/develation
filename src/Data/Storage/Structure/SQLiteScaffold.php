@@ -2,6 +2,10 @@
 
 namespace BlueFission\Data\Storage\Structure;
 
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
+use BlueFission\Connections\Database\SQLiteLink;
 use BlueFission\Data\Storage\SQLite;
 
 /**
@@ -16,8 +20,9 @@ class SQLiteScaffold implements IScaffold
      *
      * @param string $entity The name of the table to be created.
      * @param callable $processor The function used to configure the structure of the table.
+     * @param SQLiteLink|null $connection An already-open connection borrowed from its owner.
      */
-    public static function create($entity, callable $processor)
+    public static function create($entity, callable $processor, ?SQLiteLink $connection = null)
     {
 
         $refFunction = new \ReflectionFunction($processor);
@@ -27,6 +32,21 @@ class SQLiteScaffold implements IScaffold
         $structure = new $type($entity);
         call_user_func_array($processor, [$structure]);
         $query = $structure->build();
+
+        if ($connection) {
+            $connection->query($query);
+            $connection->perform(
+                $connection->status() === SQLiteLink::STATUS_SUCCESS
+                    ? Event::CREATED
+                    : [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(
+                    when: Action::CREATE,
+                    info: $connection->status(),
+                    data: ['entity' => $entity, 'operation' => 'create']
+                )
+            );
+            return;
+        }
 
         $sqlite = new SQLite(['location' => null, 'name' => $entity]);
         $sqlite->activate();
@@ -49,10 +69,26 @@ class SQLiteScaffold implements IScaffold
      * Deletes an existing SQLite table using the entity name.
      *
      * @param string $entity The name of the table to be deleted.
+     * @param SQLiteLink|null $connection An already-open connection borrowed from its owner.
      */
-    public static function delete($entity)
+    public static function delete($entity, ?SQLiteLink $connection = null)
     {
         $query = "DROP TABLE IF EXISTS `{$entity}`";
+        if ($connection) {
+            $connection->query($query);
+            $connection->perform(
+                $connection->status() === SQLiteLink::STATUS_SUCCESS
+                    ? Event::DELETED
+                    : [Event::ACTION_FAILED, Event::FAILURE],
+                new Meta(
+                    when: Action::DELETE,
+                    info: $connection->status(),
+                    data: ['entity' => $entity, 'operation' => 'delete']
+                )
+            );
+            return;
+        }
+
         $sqlite = new SQLite(['location' => null, 'name' => $entity]);
         $sqlite->activate();
         $sqlite->run($query);

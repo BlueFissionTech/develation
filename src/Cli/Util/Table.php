@@ -28,10 +28,10 @@ class Table extends Obj
         $padding = $options->hasKey('padding') ? (int)$options['padding'] : 1;
         $align = Arr::make($options->hasKey('align') ? (array)$options['align'] : []);
 
-        $rowCount = Arr::count($rows);
-        $colCount = Arr::count($headers);
+        $rowCount = Arr::size($rows);
+        $colCount = Arr::size($headers);
         for ($i = 0; $i < $rowCount; $i++) {
-            $colCount = (int)Num::max($colCount, Arr::count($rows[$i]));
+            $colCount = (int)Num::max($colCount, Arr::size($rows[$i]));
         }
 
         $headers = self::normalizeRow($headers, $colCount);

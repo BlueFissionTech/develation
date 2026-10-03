@@ -99,7 +99,7 @@ $items = Arr::make($threadsArr->get('main') ?? [])
     })
     ->val();
 
-$count = Arr::count($items);
+$count = Arr::size($items);
 // Append space so Template::field() does not treat zero as empty.
 $viewData['comment_count'] = $count . ' ';
 $viewData['comment_label'] = Str::pluralize('comment');

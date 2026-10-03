@@ -282,6 +282,18 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Check for a zero-based array with consecutive integer keys in insertion order.
+     * Unlike isIndexed(), this follows PHP's array_is_list semantics, including
+     * treating an empty array as a list.
+     *
+     * @return bool
+     */
+    public function _isList(): bool
+    {
+        return is_array($this->_data) && array_is_list($this->_data);
+    }
+
+    /**
      * check if the array is numerically indexed
      * @return bool
      */

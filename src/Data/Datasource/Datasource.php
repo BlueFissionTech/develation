@@ -118,7 +118,7 @@ class Datasource extends Data implements IData
     private function inbounds($index = null)
     {
         $index = Num::isValid($index) ? $index : $this->_index;
-        return ($index <= Arr::count($this->_collection) && $index >= 0);
+        return ($index <= Arr::size($this->_collection) && $index >= 0);
     }
 
     /**

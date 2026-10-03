@@ -72,7 +72,7 @@ $console->writeln($console->table(['Item', 'Status'], $rows, [
 
 $status = new StatusBar();
 $status
-    ->set('total', (string)Arr::count($rows))
+    ->set('total', (string)Arr::size($rows))
     ->set('mode', 'demo')
     ->set('date', Date::formatTimestamp(time()));
 $console->writeln($status->render());

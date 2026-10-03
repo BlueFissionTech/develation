@@ -940,7 +940,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		} elseif ( Val::isNotNull($reference) ) {
 			$service->type = $reference;	
 			$service->scope = $this;
-			if ( is_subclass_of($reference, Service::class) && Arr::count($args) == 0 ) {
+			if ( is_subclass_of($reference, Service::class) && Arr::size($args) == 0 ) {
 				$service->instance = $this->resolve($reference);
 			}
 		} else {

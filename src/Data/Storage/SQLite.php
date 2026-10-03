@@ -305,7 +305,7 @@ class SQLite extends Storage implements IData
 
                     if ($this->config('auto_join')) {
 
-                        for ($i = $count; $i < Arr::count($tables); $i++) {
+                        for ($i = $count; $i < Arr::size($tables); $i++) {
                             $b = $tables[$i];
                             if ($a != $b) {
                                 $join_2 = $this->table($b);
@@ -533,7 +533,7 @@ class SQLite extends Storage implements IData
                         }
                     }
 
-                    for ($i = $count; $i < Arr::count($tables); $i++) {
+                    for ($i = $count; $i < Arr::size($tables); $i++) {
                         $b = $tables[$i];
                         if ($a != $b) {
                             $join_2 = $this->table($b);

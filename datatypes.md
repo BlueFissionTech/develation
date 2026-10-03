@@ -163,6 +163,12 @@ Here, the `trim()` and `lower()` methods replace the need for `trim($input)` and
 
 Similarly, for arrays, instead of PHP's array functions, you can use methods provided by the `Arr` class:
 
+`Arr::isList($value)` and `$array->isList()` use PHP list semantics: an empty
+array or a zero-based, consecutive sequence is a list; sparse, reordered, and
+associative keys are not. `values()` reindexes an array rather than checking
+whether the original keys already form a list. `keys()` returns the existing
+keys without changing them.
+
 ```php
 $array = Arr::make([1, 2, 3, 4, 5]);
 

@@ -64,7 +64,7 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 
 		$dir = $this->object->listDir();
 
-		$this->assertTrue(Arr::count($dir) > 0);
+		$this->assertTrue(Arr::size($dir) > 0);
 	}
 
 	public function testCanCreateNestedDirectoryRecursively()
