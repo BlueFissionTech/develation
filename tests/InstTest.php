@@ -22,6 +22,18 @@ class InstTest extends TestCase
         $this->assertSame($value, $inst->val());
     }
 
+    public function testFactoryUsesRefForResources(): void
+    {
+        $handle = fopen('php://memory', 'w+');
+        try {
+            $ref = ValFactory::make(DataTypes::RESOURCE, $handle);
+            $this->assertInstanceOf(Ref::class, $ref);
+            $this->assertSame($handle, $ref->val());
+        } finally {
+            fclose($handle);
+        }
+    }
+
     public function testInstBuildsAnEmptyObjectWhenNoInputIsProvided(): void
     {
         $inst = Inst::make();
@@ -84,5 +96,27 @@ class InstTest extends TestCase
             }
             $this->assertTrue($rejected);
         }
+    }
+
+    public function testDeclaredNullableObjectFieldCanReturnToNull(): void
+    {
+        $obj = new class extends Obj {
+            protected $_data = ['payload' => null];
+            protected $_types = ['payload' => DataTypes::OBJECT];
+            protected $_lockDataType = true;
+        };
+
+        $this->assertNull($obj->payload);
+        $value = (object)['name' => 'Ada'];
+        $obj->payload = $value;
+        $this->assertSame($value, $obj->payload);
+        $obj->field('payload', null);
+        $this->assertNull($obj->payload);
+
+        $obj->field('payload', $value);
+        $field = $obj->exposeValueObject()->field('payload');
+        $this->assertInstanceOf(Inst::class, $field);
+        $field->reset();
+        $this->assertNull($field->val());
     }
 }

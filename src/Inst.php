@@ -78,14 +78,6 @@ class Inst extends Val implements IVal
         return $this->_data;
     }
 
-    public function clear(): IVal
-    {
-        $this->_data = new \stdClass();
-        $this->trigger(Event::CHANGE);
-
-        return $this;
-    }
-
     /**
      * Convert the wrapped instance into an Obj.
      */
@@ -100,28 +92,4 @@ class Inst extends Val implements IVal
         return $obj;
     }
 
-    public function ref(&$value): IVal
-    {
-        if ($value instanceof Ref) {
-            $value = $value->val();
-        }
-
-        if (is_array($value)) {
-            $value = (object) $value;
-        }
-
-        if (is_string($value) && trim($value) !== '') {
-            $decoded = json_decode($value);
-            if (json_last_error() === JSON_ERROR_NONE && is_object($decoded)) {
-                $value = $decoded;
-            } else {
-                $value = new \stdClass();
-            }
-        }
-
-        $this->alter($value);
-        $this->_data = &$value;
-
-        return $this;
-    }
 }
