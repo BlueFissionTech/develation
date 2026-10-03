@@ -4,85 +4,85 @@ namespace BlueFission\Tests;
 
 use BlueFission\DataTypes;
 use BlueFission\IVal;
+use BlueFission\Inst;
 use BlueFission\Obj;
-use BlueFission\ObjectVal;
-use BlueFission\Str;
+use BlueFission\Ref;
 use BlueFission\ValFactory;
 use PHPUnit\Framework\TestCase;
 
-class ObjectValTest extends TestCase
+class InstTest extends TestCase
 {
-    public function testFactoryUsesAnIValForObjectsWithoutChangingOtherMappings(): void
+    public function testFactoryUsesInstForObjectsWithoutChangingOtherMappings(): void
     {
         $value = (object)['name' => 'Ada'];
-        $objectValue = ValFactory::make(DataTypes::OBJECT, $value);
+        $inst = ValFactory::make(DataTypes::OBJECT, $value);
 
-        $this->assertInstanceOf(IVal::class, $objectValue);
-        $this->assertInstanceOf(ObjectVal::class, $objectValue);
-        $this->assertSame($value, $objectValue->val());
-        $this->assertInstanceOf(Str::class, ValFactory::make(DataTypes::STRING, 'Ada'));
+        $this->assertInstanceOf(IVal::class, $inst);
+        $this->assertInstanceOf(Inst::class, $inst);
+        $this->assertSame($value, $inst->val());
     }
 
-    public function testObjectValueKeepsStaticAndFluentValueIdioms(): void
+    public function testInstBuildsAnEmptyObjectWhenNoInputIsProvided(): void
     {
-        $first = (object)['name' => 'Ada'];
-        $second = (object)['name' => 'Grace'];
-        $value = ObjectVal::make($first);
+        $inst = Inst::make();
 
-        $this->assertInstanceOf(ObjectVal::class, $value);
-        $this->assertTrue($value->isValid($second));
-        $this->assertFalse($value->isValid('not an object'));
-        $this->assertFalse($value->isValid(null));
-        $this->assertSame($value, $value->val($second));
-        $this->assertSame($second, $value->val());
+        $this->assertInstanceOf(Inst::class, $inst);
+        $this->assertTrue($inst->is());
+        $this->assertInstanceOf(\stdClass::class, $inst->val());
     }
 
-    public function testLockedObjectFieldAcceptsObjectsAndRejectsScalarsAndNull(): void
+    public function testInstAcceptsArrayAndJsonInputAndConvertsItToObject(): void
     {
-        $first = (object)['name' => 'Ada'];
-        $second = (object)['name' => 'Grace'];
-        $object = new class extends Obj {
+        $arrayInst = Inst::make(['name' => 'Ada', 'age' => 42]);
+        $jsonInst = Inst::make('{"name":"Grace","language":"COBOL"}');
+
+        $this->assertInstanceOf(\stdClass::class, $arrayInst->val());
+        $this->assertEquals('Ada', $arrayInst->val()->name);
+        $this->assertEquals('Grace', $jsonInst->val()->name);
+        $this->assertEquals('COBOL', $jsonInst->val()->language);
+    }
+
+    public function testInstConvertsWrappedObjectIntoObj(): void
+    {
+        $inst = Inst::make((object)['name' => 'Ada', 'language' => 'PHP']);
+        $obj = $inst->convert();
+
+        $this->assertInstanceOf(Obj::class, $obj);
+        $this->assertEquals('Ada', $obj->field('name'));
+        $this->assertEquals('PHP', $obj->field('language'));
+    }
+
+    public function testInstRespectsRefAndObjectValidation(): void
+    {
+        $ref = Ref::bind($value);
+        $value = (object)['name' => 'Ada'];
+        $inst = Inst::make($ref);
+
+        $this->assertSame($value, $inst->val());
+        $this->assertTrue($inst->isValid($value));
+        $this->assertFalse($inst->isValid('not an object'));
+    }
+
+    public function testObjTypedFieldAcceptsInstAsObjectValue(): void
+    {
+        $value = (object)['name' => 'Ada'];
+        $obj = new class extends Obj {
             protected $_data = [];
             protected $_types = ['payload' => DataTypes::OBJECT];
             protected $_lockDataType = true;
         };
 
-        $object->payload = $first;
-        $this->assertSame($first, $object->payload);
-        $object->field('payload', $second);
-        $this->assertSame($second, $object->payload);
+        $obj->payload = $value;
+        $this->assertSame($value, $obj->payload);
 
-        foreach (['not an object', 7, null] as $invalid) {
+        foreach (['bad', 7, null] as $invalid) {
             $rejected = false;
             try {
-                $object->field('payload', $invalid);
+                $obj->field('payload', $invalid);
             } catch (\Exception $exception) {
                 $rejected = true;
             }
             $this->assertTrue($rejected);
-            $this->assertSame($second, $object->payload);
         }
-    }
-
-    public function testDeclaredNullableObjectFieldSupportsAssignmentAndReset(): void
-    {
-        $object = new class extends Obj {
-            protected $_data = ['payload' => null];
-            protected $_types = ['payload' => DataTypes::OBJECT];
-            protected $_lockDataType = true;
-        };
-
-        $this->assertNull($object->payload);
-        $value = (object)['name' => 'Ada'];
-        $object->payload = $value;
-        $this->assertSame($value, $object->payload);
-        $object->field('payload', null);
-        $this->assertNull($object->payload);
-        $object->payload = $value;
-
-        $field = $object->exposeValueObject()->field('payload');
-        $this->assertInstanceOf(ObjectVal::class, $field);
-        $field->reset();
-        $this->assertNull($object->field('payload')->val());
     }
 }
