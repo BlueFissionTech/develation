@@ -336,7 +336,7 @@ Inside `#each`, the current item is available as a scoped `current` value, so `{
 
 ## Usage
 
-Install DevElation with Composer:
+DevElation requires PHP 8.2 or newer. Install the library with Composer:
 
 ```bash
 composer require bluefission/develation
@@ -363,6 +363,18 @@ The canonical source repository is [`BlueFissionTech/develation`](https://github
 git clone https://github.com/BlueFissionTech/develation.git
 ```
 
+For package scope and planned work, see [SPEC.md](SPEC.md) and
+[roadmap.md](roadmap.md). The [examples](examples/README.md) show runnable
+usage, while [tests.md](tests.md) separates the provider-free test baseline
+from optional integration setup. Optional service extensions are not required
+for a basic Composer installation.
+
 ## Contributions
 
 DevElation welcomes contributions from the open-source community. Whether you're a seasoned developer or just starting, your input is valued. If you have ideas on how to expand the library's capabilities, especially in areas of automation, smart technologies, and AI, please consider contributing.
+
+Before proposing a change, check the [coding standards](coding_standards.md),
+add focused tests for changed behavior, and run the relevant suite with
+`vendor/bin/phpunit --do-not-cache-result`. See [tests.md](tests.md) for
+optional integration prerequisites; keep those checks opt-in. DevElation is
+licensed under the [MIT license](LICENSE).
