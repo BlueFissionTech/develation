@@ -47,6 +47,7 @@ A collection of wrapper classes around PHP's primitive data types that offer enh
 - [Ref Primitive Documentation](ref.md)
 - [DevElation Capability Surface](capability_surface.md)
 - [Usage Readiness Checklist](usage_readiness_checklist.md)
+- [Runtime and Extension Benchmark Matrix](runtime_benchmarks.md)
 
 Static helpers: most `Val`/`Obj`-based classes expose their underscored instance helpers as static shorthand. For example, `Str` has an internal `_pluralize()` instance method which can be invoked statically via `Str::pluralize('comment')` thanks to `Val::__callStatic`. This pattern is used throughout the library and examples.
 
