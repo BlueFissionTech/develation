@@ -45,6 +45,26 @@ class ArrTest extends ValTest {
 		$this->assertSame(0, static::$classname::count());
 	}
 
+	public function testSumSupportsNumericValuesWithoutChangingTheArray()
+	{
+		$values = ['first' => 2, 'second' => '3', 'third' => 1.5];
+		$object = new Arr($values);
+
+		$this->assertSame(6.5, $object->sum());
+		$this->assertSame(6.5, Arr::sum($values));
+		$this->assertSame($values, $object->val());
+		$this->assertSame(6, Arr::sum([1, 2, 3]));
+		$this->assertSame(3.5, Arr::sum(['2.5', 1]));
+		$this->assertSame(0, Arr::sum([]));
+		$this->assertSame(0, (new Arr([]))->sum());
+	}
+
+	public function testSumRejectsNonNumericEntries()
+	{
+		$this->expectException(\InvalidArgumentException::class);
+		Arr::sum([1, 'not numeric']);
+	}
+
 	public function testAppendingWithBlankOffset()
 	{
 		$this->object[] = 'Second Item';
