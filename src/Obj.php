@@ -90,6 +90,7 @@ class Obj implements IObj, IDispatcher, IBehavioral
             $item = Factory::make($type, $this->_data[$field] ?? null);
             if ( isset($declaredNullableFields[$field]) ) {
                 $item->clear();
+                $item->clearSnapshot()->snapshot();
             }
 
             $this->_data[$field] = $item;

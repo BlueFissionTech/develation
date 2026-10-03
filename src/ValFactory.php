@@ -47,7 +47,10 @@ class ValFactory
                 $class = '\BlueFission\Arr';
                 break;
             case DataTypes::OBJECT->value:
-                $class = '\BlueFission\Obj';
+                $class = '\BlueFission\Inst';
+                break;
+            case DataTypes::RESOURCE->value:
+                $class = '\BlueFission\Ref';
                 break;
             case DataTypes::CALLABLE->value:
                 $class = '\BlueFission\Func';

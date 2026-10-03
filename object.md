@@ -39,6 +39,12 @@ assignment. A typed field listed only in `_types` has no declared null default
 and still rejects null when type locking is enabled. This rule does not change
 the validation of fields supplied as their own `IVal` objects.
 
+`DataTypes::OBJECT` fields use `Inst`, a typed `IVal` wrapper rather than
+another `Obj`. With type locking enabled, they accept PHP objects and reject
+scalars. A declared `null` default makes the field nullable under the same rule
+above. `Inst` carries the object reference; it does not clone or freeze the
+object graph.
+
 ## Methods
 
 ### field

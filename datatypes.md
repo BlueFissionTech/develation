@@ -45,8 +45,15 @@ The core purpose of these wrapper classes is to provide a structured, object-ori
 - `Num`: Specialized class for numeric values.
 - `Str`: Specialized class for string values.
 - `Arr`: Specialized class for array values.
+- `Inst`: Wrapper for a PHP object instance, distinct from the dynamic `Obj` structure.
+- `Ref`: Wrapper for a resource or bound reference.
 
 Typed fields in `Obj` use the `DataTypes` enum to determine how values are cast and exposed. That means you can declare a field as `DataTypes::STRING` and the field behaves like a `Str` value object when `_exposeValueObject` is enabled.
+
+`ValFactory::make(DataTypes::OBJECT, $value)` creates an `Inst`. The existing
+`DataTypes::RESOURCE` case creates a `Ref`; reference handling remains with
+`Ref`, not `Inst`. `Inst` can wrap an object or convert supported array and JSON
+object inputs, and `convert()` creates a separate dynamic `Obj` structure.
 
 ## Key Methods
 
