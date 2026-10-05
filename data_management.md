@@ -28,6 +28,24 @@ $store->assign($payload);
 $store->write();
 ```
 
+## Bounded Local File Reads
+
+Use `FileSystem::fileContentsBounded($path, $maxBytes)` when untrusted local file
+size must be capped. It reads raw bytes from an existing regular file with `rb`,
+never creates a path, and checks the limit while reading; it does not apply
+content filters that could expand the result. An empty file is valid with a
+zero-byte limit. Missing or unreadable files raise `RuntimeException`,
+directories raise `UnexpectedValueException`, stream-wrapper paths or invalid
+limits raise `InvalidArgumentException`, and an oversized file raises
+`LengthException`. The older `fileContents()` call remains unbounded for
+compatibility.
+
+```php
+use BlueFission\Data\FileSystem;
+
+$document = FileSystem::fileContentsBounded($path, 1024 * 1024);
+```
+
 ## Schema Validation
 
 `BlueFission\Data\Schema` lets you define typed fields, cast input, and validate structured data.
