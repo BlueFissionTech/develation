@@ -229,6 +229,16 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		FileSystem::fileContentsBounded($path, 5);
 	}
 
+	public function testBoundedFileContentsMeasuresBytesNotCharacters()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'unicode.txt';
+		file_put_contents($path, "\xc3\xa9");
+
+		$this->assertSame("\xc3\xa9", FileSystem::fileContentsBounded($path, 2));
+		$this->expectException(\LengthException::class);
+		FileSystem::fileContentsBounded($path, 1);
+	}
+
 	public function testBoundedFileContentsRejectsMissingDirectoryAndStreamTargets()
 	{
 		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing.txt';
@@ -239,7 +249,7 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 			$this->assertFileDoesNotExist($missing);
 		}
 
-		foreach ([$this->testdirectory, 'php://memory', 'file://'.$this->testdirectory] as $target) {
+		foreach ([$this->testdirectory, 'php://memory', 'file://'.$this->testdirectory, 'data:text/plain,abc'] as $target) {
 			try {
 				FileSystem::fileContentsBounded($target, 10);
 				$this->fail('A directory or stream wrapper must fail.');

@@ -4,6 +4,7 @@ namespace BlueFission\Data;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Ref;
 use BlueFission\IObj;
 use BlueFission\Collections\Collection;
@@ -701,7 +702,9 @@ class FileSystem extends Data implements IData {
 			throw new \InvalidArgumentException('Maximum file bytes must not be negative.');
 		}
 
-		if ($path === '' || str_contains($path, "\0") || preg_match('~^[a-z][a-z0-9+.-]*://~i', $path)) {
+		$hasScheme = preg_match('~^[a-z][a-z0-9+.-]*:~i', $path) === 1;
+		$isDrivePath = preg_match('~^[a-z]:(?!//)~i', $path) === 1;
+		if ($path === '' || Str::contains($path, "\0") || ($hasScheme && !$isDrivePath)) {
 			throw new \InvalidArgumentException('A local file path is required.');
 		}
 
@@ -734,8 +737,8 @@ class FileSystem extends Data implements IData {
 
 			$contents = '';
 			while (true) {
-				$remaining = $maxBytes - strlen($contents);
-				$chunk = fread($handle, $remaining === 0 ? 1 : min(8192, $remaining));
+				$remaining = $maxBytes - Str::len($contents);
+				$chunk = fread($handle, $remaining === 0 ? 1 : Num::min(8192, $remaining));
 				if ($chunk === false) {
 					throw new \RuntimeException('File could not be read.');
 				}
