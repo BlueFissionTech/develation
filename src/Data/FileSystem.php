@@ -4,6 +4,7 @@ namespace BlueFission\Data;
 use BlueFission\Val;
 use BlueFission\Str;
 use BlueFission\Arr;
+use BlueFission\Num;
 use BlueFission\Ref;
 use BlueFission\IObj;
 use BlueFission\Collections\Collection;
@@ -682,6 +683,82 @@ class FileSystem extends Data implements IData {
 		$contents = file_get_contents($path);
 
 		return Dev::apply('_out', $contents === false ? null : $contents);
+	}
+
+	/**
+	 * Read raw bytes from a local regular file without creating it.
+	 *
+	 * Unlike fileContents(), this explicit bounded read does not apply content
+	 * filters: a filter could expand the result beyond the requested byte limit.
+	 *
+	 * @throws \InvalidArgumentException For an invalid limit or non-local path.
+	 * @throws \UnexpectedValueException For a non-regular target.
+	 * @throws \RuntimeException For a missing or unreadable file or read failure.
+	 * @throws \LengthException When the file exceeds the byte limit.
+	 */
+	public static function fileContentsBounded(string $path, int $maxBytes): string
+	{
+		if ($maxBytes < 0) {
+			throw new \InvalidArgumentException('Maximum file bytes must not be negative.');
+		}
+
+		$hasScheme = preg_match('~^[a-z][a-z0-9+.-]*:~i', $path) === 1;
+		$isDrivePath = preg_match('~^[a-z]:(?!//)~i', $path) === 1;
+		if ($path === '' || Str::contains($path, "\0") || ($hasScheme && !$isDrivePath)) {
+			throw new \InvalidArgumentException('A local file path is required.');
+		}
+
+		if (!file_exists($path)) {
+			throw new \RuntimeException('File does not exist.');
+		}
+
+		if (!is_file($path)) {
+			throw new \UnexpectedValueException('Target is not a regular file.');
+		}
+
+		if (!is_readable($path)) {
+			throw new \RuntimeException('File is not readable.');
+		}
+
+		$handle = @fopen($path, 'rb');
+		if ($handle === false) {
+			throw new \RuntimeException('File could not be opened for reading.');
+		}
+
+		try {
+			$stat = fstat($handle);
+			if ($stat === false || ($stat['mode'] & 0170000) !== 0100000) {
+				throw new \UnexpectedValueException('Target is not a regular file.');
+			}
+
+			if ($stat['size'] > $maxBytes) {
+				throw new \LengthException('File exceeds the maximum byte count.');
+			}
+
+			$contents = '';
+			while (true) {
+				$remaining = $maxBytes - Str::len($contents);
+				$chunk = fread($handle, $remaining === 0 ? 1 : Num::min(8192, $remaining));
+				if ($chunk === false) {
+					throw new \RuntimeException('File could not be read.');
+				}
+
+				if ($chunk === '') {
+					if (!feof($handle)) {
+						throw new \RuntimeException('File read stopped before end of file.');
+					}
+					return $contents;
+				}
+
+				if ($remaining === 0) {
+					throw new \LengthException('File exceeds the maximum byte count.');
+				}
+
+				$contents .= $chunk;
+			}
+		} finally {
+			fclose($handle);
+		}
 	}
 
 	/**

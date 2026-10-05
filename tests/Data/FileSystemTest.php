@@ -210,6 +210,68 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFileDoesNotExist($missing);
 	}
 
+	public function testBoundedFileContentsReturnsOnlyCompleteRegularFileBytes()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'bounded file.txt';
+		file_put_contents($path, "A\\B\nC");
+
+		$this->assertSame("A\\B\nC", FileSystem::fileContentsBounded($path, 5));
+		$this->assertSame("A\\B\nC", FileSystem::fileContentsBounded($path, 8192));
+		$this->assertSame('', FileSystem::fileContentsBounded($this->emptyFile(), 0));
+	}
+
+	public function testBoundedFileContentsRejectsOversizeWithoutReturningPartialBytes()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'oversize.txt';
+		file_put_contents($path, '123456');
+
+		$this->expectException(\LengthException::class);
+		FileSystem::fileContentsBounded($path, 5);
+	}
+
+	public function testBoundedFileContentsMeasuresBytesNotCharacters()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'unicode.txt';
+		file_put_contents($path, "\xc3\xa9");
+
+		$this->assertSame("\xc3\xa9", FileSystem::fileContentsBounded($path, 2));
+		$this->expectException(\LengthException::class);
+		FileSystem::fileContentsBounded($path, 1);
+	}
+
+	public function testBoundedFileContentsRejectsMissingDirectoryAndStreamTargets()
+	{
+		$missing = $this->testdirectory.DIRECTORY_SEPARATOR.'missing.txt';
+		try {
+			FileSystem::fileContentsBounded($missing, 10);
+			$this->fail('A missing file must fail.');
+		} catch (\RuntimeException $exception) {
+			$this->assertFileDoesNotExist($missing);
+		}
+
+		foreach ([$this->testdirectory, 'php://memory', 'file://'.$this->testdirectory, 'data:text/plain,abc'] as $target) {
+			try {
+				FileSystem::fileContentsBounded($target, 10);
+				$this->fail('A directory or stream wrapper must fail.');
+			} catch (\UnexpectedValueException|\InvalidArgumentException $exception) {
+				$this->assertNotSame('', $exception->getMessage());
+			}
+		}
+	}
+
+	public function testBoundedFileContentsRejectsNegativeLimits()
+	{
+		$this->expectException(\InvalidArgumentException::class);
+		FileSystem::fileContentsBounded($this->emptyFile(), -1);
+	}
+
+	private function emptyFile(): string
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'empty.txt';
+		file_put_contents($path, '');
+		return $path;
+	}
+
 	public function testStaticFileBasenameReturnsConcretePathBasename()
 	{
 		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'basename.txt';
