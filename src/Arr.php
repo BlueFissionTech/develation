@@ -958,6 +958,28 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Return entries whose keys are absent from every comparison array.
+     * Values and source keys are preserved; the current array is unchanged.
+     *
+     * @param array|Arr $array First comparison array.
+     * @param array|Arr ...$arrays Additional comparison arrays.
+     * @return Arr
+     */
+    public function _diffKey(array|Arr $array, array|Arr ...$arrays): Arr
+    {
+        if (!$this->is($this->_data)) {
+            return Arr::make();
+        }
+
+        $comparisons = [$array instanceof Arr ? $array->toArray() : $array];
+        foreach ($arrays as $comparison) {
+            $comparisons[] = $comparison instanceof Arr ? $comparison->toArray() : $comparison;
+        }
+
+        return Arr::make(array_diff_key($this->_data, ...$comparisons));
+    }
+
+    /**
      * Flip the keys and values of the current array.
      *
      * @return Arr
