@@ -120,6 +120,18 @@ class Num extends Val implements IVal {
         return $this->_isFloat();
     }
 
+    /**
+     * Check whether the value is a finite native integer or float.
+     * Numeric strings and other coercible values are not accepted.
+     *
+     * @return bool
+     */
+    public function _isFinite(): bool
+    {
+        return (is_int($this->_data) || is_float($this->_data))
+            && is_finite($this->_data);
+    }
+
 	/**
 	 * Sets string formatting for the output of the number
 	 *

@@ -64,6 +64,27 @@ class NumTest extends ValTest
         $this->assertFalse(Num::isDouble('2.5'));
     }
 
+    public function testFiniteHelperAcceptsOnlyFiniteNativeNumbers()
+    {
+        $this->assertTrue(Num::isFinite(0));
+        $this->assertTrue(Num::isFinite(-42));
+        $this->assertTrue(Num::isFinite(0.0));
+        $this->assertTrue(Num::isFinite(-2.5));
+        $this->assertFalse(Num::isFinite(NAN));
+        $this->assertFalse(Num::isFinite(INF));
+        $this->assertFalse(Num::isFinite(-INF));
+        $this->assertFalse(Num::isFinite('2.5'));
+        $this->assertFalse(Num::isFinite('INF'));
+        $this->assertFalse(Num::isFinite(true));
+        $this->assertFalse(Num::isFinite(null));
+        $this->assertFalse(Num::isFinite([]));
+        $this->assertFalse(Num::isFinite(new \stdClass()));
+
+        $this->assertTrue(Num::make(3.5)->isFinite());
+        $this->assertFalse(Num::make(INF)->isFinite());
+        $this->assertFalse(Num::make('3.5')->isFinite());
+    }
+
     public function testClampUsesInclusiveBoundsWithoutMutatingTheNumber()
     {
         $number = new Num(5);
