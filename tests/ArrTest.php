@@ -2,6 +2,7 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Arr;
+use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Collections\Collection;
 use BlueFission\Collections\Group;
  
@@ -63,6 +64,50 @@ class ArrTest extends ValTest {
 	{
 		$this->expectException(\InvalidArgumentException::class);
 		Arr::sum([1, 'not numeric']);
+	}
+
+	public function testSortDescPreservesKeysAndNativeTieOrder()
+	{
+		$maps = [
+			[],
+			['only' => 4],
+			['low' => 1, 7 => 3, '07' => 3, 'high' => 5],
+			['first' => 3, 'second' => 3, 'third' => 2],
+			['a' => '10', 'b' => 2, 'c' => '2', 'd' => 10],
+			['already' => 4, 'ordered' => 2, 'last' => 1],
+		];
+
+		foreach ($maps as $map) {
+			$original = $map;
+			$expected = $map;
+			arsort($expected, SORT_REGULAR);
+			$object = Arr::make($map);
+
+			$this->assertSame($expected, Arr::sortDesc($map));
+			$this->assertSame($original, $map);
+			$this->assertSame($object, $object->sortDesc());
+			$this->assertSame($expected, $object->val());
+		}
+
+		$this->assertSame(['first', 'second', 'third'], array_keys(Arr::sortDesc([
+			'first' => 3, 'second' => 3, 'third' => 2,
+		])));
+	}
+
+	public function testSortDescEmitsChangeForReorderedMap()
+	{
+		$object = Arr::make(['low' => 1, 'high' => 2]);
+		$changes = 0;
+		$object->when(Event::CHANGE, function () use (&$changes) {
+			$changes++;
+		});
+
+		$object->sortDesc();
+
+		$this->assertSame(['high' => 2, 'low' => 1], $object->val());
+		$this->assertSame(1, $changes);
+		$object->sortDesc();
+		$this->assertSame(1, $changes);
 	}
 
 	public function testAppendingWithBlankOffset()
