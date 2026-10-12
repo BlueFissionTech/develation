@@ -139,6 +139,31 @@ class ArrTest extends ValTest {
 		$this->assertEquals(['foo' => 'first', 'bar' => 'second'], static::$classname::flip(['first' => 'foo', 'second' => 'bar']));
 	}
 
+	public function testDiffKeyPreservesSourceEntriesAndMatchesNativeMultipleArrayComparison()
+	{
+		$source = ['name' => 'Ada', 0 => false, 2 => null, 'state' => 'open'];
+		$first = ['name' => 'different value', 0 => true];
+		$second = [2 => 'different value'];
+		$expected = array_diff_key($source, $first, $second);
+		$object = new static::$classname($source);
+
+		$this->assertSame(['state' => 'open'], $expected);
+		$this->assertSame($expected, static::$classname::diffKey($source, $first, $second));
+		$this->assertSame($expected, $object->diffKey(new static::$classname($first), $second)->val());
+		$this->assertSame($source, $object->val());
+		$this->assertSame($source, static::$classname::diffKey($source, []));
+		$this->assertSame([], static::$classname::diffKey([], []));
+	}
+
+	public function testDiffKeyRetainsNumericKeysWithoutReindexing()
+	{
+		$source = [1 => 'one', 3 => 'three', 5 => 'five'];
+		$expected = [1 => 'one', 5 => 'five'];
+
+		$this->assertSame($expected, static::$classname::diffKey($source, [3 => 'other']));
+		$this->assertSame($expected, (new static::$classname($source))->diffKey([3 => 'other'])->val());
+	}
+
 	public function testReturnsValuesAsReindexedArray()
 	{
 		$object = new static::$classname(['first' => 'foo', 'second' => 'bar']);
