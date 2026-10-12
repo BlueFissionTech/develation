@@ -369,16 +369,17 @@ class HTTP {
 	 *
 	 * @param mixed $a
 	 * @param int $flags Native JSON encoding options.
+	 * @param int $depth Maximum nesting depth.
 	 * @return string|false
 	 */
-	static function jsonEncode($a=false, int $flags=0)
+	static function jsonEncode($a=false, int $flags=0, int $depth=512)
 	{
 		if (function_exists('json_encode'))
 		{
-			return json_encode($a, $flags);
+			return json_encode($a, $flags, $depth);
 		}
 
-		return self::jsonEncodeFallback($a, $flags);
+		return self::jsonEncodeFallback($a, $flags, $depth);
 	}
 
 	/**
@@ -386,11 +387,12 @@ class HTTP {
 	 *
 	 * @param mixed $value
 	 * @param int $flags
+	 * @param int $depth
 	 * @return string|false
 	 */
-	private static function jsonEncodeFallback($value, int $flags=0): string|false
+	private static function jsonEncodeFallback($value, int $flags=0, int $depth=512): string|false
 	{
-		if ($flags !== 0) return false;
+		if ($flags !== 0 || $depth !== 512) return false;
 
 		if (Val::isNull($value)) return 'null';
 		if ($value === false) return 'false';
@@ -454,11 +456,17 @@ class HTTP {
 	 * @param string $json
 	 * @param bool $assoc
 	 * @param mixed $default
+	 * @param int $depth Maximum nesting depth.
+	 * @param int $flags Native JSON decoding options.
 	 * @return mixed
 	 */
-	static function jsonDecode(string $json, bool $assoc = true, mixed $default = null): mixed
+	static function jsonDecode(string $json, bool $assoc = true, mixed $default = null, int $depth = 512, int $flags = 0): mixed
 	{
-		$value = json_decode($json, $assoc);
+		$value = json_decode($json, $assoc, $depth, $flags);
+
+		if (($flags & JSON_THROW_ON_ERROR) !== 0) {
+			return $value;
+		}
 
 		if (json_last_error() !== JSON_ERROR_NONE) {
 			return $default;
