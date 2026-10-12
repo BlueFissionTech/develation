@@ -154,6 +154,28 @@ class StrTest extends ValTest {
 		$this->assertFalse(Str::contains('orchestrate', 'matrix'));
 	}
 
+	public function testStripTagsMatchesNativePlainTextBehavior()
+	{
+		$inputs = [
+			'',
+			'plain text',
+			'<p>Hello <strong>world</strong></p>',
+			'<p>unfinished <strong>markup',
+			'Before <!-- hidden <b>markup</b> --> after',
+			'&amp; &lt;tag&gt; &#65; <em>visible</em>',
+			"<br>line\n<span>next</span>",
+		];
+
+		foreach ($inputs as $input) {
+			$expected = strip_tags($input);
+			$value = Str::make($input);
+
+			$this->assertSame($expected, Str::stripTags($input));
+			$this->assertSame($value, $value->stripTags());
+			$this->assertSame($expected, $value->val());
+		}
+	}
+
 	public function testStrRepeatProvidesCanonicalStaticHelper()
 	{
 		$this->assertSame('ababab', Str::repeat('ab', 3));
