@@ -410,6 +410,20 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Remove HTML and PHP tags using native strip_tags semantics.
+	 *
+	 * Entity references and whitespace are left unchanged. This is a text
+	 * conversion helper, not an HTML sanitizer for untrusted output.
+	 *
+	 * @return IVal
+	 */
+	public function _stripTags(): IVal {
+		$this->alter(strip_tags($this->_data));
+
+		return $this;
+	}
+
+	/**
 	 * Check whether the current string matches a PCRE pattern.
 	 *
 	 * @param string $pattern
