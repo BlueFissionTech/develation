@@ -464,6 +464,32 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Sort map values in descending order while preserving their keys.
+     *
+     * Uses PHP's regular comparison and stable tie order, unlike sort().
+     * Instance usage mutates this Arr; static usage returns a native array.
+     *
+     * @return IVal
+     */
+    public function _sortValuesDescending(): IVal
+    {
+        if (!$this->is($this->_data)) {
+            return $this;
+        }
+
+        $sorted = $this->_data;
+        arsort($sorted, SORT_REGULAR);
+        // Val::alter() compares arrays loosely, so an order-only change needs
+        // an explicit event before the constrained assignment.
+        if ($this->_data !== $sorted) {
+            $this->trigger(Event::CHANGE);
+        }
+        $this->alter($sorted);
+
+        return $this;
+    }
+
+    /**
      * Reverse the array.
      *
      * @param bool $preserve_keys Whether numeric keys should be preserved.
