@@ -66,7 +66,7 @@ class ArrTest extends ValTest {
 		Arr::sum([1, 'not numeric']);
 	}
 
-	public function testSortValuesDescendingPreservesKeysAndNativeTieOrder()
+	public function testSortDescPreservesKeysAndNativeTieOrder()
 	{
 		$maps = [
 			[],
@@ -83,18 +83,18 @@ class ArrTest extends ValTest {
 			arsort($expected, SORT_REGULAR);
 			$object = Arr::make($map);
 
-			$this->assertSame($expected, Arr::sortValuesDescending($map));
+			$this->assertSame($expected, Arr::sortDesc($map));
 			$this->assertSame($original, $map);
-			$this->assertSame($object, $object->sortValuesDescending());
+			$this->assertSame($object, $object->sortDesc());
 			$this->assertSame($expected, $object->val());
 		}
 
-		$this->assertSame(['first', 'second', 'third'], array_keys(Arr::sortValuesDescending([
+		$this->assertSame(['first', 'second', 'third'], array_keys(Arr::sortDesc([
 			'first' => 3, 'second' => 3, 'third' => 2,
 		])));
 	}
 
-	public function testSortValuesDescendingEmitsChangeForReorderedMap()
+	public function testSortDescEmitsChangeForReorderedMap()
 	{
 		$object = Arr::make(['low' => 1, 'high' => 2]);
 		$changes = 0;
@@ -102,11 +102,11 @@ class ArrTest extends ValTest {
 			$changes++;
 		});
 
-		$object->sortValuesDescending();
+		$object->sortDesc();
 
 		$this->assertSame(['high' => 2, 'low' => 1], $object->val());
 		$this->assertSame(1, $changes);
-		$object->sortValuesDescending();
+		$object->sortDesc();
 		$this->assertSame(1, $changes);
 	}
 

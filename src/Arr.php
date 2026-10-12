@@ -471,7 +471,7 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
      *
      * @return IVal
      */
-    public function _sortValuesDescending(): IVal
+    public function _sortDesc(): IVal
     {
         if (!$this->is($this->_data)) {
             return $this;
