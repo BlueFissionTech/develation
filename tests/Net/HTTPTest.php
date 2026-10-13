@@ -93,6 +93,20 @@ class HTTPTest extends TestCase {
         $this->assertSame(json_decode($json, true, 16, $flags), HTTP::jsonDecode($json, true, null, 16, $flags));
     }
 
+    public function testJsonDecodePreservesNumericKeyObjectWhenAssociativeModeIsOff() {
+        $json = '{"0":"first","12":"later"}';
+
+        $decoded = HTTP::jsonDecode($json, false, null, 32, JSON_THROW_ON_ERROR);
+        $this->assertInstanceOf(\stdClass::class, $decoded);
+        $this->assertEquals(json_decode($json, false, 32, JSON_THROW_ON_ERROR), $decoded);
+        $this->assertSame('first', $decoded->{'0'});
+        $this->assertSame('later', $decoded->{'12'});
+        $this->assertSame(
+            json_decode($json, true, 32, JSON_THROW_ON_ERROR),
+            HTTP::jsonDecode($json, true, null, 32, JSON_THROW_ON_ERROR)
+        );
+    }
+
     public function testJsonDecodeRejectsInvalidDepthLikeNativeJson() {
         $this->expectException(\ValueError::class);
         HTTP::jsonDecode('{}', true, 'fallback', 0, JSON_THROW_ON_ERROR);
@@ -124,6 +138,14 @@ class HTTPTest extends TestCase {
         $this->assertFalse(HTTP::jsonEncode("\xB1"));
         $this->assertFalse($this->invokeStaticHttpMethod('jsonEncodeFallback', [$payload, $flags, 16]));
         $this->assertFalse($this->invokeStaticHttpMethod('jsonEncodeFallback', [$payload, 0, 16]));
+    }
+
+    public function testJsonEncodePreservesSignedZeroAndFractionalType() {
+        $values = [-0.0, 1.0];
+        $flags = JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION;
+
+        $this->assertSame(json_encode($values, $flags, 32), HTTP::jsonEncode($values, $flags, 32));
+        $this->assertSame('[-0.0,1.0]', HTTP::jsonEncode($values, $flags, 32));
     }
 
     public function testJsonEncodeThrowFlagRejectsInvalidValuesAndDepth() {
