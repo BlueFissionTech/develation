@@ -658,6 +658,24 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Calculate the native similar_text percentage for ordered byte strings.
+	 *
+	 * The result is not rounded. Reversing the arguments may change it, and
+	 * comparing two empty strings returns zero. This does not change the Str.
+	 * Native similar_text has cubic complexity in the longest string length.
+	 *
+	 * @param string $string The second string to compare.
+	 * @return float A percentage between zero and 100.
+	 */
+	public function _similarityPercent(string $string): float
+	{
+		$percent = 0.0;
+		similar_text((string)$this->_data, $string, $percent);
+
+		return $percent;
+	}
+
+	/**
      * Calculates the similarity between two strings
      *
      * @param string $string

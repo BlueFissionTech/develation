@@ -2,6 +2,7 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Str;
+use BlueFission\Behavioral\Behaviors\Event;
  
 class StrTest extends ValTest {
  
@@ -36,6 +37,51 @@ class StrTest extends ValTest {
 
 		$sim = $this->object->similarityTo('My Name Is Jon');
 		$this->assertTrue($sim < 1);
+	}
+
+	public function testSimilarityPercentMatchesNativeOrderedByteStrings(): void
+	{
+		$pairs = [
+			['', ''],
+			['', 'alpha'],
+			['alpha', ''],
+			['same', 'same'],
+			['abc', 'xyz'],
+			['bafoobar', 'barfoo'],
+			['barfoo', 'bafoobar'],
+			['a,b!', 'a-b?'],
+			['éø', 'øé'],
+		];
+
+		foreach ($pairs as [$left, $right]) {
+			$expected = 0.0;
+			similar_text($left, $right, $expected);
+
+			$this->assertSame($expected, Str::similarityPercent($left, $right));
+			$this->assertSame($expected, Str::make($left)->similarityPercent($right));
+		}
+
+		$this->assertNotSame(
+			Str::similarityPercent('bafoobar', 'barfoo'),
+			Str::similarityPercent('barfoo', 'bafoobar')
+		);
+		$this->assertSame(0.0, Str::similarityPercent('', ''));
+		$this->assertSame(100.0, Str::similarityPercent('same', 'same'));
+		$this->assertSame(66.66666666666667, Str::similarityPercent('ab', 'a'));
+	}
+
+	public function testSimilarityPercentUsesActionDispatchWithoutMutating(): void
+	{
+		$value = Str::make('ab');
+		$actions = 0;
+		$value->when(Event::ACTION_PERFORMED, function () use (&$actions): void {
+			$actions++;
+		});
+
+		$this->assertSame(66.66666666666667, $value->similarityPercent('a'));
+		$this->assertSame('ab', $value->val());
+		$this->assertSame(1, $actions);
+		$this->assertSame(1.0, $value->similarityTo('ab'));
 	}
 
 	public function testSplitReturnsArrayValueObject()
