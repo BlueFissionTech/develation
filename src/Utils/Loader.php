@@ -100,9 +100,10 @@ class Loader
      *
      * @param string $fullyQualifiedClass The fully qualified name of the class to load
      *
-     * @return bool
+     * @param bool $once Preserve the historical require-once behavior by default.
+     * @return bool|null False when no file is found; null after a successful load.
      */
-    public function load($fullyQualifiedClass)
+    public function load($fullyQualifiedClass, bool $once = true)
     {
         $classPath = $this->getClassDirectoryPath($fullyQualifiedClass);
 
@@ -112,10 +113,18 @@ class Loader
 
         if (Arr::is($classPath)) {
             foreach ($classPath as $path) {
-                require_once($path);
+                if ($once) {
+                    require_once($path);
+                } else {
+                    require($path);
+                }
             }
         } else {
-            require_once($classPath);
+            if ($once) {
+                require_once($classPath);
+            } else {
+                require($classPath);
+            }
         }
     }
 
