@@ -290,6 +290,36 @@ $result = $console->working('Fetching', function () {
 $console->writeln('Result: ' . $result);
 ```
 
+### Application route registration targets
+
+`Mapping::add()` and `Mapping::crud()` retain their default registration on
+`Application::instance()`. Pass an `Application` as the last argument to target
+a particular instance. For an existing registration script with many static
+calls, use a bounded context instead:
+
+```php
+use BlueFission\Services\Application;
+use BlueFission\Services\Mapping;
+
+$app = new Application(['name' => 'catalog']);
+Mapping::withApplication($app, function () {
+    Mapping::add('/products', [ProductController::class, 'index']);
+    Mapping::crud('/products', 'items', ProductController::class, 'id');
+});
+
+Mapping::add('/health', static fn () => 'ok', 'health', 'get', $app);
+```
+
+An explicit argument takes precedence over the scoped target; otherwise the
+current scope wins over the base default. The scope restores its previous
+target on return or exception and does not share targets between Fibers. It
+does not change the application's dispatch policy or create a new singleton.
+
+`Loader::load($name)` still uses `require_once`. For repeatable, side-effect-only
+registration scripts, `Loader::load($name, false)` opts into `require`; callers
+must guard successful registration themselves. Do not repeat-load files that
+declare classes or functions, since PHP would redeclare them.
+
 ### Storage pipeline: session-backed data
 
 ```php

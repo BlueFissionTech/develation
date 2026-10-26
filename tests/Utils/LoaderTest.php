@@ -78,4 +78,56 @@ class LoaderTest extends TestCase
             }
         }
     }
+
+    public function testRepeatableLoadIsOptInAndDefaultRemainsOnce(): void
+    {
+        $loader = Loader::instance();
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('loader-repeat-', true);
+        $name = 'RepeatFixture' . str_replace('.', '', uniqid('', true));
+        $counter = 'loader_repeat_' . $name;
+        mkdir($dir);
+        $file = $dir . DIRECTORY_SEPARATOR . $name . '.php';
+        file_put_contents($file, "<?php \$GLOBALS['{$counter}'] = (\$GLOBALS['{$counter}'] ?? 0) + 1;\n");
+
+        try {
+            $loader->addPath($dir);
+            $this->assertNull($loader->load($name));
+            $this->assertNull($loader->load($name));
+            $this->assertSame(1, $GLOBALS[$counter]);
+            $this->assertNull($loader->load($name, false));
+            $this->assertNull($loader->load($name, false));
+            $this->assertSame(3, $GLOBALS[$counter]);
+        } finally {
+            unset($GLOBALS[$counter]);
+            unlink($file);
+            rmdir($dir);
+        }
+    }
+
+    public function testRepeatableLoadCanRetryAfterAThrownFixture(): void
+    {
+        $loader = Loader::instance();
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('loader-retry-', true);
+        $name = 'RetryFixture' . str_replace('.', '', uniqid('', true));
+        $counter = 'loader_retry_' . $name;
+        mkdir($dir);
+        $file = $dir . DIRECTORY_SEPARATOR . $name . '.php';
+        file_put_contents($file, "<?php if (!isset(\$GLOBALS['{$counter}'])) { \$GLOBALS['{$counter}'] = 1; throw new \\RuntimeException('first load'); } \$GLOBALS['{$counter}']++;\n");
+
+        try {
+            $loader->addPath($dir);
+            try {
+                $loader->load($name, false);
+                $this->fail('Expected the first load to throw.');
+            } catch (\RuntimeException $exception) {
+                $this->assertSame('first load', $exception->getMessage());
+            }
+            $this->assertNull($loader->load($name, false));
+            $this->assertSame(2, $GLOBALS[$counter]);
+        } finally {
+            unset($GLOBALS[$counter]);
+            unlink($file);
+            rmdir($dir);
+        }
+    }
 }
