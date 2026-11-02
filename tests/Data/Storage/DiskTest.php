@@ -70,4 +70,59 @@ class DiskTest extends StorageTest {
 		$this->object->read();
 		$this->assertEquals('Testing.', $this->object->contents());
 	}
+
+	public function testFreshReadModifyWriteKeepsJsonFields(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, '{"marker":{"value":"before"},"unchanged":"keep"}');
+		$this->object->activate();
+		$this->object->read();
+		$this->assertSame(
+			['marker' => ['value' => 'before'], 'unchanged' => 'keep'],
+			$this->object->contents()
+		);
+		$this->object->assign(['marker' => ['value' => 'after']])->write();
+
+		$this->assertSame(
+			['marker' => ['value' => 'after'], 'unchanged' => 'keep'],
+			json_decode((string)file_get_contents($path), true, 512, JSON_THROW_ON_ERROR)
+		);
+
+		$this->object->read();
+		$this->assertSame(
+			['marker' => ['value' => 'after'], 'unchanged' => 'keep'],
+			$this->object->contents()
+		);
+	}
+
+	public function testExplicitRawContentsAfterReadStillOverridesFields(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, '{"marker":"before"}');
+		$this->object->activate();
+		$this->object->read();
+		$this->object->contents('raw replacement');
+		$this->object->assign(['marker' => 'after'])->write();
+
+		$this->assertSame('raw replacement', file_get_contents($path));
+	}
+
+	public function testEmptyJsonObjectCanGainFieldsWithoutChangingItsShape(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, '{}');
+		$this->object->activate()->read()->write();
+		$this->assertSame('{}', file_get_contents($path));
+
+		$this->object->assign(['marker' => 'added'])->write();
+		$this->assertSame('{"marker":"added"}', file_get_contents($path));
+	}
+
+	public function testScalarJsonReadRemainsRawWithoutFieldAssignment(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, 'null');
+		$this->object->activate()->read()->write();
+		$this->assertSame('null', file_get_contents($path));
+	}
 }

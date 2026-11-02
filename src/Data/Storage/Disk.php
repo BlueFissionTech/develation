@@ -23,6 +23,9 @@ class Disk extends Storage implements IData
 		'location'=>null, 
 		'name'=>null 
 	];
+
+	/** Whether the cached contents came from a JSON object read. */
+	protected bool $_contentsFromRead = false;
 		
 	/**
 	 * Constructor method for the disk storage object.
@@ -31,6 +34,15 @@ class Disk extends Storage implements IData
 	 */
 	public function __construct( $config = null ) {
 		parent::__construct( $config );
+	}
+
+	public function contents($data = null): mixed
+	{
+		if (!Val::isNull($data)) {
+			$this->_contentsFromRead = false;
+		}
+
+		return parent::contents($data);
 	}
 	
 	/**
@@ -93,7 +105,9 @@ class Disk extends Storage implements IData
 			return;
 		}
 
-		$data = Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents;
+		$data = $this->_contentsFromRead
+			? HTTP::jsonEncode((object)$this->_data->val())
+			: (Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents);
 
 		$data = Dev::apply(null, $data);
 
@@ -127,9 +141,12 @@ class Disk extends Storage implements IData
 		$invalidJson = new \stdClass();
 		$decoded = HTTP::jsonDecode((string)$value, true, $invalidJson);
 
-		if ($decoded !== $invalidJson) {
+		if (is_array($decoded) && str_starts_with(ltrim((string)$value), '{')) {
 			$this->contents($decoded);
-			$this->assign(Arr::make((array)$decoded)->val());
+			if ($decoded) {
+				$this->assign(Arr::make($decoded)->val());
+			}
+			$this->_contentsFromRead = true;
 		} else {
 			$this->contents($value);
 		}
