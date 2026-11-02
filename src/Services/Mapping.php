@@ -14,6 +14,58 @@ use BlueFission\Val;
  * callable functions in a web application.
  */
 class Mapping {
+	/** @var array<int, App> Registration targets on the main execution stack. */
+	private static array $_registrationTargets = [];
+
+	/** @var \WeakMap<\Fiber, array<int, App>>|null Fiber-local registration targets. */
+	private static ?\WeakMap $_fiberRegistrationTargets = null;
+
+	/**
+	 * Register mappings against an application for the duration of a callback.
+	 * Nested calls restore the previous target, including when registration fails.
+	 */
+	public static function withApplication(App $app, callable $register): mixed
+	{
+		$fiber = \Fiber::getCurrent();
+		if ($fiber === null) {
+			self::$_registrationTargets[] = $app;
+		} else {
+			self::$_fiberRegistrationTargets ??= new \WeakMap();
+			$targets = self::$_fiberRegistrationTargets[$fiber] ?? [];
+			$targets[] = $app;
+			self::$_fiberRegistrationTargets[$fiber] = $targets;
+		}
+
+		try {
+			return $register();
+		} finally {
+			if ($fiber === null) {
+				array_pop(self::$_registrationTargets);
+			} else {
+				$targets = self::$_fiberRegistrationTargets[$fiber];
+				array_pop($targets);
+				if ($targets === []) {
+					unset(self::$_fiberRegistrationTargets[$fiber]);
+				} else {
+					self::$_fiberRegistrationTargets[$fiber] = $targets;
+				}
+			}
+		}
+	}
+
+	private static function registrationTarget(?App $app): App
+	{
+		if ($app !== null) {
+			return $app;
+		}
+
+		$fiber = \Fiber::getCurrent();
+		$targets = $fiber === null
+			? self::$_registrationTargets
+			: (self::$_fiberRegistrationTargets[$fiber] ?? []);
+
+		return $targets === [] ? App::instance() : $targets[count($targets) - 1];
+	}
 
 	/**
 	 * The HTTP method for this mapping.
@@ -60,9 +112,9 @@ class Mapping {
 	 *
 	 * @return Mapping The new mapping instance.
 	 */
-	static public function add(String $path, $callable, String $name = '', String $method = 'get')
+	static public function add(String $path, $callable, String $name = '', String $method = 'get', ?App $app = null)
 	{
-		$app = App::instance();
+		$app = self::registrationTarget($app);
 		$httpMethod = Str::make($method)->trim()->lower();
 		$routePath = Str::make($path)->trim()->trim('/');
 		$routeName = Str::make($name)->trim();
@@ -86,7 +138,7 @@ class Mapping {
 	 * @param string $idField   The ID field name for the CRUD mappings.
 	 * @param string $gateway   The gateway for the CRUD mappings.
 	 */
-	static public function crud($root, $package, $controller, $idField, $gateway = '')
+	static public function crud($root, $package, $controller, $idField, $gateway = '', ?App $app = null)
 	{
 		$name = Str::make($root.$package)
 			->replace('/', '.')
@@ -95,11 +147,11 @@ class Mapping {
 		$resourcePath = self::pathFromParts($root, $package);
 		$itemPath = Str::make($resourcePath->val())->append('/$')->append($idField);
 
-		self::add($resourcePath->val(), [$controller, 'index'], $name->val(), 'get')->gateway($gateway);
-		self::add($itemPath->val(), [$controller, 'find'], Str::make($name->val())->append('.get')->val(), 'get')->gateway($gateway);
-		self::add($resourcePath->val(), [$controller, 'save'], Str::make($name->val())->append('.save')->val(), 'post')->gateway($gateway);
-		self::add($itemPath->val(), [$controller, 'update'], Str::make($name->val())->append('.update')->val(), 'post')->gateway($gateway);
-		self::add($itemPath->val(), [$controller, 'delete'], Str::make($name->val())->append('.delete')->val(), 'delete')->gateway($gateway);
+		self::add($resourcePath->val(), [$controller, 'index'], $name->val(), 'get', $app)->gateway($gateway);
+		self::add($itemPath->val(), [$controller, 'find'], Str::make($name->val())->append('.get')->val(), 'get', $app)->gateway($gateway);
+		self::add($resourcePath->val(), [$controller, 'save'], Str::make($name->val())->append('.save')->val(), 'post', $app)->gateway($gateway);
+		self::add($itemPath->val(), [$controller, 'update'], Str::make($name->val())->append('.update')->val(), 'post', $app)->gateway($gateway);
+		self::add($itemPath->val(), [$controller, 'delete'], Str::make($name->val())->append('.delete')->val(), 'delete', $app)->gateway($gateway);
 	}
 
 	/**

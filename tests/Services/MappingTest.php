@@ -134,6 +134,105 @@ class MappingTest extends TestCase
         $this->assertEquals(['gateway1', 'gateway2'], $mapping->gateways());
     }
 
+    public function testExplicitTargetKeepsApplicationsIsolatedAndRetainsNormalization(): void
+    {
+        $first = new App(['name' => 'mapping-first']);
+        $second = new App(['name' => 'mapping-second']);
+        $callback = static fn () => 'first';
+
+        $mapping = Mapping::add(' /ready/ ', $callback, ' ready ', ' POST ', $first);
+        Mapping::add('/other', static fn () => 'second', 'other', 'get', $second);
+
+        $this->assertSame($mapping, $first->maps()['post']['ready']);
+        $this->assertSame($callback, $mapping->callable);
+        $this->assertSame('ready', $mapping->name);
+        $this->assertArrayNotHasKey('get', $first->maps());
+        $this->assertArrayNotHasKey('post', $second->maps());
+        $this->assertSame([], App::instance()->maps());
+    }
+
+    public function testScopedRegistrationRestoresNestedAndExceptionalTargets(): void
+    {
+        $first = new App(['name' => 'mapping-scope-first']);
+        $second = new App(['name' => 'mapping-scope-second']);
+
+        $result = Mapping::withApplication($first, function () use ($first, $second) {
+            Mapping::add('/first', static fn () => 1);
+            $nested = Mapping::withApplication($second, function () use ($first) {
+                Mapping::add('/second', static fn () => 2);
+                Mapping::add('/explicit', static fn () => 3, '', 'get', $first);
+                return 'nested result';
+            });
+            $this->assertSame('nested result', $nested);
+
+            try {
+                Mapping::withApplication($second, static function () {
+                    Mapping::add('/before-error', static fn () => 4);
+                    throw new \RuntimeException('registration failed');
+                });
+                $this->fail('Expected a registration exception.');
+            } catch (\RuntimeException $exception) {
+                $this->assertSame('registration failed', $exception->getMessage());
+            }
+
+            Mapping::add('/restored', static fn () => 5);
+            return 'outer result';
+        });
+
+        $this->assertSame('outer result', $result);
+        $this->assertSame(['first', 'explicit', 'restored'], array_keys($first->maps()['get']));
+        $this->assertSame(['second', 'before-error'], array_keys($second->maps()['get']));
+        Mapping::add('/legacy-after', static fn () => 6);
+        $this->assertArrayHasKey('legacy-after', App::instance()->maps()['get']);
+    }
+
+    public function testCrudUsesExplicitAndScopedTargetsWithoutChangingGateways(): void
+    {
+        $first = new App(['name' => 'mapping-crud-first']);
+        $second = new App(['name' => 'mapping-crud-second']);
+
+        Mapping::withApplication($first, function () use ($second) {
+            Mapping::crud('/alpha', 'items', 'Controller', 'id', 'first-gateway');
+            Mapping::crud('/beta', 'items', 'Controller', 'key', 'second-gateway', $second);
+        });
+
+        $this->assertCount(3, $first->maps());
+        $this->assertSame(['first-gateway'], $first->maps()['get']['alpha/items']->gateways());
+        $this->assertSame(['first-gateway'], $first->maps()['delete']['alpha/items/$id']->gateways());
+        $this->assertSame(['second-gateway'], $second->maps()['get']['beta/items']->gateways());
+        $this->assertSame(['second-gateway'], $second->maps()['delete']['beta/items/$key']->gateways());
+        $this->assertArrayNotHasKey('beta/items', $first->maps()['get']);
+        $this->assertSame([], App::instance()->maps());
+    }
+
+    public function testFiberRegistrationDoesNotLeakIntoMainOrOtherFibers(): void
+    {
+        $first = new App(['name' => 'mapping-fiber-first']);
+        $second = new App(['name' => 'mapping-fiber-second']);
+
+        $fiber = new \Fiber(static function () use ($first) {
+            return Mapping::withApplication($first, static function () {
+                Mapping::add('/fiber-before', static fn () => 1);
+                \Fiber::suspend();
+                Mapping::add('/fiber-after', static fn () => 2);
+            });
+        });
+
+        $fiber->start();
+        Mapping::withApplication($second, static function () {
+            Mapping::add('/main', static fn () => 3);
+        });
+        $other = new \Fiber(static function () {
+            Mapping::add('/other-fiber', static fn () => 4);
+        });
+        $other->start();
+        $fiber->resume();
+
+        $this->assertSame(['fiber-before', 'fiber-after'], array_keys($first->maps()['get']));
+        $this->assertSame(['main'], array_keys($second->maps()['get']));
+        $this->assertSame(['other-fiber'], array_keys(App::instance()->maps()['get']));
+    }
+
     /**
      * Test if the gateway method is working as expected
      *
