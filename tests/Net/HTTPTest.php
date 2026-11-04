@@ -52,6 +52,64 @@ class HTTPTest extends TestCase {
         $this->assertSame(['ok' => true], HTTP::jsonDecode('{"ok":true}'));
         $this->assertEquals((object)['ok' => true], HTTP::jsonDecode('{"ok":true}', false));
         $this->assertSame(['fallback' => true], HTTP::jsonDecode('{bad json', true, ['fallback' => true]));
+        $this->assertNull(HTTP::jsonDecode('null', true, 'fallback'));
+    }
+
+    public function testJsonDecodePassesNativeDepthAndOptionsOnlyWhenRequested() {
+        $nested = '{"outer":{"inner":true}}';
+
+        $this->assertSame('fallback', HTTP::jsonDecode($nested, true, 'fallback', 1));
+        $this->assertSame(
+            json_decode($nested, true, 16, JSON_THROW_ON_ERROR),
+            HTTP::jsonDecode($nested, true, 'fallback', 16, JSON_THROW_ON_ERROR)
+        );
+        $this->assertEquals(
+            json_decode($nested, false, 16, JSON_THROW_ON_ERROR),
+            HTTP::jsonDecode($nested, false, 'fallback', 16, JSON_THROW_ON_ERROR)
+        );
+        $this->assertSame(123, HTTP::jsonDecode('123', true, 'fallback', 16, JSON_THROW_ON_ERROR));
+        $this->assertNull(HTTP::jsonDecode('null', true, 'fallback', 16, JSON_THROW_ON_ERROR));
+
+        // A prior permissive error must not turn a successful throwing decode into a fallback.
+        HTTP::jsonDecode('{bad json', true, 'fallback');
+        $this->assertSame(['ok' => true], HTTP::jsonDecode('{"ok":true}', true, 'fallback', 16, JSON_THROW_ON_ERROR));
+    }
+
+    public function testJsonDecodeThrowFlagNeverReturnsTheFallbackOnInvalidInput() {
+        foreach (['{bad json', "\"\xB1\"", '{"outer":{"inner":true}}'] as $index => $json) {
+            try {
+                HTTP::jsonDecode($json, true, 'fallback', $index === 2 ? 1 : 16, JSON_THROW_ON_ERROR);
+                $this->fail('Invalid JSON must raise JsonException.');
+            } catch (\JsonException $exception) {
+                $this->assertSame(
+                    [JSON_ERROR_SYNTAX, JSON_ERROR_UTF8, JSON_ERROR_DEPTH][$index],
+                    $exception->getCode()
+                );
+            }
+        }
+
+        $json = "\"\xB1\"";
+        $flags = JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE;
+        $this->assertSame(json_decode($json, true, 16, $flags), HTTP::jsonDecode($json, true, null, 16, $flags));
+    }
+
+    public function testJsonDecodePreservesNumericKeyObjectWhenAssociativeModeIsOff() {
+        $json = '{"0":"first","12":"later"}';
+
+        $decoded = HTTP::jsonDecode($json, false, null, 32, JSON_THROW_ON_ERROR);
+        $this->assertInstanceOf(\stdClass::class, $decoded);
+        $this->assertEquals(json_decode($json, false, 32, JSON_THROW_ON_ERROR), $decoded);
+        $this->assertSame('first', $decoded->{'0'});
+        $this->assertSame('later', $decoded->{'12'});
+        $this->assertSame(
+            json_decode($json, true, 32, JSON_THROW_ON_ERROR),
+            HTTP::jsonDecode($json, true, null, 32, JSON_THROW_ON_ERROR)
+        );
+    }
+
+    public function testJsonDecodeRejectsInvalidDepthLikeNativeJson() {
+        $this->expectException(\ValueError::class);
+        HTTP::jsonDecode('{}', true, 'fallback', 0, JSON_THROW_ON_ERROR);
     }
 
     public function testJsonEncodeUsesNativeEncoderWhenAvailable() {
@@ -68,6 +126,61 @@ class HTTPTest extends TestCase {
             json_encode($payload, JSON_UNESCAPED_SLASHES),
             HTTP::jsonEncode($payload, JSON_UNESCAPED_SLASHES)
         );
+    }
+
+    public function testJsonEncodePassesNativeDepthAndStrictOptions() {
+        $payload = ['path' => 'assets/icon.svg', 'nested' => ['ok' => true]];
+        $flags = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES;
+
+        $this->assertSame(json_encode($payload, $flags, 16), HTTP::jsonEncode($payload, $flags, 16));
+        $this->assertSame('null', HTTP::jsonEncode(null, JSON_THROW_ON_ERROR, 16));
+        $this->assertSame(json_encode(123, JSON_THROW_ON_ERROR, 16), HTTP::jsonEncode(123, JSON_THROW_ON_ERROR, 16));
+        $this->assertFalse(HTTP::jsonEncode("\xB1"));
+        $this->assertFalse($this->invokeStaticHttpMethod('jsonEncodeFallback', [$payload, $flags, 16]));
+        $this->assertFalse($this->invokeStaticHttpMethod('jsonEncodeFallback', [$payload, 0, 16]));
+    }
+
+    public function testJsonEncodePreservesSignedZeroAndFractionalType() {
+        $values = [-0.0, 1.0];
+        $flags = JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION;
+
+        $this->assertSame(json_encode($values, $flags, 32), HTTP::jsonEncode($values, $flags, 32));
+        $this->assertSame('[-0.0,1.0]', HTTP::jsonEncode($values, $flags, 32));
+    }
+
+    public function testJsonEncodeThrowFlagRejectsInvalidValuesAndDepth() {
+        $resource = fopen('php://memory', 'r+');
+        $recursive = [];
+        $recursive['self'] = &$recursive;
+
+        try {
+            $cases = [
+                ["\xB1", 16, JSON_ERROR_UTF8],
+                [$resource, 16, JSON_ERROR_UNSUPPORTED_TYPE],
+                [$recursive, 16, JSON_ERROR_RECURSION],
+                [['nested' => ['ok' => true]], 1, JSON_ERROR_DEPTH],
+            ];
+
+            foreach ($cases as [$value, $depth, $code]) {
+                try {
+                    HTTP::jsonEncode($value, JSON_THROW_ON_ERROR, $depth);
+                    $this->fail('Invalid JSON value must raise JsonException.');
+                } catch (\JsonException $exception) {
+                    $this->assertSame($code, $exception->getCode());
+                }
+            }
+        } finally {
+            fclose($resource);
+        }
+
+        $flags = JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE;
+        $this->assertSame(json_encode("\xB1", $flags, 16), HTTP::jsonEncode("\xB1", $flags, 16));
+    }
+
+    public function testJsonEncodeRejectsInvalidDepthLikeNativeJson() {
+        $this->expectException(\JsonException::class);
+        $this->expectExceptionCode(JSON_ERROR_DEPTH);
+        HTTP::jsonEncode([], JSON_THROW_ON_ERROR, 0);
     }
 
     public function testJsonEncodePreservesNativeFailureAndFallbackFlagBoundary() {
