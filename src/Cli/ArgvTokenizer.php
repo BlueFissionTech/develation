@@ -2,6 +2,9 @@
 
 namespace BlueFission\Cli;
 
+use BlueFission\Arr;
+use BlueFission\Str;
+
 /**
  * Convert one authored command line to argv without invoking a shell.
  * This is not a command dispatcher or a natural-language interpreter.
@@ -19,7 +22,7 @@ final class ArgvTokenizer
         $token = '';
         $started = false;
         $quote = null;
-        $length = strlen($line);
+        $length = Str::len($line);
 
         for ($index = 0; $index < $length; $index++) {
             $character = $line[$index];
@@ -65,7 +68,7 @@ final class ArgvTokenizer
                 }
                 continue;
             }
-            if (str_contains(';|&<>`$%()!', $character)) {
+            if (Str::has(';|&<>`$%()!', $character)) {
                 throw new \InvalidArgumentException('Unquoted shell syntax is not accepted in a command line.');
             }
             $token .= $character;
@@ -78,7 +81,7 @@ final class ArgvTokenizer
         if ($started) {
             $tokens[] = $token;
         }
-        if ($tokens === [] || !in_array($tokens[0], $allowedCommands, true)) {
+        if ($tokens === [] || !Arr::has($allowedCommands, $tokens[0], true)) {
             throw new \InvalidArgumentException('Command is empty or not registered by the caller.');
         }
 
