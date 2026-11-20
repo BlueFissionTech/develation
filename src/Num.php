@@ -730,7 +730,8 @@ class Num extends Val implements IVal {
 			return 0;
 		}
 
-		return $value + 0;
+		// Unary plus retains floating negative zero, including numeric strings.
+		return +$value;
 	}
 
     /**
