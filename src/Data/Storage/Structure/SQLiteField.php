@@ -208,6 +208,10 @@ class SQLiteField
                 $definition[] = "REAL";
                 break;
 
+            case 'blob':
+                $definition[] = "BLOB";
+                break;
+
             default:
             case 'text':
                 $definition[] = "TEXT";
