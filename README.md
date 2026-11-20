@@ -290,6 +290,31 @@ $result = $console->working('Fetching', function () {
 $console->writeln('Result: ' . $result);
 ```
 
+For commands with approval or mutation flags, opt in to strict boolean input
+when constructing `Args`, or inject that parser with `Application::cliParser()`.
+Dispatch side effects only after `parse()` succeeds:
+
+```php
+$args = (new Args(['strictBooleans' => true, 'allowUnknown' => false]))
+    ->addOption(new OptionDefinition('apply', ['type' => 'bool', 'short' => 'a']))
+    ->parse($argv);
+$apply = $args->options()['apply'] ?? false;
+```
+
+Strict mode accepts bare `--apply`/`-a` as true and bare `--no-apply` as false.
+Explicit values (including a following space-separated value) accept `1`,
+`true`, `yes`, `on`, `y` and `0`, `false`, `no`, `off`, `n`, case-insensitively
+with surrounding whitespace ignored. Empty or unknown explicit values,
+valued negations, and repeated assignments to the same boolean (including
+aliases) throw `InvalidArgumentException`. A word directly after a bare
+boolean must be a recognized value; put `--` between a bare flag and the
+first positional argument. Environment fallbacks and non-null defaults are
+validated too; the existing default-before-environment precedence remains.
+Help flags obey the same rules. A failed strict parse clears previous options
+and does not emit the processed event. Existing parsers remain permissive by
+default, as does `Flag::parseBool()`; migrate command handlers individually,
+and do not rely on the old truthy coercion for write authorization.
+
 ### Application route registration targets
 
 `Mapping::add()` and `Mapping::crud()` retain their default registration on
