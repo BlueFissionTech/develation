@@ -851,7 +851,9 @@ class Val implements IVal, IDispatcher {
 				call_user_func_array($callable, [&$value]);
 			}
 		}
-		if ($this->_data != $value) {
+		// Comparing an object with a scalar can emit numeric conversion notices.
+		// A type-boundary assignment is a change without coercing either value.
+		if (is_object($this->_data) !== is_object($value) || $this->_data != $value) {
 			$this->trigger(Event::CHANGE);
 		}
 		$this->_data = $value;
