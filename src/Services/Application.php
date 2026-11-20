@@ -1441,15 +1441,16 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			// Check if the argument exists for the current dependency
 			if ( Arr::hasKey($arguments, $dependencyName) ) {
 				$dependencies[$dependencyName] = $arguments[$dependencyName];
+				continue;
 			}
 
 			// If the dependency class exists, get its dependencies and create an instance of it
 			if ( $varTypes->has($dependencyClass) ) {
-				$dependencies[$dependencyName] = $arguments[$dependencyName] ?? ( $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null );
+				$dependencies[$dependencyName] = $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null;
 			} elseif ( $dependencyClass ) {
-				$dependencies[$dependencyName] =
-					$arguments[$dependencyName] ??
-					$this->getDynamicInstance($dependencyClass);
+				$dependencies[$dependencyName] = $parameter->isDefaultValueAvailable()
+					? $parameter->getDefaultValue()
+					: $this->getDynamicInstance($dependencyClass);
 			}
 		}
 
