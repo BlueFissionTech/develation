@@ -45,7 +45,7 @@ class Num extends Val implements IVal {
      */
     public function __construct( $value = null, bool $takeSnapshot = true, bool $cast = false  ) {
         if ( $this->_type && ($this->_forceType == true || $cast) ) {
-            $this->_type = self::automaticType($value);
+            $this->_type = self::autotype($value);
         }
 
 		parent::__construct($value, $takeSnapshot, $cast);
@@ -59,7 +59,7 @@ class Num extends Val implements IVal {
 	public function cast(): IVal
 	{
 		if ( $this->_type ) {
-            $this->_type = self::automaticType($this->_data);
+            $this->_type = self::autotype($this->_data);
             settype($this->_data, $this->_type->value);
 			$this->trigger(Event::CHANGE);
 
@@ -73,7 +73,7 @@ class Num extends Val implements IVal {
      * The upper limit is exclusive because a float representation of
      * PHP_INT_MAX can round to the first out-of-range integer.
      */
-    private static function automaticType(mixed $value): DataTypes
+    private static function autotype(mixed $value): DataTypes
     {
         $number = $value instanceof IVal ? $value->val() : $value;
         if (is_int($number)) {
