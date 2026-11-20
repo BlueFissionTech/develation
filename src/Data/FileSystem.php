@@ -970,12 +970,12 @@ class FileSystem extends Data implements IData {
 	{
 		$hasScheme = preg_match('~^[a-z][a-z0-9+.-]*:~i', $directory) === 1;
 		$isDrivePath = preg_match('~^[a-z]:(?!//)~i', $directory) === 1;
-		if ($directory === '' || str_contains($directory, "\0") || ($hasScheme && !$isDrivePath)) {
+		if ($directory === '' || Str::has($directory, "\0") || ($hasScheme && !$isDrivePath)) {
 			throw new \InvalidArgumentException('A local directory path is required.');
 		}
-		if ($pattern === '' || $pattern === '..' || str_contains($pattern, '/')
-			|| str_contains($pattern, '\\') || str_contains($pattern, "\0")
-			|| str_contains($pattern, '[') || str_contains($pattern, ']')
+		if ($pattern === '' || $pattern === '..' || Str::has($pattern, '/')
+			|| Str::has($pattern, '\\') || Str::has($pattern, "\0")
+			|| Str::has($pattern, '[') || Str::has($pattern, ']')
 			|| preg_match('//u', $pattern) !== 1) {
 			throw new \InvalidArgumentException('Pattern must be a UTF-8 basename using only * and ? wildcards.');
 		}
@@ -990,7 +990,8 @@ class FileSystem extends Data implements IData {
 		}
 
 		$quoted = preg_quote($pattern, '~');
-		$expression = '~\A' . str_replace(['\\*', '\\?'], ['.*', '.'], $quoted) . '\z~us';
+		$wildcards = Str::make($quoted)->replace('\\*', '.*')->replace('\\?', '.')->val();
+		$expression = '~\A' . $wildcards . '\z~us';
 		$entries = @scandir($directory, SCANDIR_SORT_NONE);
 		if ($entries === false) {
 			throw new \RuntimeException('Directory could not be listed.');
