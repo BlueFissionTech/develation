@@ -66,6 +66,51 @@ class ArrTest extends ValTest {
 		Arr::sum([1, 'not numeric']);
 	}
 
+	public function testNumericExtremaPreserveValuesAndSourceOrder()
+	{
+		$values = ['first' => 3.75, 'second' => -2, 'third' => 9.5, 'tie' => 9.5];
+		$object = Arr::make($values);
+		$changes = 0;
+		$actions = 0;
+		$object->when(Event::CHANGE, function () use (&$changes) { $changes++; });
+		$object->when(Event::ACTION_PERFORMED, function () use (&$actions) { $actions++; });
+
+		$this->assertSame(-2, $object->minimum());
+		$this->assertSame(9.5, $object->maximum());
+		$this->assertSame(-2, Arr::minimum($values));
+		$this->assertSame(9.5, Arr::maximum($values));
+		$this->assertSame($values, $object->val());
+		$this->assertSame(0, $changes);
+		$this->assertSame(2, $actions);
+		$this->assertSame(9, $object->max()); // Legacy integer contract remains unchanged.
+	}
+
+	public function testNumericExtremaPreserveSignedZeroAndLargeFiniteValues()
+	{
+		$this->assertSame('-0', sprintf('%g', Arr::minimum([0.0, -0.0])));
+		$this->assertSame('-0', sprintf('%g', Arr::minimum([-0.0, 0.0])));
+		$this->assertSame('0', sprintf('%g', Arr::maximum([-0.0, 0.0])));
+		$this->assertSame('0', sprintf('%g', Arr::maximum([0.0, -0.0])));
+		$this->assertSame(1.0e300, Arr::maximum([1.0e299, 1.0e300]));
+		$this->assertSame(1.5, Arr::minimum([2, 1.5]));
+		$this->assertSame(2, Arr::minimum(['a' => 2, 'b' => 2.0]));
+		$this->assertSame(2.0, Arr::maximum(['a' => 2.0, 'b' => 2]));
+	}
+
+	public function testNumericExtremaRejectEmptyAndUnsupportedValues()
+	{
+		foreach ([[], ['5', 2], [NAN, 2], [INF, 2], [false, 2]] as $values) {
+			foreach (['minimum', 'maximum'] as $method) {
+				try {
+					Arr::$method($values);
+					$this->fail('Expected invalid collection rejection');
+				} catch (\UnderflowException|\InvalidArgumentException $exception) {
+					$this->assertInstanceOf($values === [] ? \UnderflowException::class : \InvalidArgumentException::class, $exception);
+				}
+			}
+		}
+	}
+
 	public function testSortDescPreservesKeysAndNativeTieOrder()
 	{
 		$maps = [

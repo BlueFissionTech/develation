@@ -541,6 +541,67 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
+     * Return the lowest finite numeric value without casting or reordering.
+     * Equal nonzero values keep the first encountered type; negative zero wins
+     * a zero tie regardless of traversal order.
+     *
+     * @return int|float
+     * @throws \UnderflowException When the array is empty.
+     * @throws \InvalidArgumentException When an entry is not a finite int or float.
+     */
+    public function _minimum(): int|float
+    {
+        return $this->numericExtreme(true);
+    }
+
+    /**
+     * Return the highest finite numeric value without casting or reordering.
+     * Equal nonzero values keep the first encountered type; positive zero wins
+     * a zero tie regardless of traversal order.
+     *
+     * @return int|float
+     * @throws \UnderflowException When the array is empty.
+     * @throws \InvalidArgumentException When an entry is not a finite int or float.
+     */
+    public function _maximum(): int|float
+    {
+        return $this->numericExtreme(false);
+    }
+
+    private function numericExtreme(bool $minimum): int|float
+    {
+        if (!is_array($this->_data) || $this->_data === []) {
+            throw new \UnderflowException('Numeric extrema require at least one value');
+        }
+
+        $selected = null;
+        foreach ($this->_data as $value) {
+            if ((!is_int($value) && !is_float($value)) || (is_float($value) && !is_finite($value))) {
+                throw new \InvalidArgumentException('Numeric extrema require finite integers or floats');
+            }
+
+            if ($selected === null) {
+                $selected = $value;
+                continue;
+            }
+
+            if (($minimum && $value < $selected) || (!$minimum && $value > $selected)) {
+                $selected = $value;
+            } elseif ($value == 0 && $selected == 0) {
+                // Numeric comparison equates the two zeros. Preserve the signed
+                // value that represents the correct extremum without a cast.
+                $valueIsNegative = is_float($value) && str_starts_with(sprintf('%g', $value), '-');
+                $selectedIsNegative = is_float($selected) && str_starts_with(sprintf('%g', $selected), '-');
+                if ($minimum ? ($valueIsNegative && !$selectedIsNegative) : (!$valueIsNegative && $selectedIsNegative)) {
+                    $selected = $value;
+                }
+            }
+        }
+
+        return $selected;
+    }
+
+    /**
      * outputs any value as an array element or returns value if it is an array
      * @param bool $allow_empty
      * @return array
