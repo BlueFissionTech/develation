@@ -32,6 +32,14 @@ class ApplicationNullableDependenciesTest extends TestCase
         self::assertSame($dependency, $app->resolve(NullableConcreteConsumer::class)->dependency);
     }
 
+    public function testExistingScalarNullFallbackRemainsUnchanged(): void
+    {
+        $app = $this->application('scalar');
+        $app->bindArgs(['name' => null], ScalarDefaultConsumer::class);
+
+        self::assertSame('default', $app->resolve(ScalarDefaultConsumer::class)->name);
+    }
+
     public function testRequiredClassAndBoundInterfaceStillResolve(): void
     {
         $app = $this->application('required');
@@ -115,5 +123,12 @@ class NullableMethodTarget
     public function acceptInterface(?NullableDependencyContract $dependency = null): ?NullableDependencyContract
     {
         return $dependency;
+    }
+}
+
+class ScalarDefaultConsumer
+{
+    public function __construct(public string $name = 'default')
+    {
     }
 }
