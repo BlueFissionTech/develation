@@ -290,6 +290,20 @@ $result = $console->working('Fetching', function () {
 $console->writeln('Result: ' . $result);
 ```
 
+For sensitive CLI input, use `BlueFission\Cli\Util\Prompt::askSensitive($message,
+$reader, $default = null, $trim = false)` with a caller-supplied reader. The
+reader receives only the prompt text and must return a string, `null`, or
+`false`; `null`/`false` means EOF or cancellation and never falls back to
+ordinary input or the default. An empty string uses a non-null default.
+Whitespace is preserved unless trimming is explicitly requested. Reader
+exceptions propagate, and repeated calls carry no Prompt response history.
+Unlike ordinary `askPrompt()`/`Console::prompt()`, the sensitive path does not
+write output or put the response in `lastResponse`, snapshots, hooks, filters,
+events, metadata, or diagnostics. The caller-owned reader may still echo or
+log its input; this helper does **not** suppress terminal echo or erase PHP
+memory. Do not use the ordinary prompt path for a secret unless its retention
+and observation behavior is acceptable.
+
 ### Application route registration targets
 
 `Mapping::add()` and `Mapping::crud()` retain their default registration on
