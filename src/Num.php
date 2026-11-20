@@ -44,17 +44,11 @@ class Num extends Val implements IVal {
      * @param mixed|null $value The value to set, if any
      */
     public function __construct( $value = null, bool $takeSnapshot = true, bool $cast = false  ) {
-
-        $this->_data = $value;
         if ( $this->_type && ($this->_forceType == true || $cast) ) {
-            $clone = $this->_data;
-            settype($clone, $this->_type->value);
-            $remainder = fmod((float)$clone, 1.0);
-            $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
-            settype($this->_data, $this->_type->value);
+            $this->_type = self::automaticType($value);
         }
 
-		parent::__construct($value, $takeSnapshot);
+		parent::__construct($value, $takeSnapshot, $cast);
     }
 
     /**
@@ -65,10 +59,7 @@ class Num extends Val implements IVal {
 	public function cast(): IVal
 	{
 		if ( $this->_type ) {
-            $clone = $this->_data;
-            settype($clone, $this->_type->value);
-            $remainder = fmod((float)$clone, 1.0);
-            $this->_type = $remainder ? $this->_type : DataTypes::INTEGER;
+            $this->_type = self::automaticType($this->_data);
             settype($this->_data, $this->_type->value);
 			$this->trigger(Event::CHANGE);
 
@@ -76,6 +67,35 @@ class Num extends Val implements IVal {
 
 		return $this;
 	}
+
+    /**
+     * Select an integer only when the converted value fits the native range.
+     * The upper limit is exclusive because a float representation of
+     * PHP_INT_MAX can round to the first out-of-range integer.
+     */
+    private static function automaticType(mixed $value): DataTypes
+    {
+        $number = $value instanceof IVal ? $value->val() : $value;
+        if (is_int($number)) {
+            return DataTypes::INTEGER;
+        }
+
+        if (is_string($number) && filter_var($number, FILTER_VALIDATE_INT) !== false) {
+            return DataTypes::INTEGER;
+        }
+
+        settype($number, DataTypes::DOUBLE->value);
+        if (is_finite($number)
+            && fmod($number, 1.0) === 0.0
+            && $number >= (float)PHP_INT_MIN
+            && $number < -(float)PHP_INT_MIN
+            && !($number === 0.0 && fdiv(1.0, $number) === -INF)
+        ) {
+            return DataTypes::INTEGER;
+        }
+
+        return DataTypes::DOUBLE;
+    }
 
     /**
      * Check if the value is a valid number
