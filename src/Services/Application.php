@@ -1092,6 +1092,7 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 		$this->_last_args = $behavior->context ?? $this->_last_args;
 		
 		$this->_depth++;
+		try {
 		foreach ( $this->_routes as $behaviorName=>$senders )
 		{
 			if ( $behavior->name() == $behaviorName )
@@ -1136,12 +1137,14 @@ class Application extends Obj implements IConfigurable, IDispatcher, IBehavioral
 			}
 		}
 
-		$this->_depth--;
+		} finally {
+			$this->_depth--;
 
-		if ( $this->_depth == 0 ) {
-			$this->_broadcastedEvents = [];
-			$this->_broadcastChain = [];
-			$this->_last_args = null;
+			if ( $this->_depth == 0 ) {
+				$this->_broadcastedEvents = [];
+				$this->_broadcastChain = [];
+				$this->_last_args = null;
+			}
 		}
 	}
 
