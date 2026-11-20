@@ -112,6 +112,96 @@ class DateTest extends ValTest {
 		$this->assertEquals(strtotime('2012-12-12'), $object->timestamp());
 	}
 
+	public function testExplicitTimezoneTimestampIsIndependentOfProcessDefault()
+	{
+		$original = date_default_timezone_get();
+		$zone = new \DateTimeZone('America/New_York');
+		$expected = (new \DateTimeImmutable('2026-03-09 09:00:00', $zone))->getTimestamp();
+
+		try {
+			foreach (['UTC', 'Asia/Tokyo', 'America/New_York'] as $default) {
+				date_default_timezone_set($default);
+				$date = new Date('2026-03-09 09:00:00', 'America/New_York');
+				$this->assertSame($expected, $date->timestamp());
+				$this->assertSame('2026-03-09T09:00:00-04:00', $date->val());
+				$this->assertSame('2026-03-09', $date->date());
+				$this->assertSame('09:00:00', $date->time());
+				$this->assertSame('2026-03-09 09:00:00 America/New_York',
+					$date->format('Y-m-d H:i:s e')->val());
+				$this->assertSame($expected, $date->timestamp());
+				$this->assertSame($expected, $date->timestamp('2026-03-09 09:00:00'));
+				$this->assertSame($default, date_default_timezone_get());
+			}
+		} finally {
+			date_default_timezone_set($original);
+		}
+	}
+
+	public function testExplicitTimezoneUsesNativeTransitionResolution()
+	{
+		$original = date_default_timezone_get();
+		date_default_timezone_set('UTC');
+		$zone = new \DateTimeZone('America/New_York');
+
+		try {
+			foreach ([
+				['2026-03-08 00:00:00', '2026-03-09 00:00:00', 23],
+				['2026-11-01 00:00:00', '2026-11-02 00:00:00', 25],
+			] as [$start, $end, $hours]) {
+				$this->assertSame($hours * 3600,
+					(new Date($end, 'America/New_York'))->timestamp()
+					- (new Date($start, 'America/New_York'))->timestamp());
+			}
+
+			foreach (['2026-03-08 02:30:00', '2026-11-01 01:30:00'] as $wallTime) {
+				$native = new \DateTimeImmutable($wallTime, $zone);
+				$date = new Date($wallTime, 'America/New_York');
+				$this->assertSame($native->getTimestamp(), $date->timestamp());
+				$this->assertSame($native->format('c'), $date->val());
+			}
+			$this->assertSame('UTC', date_default_timezone_get());
+		} finally {
+			date_default_timezone_set($original);
+		}
+	}
+
+	public function testExplicitTimezonePreservesTimestampInputAndExistingDateTimeInstant()
+	{
+		$original = date_default_timezone_get();
+		date_default_timezone_set('UTC');
+
+		try {
+			$epoch = 1773061200;
+			$this->assertSame($epoch, (new Date($epoch, 'America/New_York'))->timestamp());
+			$source = new \DateTime('2026-03-09 09:00:00', new \DateTimeZone('Asia/Tokyo'));
+			$this->assertSame($source->getTimestamp(), (new Date($source))->timestamp());
+			$this->assertSame('Asia/Tokyo', (new Date($source))->datetime->getTimezone()->getName());
+			$this->assertSame($source->getTimestamp(), (new Date($source, 'America/New_York'))->timestamp());
+			$this->assertSame('Asia/Tokyo', (new Date($source, 'America/New_York'))->datetime->getTimezone()->getName());
+			$this->assertSame('UTC', date_default_timezone_get());
+		} finally {
+			date_default_timezone_set($original);
+		}
+	}
+
+	public function testAbsentTimezoneStillUsesProcessDefaultAtConstruction()
+	{
+		$original = date_default_timezone_get();
+
+		try {
+			foreach (['UTC', 'Asia/Tokyo'] as $default) {
+				date_default_timezone_set($default);
+				$native = new \DateTimeImmutable('2026-03-09 09:00:00');
+				$date = new Date('2026-03-09 09:00:00');
+				$this->assertSame($native->getTimestamp(), $date->timestamp());
+				$this->assertSame($native->format('c'), $date->val());
+				$this->assertSame($default, date_default_timezone_get());
+			}
+		} finally {
+			date_default_timezone_set($original);
+		}
+	}
+
 	public function testGetsDateTime()
 	{
 		$object = new static::$classname('2012-12-12');
