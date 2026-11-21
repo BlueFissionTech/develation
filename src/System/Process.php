@@ -100,6 +100,9 @@ class Process implements IDispatcher
      */
     protected $_exitCode = null;
 
+    /** Whether the last attempt to create a process failed. */
+    protected bool $_startFailed = false;
+
     /**
      * Whether the process resource has already been closed.
      *
@@ -175,6 +178,8 @@ class Process implements IDispatcher
     {
         $this->_exitCode = null;
         $this->_closed = false;
+        $this->_startFailed = false;
+        $this->_status = null;
         $descriptorSpec = $this->_descriptorspec;
         if ($this->_windowsSafeMode) {
             $this->prepareWindowsSafeCapture();
@@ -185,7 +190,15 @@ class Process implements IDispatcher
             ];
         }
 
-        $this->_process = $this->openProcess($descriptorSpec);
+        try {
+            $this->_process = $this->open($descriptorSpec);
+        } catch (\Throwable $exception) {
+            $this->_process = false;
+            $this->_startFailed = true;
+            $this->cleanupWindowsSafeCapture();
+            $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: 'Error starting process'));
+            throw $exception;
+        }
         $this->trigger(Action::CONNECT);
 
         if (Ref::is($this->_process)) {
@@ -200,6 +213,8 @@ class Process implements IDispatcher
             $this->trigger(Event::CONNECTED);
         } else {
             $message = "Error starting process";
+            $this->_startFailed = true;
+            $this->cleanupWindowsSafeCapture();
             error_log($message);
             $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: $message));
         }
@@ -211,7 +226,7 @@ class Process implements IDispatcher
      * Open the configured process. Kept separate so start failures can be tested
      * without executing a command or relying on platform-specific failure modes.
      */
-    protected function openProcess(array $descriptorSpec)
+    protected function open(array $descriptorSpec)
     {
         return proc_open($this->_command, $descriptorSpec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
     }
@@ -243,10 +258,16 @@ class Process implements IDispatcher
     /**
      * Method used to retrieve the status of the process.
      *
-     * @return bool|string If the process is running, returns true. Otherwise returns the error message.
+     * @return bool|string True while running, false after an observed exit, or
+     *                     a diagnostic for an unavailable process resource.
      */
     public function status()
     {
+        if (!Ref::is($this->_process)) {
+            return $this->_startFailed ? 'Error starting process'
+                : ($this->_closed ? 'Process is closed' : 'Process has not started');
+        }
+
         $this->_status = proc_get_status($this->_process);
         if ($this->_status) {
             if (!$this->_status['running'] && Num::isInt($this->_status['exitcode']) && $this->_status['exitcode'] >= 0) {
@@ -264,11 +285,17 @@ class Process implements IDispatcher
 
     /**
      * Stop the running process
-     * @return int Returns the termination status of the process that was run.
+     * @return self
      */
     public function stop()
     {
         $this->trigger(Action::STOP);
+
+        if (!Ref::is($this->_process)) {
+            $this->_closed = true;
+            $this->cleanupWindowsSafeCapture();
+            return $this;
+        }
 
         foreach ($this->_pipes as $pipe) {
             if (Ref::is($pipe)) {
@@ -290,7 +317,7 @@ class Process implements IDispatcher
 
     /**
      * Close the process resource
-     * @return int Returns the exit code of the process that was run.
+     * @return int The observed exit code, or -1 when no exit code is available.
      */
     public function close()
     {
@@ -299,6 +326,12 @@ class Process implements IDispatcher
         }
 
         $this->trigger(Action::DISCONNECT);
+        if (!Ref::is($this->_process)) {
+            $this->_closed = true;
+            $this->cleanupWindowsSafeCapture();
+            return -1;
+        }
+
         $status = proc_close($this->_process);
         if ($status >= 0) {
             $this->_exitCode = $status;

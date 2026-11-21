@@ -23,23 +23,37 @@ class Shell extends Async
     {
         $function = function () use ($command) {
             $process = new Process($command);
-            $process->start();
-            while ($status = $process->status()) {
-                if (!$status) {
-                    // If process is no longer running, break the loop
-                    break;
-                }
-                // Here you could add code to process any output as it's received
-                $output = $process->output();
-                yield $output;
-            }
-            // Optionally handle any final output or cleanup
-            $output = $process->output(); // Get any remaining output
-            $process->close();
-            yield $output;
+            yield from self::streamProcess($process);
         };
 
         return static::exec($function, $priority);
+    }
+
+    /** Stream a process until it exits, failing closed on unavailable status. */
+    protected static function streamProcess(Process $process): \Generator
+    {
+        $failure = null;
+        try {
+            $process->start();
+            while (($status = $process->status()) === true) {
+                yield $process->output();
+            }
+            if ($status !== false) {
+                throw new \RuntimeException('Process status unavailable.');
+            }
+            yield $process->output();
+        } catch (\Throwable $exception) {
+            $failure = $exception;
+            throw $exception;
+        } finally {
+            try {
+                $process->close();
+            } catch (\Throwable $cleanupException) {
+                if ($failure === null) {
+                    throw $cleanupException;
+                }
+            }
+        }
     }
 
     /**
