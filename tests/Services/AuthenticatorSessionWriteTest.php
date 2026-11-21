@@ -44,6 +44,42 @@ class AuthenticatorSessionWriteTest extends TestCase
         self::assertFalse($authenticator->setSession());
     }
 
+    public function testFailedClearNeverAttemptsAWrite(): void
+    {
+        foreach ([false, null, new \RuntimeException('clear failed')] as $failure) {
+            $session = $this->session(Storage::STATUS_SUCCESS, function () use ($failure) {
+                if ($failure instanceof \Throwable) {
+                    throw $failure;
+                }
+
+                return $failure;
+            });
+            $session->expects(self::never())->method('write');
+            $authenticator = new Authenticator($session, $this->createMock(Storage::class));
+
+            self::assertFalse($authenticator->setSession());
+            self::assertSame('Could not save session', $authenticator->status());
+        }
+    }
+
+    public function testFailedWriteReturnNeverOverridesAStaleSuccessStatus(): void
+    {
+        foreach ([false, null, new \RuntimeException('write failed')] as $failure) {
+            $session = $this->session(Storage::STATUS_SUCCESS);
+            $session->method('write')->willReturnCallback(function () use ($failure) {
+                if ($failure instanceof \Throwable) {
+                    throw $failure;
+                }
+
+                return $failure;
+            });
+            $authenticator = new Authenticator($session, $this->createMock(Storage::class));
+
+            self::assertFalse($authenticator->setSession());
+            self::assertSame('Could not save session', $authenticator->status());
+        }
+    }
+
     public function testFailedAttemptDoesNotMakeLaterSuccessAmbiguous(): void
     {
         $storedStatus = Storage::STATUS_SUCCESS;
@@ -81,14 +117,18 @@ class AuthenticatorSessionWriteTest extends TestCase
         return new Authenticator($session, $this->createMock(Storage::class));
     }
 
-    private function session(mixed $status): Storage
+    private function session(mixed $status, ?\Closure $clearCallback = null): Storage
     {
         $session = $this->createMock(Storage::class);
         $session->method('config')->willReturnSelf();
         $session->method('activate')->willReturnSelf();
         $session->method('read')->willReturnSelf();
         $session->method('data')->willReturn(['username' => 'fixture', 'id' => 42]);
-        $session->method('clear')->willReturnSelf();
+        if ($clearCallback !== null) {
+            $session->method('clear')->willReturnCallback($clearCallback);
+        } else {
+            $session->method('clear')->willReturnSelf();
+        }
         if ($status instanceof \Closure) {
             $session->method('status')->willReturnCallback($status);
         } else {
