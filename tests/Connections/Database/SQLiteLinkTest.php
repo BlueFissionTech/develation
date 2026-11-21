@@ -3,6 +3,7 @@
 namespace BlueFission\Tests\Connections\Database;
 
 use BlueFission\Connections\Database\SQLiteLink;
+use BlueFission\Connections\Database\SQLiteBlob;
 use BlueFission\Tests\Support\TestEnvironment;
 
 require_once __DIR__ . '/../../Support/TestEnvironment.php';
@@ -110,6 +111,33 @@ class SQLiteLinkTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(7, $row['count']);
         $this->assertSame(0, $row['enabled']);
         $this->assertNull($row['optional']);
+    }
+
+    public function testExplicitBlobBindingsPreserveBytesWithoutChangingStringBinding(): void
+    {
+        [$database] = $this->databasePair();
+        $link = $this->linkFor($database);
+        $link->query('CREATE TABLE fixture (payload BLOB, label TEXT)');
+
+        foreach (['', 'plain', "A\0B", "\x00\xff\x80", str_repeat("\x00\xff", 4096)] as $bytes) {
+            $link->query('INSERT INTO fixture (payload, label) VALUES (?, ?)', [new SQLiteBlob($bytes), $bytes]);
+            $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+        }
+
+        $link->close();
+        $link->open();
+        $result = $link->query('SELECT payload, label, typeof(payload) AS payload_type, typeof(label) AS label_type FROM fixture ORDER BY rowid')->result();
+        foreach (['', 'plain', "A\0B", "\x00\xff\x80", str_repeat("\x00\xff", 4096)] as $bytes) {
+            $row = $result->fetchArray(SQLITE3_ASSOC);
+            $this->assertSame(bin2hex($bytes), bin2hex($row['payload']));
+            $this->assertSame(strlen($bytes), strlen($row['payload']));
+            $this->assertSame('blob', $row['payload_type']);
+            $this->assertSame('text', $row['label_type']);
+            if ($bytes === '' || $bytes === 'plain') {
+                $this->assertSame($bytes, $row['label']);
+            }
+        }
+        $this->assertFalse($result->fetchArray(SQLITE3_ASSOC));
     }
 
     public function testNamedBindingsAndMissingValuesHaveExplicitOutcomes(): void
