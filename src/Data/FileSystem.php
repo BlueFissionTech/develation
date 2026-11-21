@@ -334,7 +334,9 @@ class FileSystem extends Data implements IData {
 		}
 		elseif ( $this->_handle )
 		{
-			$this->contents($this->_handle->read(filesize($filepath)));
+			$size = filesize($filepath);
+			// fread() rejects a zero length on PHP 8.2+, but an empty file is a valid read.
+			$this->contents($size === 0 ? '' : $this->_handle->read($size));
 			if ( $this->contents() === false )
 			{
 				$this->status( "File $file could not be read" );

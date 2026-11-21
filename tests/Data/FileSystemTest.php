@@ -220,6 +220,25 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertSame('', FileSystem::fileContentsBounded($this->emptyFile(), 0));
 	}
 
+	public function testLockedLegacyReadAcceptsEmptyFile()
+	{
+		$path = $this->emptyFile();
+		$filesystem = new FileSystem([
+			'root' => $this->testdirectory,
+			'mode' => 'rb',
+			'lock' => true,
+			'filter' => [],
+		]);
+
+		try {
+			$filesystem->open($path);
+			$this->assertTrue($filesystem->isLocked());
+			$this->assertSame('', $filesystem->read()->contents());
+		} finally {
+			$filesystem->close();
+		}
+	}
+
 	public function testBoundedFileContentsRejectsOversizeWithoutReturningPartialBytes()
 	{
 		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'oversize.txt';
