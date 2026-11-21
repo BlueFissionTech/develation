@@ -149,4 +149,29 @@ class DiskTest extends StorageTest {
 		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
 		$this->assertSame('original', file_get_contents($path));
 	}
+
+	public function testNonStringableObjectDoesNotOverwriteExistingBytes(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, 'original');
+		$this->object->activate();
+		$this->object->contents(new \stdClass());
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
+		$this->assertSame('original', file_get_contents($path));
+	}
+
+	public function testStringableRawContentsRetainExistingWriteBehavior(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		$this->object->activate();
+		$this->object->contents(new class implements \Stringable {
+			public function __toString(): string { return 'stringable'; }
+		});
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_SUCCESS, $this->object->status());
+		$this->assertSame('stringable', file_get_contents($path));
+	}
 }
