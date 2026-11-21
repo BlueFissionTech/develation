@@ -7,6 +7,7 @@ use BlueFission\Num;
 use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Event;
 use DateTime;
+use DateTimeZone;
 
 class Date extends Val implements IVal
 {
@@ -21,6 +22,9 @@ class Date extends Val implements IVal
      * @var string $_timezone The timezone of the date
      */
     protected $_timezone = "UTC";
+
+    /** The caller's explicit timezone, retained across value reads and updates. */
+    private ?DateTimeZone $_explicitTimezone = null;
 
     /**
      * @var DateTime $_datetime the DateTime object containing the date and managing most date operations
@@ -55,12 +59,26 @@ class Date extends Val implements IVal
 
     private function setValue($value = null, $timezone = null): void
     {
-        if (isset($value) && $this->isValidTimestamp($value)) {
-            $value = date('Y-m-d H:i:s', (int)$value);
+        if ($timezone instanceof DateTimeZone) {
+            $this->_explicitTimezone = $timezone;
+        } elseif (is_string($timezone) && $timezone !== '') {
+            $this->_explicitTimezone = new DateTimeZone($timezone);
         }
 
-        $this->_datetime = ($value instanceof DateTime) ? $value : new DateTime($value ?? 'now');
-        $this->_timezone = $timezone ?? $this->_datetime->getTimezone()->getName();
+        if ($value instanceof DateTime) {
+            $this->_datetime = $value;
+        } elseif (isset($value) && $this->isValidTimestamp($value) && $this->_explicitTimezone) {
+            // An epoch is an instant, not a wall time in the process timezone.
+            $this->_datetime = new DateTime('@'.(int)$value);
+            $this->_datetime->setTimezone($this->_explicitTimezone);
+        } else {
+            if (isset($value) && $this->isValidTimestamp($value)) {
+                $value = date('Y-m-d H:i:s', (int)$value);
+            }
+            $this->_datetime = new DateTime($value ?? 'now', $this->_explicitTimezone);
+        }
+
+        $this->_timezone = $this->_datetime->getTimezone()->getName();
 
         $this->_data = new Arr([
             'second' => $this->_datetime->format('s'),
@@ -233,11 +251,17 @@ class Date extends Val implements IVal
     public function _timestamp($data = null): int|null
     {
         if (is_null($data)) {
-            $timestamp = mktime((int)$this->_data['hour'], (int)$this->_data['minute'], (int)$this->_data['second'], (int)$this->_data['month'], (int)$this->_data['day'], (int)$this->_data['year']);
+            $timestamp = $this->_datetime->getTimestamp();
         } elseif (Num::is($data)) {
             $timestamp = $this->isValidTimestamp($data) ? $data : null;
         } elseif ($data instanceof DateTime) {
             $timestamp = $data->getTimestamp();
+        } elseif ($this->_explicitTimezone && is_string($data)) {
+            try {
+                $timestamp = (new DateTime($data, $this->_explicitTimezone))->getTimestamp();
+            } catch (\Exception) {
+                $timestamp = null;
+            }
         } else {
             $timestamp = strtotime($data) !== false ? strtotime($data) : null;
         }
@@ -263,8 +287,7 @@ class Date extends Val implements IVal
         switch ($arg_count) {
             default:
             case 0:
-                $timestamp = $this->timestamp();
-                $time = date($format, $timestamp);
+                $time = $this->_datetime->format($format);
                 break;
             case 1:
                 $timestamp = $this->timestamp(func_get_arg(0));
@@ -356,9 +379,7 @@ class Date extends Val implements IVal
         switch ($arg_count) {
             default:
             case 0:
-                $timestamp = $this->timestamp();
-
-                $date = date($format, $timestamp);
+                $date = $this->_datetime->format($format);
                 break;
             case 1:
                 if (version_compare(PHP_VERSION, '5.3.0', '>=')) {

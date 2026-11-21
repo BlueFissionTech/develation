@@ -218,6 +218,46 @@ class NumTest extends ValTest
         $this->assertEquals(6, $number->divide(4)->val());
     }
 
+    public function testArithmeticPreservesNativeSignedZeroForInstanceAndStaticDispatch(): void
+    {
+        $cases = [
+            ['multiply', -0.0, 0.9, -0.0 * 0.9],
+            ['divide', -0.0, 0.9, -0.0 / 0.9],
+            ['add', -0.0, -0.0, -0.0 + -0.0],
+            ['subtract', -0.0, 0.0, -0.0 - 0.0],
+            ['multiply', -0.0, '0.9', -0.0 * 0.9],
+            ['multiply', '-0.0', 0.9, '-0.0' * 0.9],
+            ['divide', '-0e0', 0.9, '-0e0' / 0.9],
+            ['add', -0.0, 0.0, -0.0 + 0.0],
+            ['subtract', -0.0, -0.0, -0.0 - -0.0],
+            ['multiply', -0.0, -1.0, -0.0 * -1.0],
+        ];
+
+        foreach ($cases as [$operation, $left, $right, $expected]) {
+            $actual = Num::make($left)->$operation($right)->val();
+            $static = Num::$operation($left, $right);
+            $this->assertIsFloat($actual);
+            $this->assertIsFloat($static);
+            $this->assertSame(json_encode($expected, JSON_PRESERVE_ZERO_FRACTION), json_encode($actual, JSON_PRESERVE_ZERO_FRACTION));
+            $this->assertSame(json_encode($expected, JSON_PRESERVE_ZERO_FRACTION), json_encode($static, JSON_PRESERVE_ZERO_FRACTION));
+        }
+    }
+
+    public function testArithmeticRetainsInvalidAndNonFiniteOperandPolicy(): void
+    {
+        $this->assertSame(0, Num::make(2)->multiply('not numeric')->val());
+        $this->assertSame(3, Num::make(2)->add('1')->val());
+        $this->assertSame(INF, Num::make(INF)->multiply(2)->val());
+        $this->assertTrue(is_nan(Num::make(NAN)->add(2)->val()));
+
+        $changes = 0;
+        $number = Num::make(-0.0);
+        $number->when(\BlueFission\Behavioral\Behaviors\Event::CHANGE, static function () use (&$changes): void { $changes++; });
+        $number->multiply(0.9);
+        $this->assertSame('-0.0', json_encode($number->val(), JSON_PRESERVE_ZERO_FRACTION));
+        $this->assertSame(0, $changes);
+    }
+
     public function testMathAliasesAcceptValueObjects()
     {
         $number = Num::make(10);
@@ -286,6 +326,48 @@ class NumTest extends ValTest
         $this->assertSame(12.75, $number->abs()->val());
         $this->assertSame(12.8, $number->round(1)->val());
         $this->assertSame(12, $number->int());
+    }
+
+    public function testFloorAndCeilMatchNativeValuesAndDispatchTypes(): void
+    {
+        $cases = [1.2, -1.2, 2, -0.0, 1.0e20];
+        foreach ($cases as $input) {
+            foreach (['floor', 'ceil'] as $method) {
+                $expected = $method($input);
+                $number = Num::make($input);
+                $this->assertSame($number, $number->$method());
+                $this->assertIsFloat($number->val());
+                $this->assertSame(json_encode($expected, JSON_PRESERVE_ZERO_FRACTION), json_encode($number->val(), JSON_PRESERVE_ZERO_FRACTION));
+                $static = Num::$method($input);
+                $this->assertIsFloat($static);
+                $this->assertSame(json_encode($expected, JSON_PRESERVE_ZERO_FRACTION), json_encode($static, JSON_PRESERVE_ZERO_FRACTION));
+            }
+        }
+    }
+
+    public function testFloorAndCeilRetainNativeNonFiniteAndInvalidInputPolicy(): void
+    {
+        $this->assertSame(INF, Num::floor(INF));
+        $this->assertSame(-INF, Num::ceil(-INF));
+        $this->assertTrue(is_nan(Num::floor(NAN)));
+        $this->assertTrue(is_nan(Num::ceil(NAN)));
+
+        $number = Num::make(1.2);
+        $changes = 0;
+        $number->when(\BlueFission\Behavioral\Behaviors\Event::CHANGE, static function () use (&$changes): void { $changes++; });
+        $number->floor();
+        $this->assertSame(1.0, $number->val());
+        $this->assertSame(1, $changes);
+
+        foreach (['floor', 'ceil'] as $method) {
+            $invalid = Num::make('not numeric');
+            try {
+                $invalid->$method();
+                $this->fail('Invalid input must not be rounded.');
+            } catch (\TypeError $exception) {
+                $this->assertSame('not numeric', $invalid->val());
+            }
+        }
     }
 
     public function testIncrementAndDecrementHelpers()
