@@ -2,6 +2,7 @@
 
 namespace BlueFission\Net;
 
+use BlueFission\Connections\Curl;
 use Http\Discovery\HttpClientDiscovery;
 use Http\Discovery\Strategy\CommonClassesStrategy;
 use Http\Discovery\Strategy\DiscoveryStrategy;
@@ -19,4 +20,6 @@ class HTTPClientFactory
 // Register the factory with HTTPlug Discovery
 ClassDiscovery::appendStrategy(CommonClassesStrategy::class);
 HttpClientDiscovery::prependStrategy(CommonClassesStrategy::class);
-HttpClientDiscovery::prependCandidate(HTTPClient::class, HTTPClientFactory::class, []);
+if (method_exists(HttpClientDiscovery::class, 'prependCandidate')) {
+    HttpClientDiscovery::prependCandidate(HTTPClient::class, HTTPClientFactory::class, []);
+}
