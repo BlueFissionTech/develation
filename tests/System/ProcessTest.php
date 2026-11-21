@@ -103,6 +103,47 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    public function testFailedStartRemovesOwnedCaptureFiles(): void
+    {
+        $process = new class($this->command(), null, null, null, ['windows_safe' => true]) extends Process {
+            public array $createdCapturePaths = [];
+
+            protected function isWindows(): bool
+            {
+                return true;
+            }
+
+            protected function prepareWindowsSafeCapture(): void
+            {
+                parent::prepareWindowsSafeCapture();
+                $this->createdCapturePaths = [$this->_stdoutFile, $this->_stderrFile];
+            }
+
+            protected function openProcess(array $descriptorSpec)
+            {
+                return false;
+            }
+        };
+
+        $logFile = tempnam(sys_get_temp_dir(), 'bf_proc_log_');
+        $originalLog = ini_get('error_log');
+        try {
+            ini_set('error_log', $logFile);
+            $process->start();
+
+            $this->assertCount(2, $process->createdCapturePaths);
+            foreach ($process->createdCapturePaths as $path) {
+                $this->assertFileDoesNotExist($path);
+            }
+        } finally {
+            ini_set('error_log', $originalLog);
+            @unlink($logFile);
+            foreach ($process->createdCapturePaths as $path) {
+                @unlink($path);
+            }
+        }
+    }
+
     private function waitForProcess(Process $process): void
     {
         $deadline = microtime(true) + 5;
