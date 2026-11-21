@@ -2,6 +2,8 @@
 
 namespace BlueFission\Data\Support;
 
+use BlueFission\Str;
+
 /** Read one bounded logical CSV record from a local regular file. */
 trait ReadsCSV
 {
@@ -28,19 +30,19 @@ trait ReadsCSV
 		if ($maxBytes < 0) {
 			throw new \InvalidArgumentException('Maximum CSV record bytes must not be negative.');
 		}
-		if (strlen($delimiter) !== 1 || strlen($enclosure) !== 1
-			|| ($escape !== '' && strlen($escape) !== 1)
+		if (Str::len($delimiter) !== 1 || Str::len($enclosure) !== 1
+			|| ($escape !== '' && Str::len($escape) !== 1)
 			|| $delimiter === $enclosure
 			|| ($escape !== '' && ($escape === $delimiter || $escape === $enclosure))
-			|| str_contains("\r\n", $delimiter)
-			|| str_contains("\r\n", $enclosure)
-			|| ($escape !== '' && str_contains("\r\n", $escape))) {
+			|| Str::has("\r\n", $delimiter)
+			|| Str::has("\r\n", $enclosure)
+			|| ($escape !== '' && Str::has("\r\n", $escape))) {
 			throw new \InvalidArgumentException('CSV delimiter, enclosure and escape must be distinct single-byte symbols.');
 		}
 
 		$hasScheme = preg_match('~^[a-z][a-z0-9+.-]*:~i', $path) === 1;
 		$isDrivePath = preg_match('~^[a-z]:(?!//)~i', $path) === 1;
-		if ($path === '' || str_contains($path, "\0") || ($hasScheme && !$isDrivePath)) {
+		if ($path === '' || Str::has($path, "\0") || ($hasScheme && !$isDrivePath)) {
 			throw new \InvalidArgumentException('A local file path is required.');
 		}
 		if (!file_exists($path)) {
@@ -104,7 +106,7 @@ trait ReadsCSV
 						$feed = $bomPending;
 						$bomPending = '';
 						$bomDecided = true;
-					} elseif (strlen($bomPending) === 3) {
+					} elseif (Str::len($bomPending) === 3) {
 						$bomPending = '';
 						$bomDecided = true;
 						continue;
@@ -115,7 +117,7 @@ trait ReadsCSV
 					$feed = $byte;
 				}
 
-				for ($index = 0, $length = strlen($feed); $index < $length; $index++) {
+				for ($index = 0, $length = Str::len($feed); $index < $length; $index++) {
 					if (self::consumeCsvByte($feed[$index], $delimiter, $enclosure, $escape, $fields, $field, $state, $escaped)) {
 						return $fields;
 					}
