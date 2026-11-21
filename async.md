@@ -8,7 +8,7 @@ worker, server, provider, or extension.
 | Surface | Execution and lifecycle | Prerequisites and unavailable behavior |
 | --- | --- | --- |
 | `Promise` | `try()` invokes the action in the current PHP call; `then()` callbacks run when the action resolves or rejects. Construction alone does not execute it. | Core PHP; no parallel execution by itself. Existing unit tests cover resolve and reject callbacks. |
-| `Async::exec()` / `run()` | `exec()` queues a promise in the default `SplPriorityQueue`; `run()` drains queued callables in the caller's PHP process, one after another. The `max_concurrency` configuration is not a worker-pool guarantee. A provider-free regression test covers explicit drain. | Core SPL. No background worker or concurrent execution is started by `exec()` alone. Destructor drain is an implementation detail, not a scheduling contract; call `run()` explicitly when completion matters. |
+| `Async::exec()` / `run()` | `exec()` queues a promise in the default `SplPriorityQueue`; `run()` drains queued callables in the caller's PHP process, one after another. The `max_concurrency` configuration is not a worker-pool guarantee. Provider-free tests cover explicit drain, order, no replay after drain, and a rejected promise followed by another task. | Core SPL. No background worker or concurrent execution is started by `exec()` alone. Destructor drain is an implementation detail, not a scheduling contract; call `run()` explicitly when completion matters. |
 | `Fork::do()` | Queues an action that calls `pcntl_fork()` when drained. Parent performs a non-blocking child status check; the caller must separately manage child completion. | Optional `pcntl` function. `do()` throws if unavailable. The process fixture is skipped without it; do not assume this path on Windows or every SAPI. |
 | `Thread::do()` | Queues an action that creates a `parallel\Runtime` and waits on the future's `value()` during drain. This is not a general multi-worker scheduler. | Optional `parallel` runtime and a compatible thread-safe PHP build/SAPI. No provider-free lifecycle fixture currently verifies this path; treat it as unverified until tested on the target runtime. |
 | `Shell::do()` | Queues a generator action intended to poll `System\Process`, but `Promise::try()` does not iterate the generator returned by that action. The current `Shell::do()` path therefore does not establish that a process starts when the queue drains. | Local `proc_open` capability would be needed for a working process path. The existing shell test accepts a null result and is not execution proof; bounded stderr, timeout, cancellation, and cleanup remain separate contract work. |
@@ -23,6 +23,34 @@ receipt-based claim, acknowledgement, release, and recovery APIs, but a queue
 backend does not itself run jobs. `Async::setQueue()` must not be assumed to
 accept every `IQueue` implementation interchangeably: their static enqueue
 signatures and payload shapes need separate compatibility proof.
+
+For a provider-free local drain, define a subclass (the base `Async` is
+abstract) and attach completion handlers before calling `run()`:
+
+```php
+use BlueFission\Async\Async;
+
+class LocalTasks extends Async {}
+
+$result = null;
+LocalTasks::exec(static function ($resolve, $reject): void {
+    $resolve('complete');
+})->then(static function ($value) use (&$result): void {
+    $result = $value;
+});
+
+// No task has run yet. This call drains synchronously in the current process.
+LocalTasks::run();
+assert($result === 'complete');
+```
+
+A promise that explicitly rejects invokes its rejection callback; the
+provider-free fixture shows a subsequent queued task still executes. This is
+not a durable retry, cancellation, graceful-shutdown, or arbitrary-exception
+guarantee. `Promise::try()` catches `Exception`, not every `Throwable`, and
+the current queue has no persistence or worker supervision contract. Handle
+idempotency and retry policy at the owning application boundary until those
+paths have separate qualification.
 
 For a reproducible offline baseline, run:
 
