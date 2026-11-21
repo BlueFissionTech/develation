@@ -23,10 +23,10 @@ without primitive wrapping.
 `Func::callAdapted(...$args): mixed` would adapt only arguments whose *actual
 reflected callable parameter* declares exactly one of `Str`, `Num`, or `Arr`
 (or that one type plus `null`). It would then invoke the same wrapped callable
-once. The ordinary `call()`, `__invoke()`, constructor, and `signature()` paths
-remain unchanged. A callable array or invokable object already wrapped by
-`Func` can use this entry point; no new general-purpose object method invoker
-is proposed.
+once for supported by-value parameters. The ordinary `call()`, `__invoke()`,
+constructor, and `signature()` paths remain unchanged. A callable array or
+invokable object already wrapped by `Func` can use this entry point; no new
+general-purpose object method invoker is proposed.
 
 | Parameter/input | Proposed behavior |
 | --- | --- |
@@ -36,7 +36,7 @@ is proposed.
 | Parameter with an omitted default | Leave it omitted; let PHP apply the declared default. |
 | Variadic primitive parameter | Adapt each supplied positional or named variadic value independently; preserve key/order semantics. |
 | Plain native type, interface, unrelated class, mixed, or multi-type union | Do not adapt; pass to PHP's normal type check. |
-| Primitive parameter declared by reference | Do not replace an aliased caller value. If it needs conversion, reject before invoking; an already-typed object remains by-reference. |
+| Primitive parameter declared by reference | Reject before invoking, even for an already-typed object. The by-value variadic entry point cannot preserve reassignment of the caller's reference. |
 | Unsupported native value or a failed primitive conversion | Fail before invoking, with a type/conversion exception that identifies the parameter but does not include sensitive argument contents. |
 
 Named arguments should be matched by reflected name and forwarded with their
@@ -51,15 +51,23 @@ supported is a review question, not an implicit promise. A union that contains
 both a primitive and another non-null type is ambiguous and is left unchanged
 in this proposal.
 
+The proposed by-value `...$args` boundary cannot preserve a caller reference
+when the callable reassigns an already-typed by-reference parameter. Object
+mutation through a shared object is not the same guarantee. This entry point
+therefore rejects reflected reference parameters rather than claiming partial
+reference preservation; a separate reference-capable transport would require
+its own public API and compatibility review.
+
 ## Test and compatibility plan
 
 - Closure and callable-array/invokable-object cases for each primitive, with
   exact object identity for already-typed values and a single callback call.
 - Nullable and omitted-default cases; positional, named, and variadic inputs
   without argument reordering or duplicate invocation.
-- A by-reference primitive parameter: already-typed object preserves the
-  reference; scalar conversion fails without changing caller state or running
-  the callback.
+- A by-reference primitive parameter: both an already-typed object and a
+  scalar are rejected before invoking; assert the caller's variable and
+  object state remain unchanged. Include a callback that would reassign the
+  parameter to prove that no false reference-preservation claim is made.
 - Multi-type union, unrelated native/class type, unknown named argument, and
   unsupported conversion: assert explicit failure and no side effect.
 - Existing `Func::call()` and `__invoke()` tests remain unchanged, including
@@ -69,6 +77,6 @@ in this proposal.
   flag or cache mutable argument data across calls.
 
 Maintainers and affected callers must review the public entry point, exact
-factory input policy, named/variadic/reference behavior, error type, and
+factory input policy, named/variadic/reference rejection, error type, and
 performance tradeoff before implementation. This remains distinct from the
 internal-usage audit in #302 and does not complete issue #308.
