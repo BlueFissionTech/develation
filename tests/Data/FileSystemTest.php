@@ -248,6 +248,30 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		FileSystem::fileContentsBounded($path, 5);
 	}
 
+	public function testBoundedReadRejectsGrowthAfterInitialSizeCheck()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'growing.txt';
+		$handle = fopen($path, 'w+b');
+		$this->assertNotFalse($handle);
+
+		try {
+			fwrite($handle, 'abc');
+			fflush($handle);
+			$this->assertSame(3, fstat($handle)['size']);
+
+			// Grow the same regular file after the size check, before the read.
+			fwrite($handle, 'de');
+			fflush($handle);
+			rewind($handle);
+
+			$reader = new \ReflectionMethod(FileSystem::class, 'readBoundedHandle');
+			$this->expectException(\LengthException::class);
+			$reader->invoke(null, $handle, 3);
+		} finally {
+			fclose($handle);
+		}
+	}
+
 	public function testBoundedFileContentsMeasuresBytesNotCharacters()
 	{
 		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'unicode.txt';
