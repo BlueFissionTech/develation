@@ -110,6 +110,33 @@ class SchemaTest extends \PHPUnit\Framework\TestCase
         $this->assertSame([], $diagnostics);
     }
 
+    public function testRepeatedWrapperRejectionClearsErrorsAfterNativeRecovery(): void
+    {
+        $schema = new Schema([
+            'value' => ['constraints' => [static fn ($value): bool => !$value instanceof IVal]],
+        ], ['strict' => true]);
+        $wrapper = Num::make(1.25);
+        $diagnostics = [];
+        set_error_handler(static function (int $severity, string $message) use (&$diagnostics): bool {
+            $diagnostics[] = [$severity, $message];
+            return true;
+        });
+
+        try {
+            for ($attempt = 0; $attempt < 2; $attempt++) {
+                $this->assertFalse($schema->validate(['value' => $wrapper]));
+                $this->assertNotEmpty($schema->errorsFor('value'));
+                $this->assertSame(1.25, $wrapper->val());
+            }
+            $this->assertTrue($schema->validate(['value' => 1.25]));
+            $this->assertSame([], $schema->errors());
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $diagnostics);
+    }
+
     public function testNumericWrapperConstraintKeepsCastingAndNestedValidationDistinct(): void
     {
         $rejectWrappers = static fn ($value): bool => !$value instanceof IVal;
