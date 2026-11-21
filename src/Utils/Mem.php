@@ -16,6 +16,7 @@ class Mem
     protected static $storage;
     protected static $id_key = 'memory_pool_id';
     public const SLEEPING = 'SLEEPING'; // Placeholder for sleeping objects
+    private const WRITE_PENDING = 'Mem sleep write pending.';
 
     public static function setStorage(Storage $storage)
     {
@@ -37,7 +38,13 @@ class Mem
             self::$storage->clear();
             self::$storage->{self::$id_key} = $id;
             self::$storage->data = $serializedData;
+            // status() is append-only. Mask any earlier success before asking
+            // this write to provide fresh confirmation.
+            self::$storage->status(self::WRITE_PENDING);
             self::$storage->write();
+            if (self::$storage->status() !== Storage::STATUS_SUCCESS) {
+                throw new \RuntimeException('Memory object could not be stored.');
+            }
         }
     }
 

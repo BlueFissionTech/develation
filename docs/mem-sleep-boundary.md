@@ -13,12 +13,17 @@ specific storage backend, persistent durability, write-failure recovery, or
 concurrent access.
 
 A store that throws during `write()` leaves the original object registered;
-the exception remains visible. A backend that returns normally without
-actually persisting cannot be distinguished through the current generic
-`Storage::write()` return contract, so silent-write failure remains unqualified.
+the exception remains visible. `sleep()` now also requires the configured
+store to report a **fresh** `Storage::STATUS_SUCCESS` after its write. A
+reported failure or absent success throws a generic `RuntimeException` and
+keeps the original object in the pool. Custom storage implementations must
+report success for a completed write; returning the store object alone is not
+confirmation. This is an observable compatibility change for such stores.
+The status is only a backend report, not proof that bytes are durable: a
+backend that falsely reports success or loses data later remains unqualified.
 
 Storage supplied to `Mem` must be trusted: `wakeup()` currently calls PHP
 `unserialize()` on the retrieved bytes. Do not use it with untrusted or
 externally mutable state. A safe untrusted-state policy and a verified
-write/retention outcome are separate contract and implementation work under
-issue #342; this change must not be treated as approval of either.
+durable write/retention outcome are separate contract and implementation work
+under issue #342; this change must not be treated as approval of either.

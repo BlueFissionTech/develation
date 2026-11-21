@@ -48,6 +48,7 @@ class MemSleepTest extends TestCase
             public function write(): IObj
             {
                 $this->records[$this->memory_pool_id] = $this->data;
+                $this->status(self::STATUS_SUCCESS);
                 return $this;
             }
 
@@ -102,5 +103,64 @@ class MemSleepTest extends TestCase
         }
 
         $this->assertSame($object, Mem::get('write-failed'));
+    }
+
+    public function testFailedOrSilentWriteCannotReuseAnEarlierSuccess(): void
+    {
+        $storage = new class extends Storage {
+            public string $mode = 'success';
+
+            public function write(): IObj
+            {
+                if ($this->mode === 'success') {
+                    $this->status(self::STATUS_SUCCESS);
+                } elseif ($this->mode === 'failed') {
+                    $this->status(self::STATUS_FAILED);
+                }
+                return $this;
+            }
+        };
+        Mem::setStorage($storage);
+        Mem::register((object) ['value' => 'first'], 'first');
+        Mem::sleep('first');
+        $this->assertNull(Mem::get('first'));
+
+        foreach (['failed', 'silent'] as $mode) {
+            $storage->mode = $mode;
+            $object = (object) ['value' => 'still available'];
+            Mem::register($object, $mode);
+            $failure = null;
+            try {
+                Mem::sleep($mode);
+            } catch (\RuntimeException $exception) {
+                $failure = $exception;
+            }
+            $this->assertInstanceOf(\RuntimeException::class, $failure);
+            $this->assertSame('Memory object could not be stored.', $failure->getMessage());
+            $this->assertSame($object, Mem::get($mode));
+        }
+    }
+
+    public function testWriteWithoutFreshSuccessCannotDiscardTheObject(): void
+    {
+        $storage = new class extends Storage {
+            public function write(): IObj
+            {
+                return $this;
+            }
+        };
+        Mem::setStorage($storage);
+        $object = (object) ['value' => 'unconfirmed'];
+        Mem::register($object, 'unconfirmed');
+
+        $failure = null;
+        try {
+            Mem::sleep('unconfirmed');
+        } catch (\RuntimeException $exception) {
+            $failure = $exception;
+        }
+        $this->assertInstanceOf(\RuntimeException::class, $failure);
+        $this->assertSame('Memory object could not be stored.', $failure->getMessage());
+        $this->assertSame($object, Mem::get('unconfirmed'));
     }
 }
