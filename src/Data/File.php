@@ -113,6 +113,10 @@ class File extends Hierarchical implements IDispatcher
      */
     public function read(): ICollection
     {
+        if ($this->_root === null) {
+            throw new \LogicException('No storage backend is bound to this file.');
+        }
+
         // Check if storage has a readable interface
         if (method_exists($this->_root, 'read')) {
             $storage = new ReflectionClass(get_class($this->_root));
@@ -137,6 +141,10 @@ class File extends Hierarchical implements IDispatcher
      */
     public function write(): ICollection
     {
+        if ($this->_root === null) {
+            throw new \LogicException('No storage backend is bound to this file.');
+        }
+
         // Check if storage has a write method
         if (method_exists($this->_root, 'write')) {
             $storage = new ReflectionClass(get_class($this->_root));

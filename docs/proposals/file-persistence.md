@@ -7,14 +7,15 @@ this document as a migration instruction or as evidence of a released contract.
 
 | Surface | Observed behavior | Contract consequence |
 | --- | --- | --- |
-| `File` / `doc()` | The no-argument constructor starts with no backend. `contents()` and `append()` change only the in-memory buffer. `write()` and `read()` call `method_exists()` on a null backend and raise `TypeError`. | A buffer-only file must fail deliberately when persistence is requested. A read-only `exists()` probe must remain usable without binding or creating anything. |
+| `File` / `doc()` | The no-argument constructor starts with no backend. `contents()` and `append()` change only the in-memory buffer. Before the unbound-operation guard, `write()` and `read()` called `method_exists()` on a null backend and raised `TypeError`. The follow-on guard reports `LogicException` instead. | A buffer-only file must fail deliberately when persistence is requested. A read-only `exists()` probe must remain usable without binding or creating anything. |
 | `Directory` | Its constructor accepts `IData`. | This does not prove `IData` is sufficient for `File`: `File::read()` and `File::write()` also expect a backend with `NAME_FIELD` and `PATH_FIELD` static metadata. |
 | `FileSystem` | Supports a configured root and explicit `mkdir()`. Its existing write path transforms existing text MIME content with `stripslashes()`. The first #259 slice covers empty-string and string-zero replacement, not arbitrary byte fidelity. | Legacy `write()` behavior must not change implicitly. Exact replacement needs a separate opt-in path and a verified root/target boundary. |
 | `Disk` storage | Exposes the storage metadata used by `File`, but must be activated. It can JSON-encode empty content and delegates disk writes through `FileSystem`. | It is not currently a literal-byte backend merely because it implements `IData`. |
 
-The concrete `File` no-backend reproduction on PHP 8.2 raises a `TypeError`
-from `method_exists(null, 'write')`. This proposal does not select a public
-binding signature based on the `Directory` constructor alone.
+The original `File` no-backend reproduction on PHP 8.2 raised a `TypeError`
+from `method_exists(null, 'write')`. The follow-on unbound-operation guard
+changes only that failure mode; it does not select a public binding signature
+based on the `Directory` constructor alone.
 
 ## Proposed acceptance contract
 
