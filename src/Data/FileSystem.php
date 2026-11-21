@@ -955,6 +955,70 @@ class FileSystem extends Data implements IData {
 	}
 
 	/**
+	 * List matching regular-file basenames from exactly one local directory.
+	 * `*` matches zero or more Unicode characters and `?` one character;
+	 * other pattern characters are literal. Hidden names are included, matching
+	 * is case-sensitive on every host, and symlinks are excluded. The byte-order
+	 * sort and lack of content filters keep this read-only result predictable.
+	 *
+	 * @return array<string> Sorted basenames, or [] for no matches.
+	 * @throws \InvalidArgumentException For invalid local path or pattern.
+	 * @throws \UnexpectedValueException For a non-directory target.
+	 * @throws \RuntimeException For missing/unreadable directory or scan error.
+	 */
+	public static function matchingFiles(string $directory, string $pattern = '*'): array
+	{
+		$hasScheme = preg_match('~^[a-z][a-z0-9+.-]*:~i', $directory) === 1;
+		$isDrivePath = preg_match('~^[a-z]:(?!//)~i', $directory) === 1;
+		if ($directory === '' || Str::has($directory, "\0") || ($hasScheme && !$isDrivePath)) {
+			throw new \InvalidArgumentException('A local directory path is required.');
+		}
+		if ($pattern === '' || $pattern === '..' || Str::has($pattern, '/')
+			|| Str::has($pattern, '\\') || Str::has($pattern, "\0")
+			|| Str::has($pattern, '[') || Str::has($pattern, ']')
+			|| preg_match('//u', $pattern) !== 1) {
+			throw new \InvalidArgumentException('Pattern must be a UTF-8 basename using only * and ? wildcards.');
+		}
+		if (!file_exists($directory)) {
+			throw new \RuntimeException('Directory does not exist.');
+		}
+		if (!is_dir($directory)) {
+			throw new \UnexpectedValueException('Target is not a directory.');
+		}
+		if (!is_readable($directory)) {
+			throw new \RuntimeException('Directory is not readable.');
+		}
+
+		// Compile the validated bytes directly: value filters must not rewrite
+		// the caller's pattern during this read-only directory scan.
+		$wildcards = '';
+		for ($index = 0, $length = strlen($pattern); $index < $length; $index++) {
+			$byte = $pattern[$index];
+			$wildcards .= $byte === '*' ? '.*' : ($byte === '?' ? '.' : preg_quote($byte, '~'));
+		}
+		$expression = '~\A' . $wildcards . '\z~us';
+		$entries = @scandir($directory, SCANDIR_SORT_NONE);
+		if ($entries === false) {
+			throw new \RuntimeException('Directory could not be listed.');
+		}
+
+		$matches = [];
+		$last = substr($directory, -1);
+		$prefix = $directory . ($last === '/' || $last === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR);
+		foreach ($entries as $entry) {
+			if ($entry === '.' || $entry === '..' || preg_match($expression, $entry) !== 1) {
+				continue;
+			}
+			$target = $prefix . $entry;
+			if (!is_link($target) && is_file($target)) {
+				$matches[] = $entry;
+			}
+		}
+		sort($matches, SORT_STRING);
+		return $matches;
+	}
+
+	/**
 	 * Return file contents split into iterable line values.
 	 *
 	 * This helper reads the current file target when one is configured,
