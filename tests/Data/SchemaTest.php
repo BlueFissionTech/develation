@@ -1,6 +1,7 @@
 <?php
 namespace BlueFission\Tests\Data;
 
+use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Data\Schema;
 use BlueFission\Data\Schema\FieldDefinition;
 use BlueFission\IVal;
@@ -108,6 +109,57 @@ class SchemaTest extends \PHPUnit\Framework\TestCase
         }
 
         $this->assertSame([], $diagnostics);
+    }
+
+    public function testRepeatedWrapperRejectionClearsErrorsAfterNativeRecovery(): void
+    {
+        $schema = new Schema([
+            'value' => ['constraints' => [static fn ($value): bool => !$value instanceof IVal]],
+        ], ['strict' => true]);
+        $wrapper = Num::make(1.25);
+        $diagnostics = [];
+        set_error_handler(static function (int $severity, string $message) use (&$diagnostics): bool {
+            $diagnostics[] = [$severity, $message];
+            return true;
+        });
+
+        try {
+            for ($attempt = 0; $attempt < 2; $attempt++) {
+                $this->assertFalse($schema->validate(['value' => $wrapper]));
+                $this->assertNotEmpty($schema->errorsFor('value'));
+                $this->assertSame(1.25, $wrapper->val());
+            }
+            $this->assertTrue($schema->validate(['value' => 1.25]));
+            $this->assertSame([], $schema->errors());
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $diagnostics);
+    }
+
+    public function testWrapperRejectionAndRecoveryPreserveSchemaEvents(): void
+    {
+        $schema = new Schema([
+            'value' => ['constraints' => [static fn ($value): bool => !$value instanceof IVal]],
+        ], ['strict' => true]);
+        $events = [];
+        foreach ([Event::FAILURE, Event::SUCCESS, Event::PROCESSED] as $name) {
+            $schema->when(new Event($name), static function () use (&$events, $name): void {
+                $events[] = $name;
+            });
+        }
+
+        $wrapper = Num::make(1.25);
+        $this->assertFalse($schema->validate(['value' => $wrapper]));
+        $this->assertNotEmpty($schema->errorsFor('value'));
+        $this->assertTrue($schema->validate(['value' => 1.25]));
+        $this->assertSame([], $schema->errors());
+        $this->assertSame(1.25, $wrapper->val());
+        $this->assertSame(
+            [Event::FAILURE, Event::PROCESSED, Event::SUCCESS, Event::PROCESSED],
+            $events
+        );
     }
 
     public function testNumericWrapperConstraintKeepsCastingAndNestedValidationDistinct(): void
