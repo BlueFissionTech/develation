@@ -294,6 +294,19 @@ $result = $console->working('Fetching', function () {
 $console->writeln('Result: ' . $result);
 ```
 
+`BlueFission\Cli\ArgvTokenizer::tokenize($line, $allowedCommands)` converts one
+authored command line to argv for `Args::parse()` without invoking a shell.
+`$allowedCommands` is a required array of exact, case-sensitive command names;
+an empty or unknown command fails before any dispatcher is called. Single and
+double quotes group spaces and can produce empty arguments. A backslash
+escapes a quote or another backslash; outside quotes it can also escape an
+ASCII space. Other backslashes remain literal, so Windows path separators are
+not consumed. Unquoted `;`, `|`, `&`, `<`, `>`, backticks, `$`, `%`, `(`, `)` and
+`!` are rejected; inside quotes they remain literal data. NUL, line breaks
+and unclosed quotes fail. The tokenizer does not expand variables, wildcards,
+paths or home directories, and it never launches a process. Callers must still
+authorize command dispatch and validate arguments after tokenization.
+
 For sensitive CLI input, use `BlueFission\Cli\Util\Prompt::askSensitive($message,
 $reader, $default = null, $trim = false)` with a caller-supplied reader. The
 reader receives only the prompt text and must return a string, `null`, or
