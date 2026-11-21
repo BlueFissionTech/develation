@@ -103,6 +103,31 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    public function testFailedStartCannotBeObservedAsSuccessfulExit(): void
+    {
+        $process = new class($this->command()) extends Process {
+            protected function openProcess(array $descriptorSpec)
+            {
+                return false;
+            }
+        };
+
+        $logFile = tempnam(sys_get_temp_dir(), 'bf_proc_log_');
+        $originalLog = ini_get('error_log');
+        try {
+            ini_set('error_log', $logFile);
+            $process->start();
+
+            // The result shape is still under review. Observation and cleanup
+            // must at least remain safe and must not report a successful exit.
+            $this->assertNotSame(true, $process->status());
+            $this->assertNotSame(0, $process->close());
+        } finally {
+            ini_set('error_log', $originalLog);
+            @unlink($logFile);
+        }
+    }
+
     private function waitForProcess(Process $process): void
     {
         $deadline = microtime(true) + 5;
