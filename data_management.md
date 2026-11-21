@@ -29,6 +29,8 @@ $store->write();
 ```
 
 `Disk::contents()` is the raw-content override. Pass a string for raw contents;
+an explicitly supplied empty string replaces the file with zero bytes rather
+than falling back to JSON fields. The string `"0"` is also written literally;
 use `assign()` for JSON object fields as above. Passing an array or a
 non-stringable object directly to `contents()` is not a structured-storage
 codec: `write()` rejects it before changing the file and reports

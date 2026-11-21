@@ -109,9 +109,14 @@ class Disk extends Storage implements IData
 		$unsupportedExplicitContents = !$this->_contentsFromRead
 			&& (is_array($this->_contents)
 				|| (is_object($this->_contents) && !($this->_contents instanceof \Stringable)));
-		$data = $this->_contentsFromRead
-			? HTTP::jsonEncode((object)$this->_data->val())
-			: (Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents);
+		if ($this->_contentsFromRead) {
+			$data = HTTP::jsonEncode((object)$this->_data->val());
+		} elseif ($this->_contents === '' || !Val::isEmpty($this->_contents)) {
+			// An explicitly supplied empty string replaces the file with empty bytes.
+			$data = $this->_contents;
+		} else {
+			$data = HTTP::jsonEncode($this->_data->val());
+		}
 
 		$data = Dev::apply(null, $data);
 		if ($unsupportedExplicitContents || is_array($data)
