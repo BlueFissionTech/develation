@@ -7,6 +7,11 @@ use PHPUnit\Framework\TestCase;
 
 class CurlHelperProbe extends Curl
 {
+    public function getTarget(string $target, array $data): string
+    {
+        return $this->getTargetWithQuery($target, $data);
+    }
+
     public function headers($headers): array
     {
         return $this->normalizeHeaders($headers);
@@ -20,6 +25,19 @@ class CurlHelperProbe extends Curl
 
 class CurlHelperTest extends TestCase
 {
+    public function testGetTargetPreservesPathAndAppendsQueryBeforeFragment(): void
+    {
+        $curl = new CurlHelperProbe();
+
+        $this->assertSame('https://example.test/items', $curl->getTarget('https://example.test/items', []));
+        $this->assertSame('https://example.test/items?existing=1&added=two',
+            $curl->getTarget('https://example.test/items?existing=1', ['added' => 'two']));
+        $this->assertSame('https://example.test/items?added=two#part',
+            $curl->getTarget('https://example.test/items#part', ['added' => 'two']));
+        $this->assertSame('https://example.test/items?existing=1#part',
+            $curl->getTarget('https://example.test/items?existing=1#part', []));
+    }
+
     public function testNormalizeHeadersCastsAssociativeValues(): void
     {
         $curl = new CurlHelperProbe();
