@@ -3,6 +3,7 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Num;
+use BlueFission\Behavioral\Behaviors\Event;
 
 class NumTest extends ValTest
 {
@@ -37,6 +38,52 @@ class NumTest extends ValTest
         $this->assertFalse(is_numeric($object->val()));
         $this->assertTrue(is_numeric($object()));
         // $this->assertTrue(is_numeric($object->cast()->val()));
+    }
+
+    public function testAutomaticCastingPreservesLargeFiniteFloatsAndCallableIsolation()
+    {
+        foreach ([1e100, -1e100, (float)PHP_INT_MAX] as $value) {
+            $number = new Num($value);
+
+            $this->assertSame($value, $number->val());
+            $this->assertSame($value, $number());
+            $this->assertSame($value, $number->val());
+            $this->assertSame($value, (new Num($value))->cast()->val());
+            $this->assertSame($value, (new Num($value, cast: true))->val());
+        }
+    }
+
+    public function testAutomaticCastingKeepsRepresentableIntegersAndNegativeZeroDistinct()
+    {
+        $this->assertSame(42, (new Num(42.0))->cast()->val());
+        $this->assertSame(PHP_INT_MIN, (new Num((float)PHP_INT_MIN))->cast()->val());
+        $this->assertSame(42, (new Num('42'))->cast()->val());
+        $this->assertSame(42, (new Num('42', cast: true))->val());
+        $this->assertSame(PHP_INT_MAX, (new Num((string)PHP_INT_MAX))->cast()->val());
+        $this->assertSame(PHP_INT_MIN, (new Num((string)PHP_INT_MIN, cast: true))->val());
+        $this->assertSame(2.5, (new Num(2.5))->cast()->val());
+        $this->assertSame(1e100, (new Num('1e100', cast: true))->val());
+        $this->assertSame(0, (new Num(null))->cast()->val());
+
+        $negativeZero = new Num(-0.0);
+        $this->assertSame(serialize(-0.0), serialize($negativeZero()));
+        $this->assertSame(serialize(-0.0), serialize($negativeZero->cast()->val()));
+        $this->assertSame(serialize(-0.0), serialize((new Num(-0.0, cast: true))->val()));
+    }
+
+    public function testAutomaticCastingPreservesNonfiniteValuesAndChangeEvent()
+    {
+        $this->assertTrue(is_infinite((new Num(INF))->cast()->val()));
+        $this->assertTrue(is_nan((new Num(NAN))->cast()->val()));
+
+        $number = new Num(1e100);
+        $changes = 0;
+        $number->when(Event::CHANGE, function () use (&$changes): void {
+            $changes++;
+        });
+        $this->assertSame(1e100, $number->cast()->val());
+        $this->assertSame('double', $number->getType());
+        $this->assertSame(1, $changes);
     }
 
     public function testZeroAsValidNumber()
