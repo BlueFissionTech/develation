@@ -138,6 +138,15 @@ class SQLiteLinkTest extends \PHPUnit\Framework\TestCase
             }
         }
         $this->assertFalse($result->fetchArray(SQLITE3_ASSOC));
+
+        $matched = $link->query(
+            'SELECT payload, typeof(payload) AS payload_type FROM fixture WHERE payload = ?',
+            [new SQLiteBlob("A\0B")]
+        )->result()->fetchArray(SQLITE3_ASSOC);
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+        $this->assertSame(bin2hex("A\0B"), bin2hex($matched['payload']));
+        $this->assertSame(strlen("A\0B"), strlen($matched['payload']));
+        $this->assertSame('blob', $matched['payload_type']);
     }
 
     public function testBlobWritePreservesLegacyNormalizationForOtherFields(): void

@@ -124,6 +124,7 @@ class SQLiteTest extends \PHPUnit\Framework\TestCase
             $row = $result->fetchArray(SQLITE3_ASSOC);
             $firstId ??= $row['id'];
             $this->assertSame(bin2hex($bytes), bin2hex($row['payload']));
+            $this->assertSame(strlen($bytes), strlen($row['payload']));
             $this->assertSame('blob', $row['payload_type']);
         }
         $result->finalize();
@@ -139,8 +140,26 @@ class SQLiteTest extends \PHPUnit\Framework\TestCase
         $db = new \SQLite3($this->_database);
         $row = $db->querySingle('SELECT payload, typeof(payload) AS payload_type FROM bytes WHERE id = ' . (int)$firstId, true);
         $this->assertSame(bin2hex("updated\0\xff"), bin2hex($row['payload']));
+        $this->assertSame(strlen("updated\0\xff"), strlen($row['payload']));
         $this->assertSame('blob', $row['payload_type']);
         $db->close();
+    }
+
+    public function testFailedBlobStorageReadCannotReportSuccess(): void
+    {
+        $db = new \SQLite3($this->_database);
+        $this->assertTrue($db->exec('CREATE TABLE bytes (id INTEGER PRIMARY KEY, payload BLOB)'));
+        $db->close();
+
+        $storage = new SQLite(['location' => $this->_database, 'name' => 'bytes']);
+        $storage->activate();
+        $db = new \SQLite3($this->_database);
+        $this->assertTrue($db->exec('DROP TABLE bytes'));
+        $db->close();
+
+        $storage->readAll();
+        $this->assertNotSame(SQLite::STATUS_SUCCESS, $storage->status());
+        $this->assertSame([], $storage->fetchRows());
     }
 
     public function testFailedBlobStorageWriteCannotReportSuccess(): void
