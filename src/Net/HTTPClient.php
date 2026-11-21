@@ -33,15 +33,26 @@ class HTTPClient implements ClientInterface
             $this->_curl->assign($this->requestBodyPayload($body));
         }
 
-        $this->_curl
-            ->open()
-            ->query()
-            ->close();
+        try {
+            $this->_curl->open()->query();
+            $statusCode = $this->getStatusCode();
+            $headers = $this->getHeaders();
+            $result = $this->_curl->result();
+        } catch (\Throwable $exception) {
+            try {
+                $this->_curl->close();
+            } catch (\Throwable $closeException) {
+                // Preserve the original request or response failure.
+            }
+            throw $exception;
+        }
+
+        $this->_curl->close();
 
         return new Response(
-            $this->getStatusCode(),
-            $this->getHeaders(),
-            $this->_curl->result()
+            $statusCode,
+            $headers,
+            $result
         );
     }
 
