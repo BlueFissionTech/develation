@@ -308,26 +308,13 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
     }
 
     /**
-     * check if the array is not empty
+     * Check whether the array contains at least one element, regardless of key or value.
+     *
      * @return bool
      */
     public function _isNotEmpty(): bool
     {
-        if (!$this->is($this->_data)) {
-            return false;
-        }
-
-        $var = $this->_data;
-
-        if (!empty($var) && count($var) >= 1) {
-            if (count($var) == 1 && !$this->isAssoc($var) && empty($var[0])) {
-                return false;
-            }
-        } elseif (empty($var) || count($var) < 1) {
-            return false;
-        }
-
-        return true;
+        return is_array($this->_data) && count($this->_data) > 0;
     }
 
     /**

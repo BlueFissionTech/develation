@@ -3,6 +3,8 @@ namespace BlueFission\Tests\Data;
 
 use BlueFission\Data\Schema;
 use BlueFission\Data\Schema\FieldDefinition;
+use BlueFission\IVal;
+use BlueFission\Num;
 
 class SchemaTest extends \PHPUnit\Framework\TestCase
 {
@@ -79,6 +81,63 @@ class SchemaTest extends \PHPUnit\Framework\TestCase
 
         $errors = $schema->errors();
         $this->assertArrayHasKey('name', $errors);
+    }
+
+    public function testRejectedNumericWrappersDoNotEmitConversionNotices(): void
+    {
+        $schema = new Schema([
+            'value' => ['constraints' => [static fn ($value): bool => !$value instanceof IVal]],
+        ], ['strict' => true]);
+        $diagnostics = [];
+        set_error_handler(static function (int $severity, string $message) use (&$diagnostics): bool {
+            $diagnostics[] = [$severity, $message];
+            return true;
+        });
+
+        try {
+            foreach ([7, 1.25] as $number) {
+                $wrapper = Num::make($number);
+                $this->assertTrue($schema->validate(['value' => $number]));
+                $this->assertSame([], $schema->errors());
+                $this->assertFalse($schema->validate(['value' => $wrapper]));
+                $this->assertNotEmpty($schema->errorsFor('value'));
+                $this->assertSame($number, $wrapper->val());
+            }
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $diagnostics);
+    }
+
+    public function testNumericWrapperConstraintKeepsCastingAndNestedValidationDistinct(): void
+    {
+        $rejectWrappers = static fn ($value): bool => !$value instanceof IVal;
+        $plain = new Schema([
+            'value' => ['type' => 'float', 'constraints' => [$rejectWrappers], 'nullable' => true],
+        ], ['strict' => true]);
+        $accept = new Schema(['value' => ['constraints' => [static fn ($value): bool => true]]]);
+        $nested = new Schema(['record' => ['schema' => $plain]], ['strict' => true]);
+        $diagnostics = [];
+        set_error_handler(static function (int $severity, string $message) use (&$diagnostics): bool {
+            $diagnostics[] = [$severity, $message];
+            return true;
+        });
+
+        try {
+            $this->assertTrue($accept->validate(['value' => Num::make(7)]));
+            $this->assertSame([], $accept->errors());
+            $this->assertTrue($plain->validate(['value' => null]));
+            $this->assertSame([], $plain->errors());
+            $this->assertFalse($nested->validate(['record' => ['value' => Num::make(1.25)]]));
+            $this->assertNotEmpty($nested->errorsFor('record'));
+            $this->assertSame(['value' => 1.25], $plain->transform(['value' => Num::make(1.25)]));
+            $this->assertSame([], $plain->errors());
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $diagnostics);
     }
 
     public function testCallableArityUsesFuncForCallableReflection()

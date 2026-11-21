@@ -334,7 +334,9 @@ class FileSystem extends Data implements IData {
 		}
 		elseif ( $this->_handle )
 		{
-			$this->contents($this->_handle->read(filesize($filepath)));
+			$size = filesize($filepath);
+			// fread() rejects a zero length on PHP 8.2+, but an empty file is a valid read.
+			$this->contents($size === 0 ? '' : $this->_handle->read($size));
 			if ( $this->contents() === false )
 			{
 				$this->status( "File $file could not be read" );
@@ -735,29 +737,41 @@ class FileSystem extends Data implements IData {
 				throw new \LengthException('File exceeds the maximum byte count.');
 			}
 
-			$contents = '';
-			while (true) {
-				$remaining = $maxBytes - Str::len($contents);
-				$chunk = fread($handle, $remaining === 0 ? 1 : Num::min(8192, $remaining));
-				if ($chunk === false) {
-					throw new \RuntimeException('File could not be read.');
-				}
-
-				if ($chunk === '') {
-					if (!feof($handle)) {
-						throw new \RuntimeException('File read stopped before end of file.');
-					}
-					return $contents;
-				}
-
-				if ($remaining === 0) {
-					throw new \LengthException('File exceeds the maximum byte count.');
-				}
-
-				$contents .= $chunk;
-			}
+			return self::readBoundedHandle($handle, $maxBytes);
 		} finally {
 			fclose($handle);
+		}
+	}
+
+	/**
+	 * Read no more than the limit plus one probe byte from an already checked handle.
+	 * The probe detects growth after the initial size check without returning a
+	 * partial result. Keep this separate to exercise that race deterministically.
+	 *
+	 * @param resource $handle
+	 */
+	private static function readBoundedHandle($handle, int $maxBytes): string
+	{
+		$contents = '';
+		while (true) {
+			$remaining = $maxBytes - strlen($contents);
+			$chunk = fread($handle, $remaining === 0 ? 1 : min(8192, $remaining));
+			if ($chunk === false) {
+				throw new \RuntimeException('File could not be read.');
+			}
+
+			if ($chunk === '') {
+				if (!feof($handle)) {
+					throw new \RuntimeException('File read stopped before end of file.');
+				}
+				return $contents;
+			}
+
+			if ($remaining === 0) {
+				throw new \LengthException('File exceeds the maximum byte count.');
+			}
+
+			$contents .= $chunk;
 		}
 	}
 

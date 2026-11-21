@@ -44,6 +44,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
 
 - [Data Types Documentation](datatypes.md)
+- [Opt-in String Entity Decoding](docs/string-entity-decoding-contract.md)
 - [Ref Primitive Documentation](ref.md)
 - [DevElation Capability Surface](capability_surface.md)
 - [Usage Readiness Checklist](usage_readiness_checklist.md)
@@ -94,6 +95,7 @@ Helper API notes:
 - Use `Arr::filter($array, $callback)`, `Arr::map($array, $callback)`, `Arr::diff($left, $right)`, `Arr::diffKey($left, $right, ...$others)`, `Arr::intersect($left, $right)`, `Arr::slice($array, $offset, $length)`, `Arr::splice($array, $replacement, $offset, $length)`, `Arr::join($array, $separator)`, and `Arr::reverse($array, $preserveKeys)` for common array transforms that should stay on the DevElation helper surface. `diffKey()` compares keys only, retains source keys/values, and accepts multiple comparison arrays; its instance form returns a new `Arr` while its static form returns a plain array.
 - Use `Arr::sortDesc($map)` for a key-preserving native array result or `Arr::make($map)->sortDesc()` for fluent mutation. It follows PHP `arsort(..., SORT_REGULAR)` comparison and stable tie order; use `Arr::sort()` for reindexed list sorting.
 - `Arr::map()` / `Arr::filter()` and `Collection::map()` / `Collection::filter()` share traversal semantics: callbacks may accept `value` or `value, key`, and retained or mapped values preserve their original keys.
+- `Arr::isEmpty()` / `isNotEmpty()` describe structural cardinality: any retained element counts, including `false`, `0`, an empty string, or `null`, and sparse numeric keys remain significant after `filter()`. Use `values()` when a dense list is required. Scalar `Val` and `Flag` emptiness semantics remain separate from array cardinality.
 - Use `Arr::values($array)` to reindex list values while preserving order. Use `BlueFission\Net\HTTP::pathSegment($segment)` to encode a single URL path segment; `HTTP::urlScheme()`, `HTTP::urlHost()`, `HTTP::urlPort()`, `HTTP::urlPath()`, or `HTTP::urlParts()` for normalized URL component parsing; `HTTP::jsonDecode()` for deterministic JSON fallback handling; and `HTTP::headerLine()`, `HTTP::statusText()`, or `HTTP::statusLine()` for side-effect-free HTTP metadata helpers.
 - Use `Arr::sum($array)` or `Arr::make($array)->sum()` for a non-mutating total of integers, floats, and numeric strings. Empty arrays total `0`; non-numeric entries throw `InvalidArgumentException`. Native `array_sum()` remains appropriate at a low-level boundary when its permissive coercion is intentional.
 - `HTTP::jsonEncode($value, $flags, $depth)` forwards optional native JSON flags and nesting depth; omitting them preserves the existing output. `HTTP::jsonDecode($json, $assoc, $default, $depth, $flags)` still returns the caller's default on a decode error unless `JSON_THROW_ON_ERROR` is passed. With that flag, native `JsonException` propagates and the default is never used; valid JSON `null` remains distinct from invalid input. Use `JSON_THROW_ON_ERROR` without recovery flags when malformed UTF-8 must be rejected. Recovery flags such as `JSON_INVALID_UTF8_SUBSTITUTE` retain their native behavior when explicitly requested. If the native encoder is unavailable, the legacy fallback accepts only zero flags and default depth; it returns `false` for unsupported options or depth rather than silently ignoring them.
@@ -104,7 +106,9 @@ Helper API notes:
 - Use `Str::similarityPercent($first, $second)` or `Str::make($first)->similarityPercent($second)` when the ordered, byte-string percentage from PHP `similar_text()` is required. It returns an unrounded float from 0 to 100, including 0 for two empty strings; reversing the arguments can change the result. The instance call uses normal action dispatch without changing the stored string. This native algorithm has cubic cost in the longest string length. `similarityTo()` remains a different rounded 0–1 helper with its existing empty-input behavior.
 - Use `Str::stripTags($text)` for a one-off plain-text conversion or `Str::make($text)->stripTags()` for a fluent string lifecycle. The helper follows one-argument PHP `strip_tags()` behavior: it preserves entity references and whitespace, removes comments with tags, and is not an HTML sanitizer for untrusted output.
 - Use `Date::formatTimestamp($timestamp, 'Y-m-d')` as a concise replacement for `date($format, $timestamp)`.
+- `new Date($wallTime, $ianaTimezone)` interprets wall times in that timezone. `timestamp()`, no-argument `date()` / `time()`, and `format(...)->val()` use the resulting instant without changing PHP's process timezone. Ambiguous and nonexistent local times follow PHP `DateTime` / `DateTimeZone` resolution (for example, New York's spring 02:30 normalizes to 03:30 and the fall 01:30 selects the first occurrence). Numeric timestamp input remains an epoch; a supplied `DateTime` object retains its own instant and timezone. Without an explicit timezone, construction follows the process default as before.
 - Use `Num::plus()`, `Num::minus()`, `Num::times()`, and `Num::by()` as readable aliases for fluent math. Math helpers unwrap `Val` objects when appropriate.
+- Use `Num::floor(1.8)` and `Num::ceil(-1.8)` for raw float results (`1.0` and `-1.0`), or `Num::make(1.8)->floor()->val()` for fluent mutation. These helpers follow native PHP `floor`/`ceil`, including signed zero and non-finite floats; invalid nonnumeric input raises `TypeError` rather than being silently converted.
 - Use `Num::clamp($value, $lower, $upper)` or `Num::make($value)->clamp($lower, $upper)` for an inclusive, non-mutating numeric bound. Equal bounds return that bound; reversed bounds or non-numeric inputs throw `InvalidArgumentException`. Integers, floats, numeric strings, and `IVal` operands are accepted.
 - Use `Num::isInt()`, `Num::isFloat()` / `Num::isDouble()`, `Num::isFinite()`, and `Flag::isBool()` / `Flag::isBoolean()` when native scalar type checks must not coerce strings or numeric values. `Num::isFinite()` accepts native integers and finite floats, but rejects numeric strings, `NAN`, and infinities; the instance form checks the stored value.
 - Use `Num::deg2rad($degrees)`, `Num::rad2deg($radians)`, `Num::sin($radians)`, `Num::cos($radians)`, and `Num::atan2($y, $x)` for hookable angle and trigonometry helpers. Angles passed to trigonometry helpers are radians.
@@ -314,6 +318,20 @@ Help flags obey the same rules. A failed strict parse clears previous options
 and does not emit the processed event. Existing parsers remain permissive by
 default, as does `Flag::parseBool()`; migrate command handlers individually,
 and do not rely on the old truthy coercion for write authorization.
+
+For sensitive CLI input, use `BlueFission\Cli\Util\Prompt::askSensitive($message,
+$reader, $default = null, $trim = false)` with a caller-supplied reader. The
+reader receives only the prompt text and must return a string, `null`, or
+`false`; `null`/`false` means EOF or cancellation and never falls back to
+ordinary input or the default. An empty string uses a non-null default.
+Whitespace is preserved unless trimming is explicitly requested. Reader
+exceptions propagate, and repeated calls carry no Prompt response history.
+Unlike ordinary `askPrompt()`/`Console::prompt()`, the sensitive path does not
+write output or put the response in `lastResponse`, snapshots, hooks, filters,
+events, metadata, or diagnostics. The caller-owned reader may still echo or
+log its input; this helper does **not** suppress terminal echo or erase PHP
+memory. Do not use the ordinary prompt path for a secret unless its retention
+and observation behavior is acceptable.
 
 ### Application route registration targets
 

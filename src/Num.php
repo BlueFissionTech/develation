@@ -385,6 +385,30 @@ class Num extends Val implements IVal {
     }
 
     /**
+     * Round down to the next integer-valued float, retaining native PHP semantics.
+     *
+     * @return IVal
+     */
+    public function _floor(): IVal
+    {
+        $this->alter(floor($this->_data));
+
+        return $this;
+    }
+
+    /**
+     * Round up to the next integer-valued float, retaining native PHP semantics.
+     *
+     * @return IVal
+     */
+    public function _ceil(): IVal
+    {
+        $this->alter(ceil($this->_data));
+
+        return $this;
+    }
+
+    /**
      * Get the absolute value of the number
      *
      * @return IVal
@@ -730,7 +754,8 @@ class Num extends Val implements IVal {
 			return 0;
 		}
 
-		return $value + 0;
+		// Unary plus retains floating negative zero, including numeric strings.
+		return +$value;
 	}
 
     /**
