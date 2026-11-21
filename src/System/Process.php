@@ -196,7 +196,11 @@ class Process implements IDispatcher
             $this->_process = false;
             $this->_startFailed = true;
             $this->cleanupWindowsSafeCapture();
-            $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: 'Error starting process'));
+            try {
+                $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: 'Error starting process'));
+            } catch (\Throwable $listenerException) {
+                // An error observer must not replace the original start failure.
+            }
             throw $exception;
         }
         $this->trigger(Action::CONNECT);

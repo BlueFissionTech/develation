@@ -147,6 +147,29 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(-1, $process->close());
     }
 
+    public function testStartExceptionSurvivesThrowingErrorListener(): void
+    {
+        $process = new class($this->command()) extends Process {
+            protected function open(array $descriptorSpec)
+            {
+                throw new \RuntimeException('original start failure');
+            }
+        };
+        $process->when(Event::ERROR, function (): void {
+            throw new \RuntimeException('observer failure');
+        });
+
+        try {
+            $process->start();
+            $this->fail('The original start failure must remain visible.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('original start failure', $exception->getMessage());
+        }
+
+        $this->assertSame('Error starting process', $process->status());
+        $this->assertSame(-1, $process->close());
+    }
+
     private function waitForProcess(Process $process): void
     {
         $deadline = microtime(true) + 5;
