@@ -3,6 +3,8 @@
 namespace BlueFission\Data\Storage;
 
 use BlueFission\IObj;
+use BlueFission\Data\IData;
+use BlueFission\Data\Support\ReadsCSV;
 
 /**
  * Class Spreadsheet
@@ -14,6 +16,8 @@ use BlueFission\IObj;
  */
 class Spreadsheet extends Storage implements IData
 {
+    use ReadsCSV;
+
     /**
      * @var int $_index The current index of the spreadsheet data.
      */

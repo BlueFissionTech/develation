@@ -1,14 +1,14 @@
 <?php
 
-namespace BlueFission\Tests\Data;
+namespace BlueFission\Tests\Data\Storage;
 
-use BlueFission\Data\FileSystem;
+use BlueFission\Data\Storage\Spreadsheet;
 use BlueFission\Tests\Support\TestEnvironment;
 use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../Support/TestEnvironment.php';
+require_once __DIR__ . '/../../Support/TestEnvironment.php';
 
-class FileSystemCsvTest extends TestCase
+class SpreadsheetCsvTest extends TestCase
 {
     private string $directory;
 
@@ -28,44 +28,44 @@ class FileSystemCsvTest extends TestCase
         $path = $this->file('records.csv', $first . str_repeat('later', 1000));
 
         $this->assertSame(['alpha', "two,\r\nlines", 'q"uote'],
-            FileSystem::firstCsvRecordBounded($path, strlen($first)));
+            Spreadsheet::firstCsvRecordBounded($path, strlen($first)));
         $this->assertFileExists($path);
         $this->assertTrue(unlink($path));
     }
 
     public function testDistinguishesEmptyFileFromEmptyAndZeroValuedRecords(): void
     {
-        $this->assertNull(FileSystem::firstCsvRecordBounded($this->file('empty.csv', ''), 0));
-        $this->assertSame([''], FileSystem::firstCsvRecordBounded($this->file('blank.csv', "\n"), 1));
-        $this->assertSame(['0'], FileSystem::firstCsvRecordBounded($this->file('zero.csv', '0'), 1));
-        $this->assertSame(['', ''], FileSystem::firstCsvRecordBounded($this->file('fields.csv', ','), 1));
-        $this->assertSame([''], FileSystem::firstCsvRecordBounded($this->file('quoted-empty.csv', "\"\"\r\n"), 4));
+        $this->assertNull(Spreadsheet::firstCsvRecordBounded($this->file('empty.csv', ''), 0));
+        $this->assertSame([''], Spreadsheet::firstCsvRecordBounded($this->file('blank.csv', "\n"), 1));
+        $this->assertSame(['0'], Spreadsheet::firstCsvRecordBounded($this->file('zero.csv', '0'), 1));
+        $this->assertSame(['', ''], Spreadsheet::firstCsvRecordBounded($this->file('fields.csv', ','), 1));
+        $this->assertSame([''], Spreadsheet::firstCsvRecordBounded($this->file('quoted-empty.csv', "\"\"\r\n"), 4));
     }
 
     public function testCountsUtf8AndBomBytesAndHonorsBomPolicy(): void
     {
         $path = $this->file('utf8.csv', "\xef\xbb\xbf\xc3\xa9,\"x\ny\"\n");
-        $this->assertSame(["\xef\xbb\xbf\xc3\xa9", "x\ny"], FileSystem::firstCsvRecordBounded($path, 12));
-        $this->assertSame(["\xc3\xa9", "x\ny"], FileSystem::firstCsvRecordBounded($path, 12, ',', '"', '', true));
+        $this->assertSame(["\xef\xbb\xbf\xc3\xa9", "x\ny"], Spreadsheet::firstCsvRecordBounded($path, 12));
+        $this->assertSame(["\xc3\xa9", "x\ny"], Spreadsheet::firstCsvRecordBounded($path, 12, ',', '"', '', true));
         $this->expectException(\LengthException::class);
-        FileSystem::firstCsvRecordBounded($path, 11, ',', '"', '', true);
+        Spreadsheet::firstCsvRecordBounded($path, 11, ',', '"', '', true);
     }
 
     public function testRejectsCapPlusOneAndMalformedQuoting(): void
     {
         $path = $this->file('cap.csv', "a,b\nlong-later-record");
         try {
-            FileSystem::firstCsvRecordBounded($path, 3);
+            Spreadsheet::firstCsvRecordBounded($path, 3);
             $this->fail('The first record needs four bytes.');
         } catch (\LengthException $exception) {
             $this->assertNotSame('', $exception->getMessage());
         }
-        $this->assertSame(['a', 'b'], FileSystem::firstCsvRecordBounded($path, 4));
+        $this->assertSame(['a', 'b'], Spreadsheet::firstCsvRecordBounded($path, 4));
 
         foreach (["a\"b,c\n", "\"unclosed", "\"closed\"x\n"] as $contents) {
             $malformed = $this->file('malformed.csv', $contents);
             try {
-                FileSystem::firstCsvRecordBounded($malformed, strlen($contents));
+                Spreadsheet::firstCsvRecordBounded($malformed, strlen($contents));
                 $this->fail('Malformed CSV was accepted.');
             } catch (\DomainException $exception) {
                 $this->assertNotSame('', $exception->getMessage());
@@ -77,7 +77,7 @@ class FileSystemCsvTest extends TestCase
     {
         $missing = $this->directory . DIRECTORY_SEPARATOR . 'missing.csv';
         try {
-            FileSystem::firstCsvRecordBounded($missing, 16);
+            Spreadsheet::firstCsvRecordBounded($missing, 16);
             $this->fail('Missing file was accepted.');
         } catch (\RuntimeException $exception) {
             $this->assertFileDoesNotExist($missing);
@@ -85,7 +85,7 @@ class FileSystemCsvTest extends TestCase
 
         foreach ([$this->directory, 'php://memory'] as $target) {
             try {
-                FileSystem::firstCsvRecordBounded($target, 16);
+                Spreadsheet::firstCsvRecordBounded($target, 16);
                 $this->fail('Nonregular target was accepted.');
             } catch (\InvalidArgumentException|\UnexpectedValueException $exception) {
                 $this->assertNotSame('', $exception->getMessage());
@@ -97,11 +97,11 @@ class FileSystemCsvTest extends TestCase
     {
         $path = $this->file('custom.csv', "a;'b\\'c';d\n");
         $this->assertSame(['a', "b'c", 'd'],
-            FileSystem::firstCsvRecordBounded($path, 64, ';', "'", '\\'));
+            Spreadsheet::firstCsvRecordBounded($path, 64, ';', "'", '\\'));
 
         foreach ([['||', '"', ''], [',', ',', ''], [',', '"', ',']] as [$delimiter, $enclosure, $escape]) {
             try {
-                FileSystem::firstCsvRecordBounded($path, 64, $delimiter, $enclosure, $escape);
+                Spreadsheet::firstCsvRecordBounded($path, 64, $delimiter, $enclosure, $escape);
                 $this->fail('Invalid CSV dialect was accepted.');
             } catch (\InvalidArgumentException $exception) {
                 $this->assertNotSame('', $exception->getMessage());
@@ -110,7 +110,7 @@ class FileSystemCsvTest extends TestCase
 
         $malformed = $this->file('invalid-escape.csv', "'bad\\x'\n");
         $this->expectException(\DomainException::class);
-        FileSystem::firstCsvRecordBounded($malformed, 64, ';', "'", '\\');
+        Spreadsheet::firstCsvRecordBounded($malformed, 64, ';', "'", '\\');
     }
 
     public function testClosesOwnedHandleAfterMalformedAndOversizeRecords(): void
@@ -118,7 +118,7 @@ class FileSystemCsvTest extends TestCase
         foreach ([["\"unfinished", 11, \DomainException::class], ['123456', 3, \LengthException::class]] as [$contents, $limit, $exceptionType]) {
             $path = $this->file('cleanup.csv', $contents);
             try {
-                FileSystem::firstCsvRecordBounded($path, $limit);
+                Spreadsheet::firstCsvRecordBounded($path, $limit);
                 $this->fail('Expected an error.');
             } catch (\DomainException|\LengthException $exception) {
                 $this->assertInstanceOf($exceptionType, $exception);
