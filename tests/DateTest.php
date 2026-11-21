@@ -44,6 +44,99 @@ class DateTest extends ValTest {
 		$this->assertEquals('2012-12-12T00:00:00+00:00', $object->val());
 	}
 
+	public function testMutableAndImmutableInputsAreCopiedWithoutChangingTheirZones(): void
+	{
+		$zone = new \DateTimeZone('America/New_York');
+		$mutable = new \DateTime('2024-03-09 12:00:00', $zone);
+		$immutable = new \DateTimeImmutable('2024-11-02 12:00:00', $zone);
+		$first = new Date($mutable);
+		$second = new Date($mutable);
+		$fromImmutable = new Date($immutable);
+		$mutable->modify('+2 days');
+		$this->assertSame('2024-03-09 12:00:00 -05:00 America/New_York', $first->datetime->format('Y-m-d H:i:s P e'));
+		$this->assertSame('2024-03-09T12:00:00-05:00', $first->val());
+		$this->assertSame('2024-03-09 12:00:00 -05:00 America/New_York', $second->datetime->format('Y-m-d H:i:s P e'));
+		$fromDate = new Date($second);
+		$first->addCalendarDays(1);
+		$this->assertSame('2024-03-09 12:00:00 -05:00 America/New_York', $second->datetime->format('Y-m-d H:i:s P e'));
+		$second->addCalendarDays(1);
+		$this->assertSame('2024-03-09 12:00:00 -05:00 America/New_York', $fromDate->datetime->format('Y-m-d H:i:s P e'));
+		$this->assertSame('2024-11-02 12:00:00 -04:00 America/New_York', $fromImmutable->datetime->format('Y-m-d H:i:s P e'));
+		$fromImmutable->val($mutable);
+		$this->assertSame('2024-03-11 12:00:00 -04:00 America/New_York', $fromImmutable->datetime->format('Y-m-d H:i:s P e'));
+		$this->assertSame('2024-11-02 12:00:00 -04:00', $immutable->format('Y-m-d H:i:s P'));
+		$this->assertSame($immutable->getTimestamp(), $fromImmutable->timestamp($immutable));
+		$fromImmutable->val($immutable);
+		$this->assertSame('2024-11-02 12:00:00 -04:00 America/New_York', $fromImmutable->datetime->format('Y-m-d H:i:s P e'));
+	}
+
+	public function testCalendarDayAdjustmentPreservesNamedZoneAndLocalWallClock(): void
+	{
+		$zone = new \DateTimeZone('America/New_York');
+		foreach ([
+			['2024-03-09 12:00:00', '2024-03-10 12:00:00 -04:00', 82800],
+			['2024-11-02 12:00:00', '2024-11-03 12:00:00 -05:00', 90000],
+			['2024-02-28 12:00:00', '2024-02-29 12:00:00 -05:00', 86400],
+			['2024-12-31 12:00:00', '2025-01-01 12:00:00 -05:00', 86400],
+		] as [$start, $expected, $elapsed]) {
+			$source = new \DateTimeImmutable($start, $zone);
+			$date = new Date($source);
+			$this->assertSame($date, $date->addCalendarDays(1));
+			$this->assertSame($expected, $date->datetime->format('Y-m-d H:i:s P'));
+			$this->assertSame('America/New_York', $date->datetime->getTimezone()->getName());
+			$this->assertSame($elapsed, $date->datetime->getTimestamp() - $source->getTimestamp());
+			$this->assertSame($start, $source->format('Y-m-d H:i:s'));
+		}
+	}
+
+	public function testCalendarDaysSupportSnapshotResetNegativeZeroAndNativeGapFoldPolicy(): void
+	{
+		$zone = new \DateTimeZone('America/New_York');
+		$source = new \DateTimeImmutable('2024-03-09 02:30:00', $zone);
+		$date = new Date($source);
+		$date->snapshot();
+		$date->addCalendarDays(1);
+		$native = $source->add(new \DateInterval('P1D'));
+		$this->assertSame($native->format('Y-m-d H:i:s P e'), $date->datetime->format('Y-m-d H:i:s P e'));
+		$date->reset();
+		$this->assertSame($source->format('Y-m-d H:i:s P e'), $date->datetime->format('Y-m-d H:i:s P e'));
+		$this->assertSame($date, $date->addCalendarDays(0));
+		$this->assertSame($date, $date->addCalendarDays(-1));
+		$this->assertSame('2024-03-08 02:30:00 -05:00', $date->datetime->format('Y-m-d H:i:s P'));
+
+		$fold = new \DateTimeImmutable('2024-11-02 01:30:00', $zone);
+		$this->assertSame($fold->add(new \DateInterval('P1D'))->format('Y-m-d H:i:s P e'),
+			(new Date($fold))->addCalendarDays(1)->datetime->format('Y-m-d H:i:s P e'));
+	}
+
+	public function testCalendarDayChangeEventAndInvalidInputs(): void
+	{
+		$date = new Date(new \DateTimeImmutable('2024-02-28 12:00:00', new \DateTimeZone('America/New_York')));
+		$changes = 0;
+		$date->when(\BlueFission\Behavioral\Behaviors\Event::CHANGE, function () use (&$changes): void { $changes++; });
+		$date->addCalendarDays(0)->addCalendarDays(1);
+		$this->assertSame(1, $changes);
+		$this->assertSame('2024-02-29 12:00:00 -05:00', $date->datetime->format('Y-m-d H:i:s P'));
+		try {
+			$date->val(new \stdClass());
+			$this->fail('Unsupported date object was accepted.');
+		} catch (\InvalidArgumentException $exception) {
+			$this->assertSame('2024-02-29 12:00:00 -05:00', $date->datetime->format('Y-m-d H:i:s P'));
+		}
+		try {
+			new Date(new \stdClass());
+			$this->fail('Unsupported constructor input was accepted.');
+		} catch (\InvalidArgumentException $exception) {
+			$this->assertNotSame('', $exception->getMessage());
+		}
+		try {
+			$date->addCalendarDays([]);
+			$this->fail('Non-integer day quantity was accepted.');
+		} catch (\TypeError $exception) {
+			$this->assertSame('2024-02-29 12:00:00 -05:00', $date->datetime->format('Y-m-d H:i:s P'));
+		}
+	}
+
 	public function testClearsValue()
 	{
 		$object = new static::$classname('2012-12-12');

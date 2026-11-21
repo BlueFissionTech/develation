@@ -389,7 +389,9 @@ class Val implements IVal, IDispatcher {
 					return is_callable($var);
 					break;
 				case DataTypes::DATETIME:
-					return $var instanceof DateTime || strtotime($var) !== false;
+					return $var instanceof \DateTimeInterface
+						|| ((is_scalar($var) || $var instanceof \Stringable)
+							&& strtotime((string)$var) !== false);
 					break;
 				default:
 					return false;
