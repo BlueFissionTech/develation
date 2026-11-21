@@ -137,4 +137,16 @@ class DiskTest extends StorageTest {
 		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
 		$this->assertSame("existing\0bytes", file_get_contents($path));
 	}
+
+	public function testEmptyArrayContentsDoNotFallBackToFieldSerialization(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, 'original');
+		$this->object->activate();
+		$this->object->contents([]);
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
+		$this->assertSame('original', file_get_contents($path));
+	}
 }
