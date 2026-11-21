@@ -549,7 +549,7 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
      * @throws \UnderflowException When the array is empty.
      * @throws \InvalidArgumentException When an entry is not a finite int or float.
      */
-    public function _minimum(): int|float
+    public function _lowest(): int|float
     {
         return $this->numericExtreme(true);
     }
@@ -563,12 +563,12 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
      * @throws \UnderflowException When the array is empty.
      * @throws \InvalidArgumentException When an entry is not a finite int or float.
      */
-    public function _maximum(): int|float
+    public function _highest(): int|float
     {
         return $this->numericExtreme(false);
     }
 
-    private function numericExtreme(bool $minimum): int|float
+    private function numericExtreme(bool $lowest): int|float
     {
         if (!is_array($this->_data) || $this->_data === []) {
             throw new \UnderflowException('Numeric extrema require at least one value');
@@ -585,20 +585,55 @@ class Arr extends Val implements IVal, ArrayAccess, IteratorAggregate
                 continue;
             }
 
-            if (($minimum && $value < $selected) || (!$minimum && $value > $selected)) {
+            $comparison = $this->compareFiniteNumeric($value, $selected);
+            if (($lowest && $comparison < 0) || (!$lowest && $comparison > 0)) {
                 $selected = $value;
             } elseif ($value == 0 && $selected == 0) {
                 // Numeric comparison equates the two zeros. Preserve the signed
                 // value that represents the correct extremum without a cast.
                 $valueIsNegative = is_float($value) && str_starts_with(sprintf('%g', $value), '-');
                 $selectedIsNegative = is_float($selected) && str_starts_with(sprintf('%g', $selected), '-');
-                if ($minimum ? ($valueIsNegative && !$selectedIsNegative) : (!$valueIsNegative && $selectedIsNegative)) {
+                if ($lowest ? ($valueIsNegative && !$selectedIsNegative) : (!$valueIsNegative && $selectedIsNegative)) {
                     $selected = $value;
                 }
             }
         }
 
         return $selected;
+    }
+
+    /** Compare finite native numbers without rounding a large integer to float. */
+    private function compareFiniteNumeric(int|float $left, int|float $right): int
+    {
+        if (is_int($left)) {
+            return is_int($right) ? $left <=> $right : $this->compareIntToFloat($left, $right);
+        }
+
+        return is_int($right) ? -$this->compareIntToFloat($right, $left) : $left <=> $right;
+    }
+
+    private function compareIntToFloat(int $integer, float $float): int
+    {
+        // On 64-bit PHP, casting PHP_INT_MAX to float rounds up to 2^63.
+        // On 32-bit PHP it remains exactly representable.
+        $upperBound = (float) PHP_INT_MAX;
+        if ((PHP_INT_SIZE > 4 && $float >= $upperBound)
+            || (PHP_INT_SIZE <= 4 && $float > $upperBound)) {
+            return -1;
+        }
+        if ($float < (float) PHP_INT_MIN) {
+            return 1;
+        }
+
+        $whole = (int) $float; // Safe after the range checks above.
+        $comparison = $integer <=> $whole;
+        if ($comparison !== 0 || $float == (float) $whole) {
+            return $comparison;
+        }
+
+        // The integer equals the truncated whole part; the fractional sign
+        // determines which side of that integer the float lies on.
+        return $float > 0 ? -1 : 1;
     }
 
     /**

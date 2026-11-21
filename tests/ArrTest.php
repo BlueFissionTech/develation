@@ -75,10 +75,10 @@ class ArrTest extends ValTest {
 		$object->when(Event::CHANGE, function () use (&$changes) { $changes++; });
 		$object->when(Event::ACTION_PERFORMED, function () use (&$actions) { $actions++; });
 
-		$this->assertSame(-2, $object->minimum());
-		$this->assertSame(9.5, $object->maximum());
-		$this->assertSame(-2, Arr::minimum($values));
-		$this->assertSame(9.5, Arr::maximum($values));
+		$this->assertSame(-2, $object->lowest());
+		$this->assertSame(9.5, $object->highest());
+		$this->assertSame(-2, Arr::lowest($values));
+		$this->assertSame(9.5, Arr::highest($values));
 		$this->assertSame($values, $object->val());
 		$this->assertSame(0, $changes);
 		$this->assertSame(2, $actions);
@@ -87,20 +87,41 @@ class ArrTest extends ValTest {
 
 	public function testNumericExtremaPreserveSignedZeroAndLargeFiniteValues()
 	{
-		$this->assertSame('-0', sprintf('%g', Arr::minimum([0.0, -0.0])));
-		$this->assertSame('-0', sprintf('%g', Arr::minimum([-0.0, 0.0])));
-		$this->assertSame('0', sprintf('%g', Arr::maximum([-0.0, 0.0])));
-		$this->assertSame('0', sprintf('%g', Arr::maximum([0.0, -0.0])));
-		$this->assertSame(1.0e300, Arr::maximum([1.0e299, 1.0e300]));
-		$this->assertSame(1.5, Arr::minimum([2, 1.5]));
-		$this->assertSame(2, Arr::minimum(['a' => 2, 'b' => 2.0]));
-		$this->assertSame(2.0, Arr::maximum(['a' => 2.0, 'b' => 2]));
+		$this->assertSame('-0', sprintf('%g', Arr::lowest([0.0, -0.0])));
+		$this->assertSame('-0', sprintf('%g', Arr::lowest([-0.0, 0.0])));
+		$this->assertSame('0', sprintf('%g', Arr::highest([-0.0, 0.0])));
+		$this->assertSame('0', sprintf('%g', Arr::highest([0.0, -0.0])));
+		$this->assertSame(1.0e300, Arr::highest([1.0e299, 1.0e300]));
+		$this->assertSame(1.5, Arr::lowest([2, 1.5]));
+		$this->assertSame(2, Arr::lowest(['a' => 2, 'b' => 2.0]));
+		$this->assertSame(2.0, Arr::highest(['a' => 2.0, 'b' => 2]));
+	}
+
+	public function testNumericExtremaCompareMixedIntegersAndFloatsPrecisely()
+	{
+		$this->assertSame(3.5, Arr::highest([3, 3.5]));
+		$this->assertSame(3, Arr::lowest([3.5, 3]));
+		$this->assertSame(-3.5, Arr::lowest([-3, -3.5]));
+		$this->assertSame(-3, Arr::highest([-3.5, -3]));
+		$this->assertSame(0, Arr::highest([-0.5, 0]));
+		$this->assertSame(0, Arr::lowest([0.5, 0]));
+
+		if (PHP_INT_SIZE > 4) {
+			$largeInteger = 9007199254740993;
+			$roundedFloat = 9007199254740992.0;
+			$this->assertSame($largeInteger, Arr::highest([$roundedFloat, $largeInteger]));
+			$this->assertSame($roundedFloat, Arr::lowest([$largeInteger, $roundedFloat]));
+			$this->assertSame(PHP_INT_MAX, Arr::lowest([(float) PHP_INT_MAX, PHP_INT_MAX]));
+			$this->assertSame((float) PHP_INT_MAX, Arr::highest([PHP_INT_MAX, (float) PHP_INT_MAX]));
+		} else {
+			$this->assertSame(PHP_INT_MAX, Arr::highest([(float) PHP_INT_MAX, PHP_INT_MAX]));
+		}
 	}
 
 	public function testNumericExtremaRejectEmptyAndUnsupportedValues()
 	{
 		foreach ([[], ['5', 2], [NAN, 2], [INF, 2], [false, 2]] as $values) {
-			foreach (['minimum', 'maximum'] as $method) {
+			foreach (['lowest', 'highest'] as $method) {
 				try {
 					Arr::$method($values);
 					$this->fail('Expected invalid collection rejection');
