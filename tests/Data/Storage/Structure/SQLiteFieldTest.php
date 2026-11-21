@@ -34,4 +34,32 @@ class SQLiteFieldTest extends \PHPUnit\Framework\TestCase
 
         $this->assertStringContainsString("DEFAULT 'blue'", $definition);
     }
+
+    public function testExplicitBlobTypeDoesNotChangeTextDefaults()
+    {
+        $blob = new SQLiteField('payload');
+        $text = new SQLiteField('label');
+        $default = new SQLiteField('note');
+
+        $this->assertSame('`payload` BLOB NOT NULL', $blob->type('blob')->definition());
+        $this->assertSame('`label` TEXT NOT NULL', $text->type('text')->definition());
+        $this->assertSame('`note` TEXT NOT NULL', $default->definition());
+    }
+
+    public function testExplicitBlobDefinitionCreatesBlobColumn()
+    {
+        if (!class_exists(\SQLite3::class)) {
+            $this->markTestSkipped('SQLite3 is not available.');
+        }
+
+        $field = new SQLiteField('payload');
+        $database = new \SQLite3(':memory:');
+        try {
+            $this->assertTrue($database->exec('CREATE TABLE sample (' . $field->type('blob')->definition() . ')'));
+            $column = $database->querySingle('SELECT type FROM pragma_table_info(\'sample\') WHERE name = \'payload\'');
+            $this->assertSame('BLOB', $column);
+        } finally {
+            $database->close();
+        }
+    }
 }
