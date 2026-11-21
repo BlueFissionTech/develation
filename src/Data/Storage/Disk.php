@@ -10,6 +10,7 @@ use BlueFission\Data\IData;
 use BlueFission\Data\FileSystem;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\DevElation as Dev;
 
 class Disk extends Storage implements IData
@@ -110,6 +111,14 @@ class Disk extends Storage implements IData
 			: (Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents);
 
 		$data = Dev::apply(null, $data);
+		if (is_array($data)) {
+			$this->status(self::STATUS_FAILED);
+			$this->perform(
+				[Event::ACTION_FAILED, Event::FAILURE],
+				new Meta(when: Action::SAVE, info: 'Disk cannot write array contents; use fields for JSON objects.')
+			);
+			return;
+		}
 
 		$source->flush()->contents( $data )->write();
 		

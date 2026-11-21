@@ -125,4 +125,16 @@ class DiskTest extends StorageTest {
 		$this->object->activate()->read()->write();
 		$this->assertSame('null', file_get_contents($path));
 	}
+
+	public function testArrayContentsDoNotOverwriteExistingBytes(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, "existing\0bytes");
+		$this->object->activate();
+		$this->object->contents(['channel' => ['message']]);
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
+		$this->assertSame("existing\0bytes", file_get_contents($path));
+	}
 }
