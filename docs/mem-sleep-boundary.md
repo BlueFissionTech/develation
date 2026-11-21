@@ -12,6 +12,11 @@ locally produced object and an in-memory test store; it does **not** qualify a
 specific storage backend, persistent durability, write-failure recovery, or
 concurrent access.
 
+A store that throws during `write()` leaves the original object registered;
+the exception remains visible. A backend that returns normally without
+actually persisting cannot be distinguished through the current generic
+`Storage::write()` return contract, so silent-write failure remains unqualified.
+
 Storage supplied to `Mem` must be trusted: `wakeup()` currently calls PHP
 `unserialize()` on the retrieved bytes. Do not use it with untrusted or
 externally mutable state. A safe untrusted-state policy and a verified

@@ -81,4 +81,26 @@ class MemSleepTest extends TestCase
         $this->assertSame('round-trip', $restored->value);
         $this->assertNull($storage->stored('backed'));
     }
+
+    public function testThrowingStoreLeavesTheRegisteredObjectAvailable(): void
+    {
+        $storage = new class extends Storage {
+            public function write(): IObj
+            {
+                throw new \RuntimeException('fixture write failure');
+            }
+        };
+        Mem::setStorage($storage);
+        $object = (object) ['value' => 'still available'];
+        Mem::register($object, 'write-failed');
+
+        try {
+            Mem::sleep('write-failed');
+            $this->fail('Expected the store failure to remain visible');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('fixture write failure', $exception->getMessage());
+        }
+
+        $this->assertSame($object, Mem::get('write-failed'));
+    }
 }
