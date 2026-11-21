@@ -122,12 +122,14 @@ class Mem
     public static function sleep($id)
     {
         if (Arr::hasKey(self::$pool, $id) && self::$pool[$id] !== self::SLEEPING) {
-            Dev::do(null, [self::$pool[$id]]);
-
-            if (self::$storage) {
-                $serializedData = serialize(self::$pool[$id]);
-                self::store($id, $serializedData);
+            // Without a backing store, replacing the pool entry would discard
+            // the only copy and wakeup() could never recover it.
+            if (!self::$storage) {
+                return;
             }
+
+            Dev::do(null, [self::$pool[$id]]);
+            self::store($id, self::$pool[$id]);
             self::$pool[$id] = self::SLEEPING; // Mark the object as stored, not active in memory
             self::$audit[$id]['used'] = false;
         }
