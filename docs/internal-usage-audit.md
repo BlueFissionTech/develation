@@ -32,6 +32,8 @@ owns that implementation, not this audit.
 | `create()`/`delete()` without a supplied link | Legacy path constructs `SQLite` with an implicit location and prints status. | A quiet explicit context is a separate public capability (#300); do not silently redirect the legacy path in an audit. |
 | `alter()` | Public method has no implementation or visible failure. | Treat as a documented gap for #300, not as successful schema work or a reason for a broad rewrite. |
 
+The [SQLiteLink mode/error review candidate](sqlite-link-mode-error-contract.md)
+records the current #303 behavior and decisions without implementing them.
 Candidate follow-up: after #303 settles link open/error semantics, #300 can
 define explicit, quiet schema execution with an inspectable outcome. Benefit:
 callers can distinguish an applied change from a failed or unsupported one
