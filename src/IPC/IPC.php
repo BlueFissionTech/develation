@@ -4,6 +4,7 @@ namespace BlueFission\IPC;
 
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Behavioral\Behaviors\State;
+use BlueFission\Arr;
 
 class IPC implements IIPC
 {
@@ -19,11 +20,19 @@ class IPC implements IIPC
     public function write(string $channel, mixed $message): void
     {
         if ($this->retryConnection()) {
-            $data = $this->_storage->read() ?? [];
-            $data[$channel][] = $message;
-            $this->_storage->contents($data);
-            $this->_storage->write();
-            $this->_storage->deactivate();
+            try {
+                $data = $this->readData();
+                $messages = $data[$channel] ?? [];
+                if (!Arr::is($messages)) {
+                    throw new \UnexpectedValueException('IPC channel contents must be an array.');
+                }
+                $messages[] = $message;
+                $data[$channel] = $messages;
+                $this->_storage->contents($data);
+                $this->_storage->write();
+            } finally {
+                $this->_storage->deactivate();
+            }
         } else {
             throw new \RuntimeException("Failed to connect to storage after {$this->_maxRetries} retries.");
         }
@@ -32,10 +41,16 @@ class IPC implements IIPC
     public function read(string $channel): array
     {
         if ($this->retryConnection()) {
-            $data = $this->_storage->read() ?? [];
-            $messages = $data[$channel] ?? [];
-            $this->_storage->deactivate();
-            return $messages;
+            try {
+                $data = $this->readData();
+                $messages = $data[$channel] ?? [];
+                if (!Arr::is($messages)) {
+                    throw new \UnexpectedValueException('IPC channel contents must be an array.');
+                }
+                return $messages;
+            } finally {
+                $this->_storage->deactivate();
+            }
         } else {
             throw new \RuntimeException("Failed to connect to storage after {$this->_maxRetries} retries.");
         }
@@ -44,14 +59,31 @@ class IPC implements IIPC
     public function clear(string $channel): void
     {
         if ($this->retryConnection()) {
-            $data = $this->_storage->read() ?? [];
-            unset($data[$channel]);
-            $this->_storage->contents($data);
-            $this->_storage->write();
-            $this->_storage->deactivate();
+            try {
+                $data = $this->readData();
+                unset($data[$channel]);
+                $this->_storage->contents($data);
+                $this->_storage->write();
+            } finally {
+                $this->_storage->deactivate();
+            }
         } else {
             throw new \RuntimeException("Failed to connect to storage after {$this->_maxRetries} retries.");
         }
+    }
+
+    private function readData(): array
+    {
+        // Storage::read() is fluent and returns the Storage object, not data.
+        $this->_storage->read();
+        $data = $this->_storage->contents();
+        if ($data === null || $data === '' || $data === '[]') {
+            return [];
+        }
+        if (!Arr::is($data)) {
+            throw new \UnexpectedValueException('IPC storage contents must be an array.');
+        }
+        return $data;
     }
 
     protected function retryConnection(): bool
