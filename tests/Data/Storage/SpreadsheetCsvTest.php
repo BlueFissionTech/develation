@@ -74,7 +74,14 @@ class SpreadsheetCsvTest extends TestCase
 
         $this->assertSame(['a', 'b'], Spreadsheet::firstCsvRecordBounded($path, 5));
         $bareCr = $this->file('bare-cr.csv', "a,b\rlater");
-        $this->assertSame(['a', 'b'], Spreadsheet::firstCsvRecordBounded($bareCr, 4));
+        try {
+            Spreadsheet::firstCsvRecordBounded($bareCr, 4);
+            $this->fail('A bare CR at the byte cap cannot be distinguished from CRLF without reading past the cap.');
+        } catch (\LengthException $exception) {
+            $this->assertNotSame('', $exception->getMessage());
+        }
+        $this->assertSame(['a', 'b'], Spreadsheet::firstCsvRecordBounded($bareCr, 5));
+        $this->assertSame(['a', 'b'], Spreadsheet::firstCsvRecordBounded($this->file('bare-cr-only.csv', "a,b\r"), 4));
     }
 
     public function testRejectsCapPlusOneAndMalformedQuoting(): void

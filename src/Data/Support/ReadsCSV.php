@@ -124,7 +124,18 @@ trait ReadsCSV
 					if (self::consumeCsvByte($feed[$index], $delimiter, $enclosure, $escape, $fields, $field, $state, $escaped)) {
 						if ($feed[$index] === "\r") {
 							// A single lookahead distinguishes bare CR from CRLF without
-							// parsing any later record. Both terminator bytes count.
+							// parsing any later record. Never read beyond the byte cap:
+							// a CR at the cap with more file bytes is ambiguous.
+							if ($bytesRead === $maxBytes) {
+								$current = fstat($handle);
+								if ($current === false) {
+									throw new \RuntimeException('File size could not be checked.');
+								}
+								if ($current['size'] > $bytesRead) {
+									throw new \LengthException('First CSV record terminator cannot be resolved within the maximum byte count.');
+								}
+								return $fields;
+							}
 							$next = fgetc($handle);
 							if ($next === false && !feof($handle)) {
 								throw new \RuntimeException('CSV record could not be read.');
