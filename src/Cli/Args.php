@@ -5,6 +5,7 @@ namespace BlueFission\Cli;
 use BlueFission\Obj;
 use BlueFission\Arr;
 use BlueFission\Flag;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
@@ -439,15 +440,15 @@ class Args extends Obj
         if (is_bool($value)) {
             return $value;
         }
-        if (is_int($value) && ($value === 0 || $value === 1)) {
+		if (Num::isInt($value) && ($value === 0 || $value === 1)) {
             return $value === 1;
         }
-        if (is_string($value)) {
-            $token = Str::lower(Str::trim($value));
-            if (in_array($token, ['1', 'true', 'yes', 'on', 'y'], true)) {
+		if (Str::is($value)) {
+			$token = Str::make($value)->trim()->lower()->val();
+			if (Arr::has(['1', 'true', 'yes', 'on', 'y'], $token, true)) {
                 return true;
             }
-            if (in_array($token, ['0', 'false', 'no', 'off', 'n'], true)) {
+			if (Arr::has(['0', 'false', 'no', 'off', 'n'], $token, true)) {
                 return false;
             }
         }
