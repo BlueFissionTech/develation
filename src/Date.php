@@ -6,10 +6,41 @@ use BlueFission\Val;
 use BlueFission\Num;
 use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Event;
+use DateInterval;
 use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
+use InvalidArgumentException;
+use OutOfRangeException;
 
 class Date extends Val implements IVal
 {
+    /**
+     * Subtract elapsed whole seconds from an instant without mutating its source.
+     * The result is an ATOM timestamp in UTC, limited to four-digit years.
+     *
+     * @throws InvalidArgumentException If the duration is not a nonnegative integer.
+     * @throws OutOfRangeException If the input or result is outside years 0001-9999.
+     */
+    public static function subtractUtcSeconds(DateTimeInterface $instant, mixed $seconds): string
+    {
+        if (!is_int($seconds) || $seconds < 0) {
+            throw new InvalidArgumentException('Duration must be a nonnegative integer number of seconds.');
+        }
+
+        $utc = DateTimeImmutable::createFromInterface($instant)
+            ->setTimezone(new DateTimeZone('UTC'));
+        $minimum = new DateTimeImmutable('0001-01-01T00:00:00+00:00');
+        $maximum = new DateTimeImmutable('9999-12-31T23:59:59.999999+00:00');
+        if ($utc < $minimum || $utc > $maximum ||
+            $seconds > $utc->getTimestamp() - $minimum->getTimestamp()) {
+            throw new OutOfRangeException('Result is outside the supported ATOM year range.');
+        }
+
+        return $utc->sub(new DateInterval('PT'.$seconds.'S'))->format(DateTimeInterface::ATOM);
+    }
+
     protected $_type = DataTypes::DATETIME;
 
     /**

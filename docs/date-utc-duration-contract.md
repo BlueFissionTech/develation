@@ -1,8 +1,7 @@
-# UTC duration subtraction contract (proposal)
+# UTC duration subtraction
 
-This is a review proposal for issue #272, not a shipped API. It is deliberately
-separate from the existing mutable `Date` value operations and from scheduling
-policy.
+`Date::subtractUtcSeconds()` is an opt-in immutable operation, separate from
+the existing mutable `Date` value operations and from scheduling policy.
 
 ## Existing surface and constraints
 
@@ -14,9 +13,9 @@ policy.
   explicit UTC conversion.
 - Issue #298 addresses explicit IANA timezone handling in the existing `Date`
   surface; issue #322 addresses immutable inputs and local calendar-day
-  arithmetic. This proposal must not silently change either contract.
+  arithmetic. This operation does not change either contract.
 
-## Proposed opt-in operation for review
+## API
 
 `Date::subtractUtcSeconds(DateTimeInterface $instant, mixed $seconds): string`
 
@@ -34,17 +33,15 @@ policy.
   therefore have no special arithmetic rule beyond the input instant's offset.
 - Return `DateTimeInterface::ATOM` text with `+00:00`, including at date, month,
   or year boundaries. The return is a value, not a `Date` or `DateTime` object.
-- Reject out-of-range results rather than overflow or silently clamp. The
-  implementation should explicitly test the supported platform range and
-  document any narrower limit if one is required.
+- Accept instants and results in the four-digit ATOM year range 0001-9999;
+  throw `OutOfRangeException` outside it rather than overflow or clamp.
 
 The explicit `Utc` and `Seconds` names distinguish this from local calendar-day
 arithmetic and from an unrestricted `DateInterval` (which can contain months,
-years, or an inversion flag). A separate object-returning helper may be more
-useful if callers need further date operations; that is a review question, not
-an additional proposed API in this slice.
+years, or an inversion flag). A caller needing further date operations can
+retain its source instant and construct an immutable value from the result.
 
-## Proposed test matrix (not yet implemented)
+## Test matrix
 
 | Input instant | Seconds | Expected ATOM result | Concern |
 | --- | ---: | --- | --- |
@@ -56,19 +53,9 @@ an additional proposed API in this slice.
 Tests should also assert unchanged source timestamp, timezone, and formatting;
 reject negative integers, floats, numeric strings, booleans, null, and arrays
 from weakly typed callers before arithmetic; and exercise a sufficiently large
-integer duration near the implementation's supported range. No test should
+integer duration across the implementation's supported range. No test should
 depend on the process-default timezone or a live service.
 
-## Review gates
-
-1. Approve or revise the public signature, especially `mixed` with explicit
-   integer validation versus accepting PHP scalar coercion, string versus
-   immutable object return, and the accepted instant input type.
-2. Confirm that fixed elapsed seconds, rather than calendar components, match
-   the intended duration semantics.
-3. Reconcile the timezone behavior with #298 and the immutable input behavior
-   with #322 before implementation. No migration of existing `Date` methods is
-   implied.
-
-This document alone does not satisfy issue #272's behavioral acceptance
-criteria; implementation, tests, and review are still required.
+This operation does not migrate existing `Date` methods. It uses elapsed
+seconds rather than the local-calendar-day arithmetic of #322; callers should
+choose the operation matching their temporal semantics.
