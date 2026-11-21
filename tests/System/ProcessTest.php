@@ -76,7 +76,7 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
     {
         $secret = 'synthetic-secret-argument-123';
         $process = new class([PHP_BINARY, '--token=' . $secret]) extends Process {
-            protected function openProcess(array $descriptorSpec)
+            protected function open(array $descriptorSpec)
             {
                 return false;
             }
@@ -101,6 +101,73 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
             ini_set('error_log', $originalLog);
             @unlink($logFile);
         }
+    }
+
+    public function testFailedStartCannotBeObservedAsSuccessfulExit(): void
+    {
+        $process = new class($this->command()) extends Process {
+            protected function open(array $descriptorSpec)
+            {
+                return false;
+            }
+        };
+
+        $logFile = tempnam(sys_get_temp_dir(), 'bf_proc_log_');
+        $originalLog = ini_get('error_log');
+        try {
+            ini_set('error_log', $logFile);
+            $process->start();
+
+            $this->assertSame('Error starting process', $process->status());
+            $this->assertSame(-1, $process->close());
+            $this->assertSame(-1, $process->close());
+        } finally {
+            ini_set('error_log', $originalLog);
+            @unlink($logFile);
+        }
+    }
+
+    public function testThrowingStartRemainsObservableWithoutAnExitCode(): void
+    {
+        $process = new class($this->command()) extends Process {
+            protected function open(array $descriptorSpec)
+            {
+                throw new \RuntimeException('synthetic open failure');
+            }
+        };
+
+        try {
+            $process->start();
+            $this->fail('The original open exception must remain visible.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('synthetic open failure', $exception->getMessage());
+        }
+
+        $this->assertSame('Error starting process', $process->status());
+        $this->assertSame(-1, $process->close());
+    }
+
+    public function testStartExceptionSurvivesThrowingErrorListener(): void
+    {
+        $process = new class($this->command()) extends Process {
+            protected function open(array $descriptorSpec)
+            {
+                throw new \RuntimeException('original start failure');
+            }
+        };
+        $process->when(Event::ERROR, function (): void {
+            throw new \RuntimeException('observer failure');
+        });
+
+        try {
+            $process->start();
+            $this->fail('The original start failure must remain visible.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('original start failure', $exception->getMessage());
+        }
+
+        $this->assertSame('Error starting process', $process->status());
+        $this->assertSame(-1, $process->close());
     }
 
     private function waitForProcess(Process $process): void
