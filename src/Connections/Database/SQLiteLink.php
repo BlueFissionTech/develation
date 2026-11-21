@@ -351,25 +351,57 @@ class SQLiteLink extends Connection implements IConfigurable
             $field_string = '';
             $value_string = '';
             $temp_values = [];
+            $bindings = [];
+            $hasBlob = false;
+            foreach ($data as $value) {
+                if ($value instanceof SQLiteBlob) {
+                    $hasBlob = true;
+                    break;
+                }
+            }
 
             // Turn array into a string
 
             // Prepare each value for input
-            foreach ($data as $a) {
-                array_push($temp_values, self::sanitize($a));
-            }
+            if ($hasBlob) {
+                $values = Arr::make([]);
+                $preparedBindings = Arr::make([]);
+                foreach ($data as $field => $value) {
+                    if ($value instanceof SQLiteBlob) {
+                        $insert[$field] = $value;
+                        $values->push('?');
+                        $preparedBindings->push($value);
+                        continue;
+                    }
 
-            $count = 0;
-            foreach (Arr::keys($data) as $a) {
-                if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
-                    $insert[$a] = $temp_values[$count];
+                    $sanitized = self::sanitize($value);
+                    if ($sanitized !== null && $sanitized !== 'NULL') {
+                        $insert[$field] = $sanitized;
+                        $values->push($sanitized);
+                    }
+                }
+                $field_string = Arr::join(Arr::map(Arr::keys($insert), static fn ($field) => Str::replace((string)$field, '`', '``')), '`, `');
+                $value_string = Arr::join($values->val(), ', ');
+                $bindings = $preparedBindings->val();
+            } else {
+                $sanitizedValues = Arr::make([]);
+                foreach ($data as $a) {
+                    $sanitizedValues->push(self::sanitize($a));
+                }
+                $temp_values = $sanitizedValues->val();
+
+                $count = 0;
+                foreach (Arr::keys($data) as $a) {
+                    if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
+                        $insert[$a] = $temp_values[$count];
+                    }
+
+                    $count++;
                 }
 
-                $count++;
+                $field_string = Arr::join(Arr::keys($insert), '`, `');
+                $value_string = Arr::join($insert, ', ');
             }
-
-            $field_string = implode('`, `', Arr::keys($insert));
-            $value_string = implode(', ', $insert);
 
             $query = "INSERT INTO `".$table."`(`".$field_string."`) VALUES(".$value_string.")";
 
@@ -378,14 +410,19 @@ class SQLiteLink extends Connection implements IConfigurable
             $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $insert));
             $this->perform([State::PROCESSING, State::BUSY]);
             try {
-                $result = $db->exec($query);
-                $success = ($result) ? true : false;
+                $result = $hasBlob ? $this->executePrepared($db, $query, $bindings) : $db->exec($query);
+                $success = $result !== false;
+                if ($result instanceof \SQLite3Result) {
+                    $result->finalize();
+                }
                 $status = ($success) ? self::STATUS_SUCCESS : ($db->lastErrorMsg() ?? self::STATUS_FAILED);
                 $lastRow = $db->lastInsertRowID();
                 $this->_last_row = $lastRow;
                 $this->_data['last_row'] = $lastRow;
-            } catch (\Exception $e) {
-                error_log($e->getMessage());
+            } catch (\Throwable $e) {
+                if (!$hasBlob) {
+                    error_log($e->getMessage());
+                }
                 $status = self::STATUS_FAILED;
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
                 $success = false;
@@ -433,26 +470,61 @@ class SQLiteLink extends Connection implements IConfigurable
         if ($db) {
             $updates = [];
             $temp_values = [];
+            $bindings = [];
             $update_string = '';
             $query_str;
-
-            foreach ($data as $a) {
-                array_push($temp_values, self::sanitize($a));
-            }
-
-            $count = 0;
-            foreach (Arr::keys($data) as $a) {
-                if ($ignore_null === true) {
-                    if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
-                        array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
-                    }
-                } else {
-                    array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
+            $hasBlob = false;
+            foreach ($data as $value) {
+                if ($value instanceof SQLiteBlob) {
+                    $hasBlob = true;
+                    break;
                 }
-                $count++;
             }
 
-            $update_string = implode(', ', $updates);
+            if ($hasBlob) {
+                $assignments = Arr::make([]);
+                $preparedBindings = Arr::make([]);
+                foreach ($data as $field => $value) {
+                    $escapedField = Str::replace((string)$field, '`', '``');
+                    if ($value instanceof SQLiteBlob) {
+                        $updates[$field] = $value;
+                        $assignments->push('`' . $escapedField . '` = ?');
+                        $preparedBindings->push($value);
+                        continue;
+                    }
+
+                    $sanitized = self::sanitize($value);
+                    if ($ignore_null && ($sanitized === null || $sanitized === 'NULL')) {
+                        continue;
+                    }
+
+                    $updates[$field] = $sanitized;
+                    $assignments->push('`' . $escapedField . '` = ' . $sanitized);
+                }
+                $update_string = Arr::join($assignments->val(), ', ');
+                $bindings = $preparedBindings->val();
+            } else {
+                $sanitizedValues = Arr::make([]);
+                foreach ($data as $a) {
+                    $sanitizedValues->push(self::sanitize($a));
+                }
+                $temp_values = $sanitizedValues->val();
+
+                $legacyUpdates = Arr::make([]);
+                $count = 0;
+                foreach (Arr::keys($data) as $a) {
+                    if ($ignore_null === true) {
+                        if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
+                            $legacyUpdates->push("`{$a}`" ."=". $temp_values[$count]);
+                        }
+                    } else {
+                        $legacyUpdates->push("`{$a}`" ."=". $temp_values[$count]);
+                    }
+                    $count++;
+                }
+                $updates = $legacyUpdates->val();
+                $update_string = Arr::join($updates, ', ');
+            }
 
             $query = "UPDATE `".$table."` SET ".$update_string." WHERE ".$where;
 
@@ -462,12 +534,17 @@ class SQLiteLink extends Connection implements IConfigurable
             $this->perform([State::PROCESSING, State::BUSY]);
 
             try {
-                $result = $db->exec($query);
-                $success = ($result) ? true : false;
+                $result = $hasBlob ? $this->executePrepared($db, $query, $bindings) : $db->exec($query);
+                $success = $result !== false;
+                if ($result instanceof \SQLite3Result) {
+                    $result->finalize();
+                }
                 $status = ($success) ? self::STATUS_SUCCESS : ($db->lastErrorMsg() ?? self::STATUS_FAILED);
                 $this->_result = $result;
-            } catch (\Exception $e) {
-                error_log($e->getMessage());
+            } catch (\Throwable $e) {
+                if (!$hasBlob) {
+                    error_log($e->getMessage());
+                }
                 $status = self::STATUS_FAILED;
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
                 $success = false;

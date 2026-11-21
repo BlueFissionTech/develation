@@ -140,6 +140,37 @@ class SQLiteLinkTest extends \PHPUnit\Framework\TestCase
         $this->assertFalse($result->fetchArray(SQLITE3_ASSOC));
     }
 
+    public function testBlobWritePreservesLegacyNormalizationForOtherFields(): void
+    {
+        [$database] = $this->databasePair();
+        $link = new SQLiteLink(['database' => $database, 'table' => 'fixture', 'key' => 'id', 'ignore_null' => true]);
+        $link->open();
+        $this->links[] = $link;
+        $link->query("CREATE TABLE fixture (id INTEGER PRIMARY KEY, payload BLOB, stamp TEXT, label TEXT DEFAULT 'fallback')");
+
+        $link->query(['stamp' => '11/21/2026', 'label' => 'NULL']);
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+        $link->query(['payload' => new SQLiteBlob("A\0B"), 'stamp' => '11/21/2026', 'label' => 'NULL']);
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+
+        $rows = $link->query('SELECT id, stamp, label, payload, typeof(payload) AS payload_type FROM fixture ORDER BY id')->result();
+        $plain = $rows->fetchArray(SQLITE3_ASSOC);
+        $binary = $rows->fetchArray(SQLITE3_ASSOC);
+        $this->assertSame('2026-11-21', $plain['stamp']);
+        $this->assertSame($plain['stamp'], $binary['stamp']);
+        $this->assertSame('fallback', $plain['label']);
+        $this->assertSame($plain['label'], $binary['label']);
+        $this->assertSame(bin2hex("A\0B"), bin2hex($binary['payload']));
+        $this->assertSame('blob', $binary['payload_type']);
+
+        $link->query(['id' => $binary['id'], 'payload' => new SQLiteBlob("C\0D"), 'stamp' => '11/22/2026', 'label' => 'NULL']);
+        $this->assertSame(SQLiteLink::STATUS_SUCCESS, $link->status());
+        $updated = $link->query('SELECT stamp, label, payload FROM fixture WHERE id = ' . (int)$binary['id'])->result()->fetchArray(SQLITE3_ASSOC);
+        $this->assertSame('2026-11-22', $updated['stamp']);
+        $this->assertSame('fallback', $updated['label']);
+        $this->assertSame(bin2hex("C\0D"), bin2hex($updated['payload']));
+    }
+
     public function testNamedBindingsAndMissingValuesHaveExplicitOutcomes(): void
     {
         [$database] = $this->databasePair();
