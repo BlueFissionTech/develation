@@ -191,7 +191,7 @@ class Process implements IDispatcher
         }
 
         try {
-            $this->_process = $this->openProcess($descriptorSpec);
+            $this->_process = $this->open($descriptorSpec);
         } catch (\Throwable $exception) {
             $this->_process = false;
             $this->_startFailed = true;
@@ -226,7 +226,7 @@ class Process implements IDispatcher
      * Open the configured process. Kept separate so start failures can be tested
      * without executing a command or relying on platform-specific failure modes.
      */
-    protected function openProcess(array $descriptorSpec)
+    protected function open(array $descriptorSpec)
     {
         return proc_open($this->_command, $descriptorSpec, $this->_pipes, $this->_cwd, $this->_env, $this->_options);
     }

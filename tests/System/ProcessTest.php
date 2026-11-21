@@ -76,7 +76,7 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
     {
         $secret = 'synthetic-secret-argument-123';
         $process = new class([PHP_BINARY, '--token=' . $secret]) extends Process {
-            protected function openProcess(array $descriptorSpec)
+            protected function open(array $descriptorSpec)
             {
                 return false;
             }
@@ -106,7 +106,7 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
     public function testFailedStartCannotBeObservedAsSuccessfulExit(): void
     {
         $process = new class($this->command()) extends Process {
-            protected function openProcess(array $descriptorSpec)
+            protected function open(array $descriptorSpec)
             {
                 return false;
             }
@@ -130,7 +130,7 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
     public function testThrowingStartRemainsObservableWithoutAnExitCode(): void
     {
         $process = new class($this->command()) extends Process {
-            protected function openProcess(array $descriptorSpec)
+            protected function open(array $descriptorSpec)
             {
                 throw new \RuntimeException('synthetic open failure');
             }
