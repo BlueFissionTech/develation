@@ -5,6 +5,7 @@ namespace BlueFission\Tests;
 use BlueFission\Val;
 use BlueFission\Num;
 use BlueFission\DataTypes;
+use BlueFission\Behavioral\Behaviors\Event;
 
 class ValTest extends \PHPUnit\Framework\TestCase
 {
@@ -25,6 +26,36 @@ class ValTest extends \PHPUnit\Framework\TestCase
         $this->emptyObject = new static::$classname("");
         $this->zeroObject = new static::$classname(0);
         $this->valueObject = new static::$classname(1);
+    }
+
+    public function testObjectScalarAssignmentSignalsChangeWithoutNumericCoercion(): void
+    {
+        $value = new Val(1);
+        $wrapper = Num::make(1);
+        $changes = 0;
+        $diagnostics = [];
+        $value->when(Event::CHANGE, static function () use (&$changes): void { $changes++; });
+        set_error_handler(static function (int $severity, string $message) use (&$diagnostics): bool {
+            $diagnostics[] = [$severity, $message];
+            return true;
+        });
+
+        try {
+            $value->val($wrapper);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $diagnostics);
+        $this->assertSame(1, $changes);
+        $this->assertSame($wrapper, $value->val());
+        $this->assertSame(1, $wrapper->val());
+
+        $scalar = new Val(1);
+        $scalarChanges = 0;
+        $scalar->when(Event::CHANGE, static function () use (&$scalarChanges): void { $scalarChanges++; });
+        $scalar->val('1');
+        $this->assertSame(0, $scalarChanges);
     }
 
     // public function tearDown() {
