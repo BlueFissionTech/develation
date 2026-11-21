@@ -3,6 +3,8 @@ namespace BlueFission\Tests;
 
 use BlueFission\Cli\Util\Prompt;
 use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\DevElation as Dev;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
 class PromptTest extends \PHPUnit\Framework\TestCase
 {
@@ -74,6 +76,36 @@ class PromptTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('', $output);
         $this->assertSame('retained', $prompt->field('lastResponse'));
         $this->assertSame($baselineEvents, $events);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSensitiveReaderSkipsActiveGlobalHooksAndFilters(): void
+    {
+        $observations = 0;
+        foreach (['_in', '_out'] as $name) {
+            Dev::filter($name, function ($value) use (&$observations) {
+                $observations++;
+                return $value;
+            });
+        }
+        foreach (['_before', '_after'] as $name) {
+            Dev::action($name, function (...$args) use (&$observations): void {
+                $observations++;
+            });
+        }
+
+        Dev::up();
+        try {
+            // Prove the global hooks are active before checking the sensitive path.
+            $this->assertSame('probe', Dev::apply('_in', 'probe'));
+            $this->assertSame(1, $observations);
+            $observations = 0;
+
+            $this->assertSame('synthetic', Prompt::askSensitive('Prompt?', fn (): string => 'synthetic'));
+            $this->assertSame(0, $observations);
+        } finally {
+            Dev::down();
+        }
     }
 
     public function testSensitiveReaderDistinguishesEmptyDefaultFromEof(): void
