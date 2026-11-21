@@ -7,6 +7,9 @@ use BlueFission\Num;
 use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Event;
 use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateInterval;
 
 class Date extends Val implements IVal
 {
@@ -32,6 +35,9 @@ class Date extends Val implements IVal
      */
     protected $_value = null;
 
+    /** Whether _value is bound to an external variable through ref(). */
+    private bool $_valueIsReference = false;
+
     /**
      * Date constructor.
      *
@@ -39,6 +45,7 @@ class Date extends Val implements IVal
      */
     public function __construct($value = null, $timezone = null)
     {
+        $value = self::independentInput($value);
         parent::__construct($value);
 
         $this->_value = $this->_data;
@@ -55,11 +62,14 @@ class Date extends Val implements IVal
 
     private function setValue($value = null, $timezone = null): void
     {
+        $value = self::independentInput($value);
         if (isset($value) && $this->isValidTimestamp($value)) {
             $value = date('Y-m-d H:i:s', (int)$value);
         }
 
-        $this->_datetime = ($value instanceof DateTime) ? $value : new DateTime($value ?? 'now');
+        $this->_datetime = ($value instanceof DateTimeInterface)
+            ? DateTime::createFromInterface($value)
+            : new DateTime($value ?? 'now');
         $this->_timezone = $timezone ?? $this->_datetime->getTimezone()->getName();
 
         $this->_data = new Arr([
@@ -72,6 +82,22 @@ class Date extends Val implements IVal
             'timezone' => $this->_datetime->format('e'),
             'offset' => $this->_datetime->format('Z')
         ]);
+    }
+
+    private static function independentInput($value)
+    {
+        if ($value instanceof DateTimeInterface) {
+            return DateTime::createFromInterface($value);
+        }
+        if ($value instanceof self) {
+            $value->val();
+            return DateTime::createFromInterface($value->datetime);
+        }
+        if (is_object($value)) {
+            throw new \InvalidArgumentException('Date value must be a date, timestamp, or parseable string.');
+        }
+
+        return $value;
     }
 
     /**
@@ -99,6 +125,8 @@ class Date extends Val implements IVal
     {
         if ($value) {
 
+            $value = self::independentInput($value);
+
             parent::val($value);
 
             $this->_value = $this->_data;
@@ -111,6 +139,26 @@ class Date extends Val implements IVal
         $this->setValue($this->_value);
 
         return $this->_datetime->format($this->_format);
+    }
+
+    /** Add whole local calendar days in the current named timezone. */
+    public function addCalendarDays(int $days): self
+    {
+        $this->val();
+        if ($days === 0) {
+            return $this;
+        }
+
+        $interval = new DateInterval('P' . ltrim((string)$days, '-') . 'D');
+        $interval->invert = $days < 0 ? 1 : 0;
+        $next = DateTimeImmutable::createFromMutable($this->_datetime)->add($interval);
+        $this->_value = $this->_valueIsReference
+            ? $next->format($this->_format)
+            : DateTime::createFromInterface($next);
+        $this->setValue($this->_value);
+        $this->trigger(Event::CHANGE);
+
+        return $this;
     }
 
     public function cast(): IVal
@@ -155,6 +203,7 @@ class Date extends Val implements IVal
 
         $this->_value = &$value;
         $this->_value = $this->val();
+        $this->_valueIsReference = true;
 
         $this->setValue($this->_value);
 
@@ -236,7 +285,7 @@ class Date extends Val implements IVal
             $timestamp = mktime((int)$this->_data['hour'], (int)$this->_data['minute'], (int)$this->_data['second'], (int)$this->_data['month'], (int)$this->_data['day'], (int)$this->_data['year']);
         } elseif (Num::is($data)) {
             $timestamp = $this->isValidTimestamp($data) ? $data : null;
-        } elseif ($data instanceof DateTime) {
+        } elseif ($data instanceof DateTimeInterface) {
             $timestamp = $data->getTimestamp();
         } else {
             $timestamp = strtotime($data) !== false ? strtotime($data) : null;
