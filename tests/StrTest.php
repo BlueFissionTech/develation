@@ -222,6 +222,63 @@ class StrTest extends ValTest {
 		}
 	}
 
+	public function testDecodeEntitiesIsOptInAndMatchesNativeHtml5Utf8(): void
+	{
+		$inputs = [
+			'',
+			'plain text',
+			'&amp; &lt; &gt; &quot; &apos; &#65; &#x1F642;',
+			'&unknown; &amp',
+			"\xc3(&amp;",
+			'<em>&amp;</em><strong>&quot;x&quot;</strong>',
+		];
+		foreach ($inputs as $input) {
+			$expected = html_entity_decode($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			$value = Str::make($input);
+			$this->assertSame($expected, Str::decodeEntities($input));
+			$this->assertSame($value, $value->decodeEntities());
+			$this->assertSame($expected, $value->val());
+		}
+
+		$this->assertSame('&amp;', Str::stripTags('<b>&amp;</b>'));
+		$this->assertSame('&', Str::make('<b>&amp;</b>')->stripTags()->decodeEntities()->val());
+		$this->assertSame('<b>&</b>', Str::decodeEntities('<b>&amp;</b>'));
+	}
+
+	public function testDecodeEntitiesHonorsExplicitFlagsAndEncodingAndDispatchesChange(): void
+	{
+		$input = '&quot; &eacute;';
+		$expected = html_entity_decode($input, ENT_NOQUOTES | ENT_HTML5, 'ISO-8859-1');
+		$value = Str::make($input);
+		$changes = 0;
+		$actions = 0;
+		$value->when(Event::CHANGE, function () use (&$changes): void { $changes++; });
+		$value->when(Event::ACTION_PERFORMED, function () use (&$actions): void { $actions++; });
+		$this->assertSame($expected, Str::decodeEntities($input, ENT_NOQUOTES | ENT_HTML5, 'ISO-8859-1'));
+		$this->assertSame($value, $value->decodeEntities(ENT_NOQUOTES | ENT_HTML5, 'ISO-8859-1'));
+		$this->assertSame($expected, $value->val());
+		$this->assertSame(1, $changes);
+		$this->assertSame(1, $actions);
+	}
+
+	public function testDecodeEntitiesRetainsNativeUnsupportedEncodingWarning(): void
+	{
+		$value = Str::make('&amp;');
+		$warnings = [];
+		set_error_handler(function (int $level, string $message) use (&$warnings): bool {
+			$warnings[] = $message;
+			return true;
+		});
+		try {
+			$this->assertSame($value, $value->decodeEntities(ENT_QUOTES | ENT_HTML5, 'invalid-encoding'));
+		} finally {
+			restore_error_handler();
+		}
+		$this->assertSame('&', $value->val());
+		$this->assertCount(1, $warnings);
+		$this->assertStringContainsString('not supported', $warnings[0]);
+	}
+
 	public function testStrRepeatProvidesCanonicalStaticHelper()
 	{
 		$this->assertSame('ababab', Str::repeat('ab', 3));

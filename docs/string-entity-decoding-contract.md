@@ -1,7 +1,7 @@
-# String entity decoding: review candidate
+# String entity decoding
 
-This documents the API decision requested in #326. It does not add a helper
-or change `Str::stripTags()`.
+`Str::decodeEntities()` is an opt-in text-normalization helper. It does not
+change `Str::stripTags()` or sanitize HTML output.
 
 ## Current boundary
 
@@ -13,32 +13,37 @@ entity references alone. `src/HTML/Form.php` uses native
 equivalent. Decoding and tag removal must remain separate opt-in steps; neither
 is an HTML sanitizer or a text-equality policy.
 
-## Proposed contract for review, not yet implemented
+## Public contract
 
-Consider `Str::decodeEntities($text, $flags = ENT_QUOTES | ENT_HTML5,
-$encoding = 'UTF-8')`, backed by a fluent instance `_decodeEntities()` helper.
-Under the existing `Str` dispatch convention, the instance call would mutate
-the stored string through `alter()`, return the same `Str` object, and emit the
-normal change/action events; the static call would return the decoded raw
-string. The public name, parameter types/defaults, and encoding validation
-need maintainer and affected-owner approval before implementation.
+`Str::decodeEntities($text, $flags = ENT_QUOTES | ENT_HTML5,
+$encoding = 'UTF-8')` returns a raw string through the existing static helper
+dispatch. `Str::make($text)->decodeEntities($flags, $encoding)` alters the
+wrapped value and returns the same `Str` object, with normal change and action
+events. Both use PHP `html_entity_decode()` with the supplied flags and
+encoding; no custom parser, tag removal, whitespace normalization, or equality
+policy is applied.
 
-For the proposed default mode, follow native `html_entity_decode()` byte
-behavior rather than introducing a custom parser. An isolated PHP 8.2.11
-probe with `ENT_QUOTES | ENT_HTML5` and UTF-8 decoded `&amp;`, `&lt;`,
+```php
+use BlueFission\Str;
+
+$plain = Str::make('<em>Tom &amp; Jo</em>')->stripTags()->decodeEntities()->val();
+// Tom & Jo
+```
+
+The default follows native `html_entity_decode()` byte behavior. PHP 8.2.11
+tests with `ENT_QUOTES | ENT_HTML5` and UTF-8 decode `&amp;`, `&lt;`,
 `&quot;`, `&apos;`, and `&#65;`; left `&unknown;` and incomplete `&amp`
 unchanged; left malformed input bytes (`C3 28`) unchanged while still decoding
-a later `&amp;`; and did not remove adjacent `<em>` tags. These observations
-are test cases, not a claim that all encodings or invalid-input modes have
-been qualified.
+a later `&amp;`; and do not remove adjacent `<em>` tags. Explicit flags and
+encoding are passed through. PHP warns and assumes UTF-8 for an unsupported
+encoding; this helper retains that native warning/fallback behavior rather
+than silently selecting another encoding itself. Callers should supply a
+known encoding. These observations do not qualify every encoding.
 
-Before implementation, test byte-exact parity and return types for empty
-input, named/numeric/unknown/incomplete entities, quotes, adjacent tags,
-malformed UTF-8, explicit flags and encodings, and composed
-`stripTags()->decodeEntities()` use. Verify that the instance's change and
-action events follow existing `alter()`/dynamic-dispatch behavior. Review
-whether invalid flag/encoding values should propagate PHP's native failure or
-have an explicit library error; avoid silent substitution or normalization.
+`tests/StrTest.php` covers byte-exact parity and return types for empty input,
+named/numeric/unknown/incomplete entities, quotes, adjacent tags, malformed
+UTF-8, explicit flags/encoding, native unsupported-encoding warning, event
+dispatch, and composed `stripTags()->decodeEntities()` use.
 
-No dependency, automatic decoding, consumer migration, release, or merge is
-implied by this candidate.
+Entity decoding is presentation/normalization, not HTML sanitization. Do not
+use it as a security boundary or assume it defines text equality.
