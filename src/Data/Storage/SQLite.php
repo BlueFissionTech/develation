@@ -205,7 +205,8 @@ class SQLite extends Storage implements IData
                 $data[$field] = $this->field($field);
             }
 
-            $success = $db->query($data);
+            $db->query($data);
+            $success = $db->status() === SQLiteLink::STATUS_SUCCESS;
 
             $this->_query = $db->stats()['query'];
 

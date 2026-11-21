@@ -351,25 +351,42 @@ class SQLiteLink extends Connection implements IConfigurable
             $field_string = '';
             $value_string = '';
             $temp_values = [];
+            $hasBlob = false;
+            foreach ($data as $value) {
+                if ($value instanceof SQLiteBlob) {
+                    $hasBlob = true;
+                    break;
+                }
+            }
 
             // Turn array into a string
 
             // Prepare each value for input
-            foreach ($data as $a) {
-                array_push($temp_values, self::sanitize($a));
-            }
-
-            $count = 0;
-            foreach (Arr::keys($data) as $a) {
-                if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
-                    $insert[$a] = $temp_values[$count];
+            if ($hasBlob) {
+                foreach ($data as $field => $value) {
+                    if ($value !== null) {
+                        $insert[$field] = $value;
+                    }
+                }
+                $field_string = implode('`, `', array_map(static fn ($field) => str_replace('`', '``', $field), Arr::keys($insert)));
+                $value_string = implode(', ', array_fill(0, count($insert), '?'));
+            } else {
+                foreach ($data as $a) {
+                    array_push($temp_values, self::sanitize($a));
                 }
 
-                $count++;
-            }
+                $count = 0;
+                foreach (Arr::keys($data) as $a) {
+                    if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
+                        $insert[$a] = $temp_values[$count];
+                    }
 
-            $field_string = implode('`, `', Arr::keys($insert));
-            $value_string = implode(', ', $insert);
+                    $count++;
+                }
+
+                $field_string = implode('`, `', Arr::keys($insert));
+                $value_string = implode(', ', $insert);
+            }
 
             $query = "INSERT INTO `".$table."`(`".$field_string."`) VALUES(".$value_string.")";
 
@@ -378,14 +395,19 @@ class SQLiteLink extends Connection implements IConfigurable
             $this->perform([Action::SEND, State::SENDING], new Meta(when: Action::PROCESS, data: $insert));
             $this->perform([State::PROCESSING, State::BUSY]);
             try {
-                $result = $db->exec($query);
-                $success = ($result) ? true : false;
+                $result = $hasBlob ? $this->executePrepared($db, $query, array_values($insert)) : $db->exec($query);
+                $success = $result !== false;
+                if ($result instanceof \SQLite3Result) {
+                    $result->finalize();
+                }
                 $status = ($success) ? self::STATUS_SUCCESS : ($db->lastErrorMsg() ?? self::STATUS_FAILED);
                 $lastRow = $db->lastInsertRowID();
                 $this->_last_row = $lastRow;
                 $this->_data['last_row'] = $lastRow;
-            } catch (\Exception $e) {
-                error_log($e->getMessage());
+            } catch (\Throwable $e) {
+                if (!$hasBlob) {
+                    error_log($e->getMessage());
+                }
                 $status = self::STATUS_FAILED;
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
                 $success = false;
@@ -435,24 +457,39 @@ class SQLiteLink extends Connection implements IConfigurable
             $temp_values = [];
             $update_string = '';
             $query_str;
-
-            foreach ($data as $a) {
-                array_push($temp_values, self::sanitize($a));
+            $hasBlob = false;
+            foreach ($data as $value) {
+                if ($value instanceof SQLiteBlob) {
+                    $hasBlob = true;
+                    break;
+                }
             }
 
-            $count = 0;
-            foreach (Arr::keys($data) as $a) {
-                if ($ignore_null === true) {
-                    if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
+            if ($hasBlob) {
+                foreach ($data as $field => $value) {
+                    if (!$ignore_null || $value !== null) {
+                        $updates[$field] = $value;
+                    }
+                }
+                $update_string = implode(', ', array_map(static fn ($field) => '`' . str_replace('`', '``', $field) . '` = ?', Arr::keys($updates)));
+            } else {
+                foreach ($data as $a) {
+                    array_push($temp_values, self::sanitize($a));
+                }
+
+                $count = 0;
+                foreach (Arr::keys($data) as $a) {
+                    if ($ignore_null === true) {
+                        if ($temp_values[$count] !== null && $temp_values[$count] !== 'NULL') {
+                            array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
+                        }
+                    } else {
                         array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
                     }
-                } else {
-                    array_push($updates, "`{$a}`" ."=". $temp_values[$count]);
+                    $count++;
                 }
-                $count++;
+                $update_string = implode(', ', $updates);
             }
-
-            $update_string = implode(', ', $updates);
 
             $query = "UPDATE `".$table."` SET ".$update_string." WHERE ".$where;
 
@@ -462,12 +499,17 @@ class SQLiteLink extends Connection implements IConfigurable
             $this->perform([State::PROCESSING, State::BUSY]);
 
             try {
-                $result = $db->exec($query);
-                $success = ($result) ? true : false;
+                $result = $hasBlob ? $this->executePrepared($db, $query, array_values($updates)) : $db->exec($query);
+                $success = $result !== false;
+                if ($result instanceof \SQLite3Result) {
+                    $result->finalize();
+                }
                 $status = ($success) ? self::STATUS_SUCCESS : ($db->lastErrorMsg() ?? self::STATUS_FAILED);
                 $this->_result = $result;
-            } catch (\Exception $e) {
-                error_log($e->getMessage());
+            } catch (\Throwable $e) {
+                if (!$hasBlob) {
+                    error_log($e->getMessage());
+                }
                 $status = self::STATUS_FAILED;
                 $this->perform(Event::ERROR, new Meta(when: Action::PROCESS, info: $e->getMessage()));
                 $success = false;

@@ -37,7 +37,29 @@ $status = $link->status();
 $link->close();
 ```
 
-Values may be strings, integers, floats, booleans, or `null`. The API does not
+Values may be strings, integers, floats, booleans, `null`, or an explicit
+`SQLiteBlob` byte value. Ordinary strings remain `SQLITE3_TEXT`, even when the
+column is declared `BLOB`; no byte intent is inferred from their contents.
+Use `new SQLiteBlob($bytes)` in prepared bindings or as a field value for
+`SQLite::write()` when the bytes must be bound as `SQLITE3_BLOB`. The byte value
+can be empty, contain NUL, or contain high bytes. Check operation `status()`
+and read back data when byte equality matters; a successful write status alone
+does not prove equality.
+
+```php
+use BlueFission\Connections\Database\SQLiteBlob;
+use BlueFission\Data\Storage\SQLite;
+
+$store = new SQLite(['location' => __DIR__ . '/app.sqlite', 'name' => 'attachments']);
+$store->activate(); // The table and its BLOB column must already exist.
+$store->field('payload', new SQLiteBlob($bytes));
+$store->write();
+if ($store->status() !== SQLite::STATUS_SUCCESS) {
+    // Inspect $store->error() and handle the failed write.
+}
+```
+
+The API does not
 bind table or column identifiers; those must come from trusted schema code.
 
 ## Result Materialization
@@ -140,6 +162,18 @@ console output. `SQLiteScaffold::alter()` is not implemented; do not use it as
 a migration operation.
 
 Application-level migrations, data backfills, indexes, and destructive schema changes remain outside the responsibility of `SQLite`.
+
+### Existing TEXT Columns And Binary Migration
+
+Changing a field declaration to `BLOB` does not alter existing tables or
+recover bytes previously truncated by TEXT binding. Keep ordinary TEXT columns
+and their callers unchanged. For a deliberate migration, first preserve a
+recoverable copy of the database and verify the original byte source. Create a
+new explicitly declared BLOB column or table, backfill from the intact byte
+source using `SQLiteBlob`, and compare `hex(payload)`, `length(payload)`, and
+row counts before switching readers. Plan the transaction and cutover with the
+application owner; DevElation does not perform or authorize schema rewrites.
+If only a truncated TEXT value remains, the missing bytes cannot be reconstructed.
 
 ## Tests
 
