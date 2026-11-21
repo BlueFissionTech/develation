@@ -398,13 +398,19 @@ class Authenticator extends Service
      */
     private function setAuthCookie($value, $duration = "")
     {
-        $this->_session->clear();
-        $this->_session->username = $value['username'];
-        $this->_session->id = $value['id'];
+        try {
+            $this->_session->clear();
+            $this->_session->username = $value['username'];
+            $this->_session->id = $value['id'];
 
-        $this->_session->write();
+            // A previous successful write cannot stand in for this attempt.
+            $this->_session->status(Storage::STATUS_FAILED);
+            $this->_session->write();
 
-        return true;
+            return $this->_session->status() === Storage::STATUS_SUCCESS;
+        } catch (\Throwable $exception) {
+            return false;
+        }
     }
 
 }
