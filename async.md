@@ -23,6 +23,9 @@ receipt-based claim, acknowledgement, release, and recovery APIs, but a queue
 backend does not itself run jobs. `Async::setQueue()` must not be assumed to
 accept every `IQueue` implementation interchangeably: their static enqueue
 signatures and payload shapes need separate compatibility proof.
+The [queue adapter review candidate](docs/async-queue-adapter-contract.md)
+records the current positional mismatch and decisions needed before adding
+another `Async` queue.
 
 For a reproducible offline baseline, run:
 
