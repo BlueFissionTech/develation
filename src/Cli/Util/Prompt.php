@@ -109,6 +109,37 @@ class Prompt extends Obj
         }
         $this->_data[$field] = $value;
     }
+
+    /**
+     * Read a sensitive response through an explicit caller-owned reader.
+     * This path does not dispatch actions, events, hooks, filters or output,
+     * and does not persist the response in Prompt or Console state. The reader
+     * receives only the prompt text; its own echo/logging policy is external.
+     *
+     * A null or false reader result means EOF/cancellation and never falls
+     * back to ordinary input or the default. Empty input uses a non-null
+     * default. Trimming is opt-in so secret whitespace is preserved by default.
+     * Reader exceptions propagate without embedding the response in diagnostics.
+     */
+    public static function askSensitive(
+        string $message,
+        callable $reader,
+        ?string $default = null,
+        bool $trim = false
+    ): ?string {
+        $response = $reader($message);
+        if ($response === null || $response === false) {
+            return null;
+        }
+        if (!is_string($response)) {
+            throw new \UnexpectedValueException('Sensitive reader must return a string, false, or null.');
+        }
+        if ($trim) {
+            $response = trim($response);
+        }
+        return $response === '' && $default !== null ? $default : $response;
+    }
+
     public static function ask(string $message, $default = null, ?string $input = null, bool $trim = true): string
     {
         $message = Dev::apply('_in', $message);
