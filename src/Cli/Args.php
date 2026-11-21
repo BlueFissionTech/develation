@@ -5,6 +5,7 @@ namespace BlueFission\Cli;
 use BlueFission\Obj;
 use BlueFission\Arr;
 use BlueFission\Flag;
+use BlueFission\Num;
 use BlueFission\Str;
 use BlueFission\Val;
 use BlueFission\DataTypes;
@@ -23,6 +24,7 @@ class Args extends Obj
         'unknown' => [],
         'allowUnknown' => true,
         'autoHelp' => true,
+        'strictBooleans' => false,
         'command' => '',
     ];
 
@@ -33,6 +35,7 @@ class Args extends Obj
         'unknown' => DataTypes::ARRAY,
         'allowUnknown' => DataTypes::BOOLEAN,
         'autoHelp' => DataTypes::BOOLEAN,
+        'strictBooleans' => DataTypes::BOOLEAN,
         'command' => DataTypes::STRING,
     ];
 
@@ -45,6 +48,7 @@ class Args extends Obj
         $this->assign([
             'allowUnknown' => $config->hasKey('allowUnknown') ? Flag::parseBool($config['allowUnknown'], true) : true,
             'autoHelp' => $config->hasKey('autoHelp') ? Flag::parseBool($config['autoHelp'], true) : true,
+            'strictBooleans' => $config->hasKey('strictBooleans') ? Flag::parseBool($config['strictBooleans']) : false,
         ]);
 
         if ($this->field('autoHelp')) {
@@ -78,6 +82,12 @@ class Args extends Obj
 
     public function parse(array $argv): self
     {
+        if ($this->field('strictBooleans')) {
+            // A failed subsequent parse must not leave a previous authorization usable.
+            $this->field('options', []);
+            $this->field('positionals', []);
+            $this->field('unknown', []);
+        }
         $argv = Dev::apply('_in', $argv);
         Dev::do('_before', [$argv, $this]);
         $this->perform(new Action(Action::PROCESS), new Meta(data: $argv));
@@ -228,6 +238,12 @@ class Args extends Obj
         if (Str::pos($name, 'no-') === 0) {
             $candidate = Str::make($name)->sub(3);
             if (isset($map['long'][$candidate])) {
+                if ($this->field('strictBooleans')) {
+                    if ($map['long'][$candidate]->type() !== 'bool' || $value !== null) {
+                        throw new \InvalidArgumentException('Negated option ' . $candidate . ' must be a bare boolean flag.');
+                    }
+                    $this->rejectAmbiguousBooleanFollower($argv, $index, $candidate);
+                }
                 return [$map['long'][$candidate]->name(), false];
             }
         }
@@ -246,7 +262,7 @@ class Args extends Obj
         }
 
         if (!$this->requiresValue($definition) && $value === null) {
-            $value = true;
+            $value = $this->booleanFollower($argv, $index, $definition->name());
         }
 
         return [$definition->name(), $value];
@@ -274,7 +290,7 @@ class Args extends Obj
                     $index++;
                 }
             } else {
-                $value = true;
+                $value = $this->booleanFollower($argv, $index, $definition->name());
             }
             $results[] = [$definition->name(), $value, $arg];
             return $results;
@@ -290,6 +306,9 @@ class Args extends Obj
         }
 
         if ($allBooleans) {
+            if ($this->field('strictBooleans')) {
+                $this->rejectAmbiguousBooleanFollower($argv, $index, $arg);
+            }
             foreach ($letters as $letter) {
                 $definition = $map['short'][$letter];
                 $results[] = [$definition->name(), true, '-' . $letter];
@@ -314,7 +333,7 @@ class Args extends Obj
         }
 
         if (!$this->requiresValue($definition) && $value === '') {
-            $value = true;
+            $value = $this->booleanFollower($argv, $index, $definition->name());
         }
 
         $results[] = [$definition->name(), $value, $arg];
@@ -357,7 +376,10 @@ class Args extends Obj
     protected function assignOption(array &$options, OptionDefinition $definition, $value): void
     {
         $name = $definition->name();
-        $cast = $this->castValue($definition->type(), $value);
+        if ($this->field('strictBooleans') && $definition->type() === 'bool' && Arr::hasKey($options, $name)) {
+            throw new \InvalidArgumentException('Duplicate boolean option ' . $name . ' is not allowed in strict mode.');
+        }
+        $cast = $this->castValue($definition->type(), $value, $name);
 
         if ($definition->repeatable() || $definition->type() === 'array') {
             $existing = $options[$name] ?? [];
@@ -377,9 +399,12 @@ class Args extends Obj
         }
     }
 
-    protected function castValue(string $type, $value)
+    protected function castValue(string $type, $value, string $name = '')
     {
         if ($type === 'bool') {
+            if ($this->field('strictBooleans')) {
+                return $this->strictBoolean($value, $name);
+            }
             return Flag::parseBool($value);
         }
 
@@ -410,6 +435,52 @@ class Args extends Obj
         return (string)$value;
     }
 
+    protected function strictBoolean($value, string $name): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+		if (Num::isInt($value) && ($value === 0 || $value === 1)) {
+            return $value === 1;
+        }
+		if (Str::is($value)) {
+			$token = Str::make($value)->trim()->lower()->val();
+			if (Arr::has(['1', 'true', 'yes', 'on', 'y'], $token, true)) {
+                return true;
+            }
+			if (Arr::has(['0', 'false', 'no', 'off', 'n'], $token, true)) {
+                return false;
+            }
+        }
+        throw new \InvalidArgumentException('Invalid boolean value for option ' . $name . '; use true/false, yes/no, on/off, y/n, or 1/0.');
+    }
+
+    protected function booleanFollower(array $argv, int &$index, string $name)
+    {
+        if (!$this->field('strictBooleans')) {
+            return true;
+        }
+        $next = $argv[$index + 1] ?? null;
+        if ($next === null || $next === '--' || Str::pos($next, '-') === 0) {
+            return true;
+        }
+        try {
+            $this->strictBoolean($next, $name);
+        } catch (\InvalidArgumentException $exception) {
+            throw new \InvalidArgumentException('Ambiguous value after boolean option ' . $name . '; use -- before a positional.', 0, $exception);
+        }
+        $index++;
+        return $next;
+    }
+
+    protected function rejectAmbiguousBooleanFollower(array $argv, int $index, string $name): void
+    {
+        $next = $argv[$index + 1] ?? null;
+        if ($next !== null && $next !== '--' && Str::pos($next, '-') !== 0) {
+            throw new \InvalidArgumentException('Ambiguous value after boolean option ' . $name . '; use -- before a positional.');
+        }
+    }
+
     protected function requiresValue(OptionDefinition $definition): bool
     {
         return $definition->type() !== 'bool';
@@ -420,7 +491,9 @@ class Args extends Obj
         foreach ($definitions as $definition) {
             $name = $definition->name();
             if (!Arr::hasKey($options, $name) && Val::isNotNull($definition->defaultValue())) {
-                $options[$name] = $definition->defaultValue();
+                $options[$name] = $this->field('strictBooleans') && $definition->type() === 'bool'
+                    ? $this->castValue('bool', $definition->defaultValue(), $name)
+                    : $definition->defaultValue();
             }
         }
     }
@@ -443,7 +516,7 @@ class Args extends Obj
                 continue;
             }
 
-            $options[$name] = $this->castValue($definition->type(), $envValue);
+            $options[$name] = $this->castValue($definition->type(), $envValue, $name);
         }
     }
 
