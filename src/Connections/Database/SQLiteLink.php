@@ -226,7 +226,10 @@ class SQLiteLink extends Connection implements IConfigurable
                     ? ++$position
                     : (Arr::has([':', '@', '$'], $key[0], true) ? $key : ':' . $key);
 
-                if (Val::isNull($value)) {
+                if ($value instanceof SQLiteBlob) {
+                    $value = $value->bytes();
+                    $type = SQLITE3_BLOB;
+                } elseif (Val::isNull($value)) {
                     $type = SQLITE3_NULL;
                 } elseif (Flag::isBool($value)) {
                     $value = (int)$value;
@@ -238,7 +241,7 @@ class SQLiteLink extends Connection implements IConfigurable
                 } elseif (Str::is($value)) {
                     $type = SQLITE3_TEXT;
                 } else {
-                    throw new \InvalidArgumentException('Query bindings must be scalar values or null.');
+                    throw new \InvalidArgumentException('Query bindings must be scalar values, SQLiteBlob, or null.');
                 }
 
                 if (!$statement->bindValue($parameter, $value, $type)) {
