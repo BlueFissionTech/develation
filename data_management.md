@@ -33,7 +33,9 @@ $store->write();
 Use `FileSystem::fileContentsBounded($path, $maxBytes)` when untrusted local file
 size must be capped. It reads raw bytes from an existing regular file with `rb`,
 never creates a path, and checks the limit while reading; it does not apply
-content filters that could expand the result. An empty file is valid with a
+content filters that could expand the result. It may read one extra probe byte
+to detect a file that grows after opening, but never returns partial content
+on an oversized read. An empty file is valid with a
 zero-byte limit. Missing or unreadable files raise `RuntimeException`,
 directories raise `UnexpectedValueException`, stream-wrapper paths or invalid
 limits raise `InvalidArgumentException`, and an oversized file raises
