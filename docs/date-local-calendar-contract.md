@@ -31,6 +31,11 @@ instead of an incidental native `TypeError`. A source `DateTime` or
 `DateTimeImmutable` must remain unchanged after Date construction, setting,
 snapshot/reset, and calendar adjustment.
 
+For a Date bound through `ref()`, copying or adding calendar days first reads
+the current referenced value. A calendar adjustment writes the formatted date
+string back to that external variable, preserving the scalar reference
+contract rather than replacing it with a mutable `DateTime` object.
+
 The instance operation is `addCalendarDays(int $days): Date`. It is
 **fluent and mutates only the receiving Date**, returning that same instance.
 Positive and negative whole-day counts are accepted; zero is an identity.

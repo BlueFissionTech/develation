@@ -137,6 +137,23 @@ class DateTest extends ValTest {
 		}
 	}
 
+	public function testReferencedDateChangesAreSynchronizedBeforeCopyAndCalendarAdjustment(): void
+	{
+		$value = '2024-01-01T00:00:00+00:00';
+		$date = new Date($value);
+		$date->ref($value);
+		$value = '2024-02-01T00:00:00+00:00';
+
+		$copy = new Date($date);
+		$this->assertSame('2024-02-01T00:00:00+00:00', $copy->val());
+		$this->assertSame('2024-02-01T00:00:00+00:00', $value);
+
+		$this->assertSame($date, $date->addCalendarDays(1));
+		$this->assertSame('2024-02-02T00:00:00+00:00', $date->val());
+		$this->assertSame('2024-02-02T00:00:00+00:00', $value);
+		$this->assertSame('2024-02-01T00:00:00+00:00', $copy->val());
+	}
+
 	public function testClearsValue()
 	{
 		$object = new static::$classname('2012-12-12');

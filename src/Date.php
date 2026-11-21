@@ -35,6 +35,9 @@ class Date extends Val implements IVal
      */
     protected $_value = null;
 
+    /** Whether _value is bound to an external variable through ref(). */
+    private bool $_valueIsReference = false;
+
     /**
      * Date constructor.
      *
@@ -87,6 +90,7 @@ class Date extends Val implements IVal
             return DateTime::createFromInterface($value);
         }
         if ($value instanceof self) {
+            $value->val();
             return DateTime::createFromInterface($value->datetime);
         }
         if (is_object($value)) {
@@ -140,6 +144,7 @@ class Date extends Val implements IVal
     /** Add whole local calendar days in the current named timezone. */
     public function addCalendarDays(int $days): self
     {
+        $this->val();
         if ($days === 0) {
             return $this;
         }
@@ -147,7 +152,9 @@ class Date extends Val implements IVal
         $interval = new DateInterval('P' . ltrim((string)$days, '-') . 'D');
         $interval->invert = $days < 0 ? 1 : 0;
         $next = DateTimeImmutable::createFromMutable($this->_datetime)->add($interval);
-        $this->_value = DateTime::createFromInterface($next);
+        $this->_value = $this->_valueIsReference
+            ? $next->format($this->_format)
+            : DateTime::createFromInterface($next);
         $this->setValue($this->_value);
         $this->trigger(Event::CHANGE);
 
@@ -196,6 +203,7 @@ class Date extends Val implements IVal
 
         $this->_value = &$value;
         $this->_value = $this->val();
+        $this->_valueIsReference = true;
 
         $this->setValue($this->_value);
 
