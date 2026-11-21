@@ -2,21 +2,12 @@
 
 namespace BlueFission\Net;
 
-use Http\Discovery\HttpClientDiscovery;
-use Http\Discovery\Strategy\CommonClassesStrategy;
-use Http\Discovery\Strategy\DiscoveryStrategy;
-use Http\Discovery\ClassDiscovery;
+use BlueFission\Connections\Curl;
 
 class HTTPClientFactory
 {
     public static function create(): HTTPClient
     {
-        $curl = new Curl(); // Assuming Curl class is configured appropriately
-        return new HTTPClient($curl);
+        return new HTTPClient(new Curl());
     }
 }
-
-// Register the factory with HTTPlug Discovery
-ClassDiscovery::appendStrategy(CommonClassesStrategy::class);
-HttpClientDiscovery::prependStrategy(CommonClassesStrategy::class);
-HttpClientDiscovery::prependCandidate(HTTPClient::class, HTTPClientFactory::class, []);

@@ -3,10 +3,21 @@ namespace BlueFission\Tests\Net;
 
 use BlueFission\Connections\Curl;
 use BlueFission\Net\HTTPClient;
+use BlueFission\Net\HTTPClientFactory;
 use PHPUnit\Framework\TestCase;
 
 class HTTPClientTest extends TestCase
 {
+    public function testExplicitFactoryConstructsIndependentClientsWithoutNetwork(): void
+    {
+        $first = HTTPClientFactory::create();
+        $second = HTTPClientFactory::create();
+
+        $this->assertInstanceOf(HTTPClient::class, $first);
+        $this->assertInstanceOf(HTTPClient::class, $second);
+        $this->assertNotSame($first, $second);
+    }
+
     public function testHeaderLinesNormalizeThroughStrAndParseThroughArr()
     {
         $client = new class($this->createMock(Curl::class)) extends HTTPClient {
