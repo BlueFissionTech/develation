@@ -18,15 +18,18 @@ policy.
 
 ## Proposed opt-in operation for review
 
-`Date::subtractUtcSeconds(DateTimeInterface $instant, int $seconds): string`
+`Date::subtractUtcSeconds(DateTimeInterface $instant, mixed $seconds): string`
 
 - Interpret the input as an **instant**, using its existing offset/timezone.
   Normalize a copy to UTC before subtraction; never mutate the input or its
   timezone object.
-- Accept nonnegative, whole seconds only. Zero returns the same instant in
-  UTC. Reject negative seconds with `InvalidArgumentException`; PHP's declared
-  types reject unsupported instant/duration types. No implicit parse of a
-  relative date string or floating duration.
+- Accept only a native, nonnegative integer number of seconds. Zero returns
+  the same instant in UTC. Validate `is_int($seconds)` before arithmetic and
+  reject negative or non-integer values with `InvalidArgumentException`;
+  `DateTimeInterface` still constrains the instant. A typed `int $seconds`
+  parameter would coerce floats, numeric strings, and booleans at a weakly
+  typed caller boundary before method-body validation, so `mixed` is
+  deliberate here. No implicit parse of a relative date string or duration.
 - Subtract elapsed seconds, not local calendar days or months. DST transitions
   therefore have no special arithmetic rule beyond the input instant's offset.
 - Return `DateTimeInterface::ATOM` text with `+00:00`, including at date, month,
@@ -51,14 +54,16 @@ an additional proposed API in this slice.
 | `2025-01-01T00:00:00+00:00` | 1 | `2024-12-31T23:59:59+00:00` | year boundary |
 
 Tests should also assert unchanged source timestamp, timezone, and formatting;
-reject negative duration; and exercise a sufficiently large duration near the
-implementation's supported range. No test should depend on the process-default
-timezone or a live service.
+reject negative integers, floats, numeric strings, booleans, null, and arrays
+from weakly typed callers before arithmetic; and exercise a sufficiently large
+integer duration near the implementation's supported range. No test should
+depend on the process-default timezone or a live service.
 
 ## Review gates
 
-1. Approve or revise the public signature, especially string versus immutable
-   object return and the accepted instant input type.
+1. Approve or revise the public signature, especially `mixed` with explicit
+   integer validation versus accepting PHP scalar coercion, string versus
+   immutable object return, and the accepted instant input type.
 2. Confirm that fixed elapsed seconds, rather than calendar components, match
    the intended duration semantics.
 3. Reconcile the timezone behavior with #298 and the immutable input behavior
