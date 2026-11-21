@@ -989,8 +989,13 @@ class FileSystem extends Data implements IData {
 			throw new \RuntimeException('Directory is not readable.');
 		}
 
-		$quoted = preg_quote($pattern, '~');
-		$wildcards = Str::make($quoted)->replace('\\*', '.*')->replace('\\?', '.')->val();
+		// Compile the validated bytes directly: value filters must not rewrite
+		// the caller's pattern during this read-only directory scan.
+		$wildcards = '';
+		for ($index = 0, $length = strlen($pattern); $index < $length; $index++) {
+			$byte = $pattern[$index];
+			$wildcards .= $byte === '*' ? '.*' : ($byte === '?' ? '.' : preg_quote($byte, '~'));
+		}
 		$expression = '~\A' . $wildcards . '\z~us';
 		$entries = @scandir($directory, SCANDIR_SORT_NONE);
 		if ($entries === false) {
@@ -998,7 +1003,8 @@ class FileSystem extends Data implements IData {
 		}
 
 		$matches = [];
-		$prefix = rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
+		$last = substr($directory, -1);
+		$prefix = $directory . ($last === '/' || $last === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR);
 		foreach ($entries as $entry) {
 			if ($entry === '.' || $entry === '..' || preg_match($expression, $entry) !== 1) {
 				continue;

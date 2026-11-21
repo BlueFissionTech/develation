@@ -2,6 +2,7 @@
 
 namespace BlueFission\Tests\Data;
 
+use BlueFission\DevElation as Dev;
 use BlueFission\Data\FileSystem;
 use BlueFission\Tests\Support\TestEnvironment;
 use PHPUnit\Framework\TestCase;
@@ -43,6 +44,31 @@ class FileSystemPatternTest extends TestCase
         file_put_contents($this->directory . DIRECTORY_SEPARATOR . "\xc3\xa9.txt", 'unicode');
         file_put_contents($this->directory . DIRECTORY_SEPARATOR . 'ab.txt', 'two');
         $this->assertSame(["\xc3\xa9.txt"], FileSystem::matchingFiles($this->directory, '?.txt'));
+    }
+
+    public function testGlobalValueFiltersDoNotRewriteTheValidatedPattern(): void
+    {
+        file_put_contents($this->directory . DIRECTORY_SEPARATOR . 'a.txt', 'a');
+        Dev::filter('_in', fn ($value) => is_string($value) ? strtoupper($value) : $value);
+        Dev::up();
+        try {
+            $this->assertSame(['a.txt'], FileSystem::matchingFiles($this->directory, '*.txt'));
+        } finally {
+            Dev::down();
+        }
+    }
+
+    public function testPosixDirectoryCanEndWithLiteralBackslash(): void
+    {
+        if (DIRECTORY_SEPARATOR !== '/') {
+            $this->markTestSkipped('A trailing backslash is a separator on this host.');
+        }
+
+        $directory = $this->directory . DIRECTORY_SEPARATOR . 'trailing\\';
+        mkdir($directory);
+        file_put_contents($directory . DIRECTORY_SEPARATOR . 'a.txt', 'a');
+
+        $this->assertSame(['a.txt'], FileSystem::matchingFiles($directory, '*.txt'));
     }
 
     public function testExcludesSymlinksWhenTheHostCanCreateThem(): void
