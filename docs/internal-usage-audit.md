@@ -1,6 +1,6 @@
 # Internal usage audit: file and SQLite boundaries
 
-This is the first, evidence-based slice of issue #302. It records current
+This is an evidence-based inventory for issue #302. It records current
 conventions and candidate corrections; it does not change a public contract.
 `AGENTS.standards.md` remains the coding baseline. File I/O and SQLite calls
 are native implementation boundaries, not candidates for mechanical wrapping.
@@ -42,11 +42,52 @@ unsupported alter, no stdout, failure event metadata, host rollback and
 post-failure reuse, and isolation between database files. No new hook is
 proposed without a concrete extension use case.
 
+## Arr and Obj behavioral boundaries
+
+| Evidence | Current convention | Assessment |
+| --- | --- | --- |
+| `src/Arr.php` `_slice()` / `_splice()` | `array_slice()` produces a new `Arr`, while `array_splice()` changes a copy and passes it through `alter()`. | Native array functions are appropriate inside the primitive. Preserve the derived-versus-mutating return distinction and key behavior. |
+| `src/Arr.php` `_map()` | The existing map helper returns a new `Arr` with keys retained. | Keep the existing primitive boundary; wrapping its internal native traversal again would add no behavior. |
+| `src/Arr.php` `_sort()` / `_sortDesc()` | `_sort()` mutates `_data` with native `sort()`; `_sortDesc()` explicitly emits `Event::CHANGE` for an order-only change before `alter()`. | This is a concrete observer-consistency candidate, not a reason to equate their different key/order contracts. |
+| `src/Obj.php` constructor and `field()` | Composes `Arr`, typed field primitives, and behavioral events; a field setter returns the object while a getter unwraps unless value-object exposure is requested. | Preserve field return and event semantics rather than mechanically substituting raw arrays or new wrappers. |
+
+On current `master`, a no-service PHP 8.2.11 fixture starting with
+`Arr::make([3, 1, 2])` observes **zero** `Event::CHANGE` callbacks after
+`sort()` produces `[1, 2, 3]`; the corresponding `sortDesc()` produces a
+different order and emits **one**. A bounded follow-up could make an actual
+`sort()` order change observable. Benefit: consistent behavior for callers
+listening to primitive mutation. Risks: new callback side effects, sorting
+performance, no-op events, comparison/tie behavior, and static versus instance
+return shape. Focused tests should cover changed and unchanged order,
+callbacks invoked exactly once, keys, comparator failures, and existing
+`ArrTest` behavior before any code change. Affected-owner review is needed;
+this audit does **not** change the event contract.
+
+`Obj::__sleep()` and `__wakeup()` are a separate serialization audit concern
+under #342, not an automatic `Obj` rewrite here. The fresh-object failure has
+a test-only draft fixture in that issue's review path.
+
+## Application dispatch boundary
+
+| Evidence | Current convention | Assessment |
+| --- | --- | --- |
+| `src/Services/Application.php` `process()` / `run()` | `Arr` and `Str` normalize request arguments and routing; behavioral events mark lifecycle decisions. `run()` remains fluent. | Keep package helpers for carried request values and preserve fluent return and event order. |
+| `run()` and private `message()` | Native `call_user_func_array()` invokes a selected recipient at the dynamic callable boundary. | Native invocation is justified; wrapping it in a primitive would hide call and exception semantics. |
+| `gatewayOutcome()` and console service dispatch | Gateway halts are observable; console handler returns are currently discarded by `run()`. | The additive public result question belongs to #332, not to a mechanical usage refactor. |
+
+For any proposed dispatch correction, benefit and risks must be assessed in
+the owning issue: result observability versus duplicate invocation, exception
+propagation, stale state on reuse, HTTP output, and callback/event compatibility.
+Focused `ApplicationTest` fixtures should distinguish these branches before a
+public signature changes. This audit adds no hook, result object, or policy.
+
 ## Review boundary
 
 - This inventory proposes no new signatures, dependency, or behavioral edit.
 - Preserve existing public names, status conventions, and low-level native
   operations where they expose file or SQLite resource semantics.
 - Review #299, #303, and #300 independently before adopting their contracts;
-  any public-facing standards or behavior change needs its own evidence and
-  human review before release.
+  review #332 and #342 independently for dispatch and serialization. The
+  `Arr::sort()` event candidate needs observer compatibility review. Any
+  public-facing standards or behavior change needs its own evidence and human
+  review before release.
