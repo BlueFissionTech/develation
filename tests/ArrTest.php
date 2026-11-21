@@ -2,6 +2,8 @@
 namespace BlueFission\Tests;
 
 use BlueFission\Arr;
+use BlueFission\Val;
+use BlueFission\Flag;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Collections\Collection;
 use BlueFission\Collections\Group;
@@ -655,13 +657,40 @@ class ArrTest extends ValTest {
 		$this->assertFalse( $falseResult );
 	}
 	
-	public function testDoesntRecognizeZeroAsEmpty()
+	public function testRecognizesWrappedZeroAsPresent()
 	{
-		$falseResult = $this->zeroObject->isNotEmpty();
-		$trueResult = $this->zeroObject->isEmpty();
+		$this->assertSame([0], $this->zeroObject->val());
+		$this->assertSame(1, $this->zeroObject->count());
+		$this->assertFalse($this->zeroObject->isEmpty());
+		$this->assertTrue($this->zeroObject->isNotEmpty());
+	}
 	
-		$this->assertTrue( $trueResult );
-		$this->assertFalse( $falseResult );
+	public function testEmptinessUsesArrayCardinalityForSparseAndFalsyElements()
+	{
+		foreach ([[false], [0], [''], [null], ['name' => null], [1 => true]] as $array) {
+			$values = Arr::make($array);
+			$this->assertSame(1, $values->count());
+			$this->assertSame(1, $values->size());
+			$this->assertFalse($values->isEmpty());
+			$this->assertTrue($values->isNotEmpty());
+			$this->assertFalse(Arr::isEmpty($array));
+		}
+
+		$filtered = Arr::make([false, true])->filter(fn ($value) => $value);
+		$this->assertSame([1 => true], $filtered->val());
+		$this->assertSame(1, $filtered->count());
+		$this->assertFalse($filtered->isEmpty());
+		$this->assertSame([true], $filtered->values()->val());
+		$this->assertFalse($filtered->values()->isEmpty());
+
+		$collection = (new Collection([false, true]))->filter(fn ($value) => $value);
+		$this->assertSame([1 => true], $collection->toArray());
+		$this->assertSame(1, $collection->count());
+		$this->assertFalse(Arr::isEmpty($collection->toArray()));
+		$this->assertTrue(Arr::isEmpty([]));
+		$this->assertTrue(Val::make(false)->isEmpty());
+		$this->assertFalse(Flag::make(false)->isEmpty());
+		$this->assertFalse(Arr::make([false])->isEmpty());
 	}
 
 	public function testAccurateFalsiness()
