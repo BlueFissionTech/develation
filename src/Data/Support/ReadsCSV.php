@@ -71,7 +71,7 @@ trait ReadsCSV
 			$escaped = false;
 			$bytesRead = 0;
 			$bomPending = '';
-			$bomDecided = !$stripBom;
+			$bomDecided = false;
 			while (true) {
 				if ($bytesRead === $maxBytes) {
 					$current = fstat($handle);
@@ -107,6 +107,9 @@ trait ReadsCSV
 						$bomPending = '';
 						$bomDecided = true;
 					} elseif (Str::len($bomPending) === 3) {
+						if (!$stripBom) {
+							$field .= $bomPending;
+						}
 						$bomPending = '';
 						$bomDecided = true;
 						continue;
@@ -119,6 +122,20 @@ trait ReadsCSV
 
 				for ($index = 0, $length = Str::len($feed); $index < $length; $index++) {
 					if (self::consumeCsvByte($feed[$index], $delimiter, $enclosure, $escape, $fields, $field, $state, $escaped)) {
+						if ($feed[$index] === "\r") {
+							// A single lookahead distinguishes bare CR from CRLF without
+							// parsing any later record. Both terminator bytes count.
+							$next = fgetc($handle);
+							if ($next === false && !feof($handle)) {
+								throw new \RuntimeException('CSV record could not be read.');
+							}
+							if ($next === "\n") {
+								if ($bytesRead === $maxBytes) {
+									throw new \LengthException('First CSV record exceeds the maximum byte count.');
+								}
+								$bytesRead++;
+							}
+						}
 						return $fields;
 					}
 				}

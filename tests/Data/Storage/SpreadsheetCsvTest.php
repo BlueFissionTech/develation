@@ -51,6 +51,32 @@ class SpreadsheetCsvTest extends TestCase
         Spreadsheet::firstCsvRecordBounded($path, 11, ',', '"', '', true);
     }
 
+    public function testPreservedBomDoesNotPreventAQuotedFirstField(): void
+    {
+        $bom = "\xef\xbb\xbf";
+        $record = $bom . '"a,b",c' . "\n";
+        $path = $this->file('quoted-bom.csv', $record);
+
+        $this->assertSame([$bom . 'a,b', 'c'], Spreadsheet::firstCsvRecordBounded($path, strlen($record)));
+        $this->assertSame(['a,b', 'c'], Spreadsheet::firstCsvRecordBounded($path, strlen($record), ',', '"', '', true));
+        $this->assertSame([$bom], Spreadsheet::firstCsvRecordBounded($this->file('bom-only.csv', $bom), 3));
+    }
+
+    public function testCountsTheCompleteCrLfTerminator(): void
+    {
+        $path = $this->file('crlf-cap.csv', "a,b\r\nlater");
+        try {
+            Spreadsheet::firstCsvRecordBounded($path, 4);
+            $this->fail('The CRLF record occupies five bytes.');
+        } catch (\LengthException $exception) {
+            $this->assertNotSame('', $exception->getMessage());
+        }
+
+        $this->assertSame(['a', 'b'], Spreadsheet::firstCsvRecordBounded($path, 5));
+        $bareCr = $this->file('bare-cr.csv', "a,b\rlater");
+        $this->assertSame(['a', 'b'], Spreadsheet::firstCsvRecordBounded($bareCr, 4));
+    }
+
     public function testRejectsCapPlusOneAndMalformedQuoting(): void
     {
         $path = $this->file('cap.csv', "a,b\nlong-later-record");
