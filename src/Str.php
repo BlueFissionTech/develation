@@ -424,6 +424,18 @@ class Str extends Val implements IVal {
 	}
 
 	/**
+	 * Decode HTML entities without stripping tags or sanitizing output.
+	 * The default follows PHP's HTML5 and UTF-8 decoding semantics.
+	 *
+	 * @return IVal
+	 */
+	public function _decodeEntities(int $flags = ENT_QUOTES | ENT_HTML5, string $encoding = 'UTF-8'): IVal {
+		$this->alter(html_entity_decode($this->_data, $flags, $encoding));
+
+		return $this;
+	}
+
+	/**
 	 * Check whether the current string matches a PCRE pattern.
 	 *
 	 * @param string $pattern

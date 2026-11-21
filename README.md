@@ -44,6 +44,7 @@ DevElation implements a behavior-driven event handling system, which includes `E
 A collection of wrapper classes around PHP's primitive data types that offer enhanced functionality and utility methods.
 
 - [Data Types Documentation](datatypes.md)
+- [Opt-in String Entity Decoding](docs/string-entity-decoding-contract.md)
 - [Ref Primitive Documentation](ref.md)
 - [DevElation Capability Surface](capability_surface.md)
 - [Usage Readiness Checklist](usage_readiness_checklist.md)
