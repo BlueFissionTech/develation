@@ -34,6 +34,9 @@ class File extends Hierarchical implements IDispatcher
      */
     private $_contents;
 
+    private ?string $boundPath = null;
+    private ?string $boundRoot = null;
+
     /**
      * The character used to separate path segments.
      */
@@ -48,6 +51,15 @@ class File extends Hierarchical implements IDispatcher
     {
         parent::__construct(); // Set up hierarchy
         $this->__dispatchesConstruct(); // Initialize Dispatches trait
+    }
+
+    /** Bind an explicit local path without creating it or changing buffer-only construction. */
+    public static function atPath(string $path, ?string $root = null): static
+    {
+        $file = new static();
+        $file->boundPath = $path;
+        $file->boundRoot = $root;
+        return $file;
     }
 
     /**
@@ -74,7 +86,8 @@ class File extends Hierarchical implements IDispatcher
      */
     public function exists(?string $path = null): bool
     {
-        $target = $this->targetPath($path, static::PATH_SEPARATOR);
+        $target = $path === null && $this->boundPath !== null
+            ? $this->boundPath : $this->targetPath($path, static::PATH_SEPARATOR);
         $exists = FileSystem::fileExists($target);
 
         return (bool)Dev::apply('_out', $exists);
@@ -88,7 +101,8 @@ class File extends Hierarchical implements IDispatcher
      */
     public function isReachable(?string $path = null): bool
     {
-        $target = $this->targetPath($path, static::PATH_SEPARATOR);
+        $target = $path === null && $this->boundPath !== null
+            ? $this->boundPath : $this->targetPath($path, static::PATH_SEPARATOR);
         $isReachable = FileSystem::fileExists($target) && FileSystem::isReadable($target);
 
         return (bool)Dev::apply('_out', $isReachable);
@@ -113,6 +127,12 @@ class File extends Hierarchical implements IDispatcher
      */
     public function read(): ICollection
     {
+        if ($this->boundPath !== null) {
+            $bytes = FileSystem::readBytesAtPath($this->boundPath, $this->boundRoot);
+            $this->contents($bytes);
+            return $this;
+        }
+
         if ($this->_root === null) {
             throw new \LogicException('No storage backend is bound to this file.');
         }
@@ -141,6 +161,14 @@ class File extends Hierarchical implements IDispatcher
      */
     public function write(): ICollection
     {
+        if ($this->boundPath !== null) {
+            if (!is_string($this->_contents)) {
+                throw new \LogicException('File contents must be set to bytes before writing.');
+            }
+            FileSystem::replaceBytesAtPath($this->boundPath, $this->_contents, $this->boundRoot);
+            return $this;
+        }
+
         if ($this->_root === null) {
             throw new \LogicException('No storage backend is bound to this file.');
         }

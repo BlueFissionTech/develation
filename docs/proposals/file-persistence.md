@@ -1,7 +1,8 @@
 # File persistence and byte-exact replacement proposal
 
-**Status: proposal for #259; the APIs below are not implemented.** Do not use
-this document as a migration instruction or as evidence of a released contract.
+**Status: proposal for #259.** The review candidate for narrow path binding and
+byte replacement is described in [file-path-binding.md](../file-path-binding.md).
+It is not a released migration instruction or a fully accepted contract.
 
 ## Current boundaries
 
