@@ -31,6 +31,8 @@ class Disk extends Storage implements IData
 	/** A FileSystem save event, not the fluent write return, confirms a write. */
 	private ?object $_observedWriteSource = null;
 	private bool $_sourceWriteConfirmed = false;
+	private ?object $_observedReadSource = null;
+	private bool $_sourceReadConfirmed = false;
 		
 	/**
 	 * Constructor method for the disk storage object.
@@ -168,7 +170,23 @@ class Disk extends Storage implements IData
 
 			return;
 		}
+		if ($this->_observedReadSource !== $source) {
+			$source->when(Event::READ, function (): void {
+				$this->_sourceReadConfirmed = true;
+			});
+			$this->_observedReadSource = $source;
+		}
+
+		$this->_sourceReadConfirmed = false;
 		$source->read();
+		if (!$this->_sourceReadConfirmed) {
+			$this->status(self::STATUS_FAILED);
+			$this->perform(
+				[Event::ACTION_FAILED, Event::FAILURE],
+				new Meta(when: Action::READ, info: 'Disk source did not confirm the read.')
+			);
+			return;
+		}
 
 		$value = $source->contents();
 
@@ -186,6 +204,7 @@ class Disk extends Storage implements IData
 		} else {
 			$this->contents($value);
 		}
+		$this->status(self::STATUS_SUCCESS);
 	}
 	
 	/**
