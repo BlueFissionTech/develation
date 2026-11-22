@@ -127,6 +127,49 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    public function testFailedStartRemovesOwnedCaptureFiles(): void
+    {
+        $process = new class($this->command(), null, null, null, ['windows_safe' => true]) extends Process {
+            public array $createdCapturePaths = [];
+
+            protected function isWindows(): bool
+            {
+                return true;
+            }
+
+            protected function prepareWindowsSafeCapture(): void
+            {
+                parent::prepareWindowsSafeCapture();
+                $this->createdCapturePaths = [$this->_stdoutFile, $this->_stderrFile];
+            }
+
+            protected function open(array $descriptorSpec)
+            {
+                return false;
+            }
+        };
+
+        $logFile = tempnam(sys_get_temp_dir(), 'bf_proc_log_');
+        $originalLog = ini_get('error_log');
+        try {
+            ini_set('error_log', $logFile);
+            $process->start();
+
+            $this->assertCount(2, $process->createdCapturePaths);
+            foreach ($process->createdCapturePaths as $path) {
+                $this->assertFileDoesNotExist($path);
+            }
+            $this->assertSame('Error starting process', $process->status());
+            $this->assertSame(-1, $process->close());
+        } finally {
+            ini_set('error_log', $originalLog);
+            @unlink($logFile);
+            foreach ($process->createdCapturePaths as $path) {
+                @unlink($path);
+            }
+        }
+    }
+
     public function testThrowingStartRemainsObservableWithoutAnExitCode(): void
     {
         $process = new class($this->command()) extends Process {
