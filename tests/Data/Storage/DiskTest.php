@@ -125,4 +125,53 @@ class DiskTest extends StorageTest {
 		$this->object->activate()->read()->write();
 		$this->assertSame('null', file_get_contents($path));
 	}
+
+	public function testArrayContentsDoNotOverwriteExistingBytes(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, "existing\0bytes");
+		$this->object->activate();
+		$this->object->contents(['channel' => ['message']]);
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
+		$this->assertSame("existing\0bytes", file_get_contents($path));
+	}
+
+	public function testEmptyArrayContentsDoNotFallBackToFieldSerialization(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, 'original');
+		$this->object->activate();
+		$this->object->contents([]);
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
+		$this->assertSame('original', file_get_contents($path));
+	}
+
+	public function testNonStringableObjectDoesNotOverwriteExistingBytes(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, 'original');
+		$this->object->activate();
+		$this->object->contents(new \stdClass());
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_FAILED, $this->object->status());
+		$this->assertSame('original', file_get_contents($path));
+	}
+
+	public function testStringableRawContentsRetainExistingWriteBehavior(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		$this->object->activate();
+		$this->object->contents(new class implements \Stringable {
+			public function __toString(): string { return 'stringable'; }
+		});
+		$this->object->write();
+
+		$this->assertSame(Storage::STATUS_SUCCESS, $this->object->status());
+		$this->assertSame('stringable', file_get_contents($path));
+	}
 }

@@ -28,6 +28,13 @@ $store->assign($payload);
 $store->write();
 ```
 
+`Disk::contents()` is the raw-content override. Pass a string for raw contents;
+use `assign()` for JSON object fields as above. Passing an array or a
+non-stringable object directly to `contents()` is not a structured-storage
+codec: `write()` rejects it before changing the file and reports
+`Storage::STATUS_FAILED`. A structured IPC store
+requires a separately reviewed encoding and lifecycle contract.
+
 ## Bounded Local File Reads
 
 Use `FileSystem::fileContentsBounded($path, $maxBytes)` when untrusted local file

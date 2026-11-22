@@ -10,6 +10,7 @@ use BlueFission\Data\IData;
 use BlueFission\Data\FileSystem;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\DevElation as Dev;
 
 class Disk extends Storage implements IData
@@ -105,11 +106,23 @@ class Disk extends Storage implements IData
 			return;
 		}
 
+		$unsupportedExplicitContents = !$this->_contentsFromRead
+			&& (is_array($this->_contents)
+				|| (is_object($this->_contents) && !($this->_contents instanceof \Stringable)));
 		$data = $this->_contentsFromRead
 			? HTTP::jsonEncode((object)$this->_data->val())
 			: (Val::isEmpty($this->_contents) ? HTTP::jsonEncode($this->_data->val()) : $this->_contents);
 
 		$data = Dev::apply(null, $data);
+		if ($unsupportedExplicitContents || is_array($data)
+			|| (is_object($data) && !($data instanceof \Stringable))) {
+			$this->status(self::STATUS_FAILED);
+			$this->perform(
+				[Event::ACTION_FAILED, Event::FAILURE],
+				new Meta(when: Action::SAVE, info: 'Disk cannot write array or non-stringable object contents; use fields for JSON objects.')
+			);
+			return;
+		}
 
 		$source->flush()->contents( $data )->write();
 		
