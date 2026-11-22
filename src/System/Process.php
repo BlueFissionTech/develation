@@ -195,6 +195,7 @@ class Process implements IDispatcher
         } catch (\Throwable $exception) {
             $this->_process = false;
             $this->_startFailed = true;
+            $this->closeOwnedPipes();
             $this->cleanupWindowsSafeCapture();
             try {
                 $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: 'Error starting process'));
@@ -218,6 +219,7 @@ class Process implements IDispatcher
         } else {
             $message = "Error starting process";
             $this->_startFailed = true;
+            $this->closeOwnedPipes();
             $this->cleanupWindowsSafeCapture();
             error_log($message);
             $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: $message));
@@ -293,28 +295,43 @@ class Process implements IDispatcher
      */
     public function stop()
     {
-        $this->trigger(Action::STOP);
-
-        if (!Ref::is($this->_process)) {
-            $this->_closed = true;
-            $this->cleanupWindowsSafeCapture();
-            return $this;
+        $failure = null;
+        try {
+            $this->trigger(Action::STOP);
+        } catch (\Throwable $exception) {
+            $failure = $exception;
         }
 
-        foreach ($this->_pipes as $pipe) {
-            if (Ref::is($pipe)) {
-                Ref::resource($pipe, ['owned' => true])->close();
-                $this->trigger(Event::DISCONNECTED);
+        $pipeFailure = $this->closeOwnedPipes(true);
+        $failure ??= $pipeFailure;
+        $hasProcess = Ref::is($this->_process);
+        if ($hasProcess) {
+            try {
+                $status = proc_close($this->_process);
+                if ($status >= 0) {
+                    $this->_exitCode = $status;
+                }
+            } catch (\Throwable $exception) {
+                $failure ??= $exception;
             }
         }
-        $status = proc_close($this->_process);
-        if ($status >= 0) {
-            $this->_exitCode = $status;
-        }
         $this->_closed = true;
-        $this->cleanupWindowsSafeCapture();
-        $this->trigger(Event::STOPPED);
-        // return $status;
+        try {
+            $this->cleanupWindowsSafeCapture();
+        } catch (\Throwable $exception) {
+            $failure ??= $exception;
+        }
+        if ($hasProcess) {
+            try {
+                $this->trigger(Event::STOPPED);
+            } catch (\Throwable $exception) {
+                $failure ??= $exception;
+            }
+        }
+
+        if ($failure) {
+            throw $failure;
+        }
 
         return $this;
     }
@@ -329,22 +346,66 @@ class Process implements IDispatcher
             return $this->_exitCode ?? -1;
         }
 
-        $this->trigger(Action::DISCONNECT);
-        if (!Ref::is($this->_process)) {
-            $this->_closed = true;
-            $this->cleanupWindowsSafeCapture();
-            return -1;
+        $failure = null;
+        try {
+            $this->trigger(Action::DISCONNECT);
+        } catch (\Throwable $exception) {
+            $failure = $exception;
         }
 
-        $status = proc_close($this->_process);
-        if ($status >= 0) {
-            $this->_exitCode = $status;
+        $pipeFailure = $this->closeOwnedPipes();
+        $failure ??= $pipeFailure;
+        $hasProcess = Ref::is($this->_process);
+        $status = -1;
+        if ($hasProcess) {
+            try {
+                $status = proc_close($this->_process);
+                if ($status >= 0) {
+                    $this->_exitCode = $status;
+                }
+            } catch (\Throwable $exception) {
+                $failure ??= $exception;
+            }
         }
         $this->_closed = true;
-        $this->cleanupWindowsSafeCapture();
-        $this->trigger(Event::DISCONNECTED);
+        try {
+            $this->cleanupWindowsSafeCapture();
+        } catch (\Throwable $exception) {
+            $failure ??= $exception;
+        }
+        if ($hasProcess) {
+            try {
+                $this->trigger(Event::DISCONNECTED);
+            } catch (\Throwable $exception) {
+                $failure ??= $exception;
+            }
+        }
 
-        return $this->_exitCode ?? $status;
+        if ($failure) {
+            throw $failure;
+        }
+
+        return $hasProcess ? ($this->_exitCode ?? $status) : -1;
+    }
+
+    /** Close only pipes supplied by the owned process attempt. */
+    private function closeOwnedPipes(bool $notifyDisconnected = false): ?\Throwable
+    {
+        $failure = null;
+        foreach ($this->_pipes as $pipe) {
+            if (Ref::is($pipe)) {
+                try {
+                    Ref::resource($pipe, ['owned' => true])->close();
+                    if ($notifyDisconnected) {
+                        $this->trigger(Event::DISCONNECTED);
+                    }
+                } catch (\Throwable $exception) {
+                    $failure ??= $exception;
+                }
+            }
+        }
+
+        return $failure;
     }
 
     /**
