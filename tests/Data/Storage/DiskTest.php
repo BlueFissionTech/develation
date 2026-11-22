@@ -38,6 +38,41 @@ class DiskTest extends StorageTest {
 		$this->assertEquals(Storage::STATUS_SUCCESSFUL_INIT, $this->object->status());
 	}
 
+	public function testDeactivateAndRepeatedActivateReleaseOwnedSources(): void
+	{
+		$disk = new class(static::$configuration) extends Disk {
+			public function source(): ?FileSystem
+			{
+				return $this->_source;
+			}
+		};
+		$handle = new \ReflectionProperty(FileSystem::class, '_handle');
+
+		$disk->activate();
+		$first = $disk->source();
+		$this->assertNotNull($first);
+		$this->assertNotNull($handle->getValue($first));
+
+		$disk->deactivate();
+		$this->assertNull($disk->source());
+		$this->assertNull($handle->getValue($first));
+
+		$disk->activate();
+		$second = $disk->source();
+		$this->assertNotNull($second);
+		$this->assertNotNull($handle->getValue($second));
+
+		$disk->activate();
+		$third = $disk->source();
+		$this->assertNotNull($third);
+		$this->assertNotSame($second, $third);
+		$this->assertNull($handle->getValue($second));
+		$this->assertNotNull($handle->getValue($third));
+
+		$disk->deactivate();
+		$this->assertNull($handle->getValue($third));
+	}
+
 	public function testStorageCanWriteFields()
 	{
 		$this->object->activate();
