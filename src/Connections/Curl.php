@@ -265,10 +265,10 @@ class Curl extends Connection implements IConfigurable
             return $target;
         }
 
-        $fragmentAt = strpos($target, '#');
-        $base = $fragmentAt === false ? $target : substr($target, 0, $fragmentAt);
-        $fragment = $fragmentAt === false ? '' : substr($target, $fragmentAt);
-        $separator = str_contains($base, '?')
+        $fragmentAt = Str::pos($target, '#');
+        $base = $fragmentAt === false ? $target : Str::sub($target, 0, $fragmentAt);
+        $fragment = $fragmentAt === false ? '' : Str::sub($target, $fragmentAt);
+        $separator = Str::has($base, '?')
             ? (str_ends_with($base, '?') || str_ends_with($base, '&') ? '' : '&')
             : '?';
 
