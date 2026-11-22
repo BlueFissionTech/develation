@@ -47,6 +47,7 @@ class AuthenticatorSessionWriteTest extends TestCase
     public function testFailedClearNeverAttemptsAWrite(): void
     {
         foreach ([false, null, new \RuntimeException('clear failed')] as $failure) {
+            $writes = 0;
             $session = $this->session(Storage::STATUS_SUCCESS, function () use ($failure) {
                 if ($failure instanceof \Throwable) {
                     throw $failure;
@@ -54,10 +55,14 @@ class AuthenticatorSessionWriteTest extends TestCase
 
                 return $failure;
             });
-            $session->expects(self::never())->method('write');
+            $session->method('write')->willReturnCallback(function () use (&$writes, $session) {
+                $writes++;
+                return $session;
+            });
             $authenticator = new Authenticator($session, $this->createMock(Storage::class));
 
             self::assertFalse($authenticator->setSession());
+            self::assertSame(0, $writes);
             self::assertSame('Could not save session', $authenticator->status());
         }
     }
@@ -105,6 +110,52 @@ class AuthenticatorSessionWriteTest extends TestCase
         self::assertTrue($authenticator->setSession());
     }
 
+    public function testFreshClearFailureCannotBePromotedByLaterSuccessfulWrite(): void
+    {
+        $storedStatus = Storage::STATUS_SUCCESS;
+        $writes = 0;
+        $session = null;
+        $session = $this->session(
+            function ($message = null) use (&$storedStatus) {
+                if ($message !== null) {
+                    $storedStatus = $message;
+                    return null;
+                }
+                return $storedStatus;
+            },
+            function () use (&$session, &$storedStatus) {
+                $storedStatus = Storage::STATUS_FAILED;
+                return $session;
+            }
+        );
+        $session->method('write')->willReturnCallback(function () use (&$session, &$storedStatus, &$writes) {
+            $writes++;
+            $storedStatus = Storage::STATUS_SUCCESS;
+            return $session;
+        });
+        $authenticator = new Authenticator($session, $this->createMock(Storage::class));
+
+        self::assertFalse($authenticator->setSession());
+        self::assertSame(0, $writes, 'A failed clear must deny before writing credentials.');
+    }
+
+    public function testSilentNoOpClearCannotEstablishSession(): void
+    {
+        $session = null;
+        $session = $this->session(Storage::STATUS_SUCCESS, function () use (&$session) {
+            return $session;
+        });
+        $writes = 0;
+        $session->method('write')->willReturnCallback(function () use (&$writes, &$session) {
+            $writes++;
+            return $session;
+        });
+        $authenticator = new Authenticator($session, $this->createMock(Storage::class));
+
+        self::assertFalse($authenticator->setSession());
+        self::assertSame(0, $writes);
+    }
+
     private function authenticator(mixed $status, bool $throw = false): Authenticator
     {
         $session = $this->session($status);
@@ -120,14 +171,23 @@ class AuthenticatorSessionWriteTest extends TestCase
     private function session(mixed $status, ?\Closure $clearCallback = null): Storage
     {
         $session = $this->createMock(Storage::class);
+        $data = ['username' => 'fixture', 'id' => 42];
         $session->method('config')->willReturnSelf();
         $session->method('activate')->willReturnSelf();
-        $session->method('read')->willReturnSelf();
-        $session->method('data')->willReturn(['username' => 'fixture', 'id' => 42]);
+        $session->method('read')->willReturnCallback(function () use (&$data, $session) {
+            $data = ['username' => 'fixture', 'id' => 42];
+            return $session;
+        });
+        $session->method('data')->willReturnCallback(function () use (&$data) {
+            return $data;
+        });
         if ($clearCallback !== null) {
             $session->method('clear')->willReturnCallback($clearCallback);
         } else {
-            $session->method('clear')->willReturnSelf();
+            $session->method('clear')->willReturnCallback(function () use (&$data, $session) {
+                $data = [];
+                return $session;
+            });
         }
         if ($status instanceof \Closure) {
             $session->method('status')->willReturnCallback($status);
