@@ -37,6 +37,12 @@ codec: `write()` rejects it before changing the file and reports
 `Storage::STATUS_FAILED`. A structured IPC store
 requires a separately reviewed encoding and lifecycle contract.
 
+`Disk::write()` reports `Storage::STATUS_SUCCESS` only after its file source
+confirms a save; a fluent return from the file source is not proof of a
+successful write. A failed or unconfirmed save reports
+`Storage::STATUS_FAILED`. This is status reporting, not an atomic-write or
+durability guarantee: a failed write may still have partial effects.
+
 ## Bounded Local File Reads
 
 Use `FileSystem::fileContentsBounded($path, $maxBytes)` when untrusted local file

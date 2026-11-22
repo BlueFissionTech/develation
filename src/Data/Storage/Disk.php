@@ -27,6 +27,10 @@ class Disk extends Storage implements IData
 
 	/** Whether the cached contents came from a JSON object read. */
 	protected bool $_contentsFromRead = false;
+
+	/** A FileSystem save event, not the fluent write return, confirms a write. */
+	private ?object $_observedWriteSource = null;
+	private bool $_sourceWriteConfirmed = false;
 		
 	/**
 	 * Constructor method for the disk storage object.
@@ -129,11 +133,25 @@ class Disk extends Storage implements IData
 			return;
 		}
 
-		$source->flush()->contents( $data )->write();
-		
-		$status = self::STATUS_SUCCESS;
-		
-		$this->status( $status );
+		if ($this->_observedWriteSource !== $source) {
+			$source->when(Event::SAVED, function (): void {
+				$this->_sourceWriteConfirmed = true;
+			});
+			$this->_observedWriteSource = $source;
+		}
+
+		$this->_sourceWriteConfirmed = false;
+		$source->flush()->contents($data)->write();
+		if (!$this->_sourceWriteConfirmed) {
+			$this->status(self::STATUS_FAILED);
+			$this->perform(
+				[Event::ACTION_FAILED, Event::FAILURE],
+				new Meta(when: Action::SAVE, info: 'Disk source did not confirm the write.')
+			);
+			return;
+		}
+
+		$this->status(self::STATUS_SUCCESS);
 	}
 	
 	/**
