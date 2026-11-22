@@ -393,7 +393,7 @@ class FileSystem extends Data implements IData {
 
 		if ($file && !$this->config('lock')) {
 			if (is_writable($path)) {
-				if ( Val::isEmpty($content) ) {
+				if ($content === null) {
 					if (!$this->exists($filepath)) {
 						$this->perform( State::PERFORMING_ACTION, new Meta(when: Action::CREATE) );
 						$isNewFile = true;
@@ -404,7 +404,7 @@ class FileSystem extends Data implements IData {
 						$status = "File '$file' already exists";
 						$this->perform( State::PERFORMING_ACTION, new Meta(when: Action::UPDATE) );
 					}
-				} elseif ( !file_put_contents($filepath, $content) ) {
+				} elseif (file_put_contents($filepath, $content) === false) {
 					$status = "Cannot write to file ($file)";
 				} else {	
 					$status = "Successfully wrote to file '$file'";
