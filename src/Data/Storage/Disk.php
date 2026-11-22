@@ -59,6 +59,11 @@ class Disk extends Storage implements IData
 	 */
 	public function activate( ): IObj
 	{
+		// A repeated activation owns the previous source and must release its handle.
+		if ($this->_source !== null) {
+			$this->deactivate();
+		}
+
 		$path = Str::make((string)($this->config('location') ?? sys_get_temp_dir()));
 		$name = Str::make((string)($this->config('name') ?? ''));
 
@@ -224,7 +229,7 @@ class Disk extends Storage implements IData
 		$source->delete();
 	}
 
-	private function _disconnect() {
+	protected function _disconnect() {
         if (Val::is($this->_source)) {
             $this->_source->close();
         }
