@@ -100,6 +100,32 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue(FileSystem::fileExists($this->testdirectory.DIRECTORY_SEPARATOR.'testfile.txt'));
 	}
 
+	public function testWriteReplacesExistingFileWithEmptyStringAndZero()
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'replacement.txt';
+		file_put_contents($path, 'old contents');
+		$this->object->filename = 'replacement.txt';
+
+		$this->object->contents('')->write();
+		$this->assertSame('', file_get_contents($path));
+
+		file_put_contents($path, 'old contents');
+		$this->object->contents('0')->write();
+		$this->assertSame('0', file_get_contents($path));
+	}
+
+	public function testWriteWithoutContentsPreservesExistingTextFile(): void
+	{
+		$path = $this->testdirectory.DIRECTORY_SEPARATOR.'existing.txt';
+		$original = "Keep \\text and bytes\n";
+		file_put_contents($path, $original);
+		$this->object->filename = 'existing.txt';
+
+		$this->object->write();
+
+		$this->assertSame($original, file_get_contents($path));
+	}
+
 	public function testCanCopyFileToDirectory()
 	{
 		$source = $this->testdirectory.DIRECTORY_SEPARATOR.'source.txt';
