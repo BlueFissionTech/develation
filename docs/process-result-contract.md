@@ -97,3 +97,9 @@ supported-platform evidence, and reviewer acceptance of timeout/output-limit
 semantics are still required before implementation and landing. The same
 evidence should inform #275 before Shell advertises a successful command
 result. This document does not complete issue #263 or #289.
+
+The existing review on PR #366 also records an implementation follow-up:
+the next code slice should make the intentional breaking rename from
+`Process::openProcess()` to `Process::open()`. That refactor is not included
+in this documentation-only contract update and must be called out and tested
+in the implementation PR.
