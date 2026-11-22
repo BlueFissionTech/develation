@@ -126,6 +126,52 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    public function testStopReleasesResourcesWhenStopObserverThrows(): void
+    {
+        $process = new Process($this->command('exit(0);'));
+        $process->start();
+        $this->waitForProcess($process);
+        $process->when(Action::STOP, static function (): void {
+            throw new \RuntimeException('synthetic stop observer');
+        });
+
+        try {
+            $process->stop();
+            $this->fail('The observer failure must remain visible.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('synthetic stop observer', $exception->getMessage());
+        }
+
+        $this->assertFalse(is_resource($process->process));
+        foreach ([0, 1, 2] as $index) {
+            $this->assertFalse(is_resource($process->pipes($index)));
+        }
+        $this->assertSame(0, $process->close());
+    }
+
+    public function testStopContinuesCleanupWhenPipeDisconnectObserverThrows(): void
+    {
+        $process = new Process($this->command('exit(0);'));
+        $process->start();
+        $this->waitForProcess($process);
+        $process->when(Event::DISCONNECTED, static function (): void {
+            throw new \RuntimeException('synthetic pipe observer');
+        });
+
+        try {
+            $process->stop();
+            $this->fail('The observer failure must remain visible.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('synthetic pipe observer', $exception->getMessage());
+        }
+
+        $this->assertFalse(is_resource($process->process));
+        foreach ([0, 1, 2] as $index) {
+            $this->assertFalse(is_resource($process->pipes($index)));
+        }
+        $this->assertSame(0, $process->close());
+    }
+
     public function testStartFailureDoesNotDiscloseCommandInLogOrErrorEvent(): void
     {
         $secret = 'synthetic-secret-argument-123';

@@ -295,28 +295,43 @@ class Process implements IDispatcher
      */
     public function stop()
     {
-        $this->trigger(Action::STOP);
-
-        if (!Ref::is($this->_process)) {
-            $this->_closed = true;
-            $this->cleanupWindowsSafeCapture();
-            return $this;
+        $failure = null;
+        try {
+            $this->trigger(Action::STOP);
+        } catch (\Throwable $exception) {
+            $failure = $exception;
         }
 
-        foreach ($this->_pipes as $pipe) {
-            if (Ref::is($pipe)) {
-                Ref::resource($pipe, ['owned' => true])->close();
-                $this->trigger(Event::DISCONNECTED);
+        $pipeFailure = $this->closeOwnedPipes(true);
+        $failure ??= $pipeFailure;
+        $hasProcess = Ref::is($this->_process);
+        if ($hasProcess) {
+            try {
+                $status = proc_close($this->_process);
+                if ($status >= 0) {
+                    $this->_exitCode = $status;
+                }
+            } catch (\Throwable $exception) {
+                $failure ??= $exception;
             }
         }
-        $status = proc_close($this->_process);
-        if ($status >= 0) {
-            $this->_exitCode = $status;
-        }
         $this->_closed = true;
-        $this->cleanupWindowsSafeCapture();
-        $this->trigger(Event::STOPPED);
-        // return $status;
+        try {
+            $this->cleanupWindowsSafeCapture();
+        } catch (\Throwable $exception) {
+            $failure ??= $exception;
+        }
+        if ($hasProcess) {
+            try {
+                $this->trigger(Event::STOPPED);
+            } catch (\Throwable $exception) {
+                $failure ??= $exception;
+            }
+        }
+
+        if ($failure) {
+            throw $failure;
+        }
 
         return $this;
     }
@@ -374,13 +389,16 @@ class Process implements IDispatcher
     }
 
     /** Close only pipes supplied by the owned process attempt. */
-    private function closeOwnedPipes(): ?\Throwable
+    private function closeOwnedPipes(bool $notifyDisconnected = false): ?\Throwable
     {
         $failure = null;
         foreach ($this->_pipes as $pipe) {
             if (Ref::is($pipe)) {
                 try {
                     Ref::resource($pipe, ['owned' => true])->close();
+                    if ($notifyDisconnected) {
+                        $this->trigger(Event::DISCONNECTED);
+                    }
                 } catch (\Throwable $exception) {
                     $failure ??= $exception;
                 }
