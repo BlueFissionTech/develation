@@ -107,6 +107,43 @@ class DiskTest extends StorageTest {
 		$this->assertSame('raw replacement', file_get_contents($path));
 	}
 
+	public function testExplicitEmptyRawContentsReplaceExistingBytes(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, 'previous bytes');
+		$this->object->activate();
+		$this->object->contents('');
+		$this->object->write();
+
+		$this->assertSame('', file_get_contents($path));
+		$this->assertSame(Storage::STATUS_SUCCESS, $this->object->status());
+	}
+
+	public function testExplicitZeroRawContentsReplaceExistingBytes(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		file_put_contents($path, 'previous bytes');
+		$this->object->activate();
+		$this->object->contents('0');
+		$this->object->write();
+
+		$this->assertSame('0', file_get_contents($path));
+		$this->assertSame(Storage::STATUS_SUCCESS, $this->object->status());
+	}
+
+	public function testRawBinaryContentsSurviveWriteAndRead(): void
+	{
+		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
+		$bytes = "\x00\x01\xff\\raw";
+		$this->object->activate();
+		$this->object->contents($bytes);
+		$this->object->write();
+
+		$this->assertSame($bytes, file_get_contents($path));
+		$this->object->read();
+		$this->assertSame($bytes, $this->object->contents());
+	}
+
 	public function testEmptyJsonObjectCanGainFieldsWithoutChangingItsShape(): void
 	{
 		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';
