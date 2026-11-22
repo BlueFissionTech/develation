@@ -1,8 +1,11 @@
-# Bounded process result contract (review proposal)
+# Bounded process result contract (approved candidate; review pending)
 
 This is a design and test plan for issue #263, not a shipped execution API.
-The existing `System\Process` methods remain unchanged in this slice. A child
-process is an untrusted local program, not a deployment or privilege boundary.
+The maintainer approved the additive method/result shape below on 2026-11-22,
+conditional on confirming there are no conflicting registered downstream
+requirements. That compatibility check is still pending. The existing
+`System\Process` methods remain unchanged in this slice. A child process is
+an untrusted local program, not a deployment or privilege boundary.
 
 ## Current source and test evidence
 
@@ -22,11 +25,12 @@ process is an untrusted local program, not a deployment or privilege boundary.
   execution defect tracked in #275. A Shell fix must not infer success from
   empty stdout or claim a bounded result before this contract is reviewed.
 
-## Proposed additive shape for review
+## Maintainer-approved additive candidate
 
 An opt-in bounded call on a `Process` instance would return one immutable
 result value rather than overload `status()`, `output()`, or `close()`. The
-candidate operation is `runBounded(int $timeoutMs, int $maxOutputBytes)`.
+approved candidate operation is
+`Process::runBounded(int $timeoutMs, int $maxOutputBytes)`.
 Both arguments must be positive and finite; no implicit unlimited mode.
 
 The proposed result has distinct fields:
@@ -86,7 +90,10 @@ not run external services or production commands.
   temporary files, and no leaked handles after repeated inspection.
 - Preserve the existing exit 0/7 polling-and-close tests as regression gates.
 
-Maintainer review is required for the public signature, result representation,
-timeout and termination guarantees, output policy, and supported-platform
-evidence. The same review should inform #275 before Shell advertises a
-successful command result. This document does not complete issue #263.
+The maintainer approved the method name, positive finite arguments, immutable
+result fields, separate streams, truncation flags, and distinction between
+termination requested and confirmed. Downstream compatibility verification,
+supported-platform evidence, and reviewer acceptance of timeout/output-limit
+semantics are still required before implementation and landing. The same
+evidence should inform #275 before Shell advertises a successful command
+result. This document does not complete issue #263 or #289.
