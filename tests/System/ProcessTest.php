@@ -4,6 +4,7 @@ namespace BlueFission\System\Tests;
 
 use PHPUnit\Framework\TestCase;
 use BlueFission\System\Process;
+use BlueFission\Behavioral\Behaviors\Action;
 use BlueFission\Behavioral\Behaviors\Event;
 use BlueFission\Behavioral\Behaviors\Meta;
 
@@ -70,6 +71,59 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame('failed', $process->output());
         $this->assertSame(7, $process->close());
+    }
+
+    public function testCloseReleasesResourcesWhenDisconnectObserverThrows(): void
+    {
+        $process = new Process($this->command('exit(0);'));
+        $process->start();
+        $this->waitForProcess($process);
+        $process->when(Action::DISCONNECT, static function (): void {
+            throw new \RuntimeException('synthetic disconnect observer');
+        });
+
+        try {
+            $process->close();
+            $this->fail('The observer failure must remain visible.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('synthetic disconnect observer', $exception->getMessage());
+        }
+
+        $this->assertFalse(is_resource($process->process));
+        foreach ([0, 1, 2] as $index) {
+            $this->assertFalse(is_resource($process->pipes($index)));
+        }
+        $this->assertSame(0, $process->close());
+    }
+
+    public function testFailedStartReleasesPipesAllocatedByOpen(): void
+    {
+        $process = new class($this->command()) extends Process {
+            protected function open(array $descriptorSpec)
+            {
+                $this->_pipes = [fopen('php://temp', 'r+'), fopen('php://temp', 'r+')];
+                return false;
+            }
+        };
+
+        $logFile = tempnam(sys_get_temp_dir(), 'bf_proc_log_');
+        $originalLog = ini_get('error_log');
+        try {
+            ini_set('error_log', $logFile);
+            $process->start();
+            $this->assertSame('Error starting process', $process->status());
+            $this->assertFalse(is_resource($process->pipes(0)));
+            $this->assertFalse(is_resource($process->pipes(1)));
+        } finally {
+            ini_set('error_log', $originalLog);
+            @unlink($logFile);
+            foreach ([0, 1] as $index) {
+                $pipe = $process->pipes($index);
+                if (is_resource($pipe)) {
+                    fclose($pipe);
+                }
+            }
+        }
     }
 
     public function testStartFailureDoesNotDiscloseCommandInLogOrErrorEvent(): void
