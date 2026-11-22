@@ -7,6 +7,11 @@ use BlueFission\Num;
 use BlueFission\Arr;
 use BlueFission\Behavioral\Behaviors\Event;
 use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
+use InvalidArgumentException;
+use OutOfRangeException;
 
 class Date extends Val implements IVal
 {
@@ -292,6 +297,35 @@ class Date extends Val implements IVal
     public static function now()
     {
         return new Date();
+    }
+
+    /**
+     * Subtract elapsed seconds from an instant without changing the input.
+     *
+     * The ATOM result is always UTC. The supported calendar range is years
+     * 0001 through 9999, subject to the platform's native timestamp range.
+     */
+    public static function subtractUtcSeconds(DateTimeInterface $instant, mixed $seconds): string
+    {
+        if (!is_int($seconds) || $seconds < 0) {
+            throw new InvalidArgumentException('Seconds must be a nonnegative integer.');
+        }
+
+        $utc = DateTimeImmutable::createFromInterface($instant)->setTimezone(new DateTimeZone('UTC'));
+
+        try {
+            $minimum = (new DateTimeImmutable('0001-01-01T00:00:00+00:00'))->getTimestamp();
+            $maximum = (new DateTimeImmutable('9999-12-31T23:59:59+00:00'))->getTimestamp();
+            $timestamp = $utc->getTimestamp();
+        } catch (\ValueError $exception) {
+            throw new OutOfRangeException('Instant is outside the supported timestamp range.', 0, $exception);
+        }
+
+        if ($timestamp < $minimum || $timestamp > $maximum || $seconds > $timestamp - $minimum) {
+            throw new OutOfRangeException('Subtraction exceeds the supported calendar range.');
+        }
+
+        return $utc->setTimestamp($timestamp - $seconds)->format(DateTimeInterface::ATOM);
     }
 
     /**

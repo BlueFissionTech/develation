@@ -35,8 +35,9 @@ policy.
 - Return `DateTimeInterface::ATOM` text with `+00:00`, including at date, month,
   or year boundaries. The return is a value, not a `Date` or `DateTime` object.
 - Reject out-of-range results rather than overflow or silently clamp. The
-  implementation should explicitly test the supported platform range and
-  document any narrower limit if one is required.
+  implementation supports calendar years `0001` through `9999` when the
+  platform can represent those native timestamps. An input outside that range
+  or a result before year `0001` raises `OutOfRangeException`.
 
 The explicit `Utc` and `Seconds` names distinguish this from local calendar-day
 arithmetic and from an unrestricted `DateInterval` (which can contain months,
@@ -44,7 +45,7 @@ years, or an inversion flag). A separate object-returning helper may be more
 useful if callers need further date operations; that is a review question, not
 an additional proposed API in this slice.
 
-## Proposed test matrix (not yet implemented)
+## Test matrix
 
 | Input instant | Seconds | Expected ATOM result | Concern |
 | --- | ---: | --- | --- |
