@@ -686,6 +686,90 @@ class FileSystem extends Data implements IData {
 	}
 
 	/**
+	 * Validate a local byte-I/O target against an existing root and parent.
+	 * No directory is created. This is a path check, not an atomic symlink-race guarantee.
+	 */
+	public static function validateBytePath(string $path, ?string $root = null): void
+	{
+		$hasScheme = preg_match('~^[a-z][a-z0-9+.-]*:~i', $path) === 1;
+		$isDrivePath = preg_match('~^[a-z]:[\\\\/]~i', $path) === 1;
+		$isAbsolute = str_starts_with($path, '/') || str_starts_with($path, '\\') || $isDrivePath;
+		if ($path === '' || str_contains($path, "\0") || !$isAbsolute || ($hasScheme && !$isDrivePath)) {
+			throw new \InvalidArgumentException('An absolute local file path is required.');
+		}
+		if (in_array(basename($path), ['.', '..', ''], true)) {
+			throw new \InvalidArgumentException('A regular file target is required.');
+		}
+
+		$parent = realpath(dirname($path));
+		if ($parent === false || !is_dir($parent)) {
+			throw new \RuntimeException('File parent directory does not exist.');
+		}
+		if ($root !== null) {
+			$canonicalRoot = realpath($root);
+			if ($canonicalRoot === false || !is_dir($canonicalRoot)) {
+				throw new \InvalidArgumentException('File root directory does not exist.');
+			}
+			$normalize = static function (string $value): string {
+				$value = str_replace('\\', '/', rtrim($value, '\\/'));
+				return $value === '' ? '/' : $value;
+			};
+			$rootPath = $normalize($canonicalRoot);
+			$parentPath = $normalize($parent);
+			if (DIRECTORY_SEPARATOR === '\\') {
+				$rootPath = strtolower($rootPath);
+				$parentPath = strtolower($parentPath);
+			}
+			$prefix = $rootPath === '/' ? '/' : $rootPath . '/';
+			if ($parentPath !== $rootPath && !str_starts_with($parentPath, $prefix)) {
+				throw new \InvalidArgumentException('File target is outside the configured root.');
+			}
+		}
+		if (is_link($path) || (file_exists($path) && !is_file($path))) {
+			throw new \UnexpectedValueException('Target is not a regular, non-symlink file.');
+		}
+	}
+
+	/** Read literal bytes from a path-bound regular file. */
+	public static function readBytesAtPath(string $path, ?string $root = null): string
+	{
+		self::validateBytePath($path, $root);
+		return self::fileContentsBounded($path, PHP_INT_MAX);
+	}
+
+	/**
+	 * Opt-in literal-byte replacement. Legacy write() filters are not used.
+	 * This does not promise atomicity, durability, or implicit parent creation.
+	 */
+	public static function replaceBytesAtPath(string $path, string $bytes, ?string $root = null): void
+	{
+		self::validateBytePath($path, $root);
+		if ((file_exists($path) && !is_writable($path)) || !is_writable(dirname($path))) {
+			throw new \RuntimeException('File target is not writable.');
+		}
+		$handle = @fopen($path, 'wb');
+		if ($handle === false) {
+			throw new \RuntimeException('File could not be opened for replacement.');
+		}
+		$written = 0;
+		$length = strlen($bytes);
+		try {
+			while ($written < $length) {
+				$count = @fwrite($handle, substr($bytes, $written));
+				if ($count === false || $count === 0) {
+					throw new \RuntimeException('File replacement was incomplete.');
+				}
+				$written += $count;
+			}
+			if (!fflush($handle)) {
+				throw new \RuntimeException('File replacement flush failed.');
+			}
+		} finally {
+			fclose($handle);
+		}
+	}
+
+	/**
 	 * Read raw bytes from a local regular file without creating it.
 	 *
 	 * Unlike fileContents(), this explicit bounded read does not apply content
