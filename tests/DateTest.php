@@ -133,6 +133,55 @@ class DateTest extends ValTest {
 		$this->assertSame('2012', (new Date('2012-12-12 12:00:00'))->formatTimestamp('Y'));
 	}
 
+	public function testSubtractUtcSecondsUsesElapsedTimeAcrossOffsetsAndBoundaries(): void
+	{
+		$cases = [
+			['2024-01-01T00:00:00+00:00', 0, '2024-01-01T00:00:00+00:00'],
+			['2024-03-01T00:00:00+02:00', 1, '2024-02-29T21:59:59+00:00'],
+			['2024-03-10T03:30:00-04:00', 3600, '2024-03-10T06:30:00+00:00'],
+			['2025-01-01T00:00:00+00:00', 1, '2024-12-31T23:59:59+00:00'],
+			['0001-01-01T00:00:01+00:00', 1, '0001-01-01T00:00:00+00:00'],
+			['9999-12-31T23:59:59+00:00', 1, '9999-12-31T23:59:58+00:00'],
+		];
+
+		foreach ($cases as [$instant, $seconds, $expected]) {
+			$this->assertSame($expected, Date::subtractUtcSeconds(new \DateTimeImmutable($instant), $seconds));
+		}
+	}
+
+	public function testSubtractUtcSecondsDoesNotMutateMutableInputOrTimezone(): void
+	{
+		$source = new \DateTime('2024-03-10T03:30:00-04:00');
+		$before = $source->format(\DateTimeInterface::ATOM);
+		$timezone = $source->getTimezone()->getName();
+
+		$this->assertSame('2024-03-10T06:30:00+00:00', Date::subtractUtcSeconds($source, 3600));
+		$this->assertSame($before, $source->format(\DateTimeInterface::ATOM));
+		$this->assertSame($timezone, $source->getTimezone()->getName());
+	}
+
+	public function testSubtractUtcSecondsRejectsWeakScalarCoercionAndRangeOverflow(): void
+	{
+		$instant = new \DateTimeImmutable('2024-01-01T00:00:00+00:00');
+		foreach ([-1, 1.5, '1', true, null, []] as $seconds) {
+			try {
+				Date::subtractUtcSeconds($instant, $seconds);
+				$this->fail('Invalid duration was accepted.');
+			} catch (\InvalidArgumentException $exception) {
+				$this->assertNotSame('', $exception->getMessage());
+			}
+		}
+
+		$this->expectException(\OutOfRangeException::class);
+		Date::subtractUtcSeconds(new \DateTimeImmutable('0001-01-01T00:00:00+00:00'), 1);
+	}
+
+	public function testSubtractUtcSecondsRejectsUnsupportedInputCalendarYear(): void
+	{
+		$this->expectException(\OutOfRangeException::class);
+		Date::subtractUtcSeconds(new \DateTimeImmutable('@253402300800'), 0);
+	}
+
 	public function testGetsTime()
 	{
 		$object = new static::$classname('2012-12-12');
