@@ -116,6 +116,48 @@ class DiskTest extends StorageTest {
 		$this->assertSame(Storage::STATUS_SUCCESS, $disk->status());
 	}
 
+	public function testSourceReadRequiresFreshReadConfirmationWithoutReplacingCachedContents(): void
+	{
+		$disk = new class(static::$configuration) extends Disk {
+			public function useSource(FileSystem $source): void
+			{
+				$this->_source = $source;
+			}
+		};
+		$source = new class extends FileSystem {
+			public bool $readSucceeds = false;
+			public string $nextContents = '';
+
+			protected function _read(): void
+			{
+				if ($this->readSucceeds) {
+					$this->contents($this->nextContents);
+					$this->trigger(Event::READ, new Meta(when: Action::READ));
+				} else {
+					$this->trigger(Event::FAILURE, new Meta(when: Action::READ));
+				}
+			}
+		};
+		$disk->useSource($source);
+		$disk->contents('cached');
+		$source->contents('stale source');
+
+		$disk->read();
+		$this->assertSame(Storage::STATUS_FAILED, $disk->status());
+		$this->assertSame('cached', $disk->contents());
+
+		$source->readSucceeds = true;
+		$source->nextContents = "fresh\0bytes";
+		$disk->read();
+		$this->assertSame(Storage::STATUS_SUCCESS, $disk->status());
+		$this->assertSame("fresh\0bytes", $disk->contents());
+
+		$source->readSucceeds = false;
+		$disk->read();
+		$this->assertSame(Storage::STATUS_FAILED, $disk->status());
+		$this->assertSame("fresh\0bytes", $disk->contents());
+	}
+
 	public function testFreshReadModifyWriteKeepsJsonFields(): void
 	{
 		$path = $this->tempDir . DIRECTORY_SEPARATOR . 'storage.tmp';

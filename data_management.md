@@ -43,6 +43,13 @@ successful write. A failed or unconfirmed save reports
 `Storage::STATUS_FAILED`. This is status reporting, not an atomic-write or
 durability guarantee: a failed write may still have partial effects.
 
+`Disk::read()` reports `Storage::STATUS_SUCCESS` only when its file source
+confirms a read. A failed or unconfirmed read reports `Storage::STATUS_FAILED`
+without replacing the previously cached contents with stale source data. A
+substituted file source must emit `Event::READ` for a successful read; a fluent
+`read()` return alone does not confirm one. This does not make read/write
+atomic or qualify `Disk` as a structured IPC channel.
+
 ## Bounded Local File Reads
 
 Use `FileSystem::fileContentsBounded($path, $maxBytes)` when untrusted local file
