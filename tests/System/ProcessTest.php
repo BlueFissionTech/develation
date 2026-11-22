@@ -313,6 +313,44 @@ class ProcessTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(-1, $process->close());
     }
 
+    public function testThrowingStartObserverBoundsAbortAndClosesOwnedPipes(): void
+    {
+        foreach ([Action::CONNECT, Event::STARTED, Event::CONNECTED] as $event) {
+            $process = new class($this->command('sleep(3);')) extends Process {
+                public function abortOutcomeForTest(): ?string
+                {
+                    return $this->_terminationOutcome;
+                }
+            };
+            $process->when($event, static function (): void {
+                throw new \RuntimeException('original start observer failure');
+            });
+
+            $startedAt = microtime(true);
+            try {
+                $process->start();
+                $this->fail('The observer failure must remain visible.');
+            } catch (\RuntimeException $exception) {
+                $this->assertSame('original start observer failure', $exception->getMessage());
+                $this->assertLessThan(1.0, microtime(true) - $startedAt, 'Abort must not wait for the child sleep.');
+                $this->assertSame('Error starting process', $process->status());
+                if (is_resource($process->process)) {
+                    $this->assertContains($process->abortOutcomeForTest(), ['requested', 'request_failed']);
+                } else {
+                    $this->assertSame('confirmed', $process->abortOutcomeForTest());
+                }
+                $this->assertFalse(is_resource($process->pipes(0)));
+                $this->assertFalse(is_resource($process->pipes(1)));
+            } finally {
+                $child = $process->process;
+                if (is_resource($child)) {
+                    @proc_terminate($child);
+                    @proc_close($child);
+                }
+            }
+        }
+    }
+
     private function waitForProcess(Process $process): void
     {
         $deadline = microtime(true) + 5;

@@ -103,6 +103,9 @@ class Process implements IDispatcher
     /** Whether the last attempt to create a process failed. */
     protected bool $_startFailed = false;
 
+    /** Root-child abort observation; never describes descendants. */
+    protected ?string $_terminationOutcome = null;
+
     /**
      * Whether the process resource has already been closed.
      *
@@ -179,6 +182,7 @@ class Process implements IDispatcher
         $this->_exitCode = null;
         $this->_closed = false;
         $this->_startFailed = false;
+        $this->_terminationOutcome = null;
         $this->_status = null;
         $descriptorSpec = $this->_descriptorspec;
         if ($this->_windowsSafeMode) {
@@ -204,25 +208,37 @@ class Process implements IDispatcher
             }
             throw $exception;
         }
-        $this->trigger(Action::CONNECT);
+        try {
+            $this->trigger(Action::CONNECT);
 
-        if (Ref::is($this->_process)) {
-            $this->trigger(Event::STARTED);
-            // Make the streams non-blocking
-            if (Arr::hasKey($this->_pipes, 1) && Ref::is($this->_pipes[1])) {
-                stream_set_blocking($this->_pipes[1], false);
+            if (Ref::is($this->_process)) {
+                $this->trigger(Event::STARTED);
+                // Make the streams non-blocking
+                if (Arr::hasKey($this->_pipes, 1) && Ref::is($this->_pipes[1])) {
+                    stream_set_blocking($this->_pipes[1], false);
+                }
+                if (Arr::hasKey($this->_pipes, 2) && Ref::is($this->_pipes[2])) {
+                    stream_set_blocking($this->_pipes[2], false);
+                }
+                $this->trigger(Event::CONNECTED);
+            } else {
+                $message = "Error starting process";
+                $this->_startFailed = true;
+                $this->closeOwnedPipes();
+                $this->cleanupWindowsSafeCapture();
+                error_log($message);
+                $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: $message));
             }
-            if (Arr::hasKey($this->_pipes, 2) && Ref::is($this->_pipes[2])) {
-                stream_set_blocking($this->_pipes[2], false);
+        } catch (\Throwable $exception) {
+            if (Ref::is($this->_process)) {
+                $this->_startFailed = true;
+                try {
+                    $this->abortStartedProcess();
+                } catch (\Throwable $cleanupFailure) {
+                    // The start-observer failure remains primary.
+                }
             }
-            $this->trigger(Event::CONNECTED);
-        } else {
-            $message = "Error starting process";
-            $this->_startFailed = true;
-            $this->closeOwnedPipes();
-            $this->cleanupWindowsSafeCapture();
-            error_log($message);
-            $this->trigger(Event::ERROR, new Meta(when: Action::CONNECT, info: $message));
+            throw $exception;
         }
 
         return $this;
@@ -269,9 +285,12 @@ class Process implements IDispatcher
      */
     public function status()
     {
+        if ($this->_startFailed) {
+            return 'Error starting process';
+        }
+
         if (!Ref::is($this->_process)) {
-            return $this->_startFailed ? 'Error starting process'
-                : ($this->_closed ? 'Process is closed' : 'Process has not started');
+            return $this->_closed ? 'Process is closed' : 'Process has not started';
         }
 
         $this->_status = proc_get_status($this->_process);
@@ -406,6 +425,52 @@ class Process implements IDispatcher
         }
 
         return $failure;
+    }
+
+    /** Best-effort, bounded abort of the owned root child after start observation fails. */
+    private function abortStartedProcess(): void
+    {
+        try {
+            $this->closeOwnedPipes();
+        } catch (\Throwable $cleanupFailure) {
+            // Continue the bounded root abort even if pipe cleanup itself fails.
+        }
+
+        try {
+            $status = proc_get_status($this->_process);
+            if (!is_array($status) || $status['running']) {
+                if (@proc_terminate($this->_process)) {
+                    $this->_terminationOutcome = 'requested';
+                    $deadline = microtime(true) + 0.5;
+                    do {
+                        usleep(10000);
+                        $status = proc_get_status($this->_process);
+                    } while (is_array($status) && $status['running'] && microtime(true) < $deadline);
+                } else {
+                    $this->_terminationOutcome = 'request_failed';
+                }
+            }
+
+            if (is_array($status) && !$status['running']) {
+                if (isset($status['exitcode']) && is_int($status['exitcode']) && $status['exitcode'] >= 0) {
+                    $this->_exitCode = $status['exitcode'];
+                }
+                $closedExit = proc_close($this->_process);
+                if ($this->_exitCode === null && $closedExit >= 0) {
+                    $this->_exitCode = $closedExit;
+                }
+                $this->_closed = true;
+                $this->_terminationOutcome = 'confirmed';
+            }
+        } catch (\Throwable $cleanupFailure) {
+            // Cleanup must not replace the original start-observer failure.
+        }
+
+        try {
+            $this->cleanupWindowsSafeCapture();
+        } catch (\Throwable $cleanupFailure) {
+            // The original start-observer failure remains primary.
+        }
     }
 
     /**
