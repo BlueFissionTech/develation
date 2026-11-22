@@ -399,7 +399,25 @@ class Authenticator extends Service
     private function setAuthCookie($value, $duration = "")
     {
         try {
-            $this->_session->clear();
+            // A prior status cannot prove that this attempt cleared its fields.
+            $this->_session->status('Session clear pending.');
+            $cleared = $this->_session->clear();
+            $remaining = $this->_session->data();
+            $hasStaleFields = !is_array($remaining);
+            if (is_array($remaining)) {
+                foreach ($remaining as $field) {
+                    if (!Val::isNull($field)) {
+                        $hasStaleFields = true;
+                        break;
+                    }
+                }
+            }
+            if ($cleared !== $this->_session
+                || $this->_session->status() === Storage::STATUS_FAILED
+                || $hasStaleFields) {
+                $this->_session->status(Storage::STATUS_FAILED);
+                return false;
+            }
             $this->_session->username = $value['username'];
             $this->_session->id = $value['id'];
 
