@@ -3,6 +3,10 @@ namespace BlueFission\Tests\Data\Storage;
 
 use BlueFission\Data\Storage\Storage;
 use BlueFission\Data\Storage\Disk;
+use BlueFission\Data\FileSystem;
+use BlueFission\Behavioral\Behaviors\Action;
+use BlueFission\Behavioral\Behaviors\Event;
+use BlueFission\Behavioral\Behaviors\Meta;
 use BlueFission\Tests\Support\TestEnvironment;
 
 require_once __DIR__ . '/../../Support/TestEnvironment.php';
@@ -69,6 +73,47 @@ class DiskTest extends StorageTest {
 
 		$this->object->read();
 		$this->assertEquals('Testing.', $this->object->contents());
+	}
+
+	public function testSourceWriteRequiresFreshSavedConfirmation(): void
+	{
+		$disk = new class(static::$configuration) extends Disk {
+			public function useSource(FileSystem $source): void
+			{
+				$this->_source = $source;
+			}
+		};
+		$source = new class extends FileSystem {
+			public bool $saveSucceeds = true;
+
+			public function flush()
+			{
+				return $this;
+			}
+
+			protected function _write(): void
+			{
+				$this->trigger(
+					$this->saveSucceeds ? [Event::SUCCESS, Event::SAVED] : [Event::FAILURE],
+					new Meta(when: Action::SAVE)
+				);
+			}
+		};
+		$disk->useSource($source);
+
+		$disk->contents('first');
+		$disk->write();
+		$this->assertSame(Storage::STATUS_SUCCESS, $disk->status());
+
+		$source->saveSucceeds = false;
+		$disk->contents('second');
+		$disk->write();
+		$this->assertSame(Storage::STATUS_FAILED, $disk->status());
+
+		$source->saveSucceeds = true;
+		$disk->contents('third');
+		$disk->write();
+		$this->assertSame(Storage::STATUS_SUCCESS, $disk->status());
 	}
 
 	public function testFreshReadModifyWriteKeepsJsonFields(): void
