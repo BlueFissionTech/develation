@@ -258,7 +258,7 @@ class Curl extends Connection implements IConfigurable
     }
 
     /** Build a GET target without changing its path, existing query, or fragment. */
-    protected function getTargetWithQuery(string $target, array $data): string
+    protected function getBaseTarget(string $target, array $data): string
     {
         $query = HTTP::query($data);
         if ($query === '') {
@@ -318,7 +318,7 @@ class Curl extends Connection implements IConfigurable
                 }
 
             } elseif ($method == 'get') {
-                curl_setopt($curl, CURLOPT_URL, $this->getTargetWithQuery((string)$this->config('target'), $data));
+                curl_setopt($curl, CURLOPT_URL, $this->getBaseTarget((string)$this->config('target'), $data));
             }
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
             foreach ($this->_options as $option => $value) {

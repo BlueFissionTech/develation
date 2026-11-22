@@ -9,7 +9,7 @@ class CurlHelperProbe extends Curl
 {
     public function getTarget(string $target, array $data): string
     {
-        return $this->getTargetWithQuery($target, $data);
+            return $this->getBaseTarget($target, $data);
     }
 
     public function headers($headers): array
